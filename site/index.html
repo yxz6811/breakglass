@@ -1,0 +1,254 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>BreakGlass 破壁 · 把视频里的死内容变成能拖的活模型</title>
+    <meta name="description" content="BreakGlass 是一个 Chrome MV3 扩展：在视频原位画出一条可拖动的数学抛物线，来源可标注、失败可恢复、零权限零网络。">
+    <meta property="og:title" content="BreakGlass 破壁 · 原位抛物线交互">
+    <meta property="og:description" content="在视频原位画出一条可拖动的数学抛物线。零权限、零网络、零依赖。">
+    <meta property="og:type" content="website">
+    <meta name="theme-color" content="#08111f">
+    <link rel="stylesheet" href="./site.css">
+    <script defer src="./site.js"></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#main">跳到正文</a>
+
+    <div class="backdrop" aria-hidden="true">
+      <span class="backdrop__blob backdrop__blob--a"></span>
+      <span class="backdrop__blob backdrop__blob--b"></span>
+      <span class="backdrop__blob backdrop__blob--c"></span>
+      <span class="backdrop__grid"></span>
+    </div>
+
+    <header class="topbar" data-topbar>
+      <nav class="glass-nav" aria-label="页面导航">
+        <a class="glass-nav__brand" href="#top">
+          <span class="mark" aria-hidden="true"></span>
+          <span>BreakGlass</span>
+        </a>
+        <span class="glass-nav__sep" role="separator" aria-orientation="vertical"></span>
+        <ul class="glass-nav__links">
+          <li><a href="#demo">演示</a></li>
+          <li><a href="#features">功能</a></li>
+          <li><a href="#stack">技术</a></li>
+          <li><a href="#start">怎么跑</a></li>
+          <li><a href="#limits">边界</a></li>
+        </ul>
+        <a class="glass-nav__cta" href="../extension/demo/index.html" target="_blank" rel="noopener">打开演示</a>
+      </nav>
+    </header>
+
+    <main id="main">
+      <section class="hero" id="top">
+        <p class="eyebrow">CHROME MV3 扩展 · 数学抛物线原位交互</p>
+        <h1>把视频里的死内容，<br><span class="grad">变成能拖的活模型</span></h1>
+        <p class="lede">
+          网课里那条抛物线只能看：位置、开口、顶点都是死的。BreakGlass 在视频<strong>原位</strong>画出一条可拖动的曲线，
+          参数实时联动；来源全程标注，失败有可恢复路径，感知等待不超过 1.5 秒。
+        </p>
+        <div class="badges" role="list">
+          <span class="badge" role="listitem">零权限</span>
+          <span class="badge" role="listitem">零网络请求</span>
+          <span class="badge" role="listitem">零运行时依赖</span>
+          <span class="badge badge--ok" role="listitem">209 项自动化测试通过</span>
+        </div>
+        <div class="hero__actions">
+          <a class="btn btn--primary" href="#demo">看现场演示</a>
+          <a class="btn" href="#start">三步跑起来</a>
+          <a class="btn btn--ghost" href="https://github.com/yxz6811/breakglass" target="_blank" rel="noopener">GitHub 仓库</a>
+        </div>
+      </section>
+
+      <section class="section" id="problem">
+        <p class="section__kicker">问题</p>
+        <h2>能看见，但动不了</h2>
+        <div class="compare">
+          <article class="card card--muted">
+            <h3>看视频时</h3>
+            <p>老师画出 <code>y = a(x−h)² + k</code>，镜头一过就没了。想验证「a 变大开口变窄」只能凭空想象，</p>
+            <p class="card__foot">参数是死的，曲线只是像素。</p>
+          </article>
+          <article class="card card--accent">
+            <h3>用 BreakGlass</h3>
+            <p>把视频暂停在那一帧，按 <kbd>Alt</kbd>+<kbd>B</kbd>：曲线出现在画面原位，拖动控制点或用滑块改 a / h / k，曲线、顶点、数字三者同步。</p>
+            <p class="card__foot">参数是活的，曲线是模型。</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="section" id="demo">
+        <p class="section__kicker">现场演示</p>
+        <h2>跑的就是仓库里同一份代码</h2>
+        <p class="section__lede">
+          下面这个页面不是复刻的示意图，而是 <code>extension/demo/</code> 里那个演示页本身（0 处 <code>chrome.*</code> 调用，路径全相对）。
+        </p>
+        <div class="source-note" role="note">
+          <span class="chip" data-source-chip>预先准备的示例</span>
+          <span>曲线来自扩展包内<strong>预先准备的样例</strong>，不是实时识别结果；界面上会一直显示来源，超时回退会说明原因。</span>
+        </div>
+        <div class="stage">
+          <iframe class="stage__frame" src="../extension/demo/index.html" title="BreakGlass 演示页" loading="lazy" data-demo-frame></iframe>
+          <div class="stage__narrow">
+            <p class="stage__narrow-title">演示页面向桌面视口设计（控制台最小宽度 960px）</p>
+            <p>手机上看不清，建议在电脑上打开，或用新标签页在宽屏里看。</p>
+            <a class="btn btn--primary" href="../extension/demo/index.html" target="_blank" rel="noopener">在新标签页打开演示</a>
+          </div>
+          <p class="stage__fallback" data-demo-fallback hidden>
+            演示页需要以 http(s) 方式打开（<code>fetch</code> 读包内 JSON 在 <code>file://</code> 下会被浏览器拦），
+            或直接<a href="../extension/demo/index.html" target="_blank" rel="noopener">在新标签页打开</a>。
+          </p>
+        </div>
+        <p class="stage__caption">演示视频素材尚未提交到仓库，页面会显示「素材未提供」的空态 —— 这也是真实状态，不是加载失败。</p>
+      </section>
+
+      <section class="section" id="features">
+        <p class="section__kicker">功能</p>
+        <h2>已经做到哪，还没做什么</h2>
+        <div class="matrix">
+          <article class="card">
+            <h3 class="card__title card__title--ok">P0 已实现</h3>
+            <ul class="list">
+              <li>视频原位绘制抛物线，贴合内容区域（含黑边与 letterbox）</li>
+              <li>控制点拖动 + <code>a</code>/<code>h</code>/<code>k</code> 三个滑块，越界自动钳制</li>
+              <li>重置保留交互层，<kbd>Esc</kbd> / 退出移除覆盖层且视频保持暂停</li>
+              <li>1.5 秒超时自动回退到预制结果，并持续显示原因</li>
+              <li>结果校验：白名单公式、有限值、范围、视频/时间/画幅/请求号逐项匹配</li>
+              <li>液态玻璃顶栏、键盘焦点可见、禁用态给原因、错误态立即播报</li>
+            </ul>
+          </article>
+          <article class="card">
+            <h3 class="card__title card__title--demo">P1 已实现 · 仅打包样例</h3>
+            <ul class="list">
+              <li>默认关闭的识别适配开关（<code>visionAdapter: off</code>）</li>
+              <li>识别候选走<strong>同一套</strong>校验器，必须标注 <code>evidence: packaged-sample</code></li>
+              <li>可信程度可选：低于 0.5 拒绝，界面永不显示百分比</li>
+              <li>缺证据、越界、帧不匹配等九类坏样例全部拒绝并可重试</li>
+              <li>识别判定耗时单独记 <code>vision-decision</code>，不混入预制回退口径</li>
+            </ul>
+            <p class="card__foot card__foot--warn">样例是随扩展打包的工程夹具，<strong>不表示外部识别已接通</strong>。</p>
+          </article>
+          <article class="card card--muted">
+            <h3 class="card__title">未派发</h3>
+            <ul class="list list--plain">
+              <li>真实视觉识别服务与单帧上传</li>
+              <li>Python / Pyodide / WASM 代码执行</li>
+              <li>账号、云端同步、数据库</li>
+              <li>任意网站注入（当前只覆盖扩展内演示页）</li>
+              <li>顶点拖动同时改 h、k（语义待定）</li>
+            </ul>
+          </article>
+        </div>
+      </section>
+
+      <section class="section" id="stack">
+        <p class="section__kicker">技术</p>
+        <h2>零权限、零网络、零依赖</h2>
+        <div class="kpis">
+          <div class="kpi"><span class="kpi__value">0</span><span class="kpi__label">扩展权限 / 主机权限</span></div>
+          <div class="kpi"><span class="kpi__value">0</span><span class="kpi__label">运行时网络请求</span></div>
+          <div class="kpi"><span class="kpi__value">122.5<span class="kpi__unit">KB</span></span><span class="kpi__label">扩展包体积（不含视频）</span></div>
+          <div class="kpi"><span class="kpi__value">209</span><span class="kpi__label">自动化测试通过</span></div>
+        </div>
+        <div class="stack-grid">
+          <article class="card">
+            <h3>运行时</h3>
+            <dl class="facts">
+              <div><dt>平台</dt><dd>Chrome Manifest V3 未打包扩展</dd></div>
+              <div><dt>语言</dt><dd>Vanilla JavaScript（无 TypeScript、无打包器）</dd></div>
+              <div><dt>渲染</dt><dd>原生 DOM + 原生 SVG + 原生 CSS</dd></div>
+              <div><dt>模块</dt><dd>UMD/IIFE 挂到 <code>window.BreakGlass</code> 命名空间</dd></div>
+            </dl>
+          </article>
+          <article class="card">
+            <h3>质量</h3>
+            <dl class="facts">
+              <div><dt>测试</dt><dd>Node 内置 <code>node --test</code>（26 个测试文件 / 3846 行）</dd></div>
+              <div><dt>手段</dt><dd>自建假时钟 + 假 DOM，无 jsdom、无浏览器驱动</dd></div>
+              <div><dt>契约</dt><dd>静态断言锁脚本顺序、id、aria、无远程地址</dd></div>
+              <div><dt>口径</dt><dd>回退首帧 ≤100ms 预算（尚未实测）</dd></div>
+            </dl>
+          </article>
+          <article class="card">
+            <h3>安全表面</h3>
+            <dl class="facts">
+              <div><dt>权限</dt><dd><code>permissions: []</code>、<code>host_permissions: []</code></dd></div>
+              <div><dt>CSP</dt><dd><code>script-src 'self'; object-src 'self'</code></dd></div>
+              <div><dt>注入</dt><dd>无 content script、无 CDN、无内联脚本</dd></div>
+              <div><dt>存储</dt><dd>无数据库、无 <code>chrome.storage</code>、无 indexedDB</dd></div>
+            </dl>
+          </article>
+        </div>
+      </section>
+
+      <section class="section" id="start">
+        <p class="section__kicker">怎么跑</p>
+        <h2>三步，不用装任何依赖</h2>
+        <ol class="steps">
+          <li class="step">
+            <span class="step__no">1</span>
+            <div><h3>拿到代码</h3><p><code>git clone https://github.com/yxz6811/breakglass</code></p></div>
+          </li>
+          <li class="step">
+            <span class="step__no">2</span>
+            <div><h3>加载扩展</h3><p>打开 <code>chrome://extensions</code>，开启「开发者模式」→「加载已解压的扩展程序」→ 选择仓库里的 <code>extension/</code></p></div>
+          </li>
+          <li class="step">
+            <span class="step__no">3</span>
+            <div><h3>打开演示页</h3><p>点扩展图标，页面自动打开。暂停到目标时间后按 <kbd>Alt</kbd>+<kbd>B</kbd>；<kbd>Esc</kbd> 退出。</p></div>
+          </li>
+        </ol>
+        <div class="quickstart-note">
+          <p>想先验证一遍？仓库里只有一条命令：</p>
+          <p><code class="code-block">node --test</code><span class="quickstart-note__hint">209 项通过，不需要 <code>npm install</code>。</span></p>
+        </div>
+      </section>
+
+      <section class="section" id="limits">
+        <p class="section__kicker">边界</p>
+        <h2>我们没做什么，以及还没验什么</h2>
+        <div class="compare">
+          <article class="card card--muted">
+            <h3>没有做</h3>
+            <ul class="list list--plain">
+              <li>不上传单帧，不接外部识别服务，不建后端</li>
+              <li>不读取浏览历史，不注入任意网站</li>
+              <li>不在浏览器里放密钥，不启用远程代码</li>
+              <li>不把预制结果写成识别成功</li>
+            </ul>
+          </article>
+          <article class="card card--warn">
+            <h3>还没验</h3>
+            <ul class="list list--plain">
+              <li>浏览器手工验收（本环境无可控浏览器会话）</li>
+              <li>回退首帧 ≤100ms 的真实采样（目前只有假时钟断言）</li>
+              <li>四画幅真机 2% 对齐记录</li>
+              <li>正式演示视频与配套素材（仓库未提交）</li>
+            </ul>
+            <p class="card__foot card__foot--warn">未执行的步骤不会被写成「通过」。</p>
+          </article>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <div class="footer__inner">
+        <div>
+          <p class="footer__title">BreakGlass 破壁</p>
+          <p class="footer__note">前端优先的原位交互演示。仓库内所有能力都以文档与自动化测试自证；未验证的部分如实标注。</p>
+        </div>
+        <nav class="footer__links" aria-label="相关文档">
+          <a href="../README.md">README</a>
+          <a href="../docs/BreakGlass-tech-stack.md">技术栈分析</a>
+          <a href="../docs/BreakGlass-visual-spec.md">视觉规范</a>
+          <a href="../docs/BreakGlass-ui-inventory.md">功能与参数清单</a>
+          <a href="../docs/BreakGlass-frontend-validation.md">验证记录</a>
+          <a href="../specs/001-insitu-parabola/spec.md">P0 规格</a>
+          <a href="../specs/002-vision-result-adapter/spec.md">P1 规格</a>
+        </nav>
+      </div>
+      <p class="footer__legal">本页与演示页均不发起任何第三方请求；页面本身零依赖、零构建。</p>
+    </footer>
+  </body>
+</html>
