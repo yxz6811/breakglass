@@ -110,6 +110,11 @@
       return this.getState();
     }
 
+    /**
+     * 播放或离开目标时间时，由会话自己结束。仍暂停在容差内则保持当前会话。
+     * @param {{ paused?: boolean, currentTime?: number }} [playback]
+     * @returns {ReturnType<SessionController['getState']>}
+     */
     onPlaybackChange({ paused, currentTime } = {}) {
       if (!paused || !Number.isFinite(currentTime) || Math.abs(currentTime - this.targetTime) > this.timeTolerance) this.exit();
       return this.getState();
