@@ -331,11 +331,14 @@ test('the shipped preset draws on a 3024×1898 frame paused at 6s', async () => 
   assert.equal(state.status, 'interactive');
   assert.equal(state.result.frameSize.width, 3024);
   assert.equal(state.result.frameSize.height, 1898);
-  assert.equal(state.result.definition.region.x, shipped.definition.region.x * (3024 / 1920));
-  assert.equal(state.result.definition.region.y, shipped.definition.region.y * (1898 / 1080));
+  assert.equal(state.result.definition.region.x, shipped.definition.region.x * (frame.width / shipped.frameSize.width));
+  assert.equal(state.result.definition.region.y, shipped.definition.region.y * (frame.height / shipped.frameSize.height));
+  assert.equal(state.result.definition.region.width, shipped.definition.region.width);
+  assert.equal(state.result.definition.region.height, shipped.definition.region.height);
   assert.equal(state.result.source, 'preset');
   assert.equal(state.result.fallback, null);
-  assert.equal(shipped.frameSize.width, 1920);
+  assert.equal(shipped.frameSize.width, 3024);
+  assert.equal(shipped.frameSize.height, 1898);
   assertAligned(h);
 });
 

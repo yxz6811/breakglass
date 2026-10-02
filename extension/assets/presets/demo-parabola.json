@@ -2,22 +2,22 @@
   "requestId": "fixture-request-001",
   "videoId": "fixture-parabola",
   "time": 6,
-  "frameSize": { "width": 1920, "height": 1080 },
+  "frameSize": { "width": 3024, "height": 1898 },
   "source": "preset",
   "fallback": null,
   "definition": {
     "equationId": "fixture.parabola",
     "parameters": {
-      "a": { "initial": 0.8, "min": 0.4, "max": 1.2, "step": 0.1 },
+      "a": { "initial": 1, "min": 0.4, "max": 1.2, "step": 0.1 },
       "h": { "initial": 0, "min": -2, "max": 2, "step": 0.1 },
-      "k": { "initial": 0, "min": -2, "max": 2, "step": 0.1 }
+      "k": { "initial": 1, "min": -2, "max": 2, "step": 0.1 }
     },
     "dragParameter": "h",
-    "domain": { "min": -4, "max": 4 },
-    "range": { "min": -4, "max": 4 },
+    "domain": { "min": -2.5, "max": 2.5 },
+    "range": { "min": 0, "max": 8 },
     "yAxis": "up",
-    "region": { "x": 480, "y": 220, "width": 960, "height": 620 }
+    "region": { "x": 629, "y": 561, "width": 538, "height": 866 }
   },
   "fixture": true,
-  "note": "工程夹具，不代表正式演示视频已经提供或完成原位对齐。"
+  "note": "区域按 breakglass-demo-9s.mp4 第 6 秒的 y = x^2 + 1 写。页面读数不代表这一帧已经通过 2% 对齐。这仍是工程夹具的初值。"
 }

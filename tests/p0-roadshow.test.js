@@ -5,15 +5,22 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const { createHarness, flush } = require('./helpers/fake-page.js');
+const preset = require('../extension/assets/presets/demo-parabola.json');
 
 /**
- * 默认夹具矩形上，数学横坐标对应的指针位置。
+ * 假页面里 1920×1080 在默认矩形上的指针横坐标。
+ * 内容区 left=100、scale=1280/1920。区域按预制画幅换进这一帧。
  * @param {number} mathX
  * @returns {number}
  */
 function clientXFor(mathX) {
-  const scale = 1280 / 1920;
-  const sourceX = 480 + ((mathX + 4) / 8) * 960;
+  const videoWidth = 1920;
+  const scale = 1280 / videoWidth;
+  const region = preset.definition.region;
+  const domain = preset.definition.domain;
+  const scaleX = videoWidth / preset.frameSize.width;
+  const sourceX = region.x * scaleX +
+    ((mathX - domain.min) / (domain.max - domain.min)) * region.width * scaleX;
   return 100 + sourceX * scale;
 }
 
