@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>课被录成了视频，但视频只能看 · BreakGlass 破壁</title>
+    <meta name="description" content="过去十年，课程从黑板搬进了视频：可回放、可跨班复用、可倍速、可暂停。但画面里的一切仍然只是像素 —— 看得见，动不了。">
+    <meta name="theme-color" content="#05060a">
+    <link rel="stylesheet" href="../site.css">
+    <script defer src="../ascii-ripple.js"></script>
+    <script type="module" src="../background.js"></script>
+    <script defer src="../site.js"></script>
+  </head>
+  <body class="article-body" data-page="2" data-next-page="./intent.html" data-prev-page="../index.html">
+    <a class="skip-link" href="#main">跳到正文</a>
+    <canvas class="bg-canvas" data-ascii-ripple data-motif="1" aria-hidden="true"></canvas>
+    <header class="topbar" data-topbar>
+      <nav class="glass-nav" aria-label="页面导航">
+        <a class="glass-nav__brand" href="../index.html"><span class="mark" aria-hidden="true"></span><span>BreakGlass</span></a>
+        <span class="glass-nav__sep" role="separator" aria-orientation="vertical"></span>
+        <ul class="glass-nav__links">
+          <li><a href="./education.html">当下教育方式</a></li>
+          <li><a href="./intent.html">项目初衷</a></li>
+          <li><a href="./change.html">改变了什么</a></li>
+          <li><a href="./abilities.html">能做什么</a></li>
+          <li><a href="./demo.html">演示</a></li>
+        </ul>
+        <a class="glass-nav__cta" href="../../extension/demo/index.html" target="_blank" rel="noopener">打开演示</a>
+      </nav>
+    </header>
+
+    <main id="main" class="article" data-pager>
+      <section class="mp-section" data-page-section>
+        <p class="crumb"><a href="../index.html">← 回到封面</a><span class="crumb__sep">·</span><span>第 02 页 / 共 6 页</span></p>
+        <p class="article__kicker">当下教育方式</p>
+        <h1 class="article__title">课被录成了视频，但视频只能看</h1>
+        <p class="article__lead">过去十年，课程从黑板搬进了视频：可回放、可跨班复用、可倍速、可暂停。但画面里的一切仍然只是像素 —— 看得见，动不了。</p>
+      </section>
+
+      <section class="mp-section" data-page-section>
+        <div class="prose">
+        <h2>视频成了课程的主要载体</h2>
+        <p>录播课、慕课、双师课堂、校内公开课，越来越多的讲解以视频形式沉淀下来。同一位老师讲同一道题的录像，可以被反复播放上千次，也可以被不同班级、不同学校复用。这本身是巨大的进步：优质讲解不再受教室与时间的限制。</p>
+        <p>视频还带来了一种新的学习节奏。学生可以暂停、回退、倍速、反复看同一步推导 —— 在直播课堂上做不到的事情，在录播里都成了默认能力。</p>
+        <p>但这份便利有一个前提：内容本身必须是固定的。一旦录下来，画面里的每一个像素就定了型。</p>
+        <h2>画面里的图形是死的</h2>
+        <p>老师在视频里画出一条抛物线，说「a 越大，开口越窄」。屏幕上确实出现了一条曲线，但它是画上去的像素，不是可以操作的模型。</p>
+        <p>它不会因为你想验证而改变开口大小，也不能被拖动，更不能把顶点挪到别的位置。学生能做的只是盯着它看，然后在脑子里想象「如果 a 再大一点会怎样」。</p>
+        <p>数学里最关键的因果关系 —— 参数变化如何影响图像 —— 恰好是视频这个媒介最难表达的部分，因为它需要动手试，而视频只提供看。</p>
+        <h2>想讲清参数，只能离开视频</h2>
+        <p>于是常见的做法是：暂停视频，切换到几何画板或课件，重新画一条曲线，调完参数，再切回视频继续讲。</p>
+        <p>这个过程每次要花几十秒到几分钟：窗口切换、软件启动、重新输入公式、调整坐标范围。更麻烦的是注意力 —— 学生记住的往往是「老师又打开了一个软件」，而不是参数与图像之间的关系。</p>
+        <p>另一种做法是干脆不演示，只用语言描述：开口变大、变窄。对已经理解的人这是提醒；对还没理解的人，这几乎等于什么都没说。</p>
+        <h2>学生这一侧只剩下三个动作</h2>
+        <p>播放、暂停、拖动进度条。画面里的坐标、图形、数值都不可触碰，学习始终停在接收这一侧，很难走到操作那一侧。</p>
+        <p>结果是理解停在「看懂」这一层，很难走到「试过」。而数学概念的真正内化，通常发生在试错的过程中：把参数推到极端、看到曲线怎么会变形、再拉回来。</p>
+        <h2>截图也解决不了问题</h2>
+        <p>有人会说：那就把这一帧截图保存下来。但截图同样是死的 —— 它能被保存、被标注、被转发，却不能被继续操作。</p>
+        <p>真正缺的不是那一帧的画面，而是那一帧里可以动手的模型。</p>
+        <blockquote><p>我们想要的，是让那一帧画面可以被上手改 —— 这正是下一个板块要说的初衷。</p></blockquote>
+        </div>
+      </section>
+
+
+      <section class="mp-section" data-page-section>
+        <nav class="module-nav" aria-label="翻页">
+          <a href="../index.html">← 上一页</a>
+          <a href="./intent.html">下一页 →</a>
+          <a href="../index.html">回到封面</a>
+        </nav>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <div class="footer__inner">
+        <div>
+          <p class="footer__title">BreakGlass 破壁</p>
+          <p class="footer__note">当前版本使用扩展包内预先准备的结果；识别适配默认关闭，浏览器手工验收仍在进行中。</p>
+        </div>
+        <nav class="footer__links" aria-label="相关文档">
+          <a href="../../README.md">README</a>
+          <a href="../../docs/BreakGlass-ui-inventory.md">功能与参数清单</a>
+          <a href="../../specs/001-insitu-parabola/spec.md">功能规格</a>
+        </nav>
+      </div>
+      <p class="footer__legal">背景为 three.js 渲染的 ASCII 涟漪（本地内置，零第三方请求）。</p>
+    </footer>
+  </body>
+</html>
