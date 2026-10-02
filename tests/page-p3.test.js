@@ -10,15 +10,16 @@ async function interactiveHarness() {
   return harness;
 }
 
-test('交互出现后暴露只读的 2% 对齐测量', async () => {
+test('交互出现后暴露布局读数，但不把自画路径当成 2% 实测', async () => {
   const harness = await interactiveHarness();
   try {
     const report = harness.win.__breakglassAlignment;
     assert.ok(report, '交互出现后应可读取对齐测量');
     assert.equal(report.samples, 9);
     assert.equal(report.tolerance, 0.02);
-    assert.equal(report.withinTolerance, true);
-    assert.equal(report.maxRatio <= report.tolerance, true);
+    assert.equal(report.measured, false);
+    assert.equal(report.withinTolerance, null);
+    assert.equal(report.maxRatio, null);
     assert.equal(report.contentRect.width, 1280);
     assert.equal(report.contentRect.height, 720);
     assert.equal(report.contentRect.left, 100);

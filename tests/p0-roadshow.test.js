@@ -33,6 +33,8 @@ test('点在画面上不会把曲线清掉，只有点到画面外面才退出',
     const overlay = harness.overlay();
     overlay.dispatch('pointerdown', { target: overlay, clientX: 400, clientY: 400, pointerId: 1 });
     harness.stage.dispatch('click', { target: overlay });
+    assert.equal(overlay.style.pointerEvents, 'all');
+    assert.equal(overlay.querySelector('path.curve-hit').getAttribute('stroke-width'), '24');
     assert.ok(harness.overlay(), '点在覆盖层空白处应留下曲线，方便讲解时指画面');
     harness.stage.dispatch('click', { target: harness.video });
     assert.equal(harness.overlay(), null);
@@ -60,7 +62,9 @@ test('控制点落在曲线顶点上，而不是落在相邻采样点旁边', as
       return distance < best ? distance : best;
     }, Infinity);
     assert.ok(nearest <= 0.02, '控制点与曲线顶点距离 ' + nearest);
-    assert.equal(harness.win.__breakglassAlignment.withinTolerance, true);
+    assert.equal(harness.win.__breakglassAlignment.measured, false);
+    assert.equal(harness.win.__breakglassAlignment.withinTolerance, null);
+    assert.equal(harness.win.__breakglassAlignment.maxRatio, null);
   } finally {
     harness.restore();
   }
@@ -117,8 +121,9 @@ test('改目标时间或定位后，画面时间和曲线绑定保持一致', as
     elements['jump-target'].dispatch('click');
     assert.equal(video.currentTime, 30);
     assert.equal(video.paused, true);
-    elements['exit-button'].dispatch('click');
-    assert.equal(elements['wake-button'].disabled, false, '定位到 30 秒后应能立刻再次破壁，不能还记着旧的 6 秒');
+    assert.equal(harness.overlay(), null, '6 秒的准备结果不能留在 30 秒的画面上');
+    assert.equal(elements['wake-button'].disabled, true);
+    assert.match(elements['state-label'].textContent, /6/);
   } finally {
     harness.restore();
   }
@@ -200,7 +205,8 @@ test('常见分辨率都能破壁，退出后不留下上一帧的对齐结论',
       elements['wake-button'].dispatch('click');
       assert.ok(harness.overlay(), width + '×' + height + ' 应出现曲线');
       assert.equal(elements['source-label'].textContent, '预先准备的示例');
-      assert.equal(harness.win.__breakglassAlignment.withinTolerance, true, width + '×' + height);
+      assert.equal(harness.win.__breakglassAlignment.measured, false, width + '×' + height);
+      assert.equal(harness.win.__breakglassAlignment.withinTolerance, null, width + '×' + height);
     }
     elements['exit-button'].dispatch('click');
     assert.equal(harness.overlay(), null);
@@ -218,6 +224,35 @@ test('视频报错时卸下曲线并留下说明', async () => {
     assert.equal(harness.overlay(), null);
     assert.match(harness.elements['state-label'].textContent, /无法加载/);
     assert.equal(harness.elements['wake-button'].disabled, true);
+  } finally {
+    harness.restore();
+  }
+});
+
+test('全屏时 Esc 只退出全屏，不拆曲线', async () => {
+  const harness = await readyHarness();
+  try {
+    harness.elements['wake-button'].dispatch('click');
+    harness.document.fullscreenElement = harness.stage;
+    harness.document.dispatch('keydown', { key: 'Escape' });
+    assert.ok(harness.overlay(), '全屏中的 Esc 不应拆掉曲线');
+    harness.document.fullscreenElement = null;
+    harness.document.dispatch('keydown', { key: 'Escape' });
+    assert.equal(harness.overlay(), null);
+  } finally {
+    harness.restore();
+  }
+});
+
+test('视频标识和准备结果不一致时不能破壁', async () => {
+  const harness = await readyHarness();
+  try {
+    harness.video.setAttribute('data-video-id', 'other-video');
+    harness.video.dispatch('pause');
+    assert.equal(harness.elements['wake-button'].disabled, true);
+    harness.elements['wake-button'].dispatch('click');
+    assert.equal(harness.overlay(), null);
+    assert.match(harness.elements['state-label'].textContent, /不是同一份/);
   } finally {
     harness.restore();
   }

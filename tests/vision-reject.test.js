@@ -76,6 +76,27 @@ for (const [label, mutate] of BAD_CANDIDATES) {
   });
 }
 
+test('frameSize 与当前帧不一致时不得换算成识别成功', async () => {
+  const candidate = clone(VISION);
+  candidate.frameSize = { width: 1280, height: 720 };
+  // 区域落在样例自己的画幅内，避免被「区域越界」提前拒绝。
+  candidate.definition.region = { x: 80, y: 40, width: 640, height: 360 };
+  const h = setup({ candidate, withPreset: true });
+  try {
+    start(h.wake);
+    await flush();
+    const state = h.latest();
+    assert.equal(state.status, 'recoverable-error');
+    assert.equal(state.code, FAIL_CODE);
+    assert.equal(state.message, FAIL_MESSAGE);
+    assert.equal(state.result, null);
+    assert.equal(h.states.some((item) => item.status === 'interactive'), false);
+    assert.equal(h.clock.pending(), 0);
+  } finally {
+    h.restore();
+  }
+});
+
 test('存在匹配预制时，坏识别候选也不得把预制画成识别成功', async () => {
   const h = setup({ candidate: (() => { const c = clone(VISION); delete c.evidence; return c; })(), withPreset: true });
   try {

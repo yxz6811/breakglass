@@ -32,13 +32,13 @@
 | 4 | 取消等待 | `#cancel-button`（`.lg-item`） | button | **隐藏 + 禁用** | 仅 `waiting` | 取消本次等待 | 收起等待条；来源复位；`已取消等待，可以再次破壁。` | `Esc`（无覆盖层时） |
 | 5 | 重试 | `#retry-button`（`.lg-item`） | button | **隐藏 + 禁用** | 仅 `recoverable-error` | 重新发起唤醒 | 变为 primary（破壁降为 ghost）；回到等待/交互 | — |
 | 6 | 重置 | `#reset-button`（`.lg-item`） | button | 可见，**禁用** | 仅 `interactive` | `controller.reset()` + 重绘 | 三个滑块回到初值；`已恢复本次结果的初始参数。` | — |
-| 7 | 全屏 | `#fullscreen-button`（`.lg-item`） | button | 可见可用 | 始终 | 对 `#video-stage` 请求/退出全屏 | 全屏变化后重算覆盖层坐标 | — |
+| 7 | 全屏 | `#fullscreen-button`（`.lg-item`） | button | 可见可用 | 始终 | 对整页 `document.documentElement` 请求/退出全屏 | 全屏变化后重算覆盖层坐标。全屏期间 Esc 只退出全屏 | — |
 | 8 | 退出 | `#exit-button`（`.lg-item`） | button | 可见，**禁用** | `interactive`、`waiting`、`recoverable-error` | 移除覆盖层 / 取消等待 / 结束会话 | 控件复位，主操作回到破壁 | `Esc`（有覆盖层时） |
 | 9 | 开口宽窄 `a` | `#parameter-a` + `#parameter-a-value` | range + output | 禁用，值 `0.8`，输出 `—` | 仅 `interactive` | `input` → `session.setParameter('a', …)` + 重绘 | 数值 1 位小数，与曲线同步 | ← / → 原生 |
 | 10 | 水平位置 `h` | `#parameter-h` + `#parameter-h-value` | range + output | 禁用，值 `0`，输出 `—` | 仅 `interactive` | 同上（`setParameter('h', …)`） | 同上；也是**控制点拖动**写入的参数 | ← / → 原生 |
 | 11 | 顶点高度 `k` | `#parameter-k` + `#parameter-k-value` | range + output | 禁用，值 `0`，输出 `—` | 仅 `interactive` | 同上（`setParameter('k', …)`） | 同上 | ← / → 原生 |
 | 12 | 目标时间 | `#target-time` | number | `value=6`、`min=0`、`step=0.1` | 始终可编辑 | 破壁门禁与定位依据 | 不在目标时间时破壁禁用 | ↑ / ↓ 原生 |
-| 13 | 控制点 | 覆盖层 `<circle r=10 tabindex=0>` + 透明热区 `<circle r=18>` | SVG circle | 随覆盖层出现 | 仅 `interactive` | `pointerdown/move/up` 拖动 | 写入 `dragParameter`（当前 `h`），钳制在范围内；`cursor: grab / grabbing` | 可聚焦 |
+| 13 | 控制点 | 覆盖层可见 `<circle r=10>`、透明 `<circle r=18>`，以及 `stroke-width=24` 的透明命中路径 | SVG | 随覆盖层出现 | 仅 `interactive` | `pointerdown/move/up` 拖动。覆盖层 `pointer-events: all`，点在层内不退出 | 写入 `dragParameter`（当前 `h`），钳制在范围内；`cursor: grab / grabbing` | 可聚焦 |
 | 14 | 等待条 | `#waiting-bar` + `#waiting-progress` | div + span | **隐藏** | 仅 `waiting` | 无交互（提示 + 进度） | 1.5s 线性进度条，`--wait-ms` = `fallbackAfterMs` | — |
 | 15 | 来源芯片 | `#source-label` | span | `等待素材` | 始终 | 无交互（状态） | 见第 3 节；超时回退加虚线、非 preset 加警示色 | — |
 | 16 | 视频原生控件 | `<video controls>` | video | 始终 | 始终 | 浏览器自带播放条 | 空格保留给播放器（不作为破壁键） | — |
@@ -228,6 +228,8 @@
 | `#state-label` | 无预制 | `当前帧没有可用的准备结果，无法进入交互。` |
 | `#state-label` | 外部非法 / 识别被拒 | `外部结果不可用，未进入交互。` |
 | `#state-label` | 门禁不满足 | `请先暂停在目标时间。` / `请暂停在目标时间。` |
+| `#state-label` | 素材时间对不上 | `准备结果对应 N 秒，当前画面对不上。` |
+| `#state-label` | 视频标识对不上 | `这段视频和准备结果不是同一份。` |
 | `#state-label` | 视频错误 | `视频无法加载，未挂载交互层。` |
 | `#waiting-bar` | 等待中 | `正在等待外部结果…` |
 | `#runtime-note` | 就绪 | `配置：off · 本地预制已预热 · 回退 1500ms` |
@@ -239,7 +241,7 @@
 
 | 全局对象 | 内容 |
 | --- | --- |
-| `window.__breakglassAlignment` | `{ contentRect, scale, samples, maxRatio, tolerance, withinTolerance, at }`，`pagehide` 后为 `null` |
+| `window.__breakglassAlignment` | `{ contentRect, scale, samples, maxRatio, tolerance, withinTolerance, measured, at }`。页面读数 `measured` 为 `false`，`maxRatio` 与 `withinTolerance` 为 `null`，不是相对画面的 2% 结论。`pagehide` 或退出后为 `null` |
 | `window.__breakglassLatency.summary()` | 各计时名（`fallback-visible` 与识别路径的 `vision-decision`）的 `count / p50 / p95 / max` |
 | `window.__breakglassLatency.snapshot()` | 原始毫秒数组 |
 | `window.BreakGlassUI.magnify` / `LiquidGlassDock` | 顶栏放大内核与控制器（`extension/src/ui/`） |

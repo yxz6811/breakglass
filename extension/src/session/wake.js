@@ -171,7 +171,18 @@
     }
 
     /**
-     * 识别样例同样按当前视频帧装订区域，并保留它自己的溯源标记。
+     * 画幅必须和当前帧一致。识别样例不按比例放大到另一张片子上。
+     * @param {object | null | undefined} sample
+     * @param {{ width: number, height: number }} frameSize
+     * @returns {boolean}
+     */
+    function framesMatch(sample, frameSize) {
+      const frame = sample && sample.frameSize;
+      return Boolean(frame) && frame.width === frameSize.width && frame.height === frameSize.height;
+    }
+
+    /**
+     * 识别样例在画幅已经对齐后装订区域，并保留它自己的溯源标记。
      * 与 bindPreset 的差别只有来源、fallback 固定为 null，以及 evidence / confidence 原样带过。
      * @param {object} source
      * @param {string} requestId
@@ -296,10 +307,10 @@
             deny(ctx, token, 'external_unavailable', EXTERNAL_UNAVAILABLE);
             return;
           }
-          // 先按样例自己的画幅校验一次：缺证据、低可信度、越界区域等在这里就要被拒，
-          // 否则后面的按帧换算会把越界区域钳制掉，等于把坏样例洗成好结果。
+          // 先按样例自己的画幅校验：缺证据、低可信度、越界区域在这里拒绝。
+          // 画幅和当前帧不一致也拒绝，不能换算成另一张片子上的识别成功。
           const authored = checkCandidate(loaded.candidate, {}, { allowVision: true });
-          if (!authored.ok) {
+          if (!authored.ok || !framesMatch(authored.value, ctx.frameSize)) {
             deny(ctx, token, 'external_unavailable', EXTERNAL_UNAVAILABLE);
             return;
           }

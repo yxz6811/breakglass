@@ -103,6 +103,11 @@ function element(tagName) {
       if (/^[a-zA-Z]+$/.test(selector)) {
         return found.find((child) => child.tagName === selector.toUpperCase()) || null;
       }
+      const taggedClass = /^([a-zA-Z]+)\.([A-Za-z0-9_-]+)$/.exec(selector);
+      if (taggedClass) {
+        return found.find((child) => child.tagName === taggedClass[1].toUpperCase()
+          && child.classList.contains(taggedClass[2])) || null;
+      }
       return null;
     },
     getBoundingClientRect() { return Object.assign({}, node.rect); },
@@ -118,8 +123,13 @@ function element(tagName) {
     set(markup) {
       node.markup = String(markup);
       children.length = 0;
-      for (const match of String(markup).matchAll(/<([a-zA-Z]+)/g)) {
+      for (const match of String(markup).matchAll(/<([a-zA-Z]+)([^>]*)>/g)) {
         const child = element(match[1]);
+        const attrs = match[2] || '';
+        const className = /class="([^"]*)"/.exec(attrs);
+        if (className) child.className = className[1];
+        const strokeWidth = /stroke-width="([^"]*)"/.exec(attrs);
+        if (strokeWidth) child.setAttribute('stroke-width', strokeWidth[1]);
         child.parentNode = node;
         children.push(child);
       }

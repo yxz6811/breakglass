@@ -5,7 +5,6 @@
     geometry,
     alignment,
     preset,
-    frameFit,
     session: sessionApi,
     wake: wakeApi,
     latency: latencyApi
@@ -52,16 +51,13 @@
   const PACKAGED_VIDEO_URL = '../assets/video/breakglass-demo-9s.mp4';
 
   /**
-   * 包内 9 秒演示片的目标时间（秒）。输入框初值用它。
-   * 夹具 JSON 里的 time 不作为演示默认值，磁盘上的 JSON 也不改。
+   * 包内演示片的输入框初值（秒）。准备结果自己的 time 不跟这个输入框走。
    * @type {number}
    */
   const PACKAGED_DEMO_TARGET_SECONDS = 6;
 
   let config = null;
   let presetResult = null;
-  let preparedFrame = null;
-  let preparedRegion = null;
   let controller = null;
   let wakeHandle = null;
   let latencies = null;
@@ -138,15 +134,83 @@
   }
 
   /**
-   * 会话是否允许破壁，以目标时间输入框的当前值为准。
-   * 内存里的预制结果时间一并跟上，校验仍对照会话目标；磁盘上的 JSON 不改。
+   * 输入框是用户要停住的秒数。准备结果自己的 time 不跟着改。
    */
   function syncSessionTarget() {
     if (!controller) return;
     const nextTarget = targetTime();
     if (!Number.isFinite(nextTarget)) return;
     controller.targetTime = nextTarget;
-    if (presetResult && typeof presetResult === 'object') presetResult.time = nextTarget;
+  }
+
+  /**
+   * 准备结果写明的时间（秒）。
+   * @returns {number}
+   */
+  function authoredTime() {
+    const time = presetResult && presetResult.time;
+    return typeof time === 'number' && Number.isFinite(time) ? time : Number.NaN;
+  }
+
+  /**
+   * 容差跟会话。会话还没建好时用 0.2 秒。
+   * @returns {number}
+   */
+  function timeTolerance() {
+    return controller && Number.isFinite(controller.timeTolerance) ? controller.timeTolerance : 0.2;
+  }
+
+  /**
+   * video 上若写了 data-video-id，必须和预制 videoId 相同。没写则不额外拦。
+   * @returns {boolean}
+   */
+  function videoMatches() {
+    if (!presetResult) return false;
+    if (!video || typeof video.getAttribute !== 'function') return true;
+    const marked = video.getAttribute('data-video-id');
+    if (!marked) return true;
+    return marked === presetResult.videoId;
+  }
+
+  /**
+   * 当前播放时间是否落在准备结果自己的时间容差内。
+   * 多留 1e-9，和会话 canWake 一样，避免 6.2 这种浮点差被挡在 0.2 秒门外。
+   * @returns {boolean}
+   */
+  function timeMatchesMaterial() {
+    const authored = authoredTime();
+    if (!Number.isFinite(authored) || !video || !Number.isFinite(video.currentTime)) return false;
+    return Math.abs(video.currentTime - authored) <= timeTolerance() + 1e-9;
+  }
+
+  /**
+   * 画面视频和时间都对得上准备结果。
+   * @returns {boolean}
+   */
+  function matchesMaterial() {
+    return Boolean(presetResult) && videoMatches() && timeMatchesMaterial();
+  }
+
+  /**
+   * 准备结果对不上当前画面时的说明。对得上、或还没有画面尺寸时返回空串。
+   * @returns {string}
+   */
+  function materialMessage() {
+    if (presetResult && !videoMatches()) return '这段视频和准备结果不是同一份。';
+    if (presetResult && hasFrameSize() && !timeMatchesMaterial()) {
+      return '准备结果对应 ' + authoredTime() + ' 秒，当前画面对不上。';
+    }
+    return '';
+  }
+
+  /**
+   * 空闲时的状态句。素材对不上时写明它对应的秒数。
+   * @returns {string}
+   */
+  function idleStatus() {
+    const mismatch = materialMessage();
+    if (mismatch) return mismatch;
+    return atTarget() ? '已暂停在目标时间，可以再次破壁。' : '请暂停在目标时间。';
   }
 
   /**
@@ -158,13 +222,13 @@
   }
 
   /**
-   * 目标时间容差只问会话。页面不再自己比较 ±0.2 秒。
+   * 输入框目标由会话判断。准备结果自己的时间和 videoId 必须另外对上。
    * @returns {boolean}
    */
   function atTarget() {
     if (videoBroken) return false;
     syncSessionTarget();
-    if (!controller || !hasFrameSize()) return false;
+    if (!controller || !hasFrameSize() || !matchesMaterial()) return false;
     return controller.canWake({ paused: video.paused, currentTime: video.currentTime });
   }
 
@@ -267,48 +331,30 @@
     return [point.x, point.y];
   }
 
-  function parsePathPoints(data) {
-    const points = [];
-    const pattern = /[ML]\s+(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)/g;
-    let match = pattern.exec(data);
-    while (match) {
-      points.push({ x: Number(match[1]), y: Number(match[2]) });
-      match = pattern.exec(data);
-    }
-    return points;
-  }
-
-  // 只读测量输出：比较期望页面点与刚写入 DOM 的 path 采样点，供手工验收核对。
-  function publishAlignment(definition, parameters, rect, pathData) {
-    const drawn = parsePathPoints(pathData);
-    const report = alignment.sampleAlignment({
+  /**
+   * 只读布局读数。不把刚画的路径当成实测，所以不算相对画面的 2% 结论。
+   * 偏差算法在 alignment.js，要有独立实测点才算测过。
+   * @param {object} definition
+   * @param {Record<string, number>} parameters
+   * @param {{ contentRect: object, scale: number }} rect
+   * @returns {object}
+   */
+  function publishAlignment(definition, parameters, rect) {
+    const counted = alignment.sampleAlignment({
       definition,
       parameters,
       scale: rect.scale,
       contentRect: rect.contentRect,
-      samples: 9,
-      readActual: (mathX) => {
-        if (drawn.length === 0) return null;
-        const expected = alignment.mathPointToPage(definition, parameters, mathX, rect.scale);
-        let best = null;
-        let bestDistance = Infinity;
-        for (const point of drawn) {
-          const distance = Math.abs(point.x - expected.x);
-          if (distance < bestDistance) {
-            best = point;
-            bestDistance = distance;
-          }
-        }
-        return best;
-      }
+      samples: 9
     });
     window.__breakglassAlignment = {
       contentRect: { ...rect.contentRect },
       scale: rect.scale,
-      samples: report.points.length,
-      maxRatio: report.maxRatio,
-      tolerance: report.tolerance,
-      withinTolerance: report.withinTolerance,
+      samples: counted.points.length,
+      maxRatio: null,
+      tolerance: counted.tolerance,
+      withinTolerance: null,
+      measured: false,
       at: localClock ? localClock.now() : Date.now()
     };
     return window.__breakglassAlignment;
@@ -390,7 +436,9 @@
     });
     const pathData = path.join(' ');
     overlay.querySelector('path').setAttribute('d', pathData);
-    publishAlignment(definition, parameters, rect, pathData);
+    const hitPath = overlay.querySelector('path.curve-hit');
+    if (hitPath) hitPath.setAttribute('d', pathData);
+    publishAlignment(definition, parameters, rect);
 
     const dragParameter = definition.dragParameter;
     const dragValue = parameters[dragParameter];
@@ -427,7 +475,7 @@
     hideWaitingControls();
     setPrimaryAction('wake');
     setSource(null);
-    setStatus(atTarget() ? '已暂停在目标时间，可以再次破壁。' : '请暂停在目标时间。');
+    setStatus(idleStatus());
     wakeButton.disabled = !(atTarget() && Boolean(presetResult));
   }
 
@@ -438,10 +486,13 @@
     overlay.style.position = 'absolute';
     overlay.style.zIndex = '2';
     overlay.style.touchAction = 'none';
+    overlay.style.pointerEvents = 'all';
     overlay.setAttribute('aria-label', '可拖动的抛物线结果');
+    // 可见路径保持细线。后面的透明宽路径负责拖动命中。
     // 视觉控制点 r=10，另加一个透明 r=18 的热区圆。热区放在后面，
-    // 这样 querySelector('circle') 仍然拿到可见的控制点，拖动逻辑不用改。
+    // 这样 querySelector('circle') 和 querySelector('path') 仍拿到可见图形。
     overlay.innerHTML = '<path fill="none" stroke="#71ddff" stroke-width="3" stroke-linecap="round"></path>'
+      + '<path class="curve-hit" fill="none" stroke="transparent" stroke-width="24" stroke-linecap="round"></path>'
       + '<circle r="10" fill="#08111f" stroke="#ffffff" stroke-width="3" tabindex="0"></circle>'
       + '<circle class="curve-hit" r="18" fill="transparent" stroke="none" aria-hidden="true"></circle>';
     stage.appendChild(overlay);
@@ -493,16 +544,19 @@
         paused: video.paused,
         currentTime: video.currentTime
       });
-      if (wasActive && playbackState.status === 'paused-ready') {
+      const still = sessionState();
+      const leftMaterial = wasActive && still && still.status !== 'paused-ready' && !matchesMaterial();
+      if (leftMaterial || (wasActive && playbackState.status === 'paused-ready')) {
         if (overlay) removeOverlay({ pauseVideo: false });
-        else {
+        else if (leftMaterial) wakeHandle.exit();
+        if (!overlay) {
           hideWaitingControls();
           resetButton.disabled = true;
           exitButton.disabled = true;
           setSlidersEnabled(false);
           setPrimaryAction('wake');
           setSource(null);
-          setStatus(atTarget() ? '已暂停在目标时间，可以再次破壁。' : '请暂停在目标时间。');
+          setStatus(idleStatus());
         }
       }
     }
@@ -513,6 +567,12 @@
     playToggle.setAttribute('aria-label', playLabel + '视频');
     if (playTip) playTip.textContent = playLabel;
     timeLabel.textContent = `当前时间：${Number.isFinite(video.currentTime) ? video.currentTime.toFixed(1) : '—'}`;
+    const state = sessionState();
+    const idle = !state || state.status === 'paused-ready';
+    if (!videoBroken && idle && !overlay) {
+      const mismatch = materialMessage();
+      if (mismatch) setStatus(mismatch);
+    }
     syncDisabledReasons();
   }
 
@@ -537,6 +597,7 @@
         if (state && state.status === 'waiting') reason = '正在等待外部结果，可以先取消或退出。';
         else if (overlay) reason = '交互层已经出现，不需要再次破壁。';
         else if (!video.paused) reason = '请先暂停视频。';
+        else if (materialMessage()) reason = materialMessage();
         else if (!atTarget()) reason = '请把视频暂停在目标时间 ±0.2 秒内。';
         else if (!presetResult) reason = '当前没有可用的准备结果。';
         else reason = '当前还不能破壁。';
@@ -623,40 +684,14 @@
     }
   }
 
-  /**
-   * 破壁前把包内预制区域按当前片子的宽、高比例放进这一帧。
-   * 每次都从准备画幅重算，避免连续破壁把已经换算过的坐标再乘一次。
-   * 外部结果不走这里；画幅对不上时仍由校验拒绝。
-   * @param {{ width: number, height: number }} frameSize
-   * @returns {boolean}
-   */
-  function placePreparedExample(frameSize) {
-    if (!frameFit || !presetResult || !preparedFrame || !preparedRegion) return false;
-    const placed = frameFit.placeRegionInFrame(preparedFrame, preparedRegion, frameSize);
-    if (!placed) return false;
-    presetResult.frameSize.width = placed.frameSize.width;
-    presetResult.frameSize.height = placed.frameSize.height;
-    const region = presetResult.definition.region;
-    region.x = placed.region.x;
-    region.y = placed.region.y;
-    region.width = placed.region.width;
-    region.height = placed.region.height;
-    if (controller && controller.frameSize) {
-      controller.frameSize.width = placed.frameSize.width;
-      controller.frameSize.height = placed.frameSize.height;
-    }
-    return true;
-  }
-
   function wake() {
     if (!wakeHandle || !presetResult || !atTarget()) {
-      setStatus('请先暂停在目标时间。');
+      setStatus(materialMessage() || '请先暂停在目标时间。');
       return;
     }
     const state = sessionState();
     if (overlay || (state && (state.status === 'interactive' || state.status === 'waiting'))) return;
     const frameSize = { width: video.videoWidth, height: video.videoHeight };
-    placePreparedExample(frameSize);
     // 只有识别路径需要判定耗时；起点取自页面自己的时钟。
     const visionPath = Boolean(config) && config.visionAdapter === 'fixture' && config.externalAttempt === 'off';
     visionStartedAt = visionPath && localClock ? localClock.now() : null;
@@ -673,7 +708,7 @@
     wakeHandle.cancel();
     hideWaitingControls();
     setSource(null, '已取消等待，迟到结果不会再打开交互层。');
-    setStatus(atTarget() ? '已取消等待，可以再次破壁。' : '请暂停在目标时间。');
+    setStatus(atTarget() ? '已取消等待，可以再次破壁。' : (materialMessage() || '请暂停在目标时间。'));
     wakeButton.disabled = !(atTarget() && Boolean(presetResult));
   }
 
@@ -684,16 +719,6 @@
       if (!loaded.ok) throw new Error(loaded.message);
       config = loaded.config;
       presetResult = loaded.result;
-      preparedFrame = {
-        width: presetResult.frameSize.width,
-        height: presetResult.frameSize.height
-      };
-      preparedRegion = {
-        x: presetResult.definition.region.x,
-        y: presetResult.definition.region.y,
-        width: presetResult.definition.region.width,
-        height: presetResult.definition.region.height
-      };
       targetInput.value = String(PACKAGED_DEMO_TARGET_SECONDS);
       controller = new sessionApi.SessionController({
         videoId: presetResult.videoId,
@@ -734,9 +759,7 @@
   video.addEventListener('loadedmetadata', () => {
     videoBroken = false;
     assetEmpty.hidden = true;
-    if (!overlay) {
-      setStatus(atTarget() ? '已暂停在目标时间，可以再次破壁。' : '请暂停在目标时间。');
-    }
+    if (!overlay) setStatus(idleStatus());
     syncControls();
   });
   video.addEventListener('timeupdate', syncControls);
@@ -769,6 +792,7 @@
       wake();
     }
     if (event.key === 'Escape') {
+      if (document.fullscreenElement) return;
       const status = sessionState() && sessionState().status;
       if (overlay || status === 'recoverable-error') removeOverlay();
       else if (status === 'waiting') cancelWaiting();
@@ -824,7 +848,7 @@
       if (document.exitFullscreen) document.exitFullscreen();
       return;
     }
-    const target = stage || document.documentElement;
+    const target = document.documentElement;
     if (target && target.requestFullscreen) target.requestFullscreen();
   });
 
