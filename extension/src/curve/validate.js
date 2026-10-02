@@ -1,9 +1,9 @@
 (function (root, factory) {
-  const api = factory();
+  const api = factory(root);
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   root.BreakGlass = root.BreakGlass || {};
   root.BreakGlass.validate = api;
-})(typeof globalThis !== 'undefined' ? globalThis : this, function () {
+})(typeof globalThis !== 'undefined' ? globalThis : this, function (root) {
   const DEFAULT_TIME_TOLERANCE = 0.2;
   const ALLOWED_SOURCES = new Set(['preset', 'vision']);
   const ALLOWED_FALLBACKS = new Set([null, 'timeout']);
@@ -54,6 +54,13 @@
 
     const parameterNames = Object.keys(definition.parameters);
     if (parameterNames.length === 0) return fail('invalid_parameters', '至少需要一个参数。');
+    const required = requiredParameterNames(root, definition.equationId);
+    if (!required) return fail('incomplete_parameters', '该曲线没有登记必需参数。');
+    for (const name of required) {
+      if (!Object.prototype.hasOwnProperty.call(definition.parameters, name)) {
+        return fail('incomplete_parameters', `参数 ${name} 缺失。`);
+      }
+    }
     for (const name of parameterNames) {
       const parameter = definition.parameters[name];
       if (!parameter || !finite(parameter.initial) || !finite(parameter.min) ||
@@ -101,3 +108,21 @@
 
   return { validateCurveResult, finite, DEFAULT_TIME_TOLERANCE };
 });
+
+/**
+ * 求值器登记的必需系数。页面里 evaluate.js 后加载，所以要在校验时再取。
+ * @param {typeof globalThis} root
+ * @param {string} equationId
+ * @returns {string[] | null}
+ */
+function requiredParameterNames(root, equationId) {
+  const live = root.BreakGlass && root.BreakGlass.evaluate && root.BreakGlass.evaluate.requiredParameters;
+  if (live && Object.prototype.hasOwnProperty.call(live, equationId)) return live[equationId];
+  if (typeof require === 'function') {
+    const evaluate = require('./evaluate');
+    if (evaluate.requiredParameters && Object.prototype.hasOwnProperty.call(evaluate.requiredParameters, equationId)) {
+      return evaluate.requiredParameters[equationId];
+    }
+  }
+  return null;
+}
