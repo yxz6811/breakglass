@@ -33,6 +33,7 @@ var FRAGMENT = [
   'uniform vec4 uRipples[' + MAX_RIPPLES + '];',
   'uniform vec2 uFlowDir;',
   'uniform float uFlowPhase;',
+  'uniform vec2 uPointer;',
   '',
   'float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }',
   '',
@@ -46,8 +47,13 @@ var FRAGMENT = [
   // 流动渐变：只参与颜色与明暗，不参与“选哪个字”。
   // 一旦让渐变参与选字，波的推进会让整屏字符在字阶之间来回跳，视觉上就是闪烁。
   '  vec2 flowAxisDir = normalize(uFlowDir + vec2(0.0001));',
-  '  float axis = dot(vUv - 0.5, flowAxisDir);',
+  // 渐变中心朝指针方向偏移：鼠标移动时，光带整体跟着走。
+  '  vec2 flowOrigin = mix(vec2(0.5), uPointer, 0.45);',
+  '  float axis = dot(vUv - flowOrigin, flowAxisDir);',
   '  float flowWave = 0.5 + 0.5 * sin(axis * 2.6 - uFlowPhase);',
+  // 指针周围的一圈光晕（半径约屏高的 26%）。
+  '  vec2 pointerDelta = vUv - uPointer;',
+  '  float halo = exp(-dot(pointerDelta, pointerDelta) / (2.0 * 0.26 * 0.26));',
   '  for (int i = 0; i < ' + MAX_RIPPLES + '; i++) {',
   '    if (float(i) >= uRippleCount) break;',
   '    vec4 ripple = uRipples[i];',
@@ -61,10 +67,12 @@ var FRAGMENT = [
   '  vec2 atlasUv = vec2((glyph + local.x) / uGlyphCount, 1.0 - local.y);',
   '  float mask = texture2D(uAtlas, atlasUv).a;',
   // 明暗与颜色一起被渐变推动：tone 越高越亮，但选字仍由 value 决定，所以不会闪。
-  '  float tone = clamp(value + flowWave * 0.30, 0.0, 1.0);',
+  '  float tone = clamp(value + flowWave * 0.30 + halo * 0.24, 0.0, 1.0);',
   '  vec3 base = mix(vec3(0.42, 0.52, 0.64), vec3(0.95, 0.99, 1.0), tone);',
   // 颜色相位也要慢：0.12 rad/s 约 50 秒一个来回，只当作缓慢的冷暖流动，不会闪。
   '  vec3 flowTint = mix(vec3(0.74, 0.92, 1.0), vec3(0.88, 0.80, 1.0), 0.5 + 0.5 * sin(uFlowPhase * 0.12 + axis * 1.4));',
+  // 指针附近偏冷青：颜色也跟着鼠标走。
+  '  flowTint = mix(flowTint, vec3(0.72, 0.98, 1.0), halo * 0.85);',
   '  vec3 color = base * mix(vec3(1.0), flowTint, 0.32);',
   '  gl_FragColor = vec4(color, mask * (0.34 + tone * 0.56));',
   '}',
@@ -136,6 +144,7 @@ export function createAsciiRippleGL(options) {
     uRipples: { value: ripples },
     uFlowDir: { value: new THREE.Vector2(1, 0) },
     uFlowPhase: { value: 0 },
+    uPointer: { value: new THREE.Vector2(0.5, 0.5) },
   };
   var material = new THREE.ShaderMaterial({
     vertexShader: VERTEX,
@@ -198,6 +207,9 @@ export function createAsciiRippleGL(options) {
     uniforms.uFlowDir.value.set(Math.cos(currentAngle), Math.sin(currentAngle));
     // 相位速度 0.35 rad/s：渐变缓缓推过整屏，不会让人觉得在抖。
     uniforms.uFlowPhase.value += (lastRenderAt >= 0 ? FRAME_INTERVAL_MS : 0) / 1000 * 0.35;
+    // 指数平滑跟随，鼠标快速划过时不会抽动。
+    pointerSmooth.lerp(pointerTarget, 0.09);
+    uniforms.uPointer.value.copy(pointerSmooth);
     var used = 0;
     for (var i = 0; i < MAX_RIPPLES; i += 1) {
       if (i < active.length) {
@@ -213,14 +225,22 @@ export function createAsciiRippleGL(options) {
     if (!reduceMotion) frameId = window.requestAnimationFrame(frame);
   }
 
+  // 指针目标位置（UV 坐标，y 轴翻转对齐纹理方向）与平滑值。
+  var pointerTarget = new THREE.Vector2(0.5, 0.5);
+  var pointerSmooth = new THREE.Vector2(0.5, 0.5);
+  function trackPointer(event) {
+    pointerTarget.set(event.clientX / window.innerWidth, 1 - event.clientY / window.innerHeight);
+  }
+
   var lastMove = 0;
   function onPointerMove(event) {
+    trackPointer(event);
     var stamp = performance.now();
     if (stamp - lastMove < 70) return;
     lastMove = stamp;
     pushRipple(event.clientX, event.clientY, 0.55);
   }
-  function onPointerDown(event) { pushRipple(event.clientX, event.clientY, 1); }
+  function onPointerDown(event) { trackPointer(event); pushRipple(event.clientX, event.clientY, 1); }
   // 流动渐变的方向：每 6–12 秒随机换一个角度，角度之间做最短弧插值，避免跳变。
   // 相位单独累加，保证帧率变化时流动速度不变。
   var currentAngle = 0;
@@ -266,7 +286,7 @@ export function createAsciiRippleGL(options) {
     rippleAt: pushRipple,
     info: function () {
       var elapsed = (performance.now() - startedAt) / 1000;
-      return { glyphs: RAMP.length, ripples: active.length, size: [width, height], dpr: dpr, frames: frames, fps: elapsed > 0 ? Math.round(frames / elapsed) : 0, software: softwareRendering, gpu: rendererName.slice(0, 60), flowAngle: Math.round((currentAngle * 180) / Math.PI), flowPhase: Number(uniforms.uFlowPhase.value.toFixed(2)) };
+      return { glyphs: RAMP.length, ripples: active.length, size: [width, height], dpr: dpr, frames: frames, fps: elapsed > 0 ? Math.round(frames / elapsed) : 0, software: softwareRendering, gpu: rendererName.slice(0, 60), flowAngle: Math.round((currentAngle * 180) / Math.PI), flowPhase: Number(uniforms.uFlowPhase.value.toFixed(2)), pointer: [Number(pointerSmooth.x.toFixed(2)), Number(pointerSmooth.y.toFixed(2))] };
     },
   };
 }
