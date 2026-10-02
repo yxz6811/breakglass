@@ -173,6 +173,99 @@
     }, { passive: false });
   }
 
+  /* 文字溶入 / 聚出背景：逐字两层。
+     真实字与「背景字符」叠在同一个格子里，滚动位置决定融合进度 --p：
+     --p = 1 是完全成形的文字，--p = 0 是散成背景字符的雾状。
+     进度按元素写一次 CSS 变量，每个字的透明度由 CSS 用 --p 与 --i 算，避免逐字改样式。
+     中文按字拆，连续拉丁字母与数字按整词拆，避免破坏断词与选中。 */
+  var GLYPHS = [' ', '.', '`', '-', ':', ';', '+', '=', '*', 'x', '#', '%', '@'];
+  function dissolveText(el) {
+    if (el.dataset.dissolved === '1') return 0;
+    var walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT, null);
+    var textNodes = [];
+    while (walker.nextNode()) textNodes.push(walker.currentNode);
+    var index = 0;
+    textNodes.forEach(function (node) {
+      var text = node.nodeValue;
+      if (!text || !text.trim()) return;
+      var fragment = document.createDocumentFragment();
+      var position = 0;
+      while (position < text.length) {
+        var rest = text.slice(position);
+        var wordMatch = /^[A-Za-z0-9][A-Za-z0-9'’._-]*/.exec(rest);
+        var chunk = wordMatch ? wordMatch[0] : rest.charAt(0);
+        if (/^\s+$/.test(chunk)) {
+          fragment.appendChild(document.createTextNode(chunk));
+          position += chunk.length;
+          continue;
+        }
+        var span = document.createElement('span');
+        span.className = 'ch';
+        span.style.setProperty('--i', String(index % 26));
+        span.setAttribute('data-glyph', GLYPHS[(index * 5 + chunk.charCodeAt(0)) % GLYPHS.length]);
+        span.textContent = chunk;
+        fragment.appendChild(span);
+        index += 1;
+        position += chunk.length;
+      }
+      node.parentNode.replaceChild(fragment, node);
+    });
+    el.dataset.dissolved = '1';
+    el.classList.add('dis');
+    return index;
+  }
+
+  var dissolveTargets = Array.prototype.slice.call(
+    document.querySelectorAll('.article__title, .article__lead, .prose > p, .prose > h2, .prose li')
+  );
+  if (!reduceMotion && dissolveTargets.length) {
+    var split = 0;
+    dissolveTargets.forEach(function (node) { split += dissolveText(node); });
+
+    function syncDissolve() {
+      var viewport = window.innerHeight || 1;
+      for (var i = 0; i < dissolveTargets.length; i += 1) {
+        var el = dissolveTargets[i];
+        var rect = el.getBoundingClientRect();
+        if (rect.bottom < -viewport * 0.2 || rect.top > viewport * 1.2) continue;
+        var entering = Math.min(1, Math.max(0, (viewport - rect.top) / (viewport * 0.66)));
+        var leaving = Math.min(1, Math.max(0, rect.bottom / (viewport * 0.34)));
+        var progress = Math.min(entering, leaving);
+        progress = progress * progress * (3 - 2 * progress);
+        el.style.setProperty('--p', progress.toFixed(3));
+      }
+    }
+    // 停止滚动后，把仍在视口里的文字聚拢为完全可读，避免停在半路时边缘文字一直偏淡。
+    // 再次滚动时 syncDissolve 会按位置重新算，效果自动恢复。
+    var settleTimer = 0;
+    function settle() {
+      var viewport = window.innerHeight || 1;
+      for (var i = 0; i < dissolveTargets.length; i += 1) {
+        var rect = dissolveTargets[i].getBoundingClientRect();
+        if (rect.top < viewport && rect.bottom > 0) dissolveTargets[i].style.setProperty('--p', '1');
+      }
+    }
+    function onScrollDissolve() {
+      requestDissolve();
+      if (settleTimer) window.clearTimeout(settleTimer);
+      settleTimer = window.setTimeout(settle, 340);
+    }
+
+    var dissolveTicking = false;
+    function requestDissolve() {
+      if (dissolveTicking) return;
+      dissolveTicking = true;
+      window.requestAnimationFrame(function () {
+        dissolveTicking = false;
+        syncDissolve();
+      });
+    }
+    window.addEventListener('scroll', onScrollDissolve, { passive: true });
+    window.addEventListener('resize', requestDissolve);
+    syncDissolve();
+    window.breakglassDissolve = { update: syncDissolve, settle: settle, spans: split };
+  }
+
   /* 内嵌演示：file:// 或演示页不可用时给出可操作说明 */
   var frame = document.querySelector('[data-demo-frame]');
   var fallback = document.querySelector('[data-demo-fallback]');

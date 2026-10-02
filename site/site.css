@@ -282,6 +282,35 @@ a { color: var(--accent); }
   opacity: 0.95;
 }
 
+/* ---------- 文字溶入背景 / 从背景聚出 ---------- */
+/* 把 --p 注册成可动画的属性：滚动驱动的变化会平滑插值，不会一格一格跳。 */
+@property --p {
+  syntax: "<number>";
+  inherits: true;
+  initial-value: 1;
+}
+/* 每个字两层：真实字在上，背景字符在下。--p 由滚动位置驱动（1=成形，0=散成字符）。 */
+.dis { --p: 1; transition: --p 460ms var(--ease-out); }
+.dis .ch {
+  position: relative;
+  display: inline-block;
+  opacity: clamp(0, calc(var(--p, 1) * 1.28 - var(--i, 0) * 0.03), 1);
+  transform: translateY(calc((1 - var(--p, 1)) * 5px));
+}
+.dis .ch::before {
+  content: attr(data-glyph);
+  position: absolute;
+  left: 0;
+  top: 0;
+  color: var(--accent);
+  pointer-events: none;
+  opacity: clamp(0, calc(1.1 - var(--p, 1) * 1.85 + var(--i, 0) * 0.035), 1);
+}
+@media (prefers-reduced-motion: reduce) {
+  .dis .ch { opacity: 1 !important; transform: none !important; }
+  .dis .ch::before { opacity: 0 !important; }
+}
+
 /* ---------- 第 1 页：留空封面（只有背景） ---------- */
 /* 文章页：涟漪当纹理，压低到不干扰阅读；封面保持原强度 */
 /* 文章页：图案要看得见，但不能压住正文 —— 0.30 是实测可读的档位 */
