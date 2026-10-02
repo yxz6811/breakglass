@@ -284,8 +284,8 @@ a { color: var(--accent); }
 
 /* ---------- 第 1 页：留空封面（只有背景） ---------- */
 /* 文章页：涟漪当纹理，压低到不干扰阅读；封面保持原强度 */
-/* 文章页要能读：背景只留一层隐约的流动，不能跟文字抢注意力 */
-.article-body .bg-canvas { opacity: 0.18; }
+/* 文章页：图案要看得见，但不能压住正文 —— 0.30 是实测可读的档位 */
+.article-body .bg-canvas { opacity: 0.3; }
 .cover-body { overflow: hidden; }
 .cover { position: relative; z-index: 1; min-height: 100vh; min-height: 100svh; }
 

@@ -4,7 +4,7 @@ import { createAsciiRippleGL } from './background-gl.js';
 var canvas = document.querySelector('[data-ascii-ripple]');
 if (canvas) {
   try {
-    window.breakglassRippleGL = createAsciiRippleGL({ canvas: canvas });
+    window.breakglassRippleGL = createAsciiRippleGL({ canvas: canvas, motif: Number(canvas.dataset.motif) || 0 });
   } catch (error) {
     window.breakglassRippleGL = null;
     canvas.dataset.renderer = '';
