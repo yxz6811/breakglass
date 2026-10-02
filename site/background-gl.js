@@ -25,6 +25,9 @@ var RIPPLE_WIDTH = 92;
 var FRAME_INTERVAL_MS = 1000 / 30;
 var FRAME_SLACK_MS = 4;
 var CURVE_COUNT = 6;
+var MAX_TRAIL = 12;
+var TRAIL_INTERVAL_MS = 35;
+var TRAIL_LIFE = 0.7;
 
 var VERTEX = [
   'varying vec2 vUv;',
@@ -53,6 +56,7 @@ var FRAGMENT = [
   'uniform float uAspect;',
   'uniform vec2 uPointerPlot;',
   'uniform float uPointerFade;',
+  'uniform vec4 uTrail[' + MAX_TRAIL + '];',
   '',
   'float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }',
   '',
@@ -112,22 +116,16 @@ var FRAGMENT = [
   '  amt = amt * amt * (3.0 - 2.0 * amt);',
   '  float curve = mix(glowA, glowB, amt);',
   '  curve *= 0.88 + 0.12 * sin(uTime * 0.45 + plotP.x * 1.9);',
-  // 指针周围再叠一条本地函数曲线：按屏幕 3x2 的区域换不同的函数，所以鼠标走到哪，那里就出现对应的一条。
-  '  if (uPointerFade > 0.01) {',
-  // 指针处不再画函数，改成一个圆形：盘内轻微加亮，外圈一圈更亮的环。
-  // 半径 0.1 约等于屏高的 10%（900px 高时约 90px）。
-  '  if (uPointerFade > 0.01) {',
-  '    vec2 pointerDelta2 = plotP - uPointerPlot;',
-  '    float ringDist = length(pointerDelta2);',
-  '    float discRadius = 0.1;',
-  '    float inner = 1.0 - smoothstep(discRadius * 0.72, discRadius, ringDist);',
-  '    float ringWidth = discRadius * 0.16;',
-  '    float ringOffset = (ringDist - discRadius) / ringWidth;',
-  '    float outline = exp(-ringOffset * ringOffset);',
-  '    float circleInk = max(inner * 0.5, outline * 1.0) * uPointerFade;',
-  '    curve = max(curve, circleInk);',
+  // 鼠标尾迹：沿最近走过的若干个点晕开，越旧越淡，形成拖尾；不再用固定圆。
+  '  float trailGlow = 0.0;',
+  '  for (int i = 0; i < ' + MAX_TRAIL + '; i++) {',
+  '    vec4 trailPoint = uTrail[i];',
+  '    if (trailPoint.w <= 0.002) continue;',
+  '    vec2 trailDelta = plotP - trailPoint.xy;',
+  '    trailGlow += exp(-dot(trailDelta, trailDelta) / (2.0 * 0.024 * 0.024)) * trailPoint.w;',
   '  }',
-  '  }',
+  '  trailGlow = min(trailGlow, 1.0) * uPointerFade;',
+  '  curve = clamp(curve + trailGlow * 0.85, 0.0, 1.4);',
   '  float curveSigned = distA * (1.0 - amt) + distB * amt;',
   '  float cellShift = clamp(curveSigned * 1.6, -0.6, 0.6) * 0.42;',
   '  float value = 0.16 + hash(cellId) * 0.08;',
@@ -163,6 +161,8 @@ var FRAGMENT = [
   '  vec3 curveTint = mix(vec3(0.32, 0.50, 1.0), vec3(0.86, 0.55, 1.0), hueMix);',
   '  curveTint = mix(curveTint, vec3(1.0, 0.99, 1.0), smoothstep(0.9, 1.0, curve) * 0.55);',
   '  color = mix(color, curveTint * 1.28, clamp(curve * 1.15, 0.0, 1.0));',
+  // 尾迹走冷白，和曲线的蓝紫区分开。
+  '  color = mix(color, vec3(0.82, 0.97, 1.0) * 1.3, clamp(trailGlow * 1.1, 0.0, 1.0));',
   '  gl_FragColor = vec4(color, mask * (0.40 + tone * 0.58));',
   '}',
 ].join('\n');
@@ -215,6 +215,11 @@ export function createAsciiRippleGL(options) {
   var camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
   var ripples = [];
   for (var i = 0; i < MAX_RIPPLES; i += 1) ripples.push(new THREE.Vector4(0, 0, -999, 0));
+  // 尾迹点：x,y 为绘图坐标，z 为记录时刻（秒），w 为强度（越旧越淡）。
+  var trailSlots = [];
+  for (var t = 0; t < MAX_TRAIL; t += 1) trailSlots.push(new THREE.Vector4(0, 0, -999, 0));
+  var trailPoints = [];
+  var trailLastAt = -999;
 
   // 每个板块从不同曲线起步：封面从抛物线开始，其余按页号轮换。
   var startCurve = seed === 0 ? 2 : seed % CURVE_COUNT;
@@ -238,6 +243,7 @@ export function createAsciiRippleGL(options) {
     uAspect: { value: 1 },
     uPointerPlot: { value: new THREE.Vector2(0, 0) },
     uPointerFade: { value: 0 },
+    uTrail: { value: trailSlots },
   };
   var material = new THREE.ShaderMaterial({ vertexShader: VERTEX, fragmentShader: FRAGMENT, uniforms: uniforms, transparent: true, depthTest: false, depthWrite: false });
   scene.add(new THREE.Mesh(new THREE.PlaneGeometry(2, 2), material));
@@ -278,6 +284,7 @@ export function createAsciiRippleGL(options) {
   }
   var pointerFade = 0;
   var pointerMovedAt = 0;
+  var lastTrailAt = -999;
   function trackPointer(event) {
     pointerTarget.set(event.clientX / window.innerWidth, 1 - event.clientY / window.innerHeight);
     pointerToPlot(pointerTarget);
@@ -342,6 +349,26 @@ export function createAsciiRippleGL(options) {
     pointerToPlot(pointerSmooth);
     uniforms.uPointerPlot.value.lerp(pointerPlotTarget, 0.2);
     // 鼠标停止约 2.5 秒后本地曲线淡出，动起来立刻回来。
+    // 采样：按固定间隔记录指针位置，最多保留 MAX_TRAIL 个点。
+    var plotNow = (stamp - startTime) / 1000;
+    if (pointerMovedAt > 0 && stamp - lastTrailAt > TRAIL_INTERVAL_MS) {
+      lastTrailAt = stamp;
+      var last = trailPoints.length ? trailPoints[trailPoints.length - 1] : null;
+      var currentPlot = uniforms.uPointerPlot.value;
+      if (!last || (last.x - currentPlot.x) * (last.x - currentPlot.x) + (last.y - currentPlot.y) * (last.y - currentPlot.y) > 0.000004) {
+        trailPoints.push({ x: currentPlot.x, y: currentPlot.y, at: plotNow });
+        if (trailPoints.length > MAX_TRAIL) trailPoints.shift();
+      }
+    }
+    for (var slot = 0; slot < MAX_TRAIL; slot += 1) {
+      var pointIndex = trailPoints.length - 1 - slot;
+      if (pointIndex < 0) { trailSlots[slot].set(0, 0, -999, 0); continue; }
+      var point = trailPoints[pointIndex];
+      var age = plotNow - point.at;
+      var weight = age >= TRAIL_LIFE ? 0 : (1 - age / TRAIL_LIFE);
+      trailSlots[slot].set(point.x, point.y, point.at, weight * weight);
+    }
+    uniforms.uTrail.value = trailSlots;
     var moving = performance.now() - pointerMovedAt < 2500;
     pointerFade += ((moving ? 1 : 0) - pointerFade) * (moving ? 0.12 : 0.045);
     uniforms.uPointerFade.value = pointerFade;
@@ -416,6 +443,7 @@ export function createAsciiRippleGL(options) {
         flowPhase: Number(uniforms.uFlowPhase.value.toFixed(2)),
         pointer: [Number(pointerSmooth.x.toFixed(2)), Number(pointerSmooth.y.toFixed(2))],
         pointerFade: Number(pointerFade.toFixed(2)),
+        trailPoints: trailPoints.length,
       };
     },
   };
