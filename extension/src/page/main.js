@@ -20,11 +20,34 @@
   const assetEmpty = $('#asset-empty');
   const runtimeNote = $('#runtime-note');
 
+  /**
+   * 相对演示页的扩展包视频。仓库落盘路径只写在 extension/assets/video/README.md。
+   * @type {string}
+   */
+  const PACKAGED_VIDEO_URL = '../assets/video/breakglass-demo-9s.mp4';
+
   let config = null;
   let presetResult = null;
   let controller = null;
   let overlay = null;
   let dragging = false;
+
+  /**
+   * 文件可读时才把演示 video 指到扩展包内的 mp4。
+   * 缺失时不设置 src，避免 error 事件把空状态改成加载失败。
+   * @returns {Promise<boolean>} 是否已把地址交给演示 video
+   */
+  async function attachPackagedVideo() {
+    try {
+      const response = await fetch(PACKAGED_VIDEO_URL, { headers: { Range: 'bytes=0-0' } });
+      if (response.body) await response.body.cancel();
+      if (!response.ok) return false;
+    } catch {
+      return false;
+    }
+    video.src = PACKAGED_VIDEO_URL;
+    return true;
+  }
 
   function setStatus(message) {
     stateLabel.textContent = message;
@@ -209,6 +232,7 @@
   }
 
   async function boot() {
+    const packagedPromise = attachPackagedVideo();
     try {
       const loaded = await preset.loadPreset();
       if (!loaded.ok) throw new Error(loaded.message);
@@ -222,7 +246,10 @@
         externalAttempt: config.externalAttempt
       });
       runtimeNote.textContent = `配置：${config.externalAttempt} · 本地预制已预热`;
-      setStatus('正式视频素材尚未提供，加载视频后可验证交互。');
+      const packaged = await packagedPromise;
+      if (!packaged && !video.error) {
+        setStatus('正式视频素材尚未提供，加载视频后可验证交互。');
+      }
       setSource(null);
     } catch (error) {
       runtimeNote.textContent = '配置加载失败';
@@ -233,6 +260,9 @@
 
   video.addEventListener('loadedmetadata', () => {
     assetEmpty.hidden = true;
+    if (!overlay) {
+      setStatus(atTarget() ? '已暂停在目标时间，可以再次破壁。' : '请暂停在目标时间。');
+    }
     syncControls();
   });
   video.addEventListener('timeupdate', syncControls);
