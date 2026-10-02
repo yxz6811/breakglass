@@ -17,6 +17,8 @@
     <script defer src="../src/ui/liquid-glass.js"></script>
     <script defer src="../src/preset/load.js"></script>
     <script defer src="../src/preset/place-in-frame.js"></script>
+    <script defer src="../src/lesson/reading.js"></script>
+    <script defer src="../src/lesson/ask.js"></script>
     <script defer src="../src/page/main.js"></script>
   </head>
   <body>
@@ -40,7 +42,7 @@
         </button>
         <button class="lg-item" type="button" id="jump-target" aria-label="定位到目标时间">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="6"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>
-          <span class="lg-tip">定位目标时间</span>
+          <span class="lg-tip">定位到第 6 秒</span>
         </button>
         <button class="lg-item" type="button" id="wake-button" data-variant="primary" disabled aria-label="破壁" aria-keyshortcuts="Alt+B" aria-describedby="wake-reason">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 2 4.5 13.5H11l-1 8.5 8.5-11.5H12l1-8.5Z"/></svg>
@@ -76,7 +78,7 @@
         <div>
           <p class="eyebrow">BREAKGLASS · P0 DEMO</p>
           <h1>让视频里的抛物线可以被调节</h1>
-          <p class="lede">当前页面只使用扩展包内的预先准备结果，来源会持续显示。</p>
+          <p class="lede">在暂停的画面上，把一条抛物线调节出来。</p>
         </div>
       </header>
 
@@ -84,15 +86,32 @@
         <div class="video-column">
           <div class="video-stage" id="video-stage">
             <video id="demo-video" data-video-id="fixture-parabola" preload="metadata" controls playsinline></video>
-            <div class="asset-empty" id="asset-empty">正式视频素材尚未提供。当前只能验证扩展骨架与夹具逻辑。</div>
+            <div class="asset-empty" id="asset-empty">
+              <label class="stage-pick">选择视频
+                <input id="local-video" type="file" accept="video/*">
+              </label>
+              <p>文件留在这台浏览器里。</p>
+            </div>
           </div>
           <div class="transport" aria-label="视频控制">
-            <label>目标时间（秒） <input id="target-time" type="number" min="0" step="0.1" value="6"></label>
+            <p class="target-readout" id="target-time-readout">停在第 6 秒</p>
+            <label id="target-time-field" hidden>目标时间（秒） <input id="target-time" type="number" min="0" step="0.1" value="6"></label>
             <span id="time-label">当前时间：—</span>
             <div class="waiting-bar" id="waiting-bar" role="status" aria-live="polite" aria-busy="true" hidden>
               <span class="waiting-bar__spinner" aria-hidden="true"></span>
               <span class="waiting-bar__text">正在等待外部结果…</span>
               <span class="waiting-bar__track" aria-hidden="true"><span class="waiting-bar__fill" id="waiting-progress"></span></span>
+            </div>
+            <div class="lesson-row">
+              <p id="lesson-status" role="status" aria-live="polite"></p>
+              <label>阅读地址
+                <input id="lesson-endpoint" type="url" inputmode="url" autocomplete="off" placeholder="留空会退回示例片">
+              </label>
+              <label>课程说明
+                <textarea id="lesson-note" rows="2"></textarea>
+              </label>
+              <button type="button" id="lesson-next" disabled aria-label="下一个">下一个</button>
+              <button type="button" id="lesson-cancel" hidden aria-label="取消阅读">取消阅读</button>
             </div>
           </div>
         </div>
@@ -100,7 +119,7 @@
         <aside class="control-panel" aria-label="交互控制">
           <p class="panel-kicker">INTERACTION</p>
           <h2>抛物线参数</h2>
-          <p id="state-label" role="status" aria-live="polite">请加载演示视频并暂停在目标时间。</p>
+          <p id="state-label" role="status" aria-live="polite">先选择一个视频。文件留在这台浏览器里。</p>
           <!-- 禁用原因：视觉隐藏，只在对应按钮不可用时填字，供读屏说明为什么不能点。 -->
           <p class="sr-only" id="wake-reason"></p>
           <p class="sr-only" id="reset-reason"></p>
@@ -125,7 +144,7 @@
 
       <footer class="app-footer">
         <span>Alt+B 破壁 · Esc 退出 · 空格保留给播放器</span>
-        <span id="runtime-note">本地配置加载中…</span>
+        <span id="runtime-note" hidden>本地配置加载中…</span>
       </footer>
     </main>
   </body>

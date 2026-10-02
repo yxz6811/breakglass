@@ -123,6 +123,10 @@ test('页面转入后台时卸下覆盖层', async () => {
     harness.win.dispatch('pagehide');
     assert.equal(harness.overlay(), null);
     assert.equal(harness.win.__breakglassAlignment, null);
+    assert.equal(harness.elements['reset-button'].disabled, true);
+    assert.equal(harness.elements['exit-button'].disabled, true);
+    assert.equal(harness.elements['parameter-h'].disabled, true);
+    assert.equal(harness.elements['waiting-bar'].hidden, true);
   } finally {
     harness.restore();
   }

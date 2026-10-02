@@ -104,9 +104,9 @@ test('目标时间默认是 6 秒，会话仍跟随输入框当前值', async ()
     const html = fs.readFileSync(path.join(__dirname, '../extension/demo/index.html'), 'utf8');
     assert.match(html, /id="target-time"[^>]*value="6"/);
     assert.equal(elements['target-time'].value, '6');
-    assert.equal(elements['state-label'].textContent, '正式视频素材尚未提供，加载视频后可验证交互。');
+    assert.equal(elements['state-label'].textContent, '先选择一个视频。文件留在这台浏览器里。');
     assert.equal(elements['asset-empty'].hidden, false);
-    assert.equal(video.src, undefined);
+    assert.equal(video.src, '');
     harness.ready();
     assert.equal(elements['wake-button'].disabled, false);
     elements['wake-button'].dispatch('click');
@@ -206,6 +206,35 @@ test('播放会让等待或交互状态一起结束', async () => {
     assert.equal(elements['cancel-button'].hidden, true);
     assert.equal(harness.overlay(), null);
     assert.equal(elements['source-label'].textContent, '等待素材');
+  } finally {
+    harness.restore();
+  }
+});
+
+test('选择本地视频只换成浏览器内地址，并卸下已有曲线', async () => {
+  const harness = await createHarness();
+  try {
+    const { elements, video } = harness;
+    harness.ready();
+    video.setAttribute('data-video-id', 'fixture-parabola');
+    elements['wake-button'].dispatch('click');
+    assert.ok(harness.overlay());
+    const input = elements['local-video'];
+    input.files = [new Blob(['not-a-video'], { type: 'text/plain' })];
+    input.dispatch('change');
+    assert.equal(video.getAttribute('data-video-id'), 'fixture-parabola');
+    assert.ok(harness.overlay(), '非视频文件不应换掉当前画面');
+    input.files = [new Blob(['video'], { type: 'video/mp4' })];
+    input.dispatch('change');
+    assert.match(String(video.src), /^blob:/);
+    assert.equal(video.getAttribute('data-video-id'), null);
+    assert.equal(harness.overlay(), null);
+    assert.equal(elements['wake-button'].disabled, true);
+    elements['wake-button'].dispatch('click');
+    assert.equal(harness.overlay(), null, '新视频的尺寸还没到，不能用上一帧破壁');
+    assert.equal(elements['state-label'].textContent, '正在读取所选视频。');
+    video.dispatch('loadedmetadata');
+    assert.equal(elements['wake-button'].disabled, false);
   } finally {
     harness.restore();
   }

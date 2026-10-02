@@ -35,6 +35,17 @@ test('当前帧与准备画幅相同时区域保持原值', () => {
   assert.deepEqual(placed.frameSize, frame);
 });
 
+test('刚好铺满的区域换到 31 像素宽时不会被浮点误差拒绝', () => {
+  const prepared = { width: 1920, height: 1080 };
+  const region = { x: 0, y: 0, width: 1920, height: 1080 };
+  const frame = { width: 31, height: 1080 };
+  const placed = placeRegionInFrame(prepared, region, frame);
+  assert.ok(placed);
+  assert.equal(placed.region.x + placed.region.width <= frame.width, true);
+  assert.equal(placed.region.y + placed.region.height <= frame.height, true);
+  assert.equal(placed.region.width > 0, true);
+});
+
 test('超出准备画幅的区域换算后仍放不进当前帧', () => {
   const placed = placeRegionInFrame(
     { width: 1920, height: 1080 },

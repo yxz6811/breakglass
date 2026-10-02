@@ -138,9 +138,8 @@ test('invalid：外部结果不可用时进入可恢复错误，result 为 null'
   assert.equal(state.result, null);
   assert.equal(typeof state.code, 'string');
   assert.equal(state.code.length > 0, true);
-  // 现状：校验器的 code（如 invalid_definition）会透传给会话，尚未收敛到交接接口表里的三种。
-  // 页面只按 message 显示文案，所以这里锁 message。
   assert.equal(state.message, '外部结果不可用，未进入交互。');
+  assert.equal(state.code, 'external_unavailable');
 });
 
 test('cancel、exit 与 dispose 都会清掉看门狗', () => {

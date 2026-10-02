@@ -52,6 +52,13 @@ test('四种画幅下数学点都映射为有限数值', () => {
   }
 });
 
+test('超出 range 的纵坐标贴在 region 边上', () => {
+  const source = mathPointToSource(definition, parameters, definition.domain.max);
+  assert.equal(source.y, definition.region.y);
+  assert.equal(source.y >= definition.region.y, true);
+  assert.equal(source.y <= definition.region.y + definition.region.height, true);
+});
+
 test('数学点先落到 region 源像素，再按 scale 得到页面点', () => {
   const source = mathPointToSource(definition, parameters, 0);
   assert.equal(source.x, definition.region.x + definition.region.width / 2);
@@ -80,7 +87,10 @@ test('映射结果落在内容矩形内（黑边不参与对齐）', () => {
       const point = mathPointToPage(definition, parameters, mathX, rect.scale);
       const withinX = point.x >= definition.region.x * rect.scale - 1e-9 &&
         point.x <= (definition.region.x + definition.region.width) * rect.scale + 1e-9;
+      const withinY = point.y >= definition.region.y * rect.scale - 1e-9 &&
+        point.y <= (definition.region.y + definition.region.height) * rect.scale + 1e-9;
       assert.equal(withinX, true, frame.name);
+      assert.equal(withinY, true, frame.name + ' y');
     }
   }
 });
@@ -102,6 +112,8 @@ test('2% 阈值包含边界值', () => {
   assert.equal(withinTolerance(0.0200001), false);
   assert.equal(withinTolerance(NaN), false);
   assert.equal(withinTolerance(null), false);
+  assert.equal(withinTolerance((57 * 0.02) / 57), true);
+  assert.equal(withinTolerance(-0.001), false);
 });
 
 test('sampleAlignment 用实测点与期望点给出最大偏差', () => {

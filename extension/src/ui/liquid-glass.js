@@ -29,6 +29,7 @@
       this.measure();
       this.detectSupport();
       this.bind();
+      this.bindEdgeReveal();
     }
 
     // 用布局坐标测量，不受 transform 影响
@@ -73,6 +74,7 @@
       const index = this.items.indexOf(event.target);
       if (index < 0) return;
       this.focusIndex = index;
+      this.reveal();
       this.updateTargets();
       this.start();
     }
@@ -81,6 +83,62 @@
       this.focusIndex = -1;
       this.updateTargets();
       this.start();
+      this.scheduleHide();
+    }
+
+    /**
+     * 平时收到视口上方。指针进入浏览器顶端，或键盘焦点落在栏内时再滑出。
+     * 离开后稍等再收起，避免从热区移到按钮上的空隙里闪一下。
+     */
+    bindEdgeReveal() {
+      this.hideTimer = null;
+      /** @type {{ clientX: number, clientY: number } | null} */
+      this.lastPointer = null;
+      this.onWindowPointer = (event) => {
+        if (event && Number.isFinite(event.clientX) && Number.isFinite(event.clientY)) {
+          this.lastPointer = { clientX: event.clientX, clientY: event.clientY };
+        }
+        if (this.pointerWantsDock(event) || this.focusIndex >= 0) this.reveal();
+        else this.scheduleHide();
+      };
+      window.addEventListener('pointermove', this.onWindowPointer);
+    }
+
+    /**
+     * 顶端 10 像素是热区。栏已经打开时，指针还在栏的范围内也算停留。
+     * @param {PointerEvent} event
+     * @returns {boolean}
+     */
+    pointerWantsDock(event) {
+      if (!event || !Number.isFinite(event.clientY)) return false;
+      if (event.clientY <= 10) return true;
+      if (this.root.dataset.revealed !== 'true') return false;
+      const rect = this.root.getBoundingClientRect();
+      return event.clientY <= rect.bottom + 12
+        && event.clientX >= rect.left - 12
+        && event.clientX <= rect.right + 12;
+    }
+
+    /** 滑出顶栏。 */
+    reveal() {
+      if (this.hideTimer !== null) {
+        window.clearTimeout(this.hideTimer);
+        this.hideTimer = null;
+      }
+      this.root.dataset.revealed = 'true';
+    }
+
+    /**
+     * 焦点还在栏内时不收。到点后再看一次指针：滑出动画结束前指针可能已经停在栏的落点上。
+     */
+    scheduleHide() {
+      if (this.focusIndex >= 0 || this.hideTimer !== null) return;
+      this.hideTimer = window.setTimeout(() => {
+        this.hideTimer = null;
+        if (this.focusIndex >= 0) return;
+        if (this.pointerWantsDock(this.lastPointer)) return;
+        delete this.root.dataset.revealed;
+      }, 220);
     }
 
     setPointer(pointerX) {
@@ -152,6 +210,8 @@
 
     destroy() {
       this.stop();
+      if (this.hideTimer !== null) window.clearTimeout(this.hideTimer);
+      if (this.onWindowPointer) window.removeEventListener('pointermove', this.onWindowPointer);
       this.root.removeEventListener('pointermove', this.onPointerMove);
       this.root.removeEventListener('pointerleave', this.onPointerLeave);
       this.root.removeEventListener('focusin', this.onFocusIn);

@@ -74,6 +74,49 @@ test('关键字组合与顺序等价', () => {
   assert.equal(bottomRight.contentRect.top, 1000 - 1080 * (600 / 1920));
 });
 
+test('长度和同轴关键字回退到居中', () => {
+  const center = { x: { percent: 50 }, y: { percent: 50 } };
+  assert.deepEqual(resolvePosition('20% left'), center);
+  assert.deepEqual(resolvePosition('10px right'), center);
+  assert.deepEqual(resolvePosition('50% left'), center);
+  assert.deepEqual(resolvePosition('left 20%'), { x: { percent: 0 }, y: { percent: 20 } });
+  assert.deepEqual(resolvePosition('20% top'), { x: { percent: 20 }, y: { percent: 0 } });
+});
+
+test('三值位置从指定的边向内偏移', () => {
+  const wide = { left: 0, top: 0, width: 1200, height: 600 };
+  const scaleX = Math.min(wide.width / 1920, wide.height / 1080);
+  const slackX = wide.width - 1920 * scaleX;
+  const right = getContentRect({
+    elementRect: wide,
+    videoWidth: 1920,
+    videoHeight: 1080,
+    objectPosition: 'right 10px center'
+  });
+  assert.ok(Math.abs(right.contentRect.left - (slackX - 10)) < 1e-9);
+  assert.equal(right.contentRect.top, 0);
+
+  const tall = { left: 0, top: 0, width: 600, height: 1000 };
+  const scaleY = Math.min(tall.width / 1920, tall.height / 1080);
+  const slackY = tall.height - 1080 * scaleY;
+  const bottom = getContentRect({
+    elementRect: tall,
+    videoWidth: 1920,
+    videoHeight: 1080,
+    objectPosition: 'bottom 20px center'
+  });
+  assert.ok(Math.abs(bottom.contentRect.top - (slackY - 20)) < 1e-9);
+
+  const fromLeft = getContentRect({
+    elementRect: tall,
+    videoWidth: 1920,
+    videoHeight: 1080,
+    objectPosition: 'left 10px top'
+  });
+  assert.equal(fromLeft.contentRect.left, 0);
+  assert.equal(fromLeft.contentRect.top, 0);
+});
+
 test('非有限的 videoWidth / videoHeight 返回 null', () => {
   assert.equal(getContentRect({ elementRect, videoWidth: Number.NaN, videoHeight: 1080 }), null);
   assert.equal(getContentRect({ elementRect, videoWidth: 1920, videoHeight: Infinity }), null);

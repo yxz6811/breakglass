@@ -97,6 +97,8 @@ test('pagehide 释放监听并清空测量输出', async () => {
     assert.ok(harness.win.__breakglassAlignment);
     harness.win.dispatch('pagehide');
     assert.equal(harness.win.__breakglassAlignment, null);
+    assert.equal(harness.elements['reset-button'].disabled, true);
+    assert.equal(harness.elements['parameter-a'].disabled, true);
     for (const observer of harness.observers) assert.equal(observer.disconnected, true);
   } finally {
     harness.restore();

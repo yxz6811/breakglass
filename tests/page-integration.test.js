@@ -40,6 +40,8 @@ test('演示页按依赖顺序加载本地脚本', () => {
     '../src/ui/liquid-glass.js',
     '../src/preset/load.js',
     '../src/preset/place-in-frame.js',
+    '../src/lesson/reading.js',
+    '../src/lesson/ask.js',
     '../src/page/main.js'
   ]);
   for (const src of sources) {

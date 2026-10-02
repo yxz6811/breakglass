@@ -45,6 +45,20 @@ test('rejects missing fields, non-finite values and invalid region', () => {
   })).code, 'invalid_region');
 });
 
+test('a region that only overflows by a rounding ulp still fits', () => {
+  const fitted = validResult({
+    frameSize: { width: 0.3, height: 10 },
+    definition: {
+      ...validResult().definition,
+      region: { x: 0.1, y: 0, width: 0.2, height: 1 }
+    }
+  });
+  assert.equal(0.1 + 0.2 > 0.3, true);
+  assert.equal(validateCurveResult(fitted).ok, true);
+  fitted.definition.region.width = 0.21;
+  assert.equal(validateCurveResult(fitted).code, 'invalid_region');
+});
+
 test('rejects unknown equation and mismatched context', () => {
   assert.equal(validateCurveResult(validResult({
     definition: { ...validResult().definition, equationId: 'unknown' }

@@ -101,7 +101,7 @@ async function flush() {
 function harness(overrides = {}) {
   const api = require('../extension/src/session/wake');
   assert.equal(typeof api.createWake, 'function');
-  const clock = createClock();
+  const clock = overrides.clock || createClock();
   const changes = [];
   const config = {
     enableLocalMock: true,
@@ -142,7 +142,7 @@ function harness(overrides = {}) {
  * @returns {void}
  */
 function start(h, time = 12.5) {
-  h.wake.start({ paused: true, currentTime: time, frameSize: { ...FRAME } });
+  return h.wake.start({ paused: true, currentTime: time, frameSize: { ...FRAME } });
 }
 
 /**
@@ -548,9 +548,87 @@ test('an external result with a different frameSize is not drawn as success', as
   await flush();
   assert.equal(h.changes.some((state) => state.status === 'interactive'), false);
   assert.equal(h.latest().status, 'recoverable-error');
-  assert.equal(h.latest().code, 'frame_mismatch');
+  assert.equal(h.latest().code, 'external_unavailable');
   assert.equal(h.latest().result, null);
   assert.equal(h.session.getState().result, null);
+  assertAligned(h);
+});
+
+test('a late result cannot wash a different frame into the current one', async () => {
+  const clock = createClock();
+  const preset = basePreset({ frameSize: { width: 1280, height: 720 } });
+  const attempt = require('../extension/src/attempt/simulator').createAttempt({
+    mode: 'late',
+    clock,
+    lateAfterMs: 500,
+    preset
+  });
+  const h = harness({
+    clock,
+    config: { externalAttempt: 'late' },
+    preset,
+    attempt
+  });
+  start(h);
+  h.clock.advance(500);
+  await flush();
+  assert.equal(h.latest().status, 'waiting');
+  assert.equal(h.latest().result, null);
+  h.clock.advance(1000);
+  await flush();
+  const settled = h.latest();
+  assert.equal(settled.status, 'interactive');
+  assert.equal(settled.result.fallback, 'timeout');
+  assert.equal(settled.result.frameSize.width, FRAME.width);
+  assert.equal(settled.result.definition.region.x, 150);
+  assert.equal(settled.result.definition.region.width, 960);
+  assert.equal(preset.definition.region.x, 100);
+  assertAligned(h);
+});
+
+test('a missing invalid candidate fails before the watchdog', async () => {
+  const h = harness({
+    config: { externalAttempt: 'invalid' },
+    attempt: {
+      start() { return Promise.resolve(null); },
+      abort() {}
+    }
+  });
+  start(h);
+  await flush();
+  assert.equal(h.latest().status, 'recoverable-error');
+  assert.equal(h.latest().result, null);
+  assert.equal(h.clock.pending(), 0);
+});
+
+test('a missing late candidate still falls back to the preset at 1500ms', async () => {
+  const h = harness({
+    config: { externalAttempt: 'late' },
+    attempt: {
+      start() { return Promise.resolve({ candidate: null }); },
+      abort() {}
+    }
+  });
+  start(h);
+  await flush();
+  assert.equal(h.latest().status, 'waiting');
+  h.clock.advance(1500);
+  await flush();
+  assert.equal(h.latest().status, 'interactive');
+  assert.equal(h.latest().result.fallback, 'timeout');
+  assert.equal(h.latest().result.frameSize.width, FRAME.width);
+});
+
+test('a fallback delay other than 1500 does not schedule another watchdog', async () => {
+  const h = harness({ config: { externalAttempt: 'hang', fallbackAfterMs: 2000 } });
+  const started = start(h);
+  assert.equal(started.ok, false);
+  assert.equal(h.clock.pending(), 0);
+  h.clock.advance(2000);
+  await flush();
+  assert.equal(h.latest().status, 'recoverable-error');
+  assert.equal(h.latest().result, null);
+  assert.equal(h.changes.some((state) => state.status === 'interactive'), false);
   assertAligned(h);
 });
 
@@ -562,4 +640,89 @@ test('enableLocalMock false does not turn a timeout into a preset success', asyn
   assert.notEqual(h.latest().status, 'interactive');
   assert.equal(h.latest().result, null);
   assert.equal(h.session.getState().result, null);
+});
+
+test('a synchronous attempt failure is not reported as started', () => {
+  const h = harness({
+    config: { externalAttempt: 'hang' },
+    attempt: {
+      start() { throw new Error('boom'); },
+      abort() {}
+    }
+  });
+  const started = start(h);
+  assert.equal(started.ok, false);
+  assert.equal(started.code, 'external_unavailable');
+  assert.equal(h.latest().status, 'recoverable-error');
+  assert.equal(h.latest().result, null);
+  assert.equal(h.clock.pending(), 0);
+});
+
+test('the watchdog path fails closed when no clock is provided', () => {
+  const api = require('../extension/src/session/wake');
+  const session = new SessionController({
+    videoId: 'fixture-parabola',
+    targetTime: 12.5,
+    frameSize: { ...FRAME },
+    externalAttempt: 'hang'
+  });
+  const wake = api.createWake({
+    session,
+    config: {
+      enableLocalMock: true,
+      fallbackAfterMs: 1500,
+      prewarmed: true,
+      externalAttempt: 'hang'
+    },
+    preset: basePreset(),
+    onChange() {}
+  });
+  const started = wake.start({ paused: true, currentTime: 12.5, frameSize: { ...FRAME } });
+  assert.equal(started.ok, false);
+  assert.equal(session.getState().status, 'recoverable-error');
+  assert.equal(session.getState().result, null);
+});
+
+test('the preset path does not need a clock', () => {
+  const api = require('../extension/src/session/wake');
+  const session = new SessionController({
+    videoId: 'fixture-parabola',
+    targetTime: 12.5,
+    frameSize: { ...FRAME },
+    externalAttempt: 'off'
+  });
+  const wake = api.createWake({
+    session,
+    config: {
+      enableLocalMock: true,
+      fallbackAfterMs: 1500,
+      prewarmed: true,
+      externalAttempt: 'off'
+    },
+    preset: basePreset(),
+    onChange() {}
+  });
+  const started = wake.start({ paused: true, currentTime: 12.5, frameSize: { ...FRAME } });
+  assert.equal(started.ok, true);
+  assert.equal(session.getState().status, 'interactive');
+});
+
+test('a missing vision loader is not reported as started', () => {
+  const load = require('../extension/src/preset/load');
+  const original = load.loadVisionFixture;
+  const preset = globalThis.BreakGlass && globalThis.BreakGlass.preset;
+  const presetOriginal = preset && preset.loadVisionFixture;
+  load.loadVisionFixture = null;
+  if (preset) preset.loadVisionFixture = null;
+  try {
+    const h = harness({ config: { externalAttempt: 'off', visionAdapter: 'fixture' } });
+    const started = start(h);
+    assert.equal(started.ok, false);
+    assert.equal(started.code, 'external_unavailable');
+    assert.equal(h.latest().status, 'recoverable-error');
+    assert.equal(h.latest().result, null);
+  } finally {
+    load.loadVisionFixture = original;
+    if (preset) preset.loadVisionFixture = presetOriginal;
+  }
 });

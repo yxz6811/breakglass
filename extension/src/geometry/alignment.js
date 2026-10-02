@@ -7,14 +7,27 @@
   const evaluate = BreakGlass.evaluate || (typeof require === 'function' ? require('../curve/evaluate') : null);
   const DEFAULT_TOLERANCE = 0.02;
 
+  /**
+   * 把比例收进声明的坐标窗口。超出 range 的 y 贴在区域边上，不画出 region。
+   * @param {number} value
+   * @returns {number}
+   */
+  function unitInterval(value) {
+    if (!Number.isFinite(value)) return 0;
+    if (value < 0) return 0;
+    if (value > 1) return 1;
+    return value;
+  }
+
   // 三层坐标：数学坐标 → 源帧像素 → 页面 CSS 像素（相对内容矩形左上角）。
   function mathPointToSource(definition, parameters, mathX) {
     if (!evaluate) throw new Error('alignment 需要 evaluate 模块。');
     const y = evaluate.evaluateWithParameters(definition, parameters, mathX);
-    const xRatio = (mathX - definition.domain.min) / (definition.domain.max - definition.domain.min);
-    const yRatio = definition.yAxis === 'up'
+    const xRatio = unitInterval((mathX - definition.domain.min) / (definition.domain.max - definition.domain.min));
+    const rawY = definition.yAxis === 'up'
       ? (definition.range.max - y) / (definition.range.max - definition.range.min)
       : (y - definition.range.min) / (definition.range.max - definition.range.min);
+    const yRatio = unitInterval(rawY);
     return {
       x: definition.region.x + xRatio * definition.region.width,
       y: definition.region.y + yRatio * definition.region.height
@@ -48,8 +61,16 @@
     return distance(expected, actual) / shorter;
   }
 
+  /**
+   * 偏差比例不超过阈值即通过。比较时留出 1e-9，避免较短边乘 2% 的浮点余量被判出界。
+   * 负数没有「更近」的含义，不算通过。
+   * @param {unknown} ratio
+   * @param {number} [tolerance]
+   * @returns {boolean}
+   */
   function withinTolerance(ratio, tolerance = DEFAULT_TOLERANCE) {
-    return Number.isFinite(ratio) && ratio <= tolerance;
+    const limit = Number.isFinite(tolerance) && tolerance >= 0 ? tolerance : DEFAULT_TOLERANCE;
+    return Number.isFinite(ratio) && ratio >= 0 && ratio <= limit + 1e-9;
   }
 
   /**

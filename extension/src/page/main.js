@@ -9,6 +9,8 @@
     wake: wakeApi,
     latency: latencyApi
   } = window.BreakGlass;
+  const lessonApi = window.BreakGlass.lesson || null;
+  const askApi = window.BreakGlass.lessonAsk || null;
   const $ = (selector) => document.querySelector(selector);
   const video = $('#demo-video');
   const stage = $('#video-stage');
@@ -43,6 +45,11 @@
   const wakeReason = $('#wake-reason');
   const resetReason = $('#reset-reason');
   const playTip = playToggle ? playToggle.querySelector('.lg-tip') : null;
+  const lessonStatus = $('#lesson-status');
+  const lessonCancel = $('#lesson-cancel');
+  const lessonNext = $('#lesson-next');
+  const lessonEndpoint = $('#lesson-endpoint');
+  const lessonNote = $('#lesson-note');
 
   /**
    * 相对演示页的扩展包视频。仓库落盘路径只写在 extension/assets/video/README.md。
@@ -68,11 +75,44 @@
   let dragOrigin = null;
   let placedRectKey = '';
   let videoBroken = false;
+  /** 用户选择的本地视频地址。有值时不再用包内演示片覆盖。 */
+  let localVideoUrl = '';
+  /** 新视频的元数据还没到。这之前不能沿用上一帧的宽高破壁。 */
+  let mediaPending = false;
+  /** 曲线至少出现过一次之后，才放出可编辑的目标时间。 */
+  let curveShown = false;
   // 识别路径的判定起点；只在 visionAdapter 为 fixture 且外部演练为 off 时置位。
   let visionStartedAt = null;
+  /**
+   * 取消等待时的空闲文案。下一次 paused-ready 绘制用掉后清空。
+   * @type {{ note: string, status: string } | null}
+   */
+  let pendingIdle = null;
+  /** 看门狗只接受 1500。等待条不再跟随其它配置值。 */
+  const FALLBACK_AFTER_MS = 1500;
   let resizeObserver = null;
   let dprQuery = null;
   let dprHandler = null;
+  /** 启动时加载的 demo-parabola，退回时重新挂上。 */
+  let packagedPreset = null;
+  /**
+   * 这一次阅读。点只存在内存里，换片子或退回时清空。
+   * shown 是当前挂着（或正在定位过去）的那一处。
+   * @type {{ src: string, readingId: string, videoId: string, duration: number, phase: 'reading' | 'ready', cancelled: boolean, courseNote: string, points: object[], dropped: { id: string, reason: string }[], first: object | null, shown: object | null, seeking: boolean, startedAt: number, timer: unknown, pendingJump: { before: number, after: number | null, wakeDisabled: boolean } | null, jumps: { before: number, after: number | null, wakeDisabled: boolean }[] } | null}
+   */
+  let lesson = null;
+  let lessonSerial = 0;
+  /** @type {{ cancel: Function } | null} */
+  let lessonAskHandle = null;
+  /** 隐藏采样视频。只在阅读采样期间存在，不挂进舞台。 */
+  let lessonProbe = null;
+  /** 当前会话挂的是这次阅读的点，而不是包内的 demo-parabola。 */
+  let usingLessonCurve = false;
+  /** 阅读点破壁的起点。只在点已经存好并落定时置位。 */
+  let lessonWakeStartedAt = null;
+  /** 刚退回 9 秒片时的原因。那支片子加载失败时要改口，不能说已经回去了。 */
+  let lessonFallbackReason = '';
+  let wakeMounts = 0;
 
   function createClock() {
     const read = window.performance && typeof window.performance.now === 'function'
@@ -92,14 +132,39 @@
    * @returns {Promise<boolean>} 是否已把地址交给演示 video
    */
   async function attachPackagedVideo() {
+    if (localVideoUrl) return true;
     try {
       const response = await fetch(PACKAGED_VIDEO_URL, { method: 'HEAD' });
       if (response.status === 404 || response.status === 410) return false;
     } catch {
       // 断网时 HEAD 失败，不代表扩展包里没有这个文件。
     }
+    if (localVideoUrl) return true;
     video.src = PACKAGED_VIDEO_URL;
     return true;
+  }
+
+  /**
+   * 把用户选中的视频放进播放器。地址是浏览器临时对象，不发送到任何服务器。
+   * 去掉 data-video-id，避免把别人的文件当成夹具那一支片子。
+   * @param {File} file
+   */
+  function useLocalVideo(file) {
+    if (!file || !video || typeof URL.createObjectURL !== 'function') return;
+    if (file.type && file.type.indexOf('video/') !== 0) {
+      setStatus('请选择一个视频文件。');
+      return;
+    }
+    resetLesson();
+    mediaPending = true;
+    videoBroken = false;
+    if (overlay) removeOverlay({ pauseVideo: false });
+    if (localVideoUrl) URL.revokeObjectURL(localVideoUrl);
+    localVideoUrl = URL.createObjectURL(file);
+    if (video.removeAttribute) video.removeAttribute('data-video-id');
+    video.src = localVideoUrl;
+    if (assetEmpty) assetEmpty.hidden = true;
+    syncControls();
   }
 
   function setStatus(message, variant) {
@@ -124,8 +189,7 @@
     if (!waitingBar) return;
     waitingBar.hidden = !active;
     if (!active) return;
-    const ms = config && Number.isFinite(config.fallbackAfterMs) ? config.fallbackAfterMs : 1500;
-    waitingBar.style.setProperty('--wait-ms', ms + 'ms');
+    waitingBar.style.setProperty('--wait-ms', FALLBACK_AFTER_MS + 'ms');
   }
 
   function targetTime() {
@@ -197,10 +261,63 @@
    */
   function materialMessage() {
     if (presetResult && !videoMatches()) return '这段视频和准备结果不是同一份。';
-    if (presetResult && hasFrameSize() && !timeMatchesMaterial()) {
-      return '准备结果对应 ' + authoredTime() + ' 秒，当前画面对不上。';
-    }
+    if (presetResult && hasFrameSize() && !timeMatchesMaterial()) return seekStatus();
     return '';
+  }
+
+  /**
+   * 把秒数收成一位小数，避免二进制尾巴出现在句子里。
+   * @param {number} value
+   * @returns {string}
+   */
+  function formatSecond(value) {
+    return String(Math.round(value * 10) / 10);
+  }
+
+  /**
+   * 定位按钮实际会跳到的秒数。有效输入优先，否则用准备结果自己的时间。
+   * @returns {number}
+   */
+  function seekDestination() {
+    const typed = targetTime();
+    if (Number.isFinite(typed) && typed >= 0) return typed;
+    return authoredTime();
+  }
+
+  /**
+   * 两个秒数是否落在同一次时间容差里。
+   * @param {number} left
+   * @param {number} right
+   * @returns {boolean}
+   */
+  function sameSecond(left, right) {
+    return Number.isFinite(left) && Number.isFinite(right) && Math.abs(left - right) <= timeTolerance() + 1e-9;
+  }
+
+  /**
+   * 还没停在准备结果那一秒时，告诉用户下一步。
+   * 句子里的秒数必须和定位按钮会跳到的秒数一致。
+   * @returns {string}
+   */
+  function seekStatus() {
+    const authored = authoredTime();
+    const dest = seekDestination();
+    if (!Number.isFinite(authored)) return '请暂停在目标时间。';
+    if (!sameSecond(dest, authored)) {
+      if (timeMatchesMaterial()) {
+        return '目标时间已改成第 ' + formatSecond(dest) + ' 秒，准备结果只对应第 ' + formatSecond(authored) + ' 秒。';
+      }
+      return '准备结果对应第 ' + formatSecond(authored) + ' 秒。当前目标时间是第 ' + formatSecond(dest) + ' 秒。';
+    }
+    return '点定位，停在第 ' + formatSecond(authored) + ' 秒。';
+  }
+
+  /**
+   * 还没有画面时的下一步。
+   * @returns {string}
+   */
+  function pickStatus() {
+    return '先选择一个视频。文件留在这台浏览器里。';
   }
 
   /**
@@ -208,9 +325,49 @@
    * @returns {string}
    */
   function idleStatus() {
+    if (videoBroken) return '视频无法加载，未挂载交互层。';
+    if (mediaPending) return '正在读取所选视频。';
+    if (!hasFrameSize()) return pickStatus();
+    if (lessonBlocksWake()) return lessonWakeStatus();
     const mismatch = materialMessage();
     if (mismatch) return mismatch;
-    return atTarget() ? '已暂停在目标时间，可以再次破壁。' : '请暂停在目标时间。';
+    return atTarget() ? '现在点破壁。' : seekStatus();
+  }
+
+  /**
+   * 破壁被挡住时的说明。只有宽度、高度还是 0 时保持原来的暂停提示。
+   * @returns {string}
+   */
+  function wakeBlockedStatus() {
+    if (videoBroken) return '视频无法加载，未挂载交互层。';
+    if (mediaPending) return '正在读取所选视频。';
+    if (!hasFrameSize()) return video && video.videoWidth > 0 ? '请先暂停在目标时间。' : pickStatus();
+    return idleStatus();
+  }
+
+  /**
+   * 把下一步对应的按钮亮出来，并在第一次出曲线之前藏起目标时间输入框。
+   */
+  function markGuide() {
+    const state = sessionState();
+    const busy = Boolean(state && (state.status === 'waiting' || state.status === 'recoverable-error'));
+    const canSeek = hasFrameSize() && !videoBroken && !overlay && !busy && videoMatches() && !lessonBlocksWake();
+    if (jumpTarget && jumpTarget.classList) jumpTarget.classList.toggle('is-next', canSeek && !atTarget());
+    if (wakeButton && wakeButton.classList) {
+      wakeButton.classList.toggle('is-next', Boolean(canSeek && atTarget() && !wakeButton.disabled));
+    }
+    const field = $('#target-time-field');
+    const readout = $('#target-time-readout');
+    if (field) field.hidden = !curveShown;
+    if (readout) readout.hidden = curveShown;
+    const jumpTip = jumpTarget && jumpTarget.querySelector ? jumpTarget.querySelector('.lg-tip') : null;
+    const authored = authoredTime();
+    const dest = seekDestination();
+    if (jumpTarget && jumpTarget.setAttribute && Number.isFinite(dest)) {
+      jumpTarget.setAttribute('aria-label', '定位到第 ' + formatSecond(dest) + ' 秒');
+    }
+    if (jumpTip && Number.isFinite(dest)) jumpTip.textContent = '定位到第 ' + formatSecond(dest) + ' 秒';
+    if (readout && Number.isFinite(authored)) readout.textContent = '停在第 ' + formatSecond(authored) + ' 秒';
   }
 
   /**
@@ -218,6 +375,7 @@
    * @returns {boolean}
    */
   function hasFrameSize() {
+    if (mediaPending) return false;
     return Boolean(video && video.videoWidth > 0 && video.videoHeight > 0);
   }
 
@@ -249,9 +407,19 @@
     return Boolean(result) && result.source === 'vision' && result.evidence === 'packaged-sample';
   }
 
+  /**
+   * 交互里挂的是这次阅读存好的点。来源仍是 preset，只换显示文案。
+   * @param {object | null} result
+   * @returns {boolean}
+   */
+  function isLessonResult(result) {
+    return usingLessonCurve && Boolean(result) && result.source === 'preset' && result.fallback !== 'timeout';
+  }
+
   function sourceText(result) {
     if (!result) return '等待素材';
     if (isPackagedVision(result)) return '识别结果';
+    if (isLessonResult(result)) return '这次阅读';
     if (result.fallback === 'timeout') return '预先准备的示例 · 超时回退';
     return result.source === 'preset' ? '预先准备的示例' : '来源不可用';
   }
@@ -272,6 +440,10 @@
     // 识别样例的说明必须写明尚未接通外部识别；也不显示可信程度百分比。
     if (vision) {
       sourceNote.textContent = '随演示打包的识别样例，尚未接通外部识别。';
+      return;
+    }
+    if (isLessonResult(result)) {
+      sourceNote.textContent = '这一帧在阅读时已经算好。';
       return;
     }
     sourceNote.textContent = result
@@ -461,22 +633,16 @@
   }
 
   function removeOverlay({ pauseVideo = true } = {}) {
-    if (wakeHandle) wakeHandle.exit();
-    if (overlay) overlay.remove();
-    overlay = null;
+    pendingIdle = null;
     dragging = false;
     dragOrigin = null;
     placedRectKey = '';
+    if (overlay) overlay.remove();
+    overlay = null;
     window.__breakglassAlignment = null;
     if (pauseVideo && video && !video.paused) video.pause();
-    resetButton.disabled = true;
-    exitButton.disabled = true;
-    setSlidersEnabled(false);
-    hideWaitingControls();
-    setPrimaryAction('wake');
-    setSource(null);
-    setStatus(idleStatus());
-    wakeButton.disabled = !(atTarget() && Boolean(presetResult));
+    if (wakeHandle) wakeHandle.exit();
+    else paintPausedReady();
   }
 
   function createOverlay() {
@@ -549,29 +715,19 @@
       if (leftMaterial || (wasActive && playbackState.status === 'paused-ready')) {
         if (overlay) removeOverlay({ pauseVideo: false });
         else if (leftMaterial) wakeHandle.exit();
-        if (!overlay) {
-          hideWaitingControls();
-          resetButton.disabled = true;
-          exitButton.disabled = true;
-          setSlidersEnabled(false);
-          setPrimaryAction('wake');
-          setSource(null);
-          setStatus(idleStatus());
-        }
       }
     }
     const waiting = Boolean(sessionState() && sessionState().status === 'waiting');
     const ready = atTarget() && Boolean(presetResult);
-    wakeButton.disabled = waiting || !ready || Boolean(overlay);
+    wakeButton.disabled = waiting || !ready || Boolean(overlay) || lessonBlocksWake();
     const playLabel = video.paused ? '播放' : '暂停';
     playToggle.setAttribute('aria-label', playLabel + '视频');
     if (playTip) playTip.textContent = playLabel;
     timeLabel.textContent = `当前时间：${Number.isFinite(video.currentTime) ? video.currentTime.toFixed(1) : '—'}`;
     const state = sessionState();
     const idle = !state || state.status === 'paused-ready';
-    if (!videoBroken && idle && !overlay) {
-      const mismatch = materialMessage();
-      if (mismatch) setStatus(mismatch);
+    if (!videoBroken && idle && !overlay && (materialMessage() || !atTarget())) {
+      setStatus(idleStatus());
     }
     syncDisabledReasons();
   }
@@ -596,14 +752,17 @@
         const state = sessionState();
         if (state && state.status === 'waiting') reason = '正在等待外部结果，可以先取消或退出。';
         else if (overlay) reason = '交互层已经出现，不需要再次破壁。';
+        else if (lessonBlocksWake()) reason = lessonWakeStatus();
         else if (!video.paused) reason = '请先暂停视频。';
+        else if (!hasFrameSize()) reason = pickStatus();
         else if (materialMessage()) reason = materialMessage();
-        else if (!atTarget()) reason = '请把视频暂停在目标时间 ±0.2 秒内。';
+        else if (!atTarget()) reason = seekStatus();
         else if (!presetResult) reason = '当前没有可用的准备结果。';
         else reason = '当前还不能破壁。';
       }
       wakeReason.textContent = reason;
     }
+    markGuide();
     if (resetReason) {
       resetReason.textContent = resetButton.disabled ? '需要先出现可交互的曲线再重置。' : '';
     }
@@ -615,10 +774,38 @@
     syncDisabledReasons();
   }
 
+  /**
+   * 会话回到 paused-ready 时复位按钮、来源和等待条。取消文案只在这一处消费。
+   */
+  function paintPausedReady() {
+    visionStartedAt = null;
+    hideWaitingControls();
+    resetButton.disabled = true;
+    exitButton.disabled = true;
+    setSlidersEnabled(false);
+    setPrimaryAction('wake');
+    const note = pendingIdle;
+    pendingIdle = null;
+    if (note) {
+      setSource(null, note.note);
+      setStatus(note.status);
+    } else {
+      setSource(null);
+      setStatus(idleStatus());
+    }
+    lessonWakeStartedAt = null;
+    wakeButton.disabled = !(atTarget() && Boolean(presetResult)) || lessonBlocksWake();
+    markGuide();
+  }
+
   function renderState(state) {
     // 取消、退出、播放或离开目标时间：判定没有结算，不记账。
-    if (state.status === 'paused-ready') visionStartedAt = null;
+    if (state.status === 'paused-ready') {
+      paintPausedReady();
+      return;
+    }
     if (state.status === 'interactive') {
+      curveShown = true;
       const result = state.result;
       const timedOut = result && result.fallback === 'timeout';
       if (timedOut && latencies) latencies.mark('timeout-decided');
@@ -632,6 +819,7 @@
       }
       // 识别路径单独结算；预制路径（含超时回退）不写这组。
       if (!timedOut && isPackagedVision(result)) recordVisionDecision();
+      recordLessonWakeVisible();
       hideWaitingControls();
       resetButton.disabled = false;
       exitButton.disabled = false;
@@ -643,8 +831,8 @@
       }
       setSource(result);
       setStatus(timedOut
-        ? '已改用预先准备的示例（超时回退），可拖动控制点。'
-        : '交互已出现，可拖动控制点改变水平位置。');
+        ? '已改用预先准备的示例。拖画面上的点，或拖右边的滑块。'
+        : '拖画面上的点，或拖右边的滑块。按 Esc 退出。');
       syncControls();
       return;
     }
@@ -685,16 +873,21 @@
   }
 
   function wake() {
+    if (lessonBlocksWake()) {
+      setStatus(lessonWakeStatus());
+      return;
+    }
     if (!wakeHandle || !presetResult || !atTarget()) {
-      setStatus(materialMessage() || '请先暂停在目标时间。');
+      setStatus(wakeBlockedStatus());
       return;
     }
     const state = sessionState();
     if (overlay || (state && (state.status === 'interactive' || state.status === 'waiting'))) return;
     const frameSize = { width: video.videoWidth, height: video.videoHeight };
-    // 只有识别路径需要判定耗时；起点取自页面自己的时钟。
-    const visionPath = Boolean(config) && config.visionAdapter === 'fixture' && config.externalAttempt === 'off';
+    // 只有识别路径需要判定耗时；起点取自页面自己的时钟。阅读点改走自己的那一组。
+    const visionPath = !usingLessonCurve && Boolean(config) && config.visionAdapter === 'fixture' && config.externalAttempt === 'off';
     visionStartedAt = visionPath && localClock ? localClock.now() : null;
+    lessonWakeStartedAt = usingLessonCurve && localClock ? localClock.now() : null;
     const started = wakeHandle.start({
       paused: true,
       currentTime: video.currentTime,
@@ -705,12 +898,506 @@
 
   function cancelWaiting() {
     if (!wakeHandle || !sessionState() || sessionState().status !== 'waiting') return;
+    pendingIdle = {
+      note: '已取消等待，迟到结果不会再打开交互层。',
+      status: atTarget() ? '已取消等待，可以再次破壁。' : (materialMessage() || seekStatus())
+    };
     wakeHandle.cancel();
-    hideWaitingControls();
-    setSource(null, '已取消等待，迟到结果不会再打开交互层。');
-    setStatus(atTarget() ? '已取消等待，可以再次破壁。' : (materialMessage() || '请暂停在目标时间。'));
-    wakeButton.disabled = !(atTarget() && Boolean(presetResult));
   }
+
+  /**
+   * 换一条曲线：先拆掉旧的唤醒，再用这条曲线新建会话和 createWake。
+   * 阅读点不走外部等待和识别样例，点击只取出已经存好的结果。
+   * @param {object} result 已通过校验的准备结果
+   * @param {boolean} fromLesson 是否是这次阅读的点
+   */
+  function mountWake(result, fromLesson) {
+    if (wakeHandle) wakeHandle.dispose();
+    presetResult = result;
+    usingLessonCurve = Boolean(fromLesson);
+    targetInput.value = String(fromLesson ? result.time : PACKAGED_DEMO_TARGET_SECONDS);
+    const live = fromLesson ? { ...config, externalAttempt: 'off', visionAdapter: 'off' } : config;
+    controller = new sessionApi.SessionController({
+      videoId: result.videoId,
+      targetTime: targetTime(),
+      frameSize: result.frameSize,
+      externalAttempt: live.externalAttempt
+    });
+    syncSessionTarget();
+    wakeHandle = wakeApi.createWake({
+      session: controller,
+      config: live,
+      preset: result,
+      clock: localClock,
+      onChange: (state) => applyState(state)
+    });
+    wakeMounts += 1;
+    window.__breakglassWakeMounts = wakeMounts;
+  }
+
+  /**
+   * 预先准备的 9 秒片不进入阅读。
+   * @param {unknown} src
+   * @returns {boolean}
+   */
+  function isPreparedSource(src) {
+    return String(src || '').indexOf('breakglass-demo-9s.mp4') >= 0;
+  }
+
+  /**
+   * 阅读中、定位中，或这支片子还没有可用的点时，不许破壁。
+   * 这样不会把 demo-parabola 画到别人的片子上。
+   * @returns {boolean}
+   */
+  function lessonBlocksWake() {
+    if (!lesson) return false;
+    return lesson.seeking || !usingLessonCurve;
+  }
+
+  /**
+   * @returns {string}
+   */
+  function lessonWakeStatus() {
+    if (!lesson) return '';
+    if (lesson.seeking) return '正在定位，停稳后才能破壁。';
+    if (lesson.phase === 'reading') return '正在读，第一处读好后会停在那一帧。';
+    return '这次阅读没有可用的点，不能破壁。';
+  }
+
+  /**
+   * 状态和「下一个」按钮只由这里写。note 是这一下要补充的一句。
+   * @param {string} [note]
+   */
+  function renderLesson(note) {
+    if (!lesson) {
+      if (lessonNext) lessonNext.disabled = true;
+      if (lessonCancel) lessonCancel.hidden = true;
+      return;
+    }
+    const count = lesson.points.length;
+    const parts = [];
+    if (lesson.cancelled) parts.push('已取消阅读。');
+    if (lesson.phase === 'reading') {
+      parts.push(count > 0 ? '正在读，已存好 ' + count + ' 处。' : '正在读这段视频。');
+      if (lesson.courseNote) parts.push(lesson.courseNote);
+    } else if (!lesson.cancelled) {
+      parts.push('读完了，共 ' + count + ' 处。');
+    }
+    if (note) parts.push(note);
+    const later = lesson.shown ? lessonApi.nextPoint(lesson.points, lesson.shown.time) : null;
+    const none = lesson.phase === 'ready' && !later;
+    if (none && lesson.shown) parts.push('没有下一处。');
+    if (lessonNext) lessonNext.disabled = !lesson.shown || lesson.seeking || none;
+    if (lessonCancel) {
+      lessonCancel.hidden = lesson.phase !== 'reading';
+      lessonCancel.disabled = lesson.phase !== 'reading';
+    }
+    if (lessonStatus) lessonStatus.textContent = parts.join(' ');
+  }
+
+  /**
+   * 停掉计时、请求和隐藏采样。已经存下的点不动。
+   */
+  function stopLessonWork() {
+    if (lesson && lesson.timer != null && localClock) {
+      localClock.clear(lesson.timer);
+      lesson.timer = null;
+    }
+    if (lessonAskHandle) {
+      lessonAskHandle.cancel();
+      lessonAskHandle = null;
+    }
+    if (lessonProbe) {
+      const probe = lessonProbe;
+      lessonProbe = null;
+      probe.finish();
+    }
+  }
+
+  /**
+   * 换片子时丢掉上一支片子的阅读。挂着的阅读曲线换回 demo-parabola。
+   */
+  function resetLesson() {
+    stopLessonWork();
+    lesson = null;
+    lessonFallbackReason = '';
+    if (lessonStatus) lessonStatus.textContent = '';
+    if (usingLessonCurve && packagedPreset) {
+      if (overlay) removeOverlay({ pauseVideo: false });
+      mountWake(packagedPreset, false);
+    }
+    renderLesson();
+  }
+
+  /**
+   * 片子有时长、且不是 9 秒片时开始阅读。空白地址直接退回。
+   */
+  function maybeStartLesson() {
+    if (!lessonApi || !localClock || !packagedPreset || !video) return;
+    const src = String(video.src || '');
+    if (!src || isPreparedSource(src)) return;
+    const duration = Number(video.duration);
+    if (!Number.isFinite(duration) || duration <= 0) return;
+    if (lesson && lesson.src === src) return;
+    resetLesson();
+    lessonSerial += 1;
+    const course = askApi ? askApi.prepareCourse(lessonNote ? lessonNote.value : '') : { message: '' };
+    lesson = {
+      src,
+      readingId: 'reading-' + lessonSerial,
+      videoId: 'local-binding-' + lessonSerial,
+      duration,
+      phase: 'reading',
+      cancelled: false,
+      courseNote: course.message,
+      points: [],
+      dropped: [],
+      first: null,
+      shown: null,
+      seeking: false,
+      startedAt: localClock.now(),
+      timer: null,
+      pendingJump: null,
+      jumps: []
+    };
+    if (video.removeAttribute) video.removeAttribute('data-video-id');
+    renderLesson();
+    setStatus(idleStatus());
+    syncControls();
+    const url = lessonEndpoint ? String(lessonEndpoint.value || '').trim() : '';
+    if (!url || !askApi) {
+      fallbackToPrepared('empty');
+      return;
+    }
+    const owner = lesson;
+    owner.timer = localClock.schedule(askApi.DEADLINE_MS, () => {
+      if (lesson !== owner) return;
+      owner.timer = null;
+      if (owner.points.length === 0) fallbackToPrepared('timeout');
+      else finishLesson();
+    });
+    captureFrames(lessonApi.sampleTimes(duration)).then((frames) => {
+      if (lesson !== owner || owner.phase !== 'reading') return;
+      if (frames.length === 0) {
+        lessonFailed(owner, 'unavailable');
+        return;
+      }
+      lessonAskHandle = askApi.startLessonAsk({
+        url,
+        body: askApi.requestBody({
+          readingId: owner.readingId,
+          videoId: owner.videoId,
+          duration: owner.duration,
+          courseText: lessonNote ? lessonNote.value : '',
+          frames
+        }),
+        fetchImpl: (address, init) => fetch(address, init),
+        clock: localClock,
+        onSuccess: (payload) => {
+          if (lesson !== owner || owner.phase !== 'reading') return;
+          lessonAskHandle = null;
+          (Array.isArray(payload.points) ? payload.points : []).forEach((point) => offerLessonPoint(point));
+          if (lesson !== owner) return;
+          if (owner.points.length === 0) fallbackToPrepared('unavailable');
+          else finishLesson();
+        },
+        onFailure: (code) => lessonFailed(owner, code)
+      });
+    });
+  }
+
+  /**
+   * 在隐藏视频上按采样时刻截图。舞台上的片子不跟着动。
+   * 测试可以预先放一个 window.__breakglassLessonFrames(times) 直接给出画面。
+   * @param {number[]} times 秒
+   * @returns {Promise<{ time: number, image: string }[]>}
+   */
+  function captureFrames(times) {
+    const hook = window.__breakglassLessonFrames;
+    if (typeof hook === 'function') {
+      return Promise.resolve()
+        .then(() => hook(times.slice()))
+        .then((frames) => (Array.isArray(frames) ? frames : []))
+        .catch(() => []);
+    }
+    if (!lesson || times.length === 0 || typeof document.createElement !== 'function') return Promise.resolve([]);
+    const src = lesson.src;
+    return new Promise((resolve) => {
+      const probe = document.createElement('video');
+      const canvas = document.createElement('canvas');
+      const frames = [];
+      let index = 0;
+      let done = false;
+      const handle = { finish };
+      lessonProbe = handle;
+      function finish() {
+        if (done) return;
+        done = true;
+        if (lessonProbe === handle) lessonProbe = null;
+        if (probe.removeAttribute) probe.removeAttribute('src');
+        if (typeof probe.load === 'function') probe.load();
+        resolve(frames);
+      }
+      function step() {
+        if (lessonProbe !== handle || index >= times.length) {
+          finish();
+          return;
+        }
+        probe.currentTime = times[index];
+      }
+      probe.addEventListener('seeked', () => {
+        if (done) return;
+        const image = snapshotFrame(probe, canvas);
+        if (image) frames.push({ time: times[index], image });
+        index += 1;
+        step();
+      });
+      probe.addEventListener('loadeddata', function onLoaded() {
+        probe.removeEventListener('loadeddata', onLoaded);
+        step();
+      });
+      probe.addEventListener('error', finish);
+      probe.muted = true;
+      probe.preload = 'auto';
+      probe.src = src;
+    });
+  }
+
+  /**
+   * 把隐藏视频当前帧缩到宽 640 以内，转成 JPEG。画不出来时返回空串。
+   * @param {HTMLVideoElement} probe
+   * @param {HTMLCanvasElement} canvas
+   * @returns {string}
+   */
+  function snapshotFrame(probe, canvas) {
+    const width = probe.videoWidth;
+    const height = probe.videoHeight;
+    if (!(width > 0 && height > 0) || !canvas || typeof canvas.getContext !== 'function') return '';
+    const scale = Math.min(1, 640 / width);
+    canvas.width = Math.max(1, Math.round(width * scale));
+    canvas.height = Math.max(1, Math.round(height * scale));
+    const context = canvas.getContext('2d');
+    if (!context) return '';
+    try {
+      context.drawImage(probe, 0, 0, canvas.width, canvas.height);
+      return canvas.toDataURL('image/jpeg', 0.72);
+    } catch {
+      return '';
+    }
+  }
+
+  /**
+   * 收下一处结果。已经存好的点不会因为后来的点被挤掉；
+   * 和已存点冲突的新点直接丢掉。第一处通过后定位过去，之后到的点只入库。
+   * @param {object} candidate
+   * @returns {{ ok: boolean, reason?: string }}
+   */
+  function offerLessonPoint(candidate) {
+    if (!lesson || lesson.phase !== 'reading' || !lessonApi) return { ok: false, reason: '不是这一段视频' };
+    let point = null;
+    try {
+      point = JSON.parse(JSON.stringify(candidate));
+    } catch {
+      point = null;
+    }
+    const verdict = lessonApi.validateLessonReading({
+      readingId: lesson.readingId,
+      videoId: lesson.videoId,
+      origin: 'external',
+      duration: lesson.duration,
+      points: lesson.points.concat([point])
+    }, { width: video.videoWidth, height: video.videoHeight });
+    const kept = new Set(verdict.points.map((item) => item.id));
+    const storedStay = lesson.points.every((item) => kept.has(item.id));
+    const accepted = Boolean(point) && verdict.points.indexOf(point) >= 0 && storedStay;
+    if (!accepted) {
+      const reason = verdict.dropped.length > 0 ? verdict.dropped[0].reason : '抛物线没有通过检查';
+      lesson.dropped.push({ id: point && typeof point.id === 'string' ? point.id : '', reason });
+      renderLesson('丢掉一处：' + reason + '。');
+      return { ok: false, reason };
+    }
+    lesson.points = verdict.points;
+    if (!lesson.first) {
+      lesson.first = point;
+      if (latencies) latencies.record('lesson-first-point', localClock.now() - lesson.startedAt, 'hot');
+      seekLessonPoint(point, null);
+      return { ok: true };
+    }
+    renderLesson();
+    return { ok: true };
+  }
+
+  /**
+   * 先拿走当前曲线，再暂停并定位。落定之前破壁保持禁用。
+   * @param {object} point
+   * @param {{ before: number, after: number | null, wakeDisabled: boolean } | null} jump
+   */
+  function seekLessonPoint(point, jump) {
+    lesson.seeking = true;
+    lesson.shown = point;
+    lesson.pendingJump = jump;
+    lessonWakeStartedAt = null;
+    if (overlay) removeOverlay({ pauseVideo: false });
+    else if (wakeHandle && sessionState() && sessionState().status !== 'paused-ready') wakeHandle.exit();
+    wakeButton.disabled = true;
+    syncDisabledReasons();
+    setStatus(lessonWakeStatus());
+    renderLesson();
+    if (jump) jump.wakeDisabled = wakeButton.disabled;
+    video.pause();
+    video.currentTime = point.time;
+    if (!video.seeking) settleLessonSeek();
+  }
+
+  /**
+   * 已暂停且离这一处不超过 0.2 秒才算停稳。停稳后才换上这一处的曲线。
+   */
+  function settleLessonSeek() {
+    if (!lesson || !lesson.seeking || !lesson.shown) return;
+    const point = lesson.shown;
+    if (!video.paused || Math.abs(video.currentTime - point.time) > 0.2 + 1e-9) return;
+    lesson.seeking = false;
+    mountWake(point.curve, true);
+    if (lesson.pendingJump) {
+      lesson.pendingJump.after = video.currentTime;
+      lesson.jumps.push(lesson.pendingJump);
+      lesson.pendingJump = null;
+    }
+    renderLesson();
+    setSource(null);
+    setStatus(idleStatus());
+    syncControls();
+  }
+
+  /**
+   * 「下一个」：有更晚的已存点就过去；还在读就留在原地；读完了就说没有下一处。
+   */
+  function lessonGoNext() {
+    if (!lesson || !lesson.shown || lesson.seeking || (lessonNext && lessonNext.disabled)) return;
+    const later = lessonApi.nextPoint(lesson.points, lesson.shown.time);
+    if (later) {
+      seekLessonPoint(later, { before: video.currentTime, after: null, wakeDisabled: false });
+      return;
+    }
+    if (lesson.phase === 'reading') {
+      renderLesson('下一处还在读。');
+      return;
+    }
+    renderLesson();
+  }
+
+  /**
+   * 读完：停掉采样和请求，保留已存的点。
+   * @param {string} [note]
+   */
+  function finishLesson(note) {
+    if (!lesson) return;
+    stopLessonWork();
+    lesson.phase = 'ready';
+    renderLesson(note);
+    syncControls();
+  }
+
+  /**
+   * 请求失败。已有存点就只结束阅读；一处都没有才退回。
+   * @param {object} owner 发起请求时的那次阅读
+   * @param {string} code
+   */
+  function lessonFailed(owner, code) {
+    if (lesson !== owner || owner.phase !== 'reading') return;
+    lessonAskHandle = null;
+    if (owner.points.length > 0) {
+      finishLesson('外部阅读没有返回可用结果。');
+      return;
+    }
+    fallbackToPrepared(code);
+  }
+
+  /**
+   * 取消：停掉还没完成的采样和请求。已经存下的点留着，不退回。
+   */
+  function cancelLesson() {
+    if (!lesson || lesson.phase !== 'reading') return;
+    lesson.cancelled = true;
+    finishLesson();
+    setStatus(idleStatus());
+  }
+
+  /**
+   * 读不出来就回到预先准备的 9 秒片，清空这支片子的点，挂回 demo-parabola。
+   * @param {string} code empty / timeout / unavailable
+   */
+  function fallbackToPrepared(code) {
+    const reason = code === 'timeout' ? '这次没读完。' : '外部阅读没有返回可用结果。';
+    stopLessonWork();
+    lesson = null;
+    if (overlay) removeOverlay({ pauseVideo: false });
+    if (localVideoUrl) {
+      URL.revokeObjectURL(localVideoUrl);
+      localVideoUrl = '';
+    }
+    mediaPending = true;
+    videoBroken = false;
+    if (video.setAttribute && packagedPreset) video.setAttribute('data-video-id', packagedPreset.videoId);
+    video.src = PACKAGED_VIDEO_URL;
+    if (packagedPreset) mountWake(packagedPreset, false);
+    renderLesson();
+    lessonFallbackReason = reason;
+    if (lessonStatus) lessonStatus.textContent = reason + '已回到预先准备的片子。';
+    setSource(null);
+    setStatus(reason + '已回到预先准备的片子。');
+    syncControls();
+  }
+
+  /**
+   * 阅读点破壁到覆盖层出现，只在点已经存好并落定时记。
+   */
+  function recordLessonWakeVisible() {
+    if (lessonWakeStartedAt === null || !latencies || !overlay || !usingLessonCurve) return;
+    const elapsed = localClock.now() - lessonWakeStartedAt;
+    lessonWakeStartedAt = null;
+    if (Number.isFinite(elapsed) && elapsed >= 0) latencies.record('lesson-wake-visible', elapsed, 'hot');
+  }
+
+  /**
+   * 验收只看记下来的数。破壁出现至少 20 次且 P95 ≤ 100，
+   * 并且对齐真的测过、偏差不超过 2%，才算过。
+   * @returns {{ passed: boolean, wakeVisible: { count: number, p95: number | null }, firstPoint: { count: number, max: number | null }, measured: boolean, maxRatio: number | null, jumps: number }}
+   */
+  function lessonAcceptance() {
+    const summary = latencies ? latencies.summary() : {};
+    const wakeSummary = summary['lesson-wake-visible'];
+    const firstSummary = summary['lesson-first-point'];
+    const reading = window.__breakglassAlignment;
+    const measured = Boolean(reading) && reading.measured === true;
+    const maxRatio = reading && Number.isFinite(reading.maxRatio) ? reading.maxRatio : null;
+    const count = wakeSummary ? wakeSummary.count : 0;
+    const p95 = wakeSummary ? wakeSummary.p95 : null;
+    return {
+      passed: count >= 20 && p95 !== null && p95 <= 100 && measured && maxRatio !== null && maxRatio <= 0.02,
+      wakeVisible: { count, p95 },
+      firstPoint: { count: firstSummary ? firstSummary.count : 0, max: firstSummary ? firstSummary.max : null },
+      measured,
+      maxRatio,
+      jumps: lesson ? lesson.jumps.length : 0
+    };
+  }
+
+  window.__breakglassLesson = {
+    offer: (point) => offerLessonPoint(point),
+    finish: () => {
+      if (!lesson || lesson.phase !== 'reading') return;
+      if (lesson.points.length > 0) finishLesson();
+      else fallbackToPrepared('unavailable');
+    },
+    binding: () => (lesson
+      ? { readingId: lesson.readingId, videoId: lesson.videoId, duration: lesson.duration, phase: lesson.phase }
+      : null),
+    points: () => (lesson ? lesson.points.map((item) => ({ id: item.id, time: item.time })) : []),
+    dropped: () => (lesson ? lesson.dropped.map((item) => ({ ...item })) : []),
+    jumps: () => (lesson ? lesson.jumps.map((item) => ({ ...item })) : []),
+    acceptance: lessonAcceptance
+  };
 
   async function boot() {
     const packagedPromise = attachPackagedVideo();
@@ -718,24 +1405,10 @@
       const loaded = await preset.loadPreset();
       if (!loaded.ok) throw new Error(loaded.message);
       config = loaded.config;
-      presetResult = loaded.result;
-      targetInput.value = String(PACKAGED_DEMO_TARGET_SECONDS);
-      controller = new sessionApi.SessionController({
-        videoId: presetResult.videoId,
-        targetTime: targetTime(),
-        frameSize: presetResult.frameSize,
-        externalAttempt: config.externalAttempt
-      });
-      syncSessionTarget();
+      packagedPreset = loaded.result;
       localClock = createClock();
       latencies = latencyApi.createLatencyLog({ clock: localClock });
-      wakeHandle = wakeApi.createWake({
-        session: controller,
-        config,
-        preset: presetResult,
-        clock: localClock,
-        onChange: (state) => applyState(state)
-      });
+      mountWake(packagedPreset, false);
       window.__breakglassLatency = {
         summary: () => latencies.summary(),
         snapshot: () => latencies.snapshot()
@@ -744,10 +1417,11 @@
       watchVideoSize();
       runtimeNote.textContent = `配置：${config.externalAttempt} · 本地预制已预热 · 回退 ${config.fallbackAfterMs}ms`;
       const packaged = await packagedPromise;
-      if (!packaged && !video.error) {
-        setStatus('正式视频素材尚未提供，加载视频后可验证交互。');
+      if (!packaged && !video.error && !localVideoUrl) {
+        setStatus(pickStatus());
       }
       setSource(null);
+      maybeStartLesson();
     } catch (error) {
       runtimeNote.textContent = '配置加载失败';
       setStatus(error.message || '配置加载失败。');
@@ -757,34 +1431,49 @@
 
   video.addEventListener('resize', syncControls);
   video.addEventListener('loadedmetadata', () => {
+    mediaPending = false;
     videoBroken = false;
     assetEmpty.hidden = true;
     if (!overlay) setStatus(idleStatus());
     syncControls();
+    maybeStartLesson();
+  });
+  // 只有阅读点的定位在等这一下。其它跳转照旧由 timeupdate / pause 同步。
+  video.addEventListener('seeked', () => {
+    if (lesson && lesson.seeking) settleLessonSeek();
   });
   video.addEventListener('timeupdate', syncControls);
   video.addEventListener('play', syncControls);
   video.addEventListener('pause', syncControls);
   video.addEventListener('ended', syncControls);
   video.addEventListener('error', () => {
+    if (lessonFallbackReason && isPreparedSource(video.src) && lessonStatus) {
+      lessonStatus.textContent = lessonFallbackReason + '预先准备的片子没有加载出来。';
+    }
+    mediaPending = false;
     videoBroken = true;
     assetEmpty.hidden = false;
     removeOverlay();
     setStatus('视频无法加载，未挂载交互层。', 'error');
   });
+  const localVideoInput = $('#local-video');
+  if (localVideoInput) {
+    localVideoInput.addEventListener('change', () => {
+      const file = localVideoInput.files && localVideoInput.files[0];
+      if (file) useLocalVideo(file);
+    });
+  }
   window.addEventListener('resize', drawCurve);
   document.addEventListener('fullscreenchange', drawCurve);
   window.addEventListener('orientationchange', drawCurve);
   window.addEventListener('pagehide', () => {
-    dragging = false;
-    dragOrigin = null;
-    if (overlay) {
-      overlay.remove();
-      overlay = null;
+    stopLessonWork();
+    removeOverlay({ pauseVideo: false });
+    if (localVideoUrl) {
+      URL.revokeObjectURL(localVideoUrl);
+      localVideoUrl = '';
     }
-    if (wakeHandle) wakeHandle.dispose();
     releaseWatch();
-    window.__breakglassAlignment = null;
   });
   document.addEventListener('keydown', (event) => {
     if (event.altKey && event.key.toLowerCase() === 'b') {
@@ -807,7 +1496,7 @@
   });
   jumpTarget.addEventListener('click', () => {
     if (!video.videoWidth) {
-      setStatus('正式视频素材尚未提供，暂时无法定位。');
+      setStatus(pickStatus());
       return;
     }
     const next = targetTime();
@@ -824,6 +1513,8 @@
     syncControls();
   });
   wakeButton.addEventListener('click', wake);
+  if (lessonNext) lessonNext.addEventListener('click', lessonGoNext);
+  if (lessonCancel) lessonCancel.addEventListener('click', cancelLesson);
   cancelButton.addEventListener('click', cancelWaiting);
   retryButton.addEventListener('click', wake);
   resetButton.addEventListener('click', () => {
