@@ -1,40 +1,52 @@
-# BreakGlass 介绍页（site/）
+# BreakGlass 介绍站（site/）
 
-## 这是什么
+**六个页面**：第 1 页是留空的封面，第 2–6 页是五个纯文字板块。
 
-用项目自身的视觉语言（暗色 + `#71ddff` + 液态玻璃）做的**单页项目介绍**：零依赖、零构建、零第三方请求，和产品同源。
+| 页 | 文件 | 内容 |
+| --- | --- | --- |
+| 01 | `index.html` | **留空封面**：只有背景，无文字无导航 |
+| 02 | `modules/education.html` | 当下教育方式：视频成了主要载体，但画面里的图形是死的 |
+| 03 | `modules/intent.html` | 项目初衷：不打断观看、就在原位、只做一件小事、零侵入、诚实标注 |
+| 04 | `modules/change.html` | 改变了什么：讲解流程、操作手感、学习方式的变化 |
+| 05 | `modules/abilities.html` | 能做什么：八件当场能做出来的事 |
+| 06 | `modules/demo.html` | 现场演示：内嵌真实演示页 + 四步上手 |
 
-## 文件
+## 交互
 
-| 文件 | 作用 |
-| --- | --- |
-| `index.html` | 单页内容：Hero / 问题 / 现场演示 / 功能三栏 / 技术数字 / 三步启动 / 边界 |
-| `site.css` | 样式：沿用 `extension/demo/demo.css` 的令牌与玻璃材质 |
-| `site.js` | 交互：顶栏滚动状态、滚动入场、内嵌演示的降级提示 |
-| `../extension/demo/index.html` | **内嵌的真实演示页**（`<iframe src>`），不是复刻 |
+- **滚轮逐页推进**：页内先逐段滚动，走到本页最后一段再滚就翻到下一页；向上滚到头回到上一页。
+- **翻页弹性渐显**：翻到新的一段时，标题与正文用 Web Animations API 做弹性入场（栅格里的子元素依次错峰）。
+- **封面留空**：第 1 页只有背景，滚一下即进入第 2 页；也可用 ↑/↓、PageUp/PageDown、空格。
+- 底部支持 `Esc` 回到封面。
+
+## 背景：three.js 渲染的 ASCII 涟漪
+
+- 实现：`background-gl.js` + `asSimi` shader —— 片元里算「单元 → 强度 → 字形」，字形取自运行时生成的图集纹理；涟漪与环境场全在 GPU 计算。
+- 指针移动/按下会从指针位置扩散环形波；静止时保留一层缓慢流动的字符底纹。
+- three.js **本地内置**在 `vendor/`（`three.module.min.js` + `three.core.min.js`，MIT），**不引 CDN**，全站不发起第三方请求。
+- 降级：没有 WebGL 或模块加载失败时，`site.js` 会退回 `ascii-ripple.js`（canvas 2D 版，同一套视觉参数）。
+- 文章页把画布压到 `opacity: 0.32` 当纹理，封面保持原强度。
+- 尊重 `prefers-reduced-motion`：只渲染静态一帧，不做动画。
+
+## 关于 `npx shadcn@latest add ascii-ripple-tw`
+
+这条命令在当前环境无法执行，原因有两条，都已核实：
+
+1. 本机没有 npm / npx（只有 Node 运行时），shadcn CLI 起不来。
+2. `ascii-ripple` 属于 **ReactBits Pro** 组件：公开仓库里只有预览图（`public/assets/pro/components/ascii-ripple.webp`），`public/r/` 下没有它的 registry 条目，registry 需要 Pro 授权。免费侧只有 `RippleGrid`、`LetterGlitch`、`DotGrid`、`RippleDistortion`。
+
+因此这里的涟漪是按同一视觉效果、用本站技术栈（three.js + shader）自行实现的。若拿到 Pro 授权并要求使用官方 React 版本，需要另建 React + Tailwind 工程，与本站「零依赖、零构建」的约定冲突。
 
 ## 本地预览
 
-必须用 http(s) 打开（演示页的 `fetch` 读包内 JSON 在 `file://` 下会被浏览器拦）：
+必须用 http(s) 打开（ES module 与 `fetch` 在 `file://` 下会被拦）：
 
 ```bash
-# 在仓库根目录起一个静态服务器，任选其一
-python -m http.server 8899
-npx --yes serve -l 8899 .
-# 然后打开 http://127.0.0.1:8899/site/
+python -m http.server 8899     # 或 npx --yes serve -l 8899 .
+# 打开 http://127.0.0.1:8899/site/
 ```
 
-## 部署
+## 内容口径
 
-静态托管整仓（GitHub Pages / Netlify / Cloudflare Pages 均可），站点入口是 `/site/`；
-演示页会从 `/extension/demo/` 直接加载 —— **不复制代码，单一事实来源**。
-
-如果托管平台只能发布 `site/` 目录，需要把 `extension/` 一并发布（放到 `site/extension/`），
-并把 `index.html` 里两处 `../extension/` 改成 `./extension/`。
-
-## 内容口径（必须遵守）
-
-- 演示区常驻来源标注：曲线来自**扩展包内预先准备的样例**，不是实时识别。
-- 识别适配只写「已实现但**仅打包样例**」，不得暗示外部识别已接通。
-- 手工验收（T017/T030/T038）与 ≤100ms 实测**未执行**，页面上如实写作「还没验」。
-- 不引第三方统计脚本（与「零网络请求」冲突）；要统计请自托管并在页脚声明。
+- 演示区的曲线来自扩展包内**预先准备的样例**，页面一直标注来源，不写成识别结果。
+- 识别适配标注为「默认关闭」，不暗示外部识别已接通。
+- 手工验收与 ≤100ms 实测尚未执行，页面上如实写作「仍在进行中」。

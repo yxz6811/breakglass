@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>八件当场就能做出来的事 · BreakGlass 破壁</title>
+    <meta name="description" content="下面这些不是设想，是演示页里现在就能操作出来的效果。">
+    <meta name="theme-color" content="#05060a">
+    <link rel="stylesheet" href="../site.css">
+    <script defer src="../ascii-ripple.js"></script>
+    <script type="module" src="../background.js"></script>
+    <script defer src="../site.js"></script>
+  </head>
+  <body class="article-body" data-page="5" data-next-page="./demo.html" data-prev-page="./change.html">
+    <a class="skip-link" href="#main">跳到正文</a>
+    <canvas class="bg-canvas" data-ascii-ripple aria-hidden="true"></canvas>
+    <header class="topbar" data-topbar>
+      <nav class="glass-nav" aria-label="页面导航">
+        <a class="glass-nav__brand" href="../index.html"><span class="mark" aria-hidden="true"></span><span>BreakGlass</span></a>
+        <span class="glass-nav__sep" role="separator" aria-orientation="vertical"></span>
+        <ul class="glass-nav__links">
+          <li><a href="./education.html">当下教育方式</a></li>
+          <li><a href="./intent.html">项目初衷</a></li>
+          <li><a href="./change.html">改变了什么</a></li>
+          <li><a href="./abilities.html">能做什么</a></li>
+          <li><a href="./demo.html">演示</a></li>
+        </ul>
+        <a class="glass-nav__cta" href="../../extension/demo/index.html" target="_blank" rel="noopener">打开演示</a>
+      </nav>
+    </header>
+
+    <main id="main" class="article" data-pager>
+      <section class="mp-section" data-page-section>
+        <p class="crumb"><a href="../index.html">← 回到封面</a><span class="crumb__sep">·</span><span>第 05 页 / 共 6 页</span></p>
+        <p class="article__kicker">能做什么</p>
+        <h1 class="article__title">八件当场就能做出来的事</h1>
+        <p class="article__lead">下面这些不是设想，是演示页里现在就能操作出来的效果。</p>
+      </section>
+
+      <section class="mp-section" data-page-section>
+        <div class="prose">
+        <h2>把曲线画在画面里的正确位置</h2>
+        <p>视频的宽高比与窗口往往不一致，会出现黑边或上下留白。曲线要贴着画面里原本的坐标系落下，而不是贴在窗口边缘 —— 内容区域会先被算出来，再用来定位。</p>
+        <h2>用手指拖，也可以用滑块拉</h2>
+        <p>曲线上的控制点可以拖着走；旁边有开口、水平位置、顶点高度三个滑块，拖哪一个都会实时重画。</p>
+        <h2>三者永远同步</h2>
+        <p>曲线形状、顶点位置、数字读数同时变化，不会出现数值变了图没变的情况。</p>
+        <h2>拖出范围也不跑飞</h2>
+        <p>开口只在合理区间内变化，水平位置与顶点高度也被限制在固定范围内；越界会自动刹住，画面不会被拖乱。</p>
+        <h2>一键回到最初</h2>
+        <p>点重置，三个参数回到这一帧的初值，交互层保留，可以接着试别的讲法。</p>
+        <h2>说退就退</h2>
+        <p>按 Esc 或点退出，曲线与控制点立刻消失，视频保持暂停在原处，播放进度不受影响。</p>
+        <h2>等待最多 1.5 秒</h2>
+        <p>需要等待外部结果时，先给出等待提示与取消入口；超过 1.5 秒没有结果就自动改用准备好的结果，并说明这是超时回退以及原因。</p>
+        <h2>不合格的结果进不来</h2>
+        <p>拿到的结果要过校验：公式必须在允许范围内、数值必须是有限数、形状必须和当前画面与时间对得上。任何一项不通过就不绘制，并给出重试或退出。</p>
+        <blockquote><p>顺带还做了：键盘可以走完全程且焦点可见、按钮不可用时说明原因、出错时立即播报给读屏软件。</p></blockquote>
+        </div>
+      </section>
+
+
+      <section class="mp-section" data-page-section>
+        <nav class="module-nav" aria-label="翻页">
+          <a href="./change.html">← 上一页</a>
+          <a href="./demo.html">下一页 →</a>
+          <a href="../index.html">回到封面</a>
+        </nav>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <div class="footer__inner">
+        <div>
+          <p class="footer__title">BreakGlass 破壁</p>
+          <p class="footer__note">当前版本使用扩展包内预先准备的结果；识别适配默认关闭，浏览器手工验收仍在进行中。</p>
+        </div>
+        <nav class="footer__links" aria-label="相关文档">
+          <a href="../../README.md">README</a>
+          <a href="../../docs/BreakGlass-ui-inventory.md">功能与参数清单</a>
+          <a href="../../specs/001-insitu-parabola/spec.md">功能规格</a>
+        </nav>
+      </div>
+      <p class="footer__legal">背景为 three.js 渲染的 ASCII 涟漪（本地内置，零第三方请求）。</p>
+    </footer>
+  </body>
+</html>

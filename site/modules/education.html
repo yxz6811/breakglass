@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>课被录成了视频，但视频只能看 · BreakGlass 破壁</title>
+    <meta name="description" content="过去十年，课程从黑板搬进了视频：可回放、可跨班复用、可倍速。但画面里的一切都只是像素 —— 看得见，动不了。">
+    <meta name="theme-color" content="#05060a">
+    <link rel="stylesheet" href="../site.css">
+    <script defer src="../ascii-ripple.js"></script>
+    <script type="module" src="../background.js"></script>
+    <script defer src="../site.js"></script>
+  </head>
+  <body class="article-body" data-page="2" data-next-page="./intent.html" data-prev-page="../index.html">
+    <a class="skip-link" href="#main">跳到正文</a>
+    <canvas class="bg-canvas" data-ascii-ripple aria-hidden="true"></canvas>
+    <header class="topbar" data-topbar>
+      <nav class="glass-nav" aria-label="页面导航">
+        <a class="glass-nav__brand" href="../index.html"><span class="mark" aria-hidden="true"></span><span>BreakGlass</span></a>
+        <span class="glass-nav__sep" role="separator" aria-orientation="vertical"></span>
+        <ul class="glass-nav__links">
+          <li><a href="./education.html">当下教育方式</a></li>
+          <li><a href="./intent.html">项目初衷</a></li>
+          <li><a href="./change.html">改变了什么</a></li>
+          <li><a href="./abilities.html">能做什么</a></li>
+          <li><a href="./demo.html">演示</a></li>
+        </ul>
+        <a class="glass-nav__cta" href="../../extension/demo/index.html" target="_blank" rel="noopener">打开演示</a>
+      </nav>
+    </header>
+
+    <main id="main" class="article" data-pager>
+      <section class="mp-section" data-page-section>
+        <p class="crumb"><a href="../index.html">← 回到封面</a><span class="crumb__sep">·</span><span>第 02 页 / 共 6 页</span></p>
+        <p class="article__kicker">当下教育方式</p>
+        <h1 class="article__title">课被录成了视频，但视频只能看</h1>
+        <p class="article__lead">过去十年，课程从黑板搬进了视频：可回放、可跨班复用、可倍速。但画面里的一切都只是像素 —— 看得见，动不了。</p>
+      </section>
+
+      <section class="mp-section" data-page-section>
+        <div class="prose">
+        <h2>视频成了课程的主要载体</h2>
+        <p>录播课、慕课、校内公开课越来越多。同一位老师讲同一道题，可以被反复使用上千次，这本身是巨大的进步：优质讲解不再受教室和时间的限制。</p>
+        <p>代价是内容被固化。一堂课里老师的板书、推导、图像，一旦录成视频，就定格成了像素。这一帧里画了什么，往后永远是那样。</p>
+        <h2>画面里的图形是死的</h2>
+        <p>老师在视频里画出一条抛物线，说「a 越大，开口越窄」。学生能看到的只有一条固定的曲线：它不会因为你想验证而改变，也不能被拖动。</p>
+        <p>想真正理解参数的影响，本来需要反复调整、观察差异 —— 而在视频里，这一步做不了。</p>
+        <h2>想讲清参数，只能离开视频</h2>
+        <p>于是常见的做法是：暂停视频，切到几何画板或课件里重画一条曲线，调完参数再切回来，或者干脆用嘴描述。</p>
+        <p>讲解被打断，注意力被切走，学生记住的是「老师切换了软件」，而不是参数之间的关系。</p>
+        <h2>观众这一侧只剩下三个动作</h2>
+        <p>播放、暂停、拖动进度条。画面里的坐标、图形、数值都不可触碰，学习停在「看懂」，很难走到「试过」。</p>
+        <blockquote><p>截图是死的：一帧画面能保存下来，却不能继续操作。</p></blockquote>
+        <p>我们想要的，是让那一帧画面可以被上手改 —— 这正是下一个板块要说的初衷。</p>
+        </div>
+      </section>
+
+
+      <section class="mp-section" data-page-section>
+        <nav class="module-nav" aria-label="翻页">
+          <a href="../index.html">← 上一页</a>
+          <a href="./intent.html">下一页 →</a>
+          <a href="../index.html">回到封面</a>
+        </nav>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <div class="footer__inner">
+        <div>
+          <p class="footer__title">BreakGlass 破壁</p>
+          <p class="footer__note">当前版本使用扩展包内预先准备的结果；识别适配默认关闭，浏览器手工验收仍在进行中。</p>
+        </div>
+        <nav class="footer__links" aria-label="相关文档">
+          <a href="../../README.md">README</a>
+          <a href="../../docs/BreakGlass-ui-inventory.md">功能与参数清单</a>
+          <a href="../../specs/001-insitu-parabola/spec.md">功能规格</a>
+        </nav>
+      </div>
+      <p class="footer__legal">背景为 three.js 渲染的 ASCII 涟漪（本地内置，零第三方请求）。</p>
+    </footer>
+  </body>
+</html>

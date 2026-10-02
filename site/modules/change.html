@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>从「只能看」到「当场能改」 · BreakGlass 破壁</title>
+    <meta name="description" content="同一段视频、同一帧画面，差别只在于：曲线现在是活的，参数是可以试的。">
+    <meta name="theme-color" content="#05060a">
+    <link rel="stylesheet" href="../site.css">
+    <script defer src="../ascii-ripple.js"></script>
+    <script type="module" src="../background.js"></script>
+    <script defer src="../site.js"></script>
+  </head>
+  <body class="article-body" data-page="4" data-next-page="./abilities.html" data-prev-page="./intent.html">
+    <a class="skip-link" href="#main">跳到正文</a>
+    <canvas class="bg-canvas" data-ascii-ripple aria-hidden="true"></canvas>
+    <header class="topbar" data-topbar>
+      <nav class="glass-nav" aria-label="页面导航">
+        <a class="glass-nav__brand" href="../index.html"><span class="mark" aria-hidden="true"></span><span>BreakGlass</span></a>
+        <span class="glass-nav__sep" role="separator" aria-orientation="vertical"></span>
+        <ul class="glass-nav__links">
+          <li><a href="./education.html">当下教育方式</a></li>
+          <li><a href="./intent.html">项目初衷</a></li>
+          <li><a href="./change.html">改变了什么</a></li>
+          <li><a href="./abilities.html">能做什么</a></li>
+          <li><a href="./demo.html">演示</a></li>
+        </ul>
+        <a class="glass-nav__cta" href="../../extension/demo/index.html" target="_blank" rel="noopener">打开演示</a>
+      </nav>
+    </header>
+
+    <main id="main" class="article" data-pager>
+      <section class="mp-section" data-page-section>
+        <p class="crumb"><a href="../index.html">← 回到封面</a><span class="crumb__sep">·</span><span>第 04 页 / 共 6 页</span></p>
+        <p class="article__kicker">改变了什么</p>
+        <h1 class="article__title">从「只能看」到「当场能改」</h1>
+        <p class="article__lead">同一段视频、同一帧画面，差别只在于：曲线现在是活的，参数是可以试的。</p>
+      </section>
+
+      <section class="mp-section" data-page-section>
+        <div class="prose">
+        <h2>讲解流程上的三处变化</h2>
+        <ol>
+          <li>不再切软件：停在要讲的那一帧，曲线直接出现在画面原位，讲完退出即可。</li>
+          <li>不再靠描述：参数变化带来的形状差异，可以在同一帧里当场演示给学生看。</li>
+          <li>不再留死图：讲解结束后画面回到原样，视频停在原处，随时可以重来一遍。</li>
+        </ol>
+        <h2>操作手感上的四处变化</h2>
+        <ol>
+          <li>从「只能盯着看」变成可以拖控制点，也可以拉动画面上三个参数滑块。</li>
+          <li>曲线形状、顶点位置、数字读数三者同步变化，不会出现数值变了图没变的情况。</li>
+          <li>参数拖到边界外会自动刹住：开口范围与位置范围都被限制在合理区间。</li>
+          <li>点一下重置即可回到这一帧的初值，交互层保留，可以继续试别的讲法。</li>
+        </ol>
+        <h2>学习方式上的变化</h2>
+        <p>学生不再只是被动接受一条画好的曲线。同一个结论，可以自己动手复现：把参数推过去，看图像怎么变，再推回来。</p>
+        <blockquote><p>这些能力目前以扩展包内预先准备的结果运行；识别适配默认关闭，浏览器手工验收仍在进行中。</p></blockquote>
+        </div>
+      </section>
+
+
+      <section class="mp-section" data-page-section>
+        <nav class="module-nav" aria-label="翻页">
+          <a href="./intent.html">← 上一页</a>
+          <a href="./abilities.html">下一页 →</a>
+          <a href="../index.html">回到封面</a>
+        </nav>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <div class="footer__inner">
+        <div>
+          <p class="footer__title">BreakGlass 破壁</p>
+          <p class="footer__note">当前版本使用扩展包内预先准备的结果；识别适配默认关闭，浏览器手工验收仍在进行中。</p>
+        </div>
+        <nav class="footer__links" aria-label="相关文档">
+          <a href="../../README.md">README</a>
+          <a href="../../docs/BreakGlass-ui-inventory.md">功能与参数清单</a>
+          <a href="../../specs/001-insitu-parabola/spec.md">功能规格</a>
+        </nav>
+      </div>
+      <p class="footer__legal">背景为 three.js 渲染的 ASCII 涟漪（本地内置，零第三方请求）。</p>
+    </footer>
+  </body>
+</html>
