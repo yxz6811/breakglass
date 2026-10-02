@@ -32,7 +32,7 @@
 
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
-对照 `.specify/memory/constitution.md` v1.2.0。
+对照 `docs/BreakGlass-constitution.md` v1.1.0（仓库前端执行基线）。`.specify/memory/constitution.md` v1.2.0 是 Spec Kit 治理记忆，其感知代理约束不属于本仓库交付范围。
 
 | 门禁 | 结果 | 依据 |
 | --- | --- | --- |
@@ -79,7 +79,11 @@ extension/
 │   ├── background/service-worker.js
 │   ├── page/main.js
 │   ├── session/session.js
+│   ├── session/wake.js            # P2：冻结上下文、1500ms 看门狗、取消、迟到丢弃、createWake
+│   ├── attempt/simulator.js       # P2：off / hang / invalid / late 确定性替身
+│   ├── telemetry/latency.js       # P2：内存计时与 P50/P95
 │   ├── geometry/content-rect.js
+│   ├── geometry/alignment.js      # P3：三层坐标、偏差比例与 2% 采样
 │   ├── curve/evaluate.js
 │   ├── curve/validate.js
 │   └── preset/load.js
@@ -88,10 +92,13 @@ extension/
     ├── presets/
     └── video/
 
-tests/
-├── content-rect.test.js
-├── validate.test.js
-└── session.test.js
+tests/                        # node --test：校验、求值、几何、会话、等待、页面契约
+├── validate.test.js、evaluate.test.js、preset-contract.test.js
+├── content-rect.test.js、alignment.test.js
+├── session.test.js、backend-edges.test.js
+├── wake-timeout.test.js、wake-contract.test.js、external-simulator.test.js
+├── page-integration.test.js、page-p2.test.js、page-p3.test.js
+└── helpers/fake-clock.js、helpers/fake-page.js
 ```
 
 **Structure Decision**: 扩展与纯函数测试分开放。几何、校验和会话不依赖 DOM，以便 `node --test`。演示页是 P0 唯一已验证页面。不建立 `backend/`。正式视频文件在团队提供前不提交占位媒体冒充验收素材。

@@ -5,6 +5,7 @@
   root.BreakGlass.wake = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this, function (BreakGlass) {
   const validate = BreakGlass.validate || (typeof require === 'function' ? require('../curve/validate') : null);
+  const attemptApi = BreakGlass.attempt || (typeof require === 'function' ? require('../attempt/simulator') : null);
   const DEFAULT_FALLBACK_AFTER_MS = 1500;
 
   function defaultClock() {
@@ -86,6 +87,8 @@
       else session.cancel();
       return publish({
         status: 'recoverable-error',
+        code: code || 'recoverable_error',
+        message: message || '结果不可用，请重试或退出。',
         requestId: null,
         result: null,
         fallback: null,
@@ -100,6 +103,8 @@
       if (!resolved.ok) return fail(resolved.code || 'resolve_failed', resolved.message || '结果无法进入交互。');
       return publish({
         status: 'interactive',
+        code: null,
+        message: null,
         requestId: result.requestId,
         result,
         fallback,
@@ -164,6 +169,8 @@
       inflight = ctx;
       publish({
         status: 'waiting',
+        code: null,
+        message: null,
         requestId: ctx.requestId,
         result: null,
         fallback: null,
@@ -187,6 +194,8 @@
       session.cancel();
       return publish({
         status: 'paused-ready',
+        code: null,
+        message: null,
         requestId: null,
         result: null,
         fallback: null,
@@ -211,6 +220,8 @@
         inflight = null;
         publish({
           status: 'paused-ready',
+          code: null,
+          message: null,
           requestId: null,
           result: null,
           fallback: null,
@@ -236,5 +247,47 @@
     };
   }
 
-  return { createWakeController, DEFAULT_FALLBACK_AFTER_MS };
+  /**
+   * ownership.md 登记的交接接口：
+   * createWake({ session, config, preset, now, schedule, clearTimer, onChange })
+   * 页面只消费 onChange 给出的状态，不自己判断超时、取消或迟到。
+   * @param {{ session, config, preset, now?, schedule?, clearTimer?, onChange? }} options
+   */
+  function createWake(options = {}) {
+    const session = options.session;
+    if (!session) throw new Error('createWake 需要 session。');
+    const config = options.config || {};
+    const preset = options.preset || null;
+    const now = typeof options.now === 'function' ? options.now : () => Date.now();
+    const scheduleHost = typeof options.schedule === 'function' ? options.schedule : (fn, ms) => setTimeout(fn, ms);
+    const clearHost = typeof options.clearTimer === 'function' ? options.clearTimer : (handle) => clearTimeout(handle);
+    const onChange = typeof options.onChange === 'function' ? options.onChange : () => {};
+    const clock = {
+      now,
+      schedule: (delayMs, handler) => scheduleHost(handler, delayMs),
+      clear: (handle) => clearHost(handle)
+    };
+    const mode = config.externalAttempt || 'off';
+    const attempt = mode === 'off' || !attemptApi ? null : attemptApi.createAttempt({ mode, clock });
+    const controller = createWakeController({
+      session,
+      clock,
+      attempt,
+      fallbackAfterMs: Number.isFinite(config.fallbackAfterMs) ? config.fallbackAfterMs : DEFAULT_FALLBACK_AFTER_MS,
+      onOutcome: (outcome) => onChange({ ...outcome }),
+      resolvePreset: () => (config.enableLocalMock === true && config.prewarmed === true ? preset : null)
+    });
+    return {
+      start(input = {}) { return controller.begin({ paused: input.paused, currentTime: input.currentTime }); },
+      cancel: () => controller.cancel(),
+      exit() { controller.dispose(); return session.exit(); },
+      onPlaybackChange: (playback) => controller.onPlaybackChange(playback),
+      dispose: () => controller.dispose(),
+      getState: () => controller.getOutcome(),
+      isWaiting: () => controller.isWaiting(),
+      pendingTimers: () => controller.pendingTimers()
+    };
+  }
+
+  return { createWake, createWakeController, DEFAULT_FALLBACK_AFTER_MS };
 });

@@ -14,6 +14,8 @@
 
 **故事 3 实现进展（2026-10-02，p2 分支）**: T031–T037、T039 已实现并通过自动化检查：node --test 88 项通过（新增 tests/alignment.test.js、tests/page-p3.test.js、tests/helpers/fake-page.js；扩展 tests/content-rect.test.js、tests/page-integration.test.js）。新增 extension/src/geometry/alignment.js；改造 extension/src/geometry/content-rect.js（长度单位、单关键字补齐另一轴、数字型、非有限尺寸防御）与 extension/src/page/main.js（全屏/方向/DPR/ResizeObserver 重算和 window.__breakglassAlignment 只读测量）与 extension/demo/index.html。T038 的四画幅手工验收仍待执行。
 
+**接口与文档收口（2026-10-02）**: `extension/src/session/wake.js` 增加 `createWake({ session, config, preset, now, schedule, clearTimer, onChange })`，与 `ownership.md`「交接接口」登记的形状一致（`start/cancel/exit/onPlaybackChange/dispose`，状态含 `status/code/message/result`），`main.js` 改为消费该接口；新增 `tests/wake-contract.test.js`。T019 已按「不升版」方案对齐：`spec.md` 与 `plan.md` 改为引用 `docs/BreakGlass-constitution.md` v1.1.0，并注明 `.specify` v1.2.0 的感知代理约束不属于本仓库。T020 的行为决定已写入 `contracts/runtime-config.md` 与 `data-model.md`，验证记录落在 `docs/BreakGlass-frontend-validation.md`。自动化基线为 `node --test` 96 项通过。
+
 ## Format: `[ID] [P?] [Story] Description`
 
 - **[P]**: 可与同阶段其他 `[P]` 任务并行（不同文件、不依赖未完成任务）
@@ -97,8 +99,8 @@
 
 ### 决策与契约（阻塞后续实现）
 
-- [ ] T019 [US2] 对齐宪法版本口径，不改扩展实现。核对 `.specify/memory/constitution.md`（Version 1.2.0）、`docs/BreakGlass-constitution.md`（版本 1.1.0）和 `specs/001-insitu-parabola/spec.md` 对「产品宪法 v1.2.0」的假设。按 Governance：修订 `docs/BreakGlass-constitution.md` 时必须递增版本、日期和变更记录；若不升版，就更正 `specs/001-insitu-parabola/spec.md` 与 `specs/001-insitu-parabola/plan.md` 的版本假设。本仓库仍只做前端，不新增感知代理、上传、FastAPI 或 `backend/`。不要改 T019–T030 的编号
-- [ ] T020 [US2] 把下列决定写入 `specs/001-insitu-parabola/plan-story-2.md`、`specs/001-insitu-parabola/contracts/runtime-config.md` 和 `specs/001-insitu-parabola/data-model.md`。D1：`invalid` 进入可恢复错误并提供重试与退出，即使有匹配预制也不得显示为识别成功；只有 `hang` 在预制匹配时于 1500ms 自动回退。D2：`prewarmed: false`、预制缺失或与当前帧不匹配时进入可恢复错误，不绘制曲线。D3：等待态提供「取消」并支持 Esc；状态区使用 `role="status"` 与 `aria-live="polite"`；进入等待时焦点移到取消。D4：沿用现有 `extension/src/session/session.js` 的 `session_active` 与单会话，不整文件覆盖上游；非 `off` 从「直接拒绝」改为可等待，`off` 仍立即进入交互。D5：SC-003 只统计判定超时到首个可见 SVG 帧，本机热缓存，每场景至少 20 次，报告 P50 与 P95，并记录浏览器版本、机器和热缓存。文案：`fallback` 为 null 时显示「预先准备的示例」；`fallback` 为 `timeout` 时持续显示「预先准备的示例 · 超时回退」以及「因等待超过 1.5 秒，改用预先准备的示例。」。数据模型补上 `fallbackReason`、`frozenContext`（`requestId`、`videoId`、`time`、`frameSize`）和失效 `requestId` 集合。`time` 单位为秒，默认容差 ±0.2 秒；`fallbackAfterMs` 必须是 1500
+- [x] T019 [US2] 对齐宪法版本口径，不改扩展实现。核对 `.specify/memory/constitution.md`（Version 1.2.0）、`docs/BreakGlass-constitution.md`（版本 1.1.0）和 `specs/001-insitu-parabola/spec.md` 对「产品宪法 v1.2.0」的假设。按 Governance：修订 `docs/BreakGlass-constitution.md` 时必须递增版本、日期和变更记录；若不升版，就更正 `specs/001-insitu-parabola/spec.md` 与 `specs/001-insitu-parabola/plan.md` 的版本假设。本仓库仍只做前端，不新增感知代理、上传、FastAPI 或 `backend/`。不要改 T019–T030 的编号
+- [x] T020 [US2] 把下列决定写入 `specs/001-insitu-parabola/plan-story-2.md`、`specs/001-insitu-parabola/contracts/runtime-config.md` 和 `specs/001-insitu-parabola/data-model.md`。D1：`invalid` 进入可恢复错误并提供重试与退出，即使有匹配预制也不得显示为识别成功；只有 `hang` 在预制匹配时于 1500ms 自动回退。D2：`prewarmed: false`、预制缺失或与当前帧不匹配时进入可恢复错误，不绘制曲线。D3：等待态提供「取消」并支持 Esc；状态区使用 `role="status"` 与 `aria-live="polite"`；进入等待时焦点移到取消。D4：沿用现有 `extension/src/session/session.js` 的 `session_active` 与单会话，不整文件覆盖上游；非 `off` 从「直接拒绝」改为可等待，`off` 仍立即进入交互。D5：SC-003 只统计判定超时到首个可见 SVG 帧，本机热缓存，每场景至少 20 次，报告 P50 与 P95，并记录浏览器版本、机器和热缓存。文案：`fallback` 为 null 时显示「预先准备的示例」；`fallback` 为 `timeout` 时持续显示「预先准备的示例 · 超时回退」以及「因等待超过 1.5 秒，改用预先准备的示例。」。数据模型补上 `fallbackReason`、`frozenContext`（`requestId`、`videoId`、`time`、`frameSize`）和失效 `requestId` 集合。`time` 单位为秒，默认容差 ±0.2 秒；`fallbackAfterMs` 必须是 1500
 
 ### Tests for User Story 2
 

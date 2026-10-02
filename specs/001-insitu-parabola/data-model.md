@@ -114,3 +114,35 @@ interactive
 进入 `interactive` 时记录初始参数。重置只改 `currentParameters`。退出、取消、播放和离开目标帧都移除覆盖层、监听和消息，且不得留下第二个覆盖层。
 
 较早 requestId 的结果不能写入当前会话。视频 id 或时间已经变化时，旧结果直接丢弃。
+
+## P2 增量（T020 决定，2026-10-02）
+
+### InteractionSession 补充字段
+
+| 字段 | 说明 |
+| --- | --- |
+| frozenContext | 本次唤醒冻结的 `{ requestId, videoId, time, frameSize }`；回退与外部结果都要与它逐项匹配 |
+| fallbackReason | 超时回退原因（`timeout`），交互期间持续可见 |
+| invalidatedRequestIds | 取消、退出、换帧、播放后作废的编号集合；旧编号的结果一律丢弃 |
+
+### 状态补充
+
+```text
+waiting
+  -> interactive           off：匹配的准备结果立即可用
+  -> interactive           非 off：等待满 1500ms 且匹配预制的超时回退（fallback: timeout）
+  -> recoverable-error     超时但无匹配预制；或外部结果非法
+  -> paused-ready          取消 / 退出 / 播放 / 离开目标时间
+```
+
+`recoverable-error` 必须提供「重试」与「退出」两个动作，并且不得留下任何可绘制结果。
+
+### WakeOutcome（`createWake` 交给页面的状态）
+
+| 字段 | 说明 |
+| --- | --- |
+| status | `paused-ready` / `waiting` / `interactive` / `recoverable-error` |
+| code / message | 仅在 `recoverable-error` 使用，供界面直接展示 |
+| result | 仅在 `interactive` 使用；`source` 为 `preset`，`fallback` 为 `null` 或 `timeout` |
+| fallback / reason | 回退标记与原因 |
+| requestId / elapsedMs / decisionAt | 绑定编号、判定耗时与超时判定时刻（用于 SC-003 打点） |

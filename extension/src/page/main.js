@@ -6,7 +6,6 @@
     alignment,
     preset,
     session: sessionApi,
-    attempt: attemptApi,
     wake: wakeApi,
     latency: latencyApi
   } = window.BreakGlass;
@@ -357,7 +356,7 @@
     }
     if (overlay || (controller && controller.status === 'interactive')) return;
     // 状态变化由 wakeController 的 onOutcome 回调驱动，页面不重复渲染。
-    const started = wakeController.begin({ paused: true, currentTime: video.currentTime });
+    const started = wakeController.start({ paused: true, currentTime: video.currentTime, frameSize: { width: video.videoWidth, height: video.videoHeight } });
     if (!started.ok) setStatus(started.message || '暂时无法破壁。');
   }
 
@@ -385,16 +384,15 @@
       });
       localClock = createClock();
       latencies = latencyApi.createLatencyLog({ clock: localClock });
-      const attempt = config.externalAttempt === 'off'
-        ? null
-        : attemptApi.createAttempt({ mode: config.externalAttempt, clock: localClock });
-      wakeController = wakeApi.createWakeController({
+      // ownership.md 登记的交接接口：页面只消费 onChange 给出的状态。
+      wakeController = wakeApi.createWake({
         session: controller,
-        clock: localClock,
-        attempt,
-        fallbackAfterMs: config.fallbackAfterMs,
-        onOutcome: (outcome) => applyOutcome(outcome),
-        resolvePreset: () => (config.enableLocalMock === true && config.prewarmed === true ? presetResult : null)
+        config,
+        preset: presetResult,
+        now: () => localClock.now(),
+        schedule: (handler, delayMs) => localClock.schedule(delayMs, handler),
+        clearTimer: (handle) => localClock.clear(handle),
+        onChange: (state) => applyOutcome(state)
       });
       window.__breakglassLatency = {
         summary: () => latencies.summary(),

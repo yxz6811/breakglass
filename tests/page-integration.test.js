@@ -94,10 +94,10 @@ test('扩展源码不发请求、不含密钥或远程地址', () => {
 
 test('替身模块只被演示页与测试引用，不进入生产主路径以外的判断', () => {
   const main = readText('src/page/main.js');
-  assert.match(main, /externalAttempt === 'off'/);
-  assert.match(main, /attemptApi\.createAttempt/);
-  assert.match(main, /wakeApi\.createWakeController/);
-  assert.match(main, /fallbackAfterMs: config\.fallbackAfterMs/);
+  assert.match(main, /wakeApi\.createWake\(/);
+  assert.match(main, /preset: presetResult/);
+  assert.match(main, /onChange: \(state\) => applyOutcome\(state\)/);
+  assert.match(main, /fallbackAfterMs/);
   assert.match(main, /fallback === 'timeout'/);
   assert.match(main, /不代表实时识别成功/);
 });
