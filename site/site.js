@@ -45,7 +45,7 @@
   staggers.forEach(function (grid) {
     grid.classList.add('reveal-stagger');
     Array.prototype.forEach.call(grid.children, function (child, index) {
-      child.style.transitionDelay = (60 + index * 60) + 'ms';
+      child.style.transitionDelay = (180 + index * 130) + 'ms';
     });
   });
   targets.forEach(function (node) { node.classList.add('reveal'); });
@@ -74,7 +74,7 @@
       node.animate([
         { opacity: 0, transform: 'translateY(30px)' },
         { opacity: 1, transform: 'none' },
-      ], { duration: 720, easing: 'cubic-bezier(0.16, 1.42, 0.32, 1)', fill: 'none' });
+      ], { duration: 1500, easing: 'cubic-bezier(0.3, 0.72, 0.28, 1.02)', fill: 'none' });
     });
     grids.forEach(function (grid) {
       Array.prototype.forEach.call(grid.children, function (child, index) {
@@ -82,9 +82,9 @@
           { opacity: 0, transform: 'translateY(26px)' },
           { opacity: 1, transform: 'none' },
         ], {
-          duration: 660,
-          delay: 60 + index * 60,
-          easing: 'cubic-bezier(0.34, 1.56, 0.64, 1)',
+          duration: 1300,
+          delay: 180 + index * 130,
+          easing: 'cubic-bezier(0.3, 0.86, 0.34, 1.02)',
           fill: 'none',
         });
       });
@@ -100,9 +100,9 @@
   function goToPage(url) {
     if (!url || going) return;
     going = true;
-    document.documentElement.style.transition = 'opacity 300ms var(--ease-out)';
+    document.documentElement.style.transition = 'opacity 460ms var(--ease-out)';
     document.documentElement.style.opacity = '0';
-    window.setTimeout(function () { window.location.href = url; }, 300);
+    window.setTimeout(function () { window.location.href = url; }, 460);
   }
   window.addEventListener('keydown', function (event) {
     if (event.key === 'ArrowDown' || event.key === 'PageDown' || (event.key === ' ' && !event.shiftKey)) {

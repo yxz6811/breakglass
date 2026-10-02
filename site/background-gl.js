@@ -9,7 +9,7 @@ import * as THREE from './vendor/three.module.min.js';
 var RAMP = ' .`-:;+=*x#%@';
 var CELL_W = 16;
 var CELL_H = 20;
-var MAX_RIPPLES = 6;
+var MAX_RIPPLES = 4;
 var RIPPLE_SPEED = 320;
 var RIPPLE_WIDTH = 92;
 
@@ -85,15 +85,29 @@ export function createAsciiRippleGL(options) {
   var settings = options || {};
   var canvas = settings.canvas;
   if (!canvas) return null;
+  // 背景是慢动效，按 30fps 出图就够：省掉一半 GPU 负载，也不会因为掉帧而卡顿。
+  // 不再用 preserveDrawingBuffer（每帧多一次整屏拷贝，是最贵的一项）。
   var renderer = new THREE.WebGLRenderer({
     canvas: canvas,
     alpha: true,
     antialias: false,
-    preserveDrawingBuffer: true,
-    powerPreference: 'low-power',
+    preserveDrawingBuffer: false,
   });
-  if (!renderer.getContext()) return null;
+  var context = renderer.getContext();
+  if (!context) return null;
   renderer.setClearAlpha(0);
+
+  // 没有硬件加速时（SwiftShader / llvmpipe 等软件光栅化），片元成本高得多：
+  // 直接把内部渲染分辨率降到 0.5，用 CSS 拉伸，保证不卡。
+  var rendererName = '';
+  try {
+    var debugInfo = context.getExtension('WEBGL_debug_renderer_info');
+    rendererName = String(debugInfo ? context.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL) : context.getParameter(context.RENDERER));
+  } catch (error) {
+    rendererName = '';
+  }
+  var softwareRendering = /swiftshader|software|llvmpipe|basic render/i.test(rendererName);
+  var qualityScale = softwareRendering ? 0.5 : 1;
 
   var scene = new THREE.Scene();
   var camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
@@ -120,6 +134,13 @@ export function createAsciiRippleGL(options) {
   scene.add(new THREE.Mesh(new THREE.PlaneGeometry(2, 2), material));
 
   var reduceMotion = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+  // rAF 在 60Hz 上约每 16.7ms 回调一次；阈值留 4ms 余量，才能稳定地每两帧渲染一次（≈30fps），
+  // 否则会因为量化误差退化成每三帧一次（≈20fps）。
+  var FRAME_INTERVAL_MS = 1000 / 30;
+  var FRAME_SLACK_MS = 4;
+  var frames = 0;
+  var startedAt = performance.now();
+  var lastRenderAt = -1;
   var width = 0;
   var height = 0;
   var dpr = 1;
@@ -128,7 +149,8 @@ export function createAsciiRippleGL(options) {
   var active = [];
 
   function resize() {
-    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    // 上限 1.5：高分屏下把片元数降到一半左右；软件渲染再乘 0.5。
+    dpr = Math.min(window.devicePixelRatio || 1, 1.5) * qualityScale;
     width = canvas.clientWidth || window.innerWidth;
     height = canvas.clientHeight || window.innerHeight;
     renderer.setPixelRatio(dpr);
@@ -144,7 +166,15 @@ export function createAsciiRippleGL(options) {
   }
 
   function frame() {
-    var now = (performance.now() - startTime) / 1000;
+    var stamp = performance.now();
+    // 限帧：不到 1/30 秒就直接跳过这一帧，不提交绘制。
+    if (lastRenderAt >= 0 && stamp - lastRenderAt < FRAME_INTERVAL_MS - FRAME_SLACK_MS) {
+      frameId = window.requestAnimationFrame(frame);
+      return;
+    }
+    lastRenderAt = stamp;
+    frames += 1;
+    var now = (stamp - startTime) / 1000;
     uniforms.uTime.value = now;
     var used = 0;
     for (var i = 0; i < MAX_RIPPLES; i += 1) {
@@ -194,6 +224,9 @@ export function createAsciiRippleGL(options) {
     renderer: renderer,
     dispose: function () { window.cancelAnimationFrame(frameId); renderer.dispose(); },
     rippleAt: pushRipple,
-    info: function () { return { glyphs: RAMP.length, ripples: active.length, size: [width, height], dpr: dpr }; },
+    info: function () {
+      var elapsed = (performance.now() - startedAt) / 1000;
+      return { glyphs: RAMP.length, ripples: active.length, size: [width, height], dpr: dpr, frames: frames, fps: elapsed > 0 ? Math.round(frames / elapsed) : 0, software: softwareRendering, gpu: rendererName.slice(0, 60) };
+    },
   };
 }
