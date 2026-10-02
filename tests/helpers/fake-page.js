@@ -24,7 +24,8 @@ const ELEMENT_IDS = [
   'parameter-a', 'parameter-a-value', 'parameter-h', 'parameter-h-value',
   'parameter-k', 'parameter-k-value', 'source-label', 'source-note',
   'state-label', 'time-label', 'asset-empty', 'runtime-note',
-  'waiting-bar', 'waiting-progress', 'fullscreen-button'
+  'waiting-bar', 'waiting-progress', 'fullscreen-button',
+  'wake-reason', 'reset-reason'
 ];
 
 // 忠实一点的 style 替身：main.js 会同时用 style.left = ... 和 style.setProperty。
@@ -214,6 +215,14 @@ async function createHarness(options = {}) {
     const tag = id === 'demo-video' ? 'video' : (id === 'parameter-h' ? 'input' : 'div');
     elements[id] = element(tag);
   }
+  // 与 demo/index.html 的初始状态一致：这些控件默认禁用，取消/重试默认隐藏。
+  // 替身不解析 HTML 属性，所以初始态要在这里显式建模，否则页面读到的是 undefined。
+  for (const id of ['wake-button', 'cancel-button', 'retry-button', 'reset-button', 'exit-button',
+    'parameter-a', 'parameter-h', 'parameter-k']) {
+    elements[id].disabled = true;
+  }
+  elements['cancel-button'].hidden = true;
+  elements['retry-button'].hidden = true;
   elements['demo-video'].rect = { left: 100, top: 50, width: 1280, height: 800 };
   elements['video-stage'].rect = { left: 50, top: 0, width: 1400, height: 900 };
   elements['video-stage'].appendChild(elements['demo-video']);

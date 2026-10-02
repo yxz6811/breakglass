@@ -2,12 +2,12 @@
 
 | 项 | 值 |
 | --- | --- |
-| 版本 | 2.0.0 |
+| 版本 | 2.1.0 |
 | 日期 | 2026-10-02 |
-| 基线 | `main@0c1cafb`（PR #28 `p2`、#29 `ui`、#30 尺寸修复、#31 P1 规划均已合入；`ui` 分支与其同步） |
+| 基线 | `前端计划02@4239d35`（`main@0c1cafb` + 识别结果适配 002） |
 | 用途 | 按钮 UI、交互动画、参数调节控件的设计输入 |
 | 配套 | 令牌与动效数值见 [`BreakGlass-visual-spec.md`](./BreakGlass-visual-spec.md)；逐交互设计理由见 [`BreakGlass-ui-design-guide.md`](./BreakGlass-ui-design-guide.md)；待实现项见 [`BreakGlass-ui-todo.md`](./BreakGlass-ui-todo.md) |
-| 标注 | 未标注＝已实现（001）；标 `【P1 规划】`＝`specs/002-vision-result-adapter` 已规划、**尚未实现** |
+| 标注 | 未标注＝已实现（001 主路径 + 002 识别适配）。002 的自动检查与未执行项见 §5.6 |
 
 ## 1. 页面结构（UI 容器）
 
@@ -38,7 +38,7 @@
 | 10 | 水平位置 `h` | `#parameter-h` + `#parameter-h-value` | range + output | 禁用，值 `0`，输出 `—` | 仅 `interactive` | 同上（`setParameter('h', …)`） | 同上；也是**控制点拖动**写入的参数 | ← / → 原生 |
 | 11 | 顶点高度 `k` | `#parameter-k` + `#parameter-k-value` | range + output | 禁用，值 `0`，输出 `—` | 仅 `interactive` | 同上（`setParameter('k', …)`） | 同上 | ← / → 原生 |
 | 12 | 目标时间 | `#target-time` | number | `value=6`、`min=0`、`step=0.1` | 始终可编辑 | 破壁门禁与定位依据 | 不在目标时间时破壁禁用 | ↑ / ↓ 原生 |
-| 13 | 控制点 | 覆盖层 `<circle r=10 tabindex=0>` | SVG circle | 随覆盖层出现 | 仅 `interactive` | `pointerdown/move/up` 拖动 | 写入 `dragParameter`（当前 `h`），钳制在范围内 | 可聚焦 |
+| 13 | 控制点 | 覆盖层 `<circle r=10 tabindex=0>` + 透明热区 `<circle r=18>` | SVG circle | 随覆盖层出现 | 仅 `interactive` | `pointerdown/move/up` 拖动 | 写入 `dragParameter`（当前 `h`），钳制在范围内；`cursor: grab / grabbing` | 可聚焦 |
 | 14 | 等待条 | `#waiting-bar` + `#waiting-progress` | div + span | **隐藏** | 仅 `waiting` | 无交互（提示 + 进度） | 1.5s 线性进度条，`--wait-ms` = `fallbackAfterMs` | — |
 | 15 | 来源芯片 | `#source-label` | span | `等待素材` | 始终 | 无交互（状态） | 见第 3 节；超时回退加虚线、非 preset 加警示色 | — |
 | 16 | 视频原生控件 | `<video controls>` | video | 始终 | 始终 | 浏览器自带播放条 | 空格保留给播放器（不作为破壁键） | — |
@@ -54,8 +54,8 @@
 | 等待中 | `externalAttempt ≠ off` 且唤醒 | `正在等待外部结果…` | `等待素材` | `正在等待外部结果；超过 1.5 秒会自动改用预先准备的示例，可随时取消。` | 取消 / 退出 / 全屏 | 无 | 等待条 + 1.5s 进度；焦点移到取消 |
 | 超时回退交互 | 1500ms 到点且预制匹配 | `已改用预先准备的示例（超时回退），可拖动控制点。` | `预先准备的示例 · 超时回退` | `因等待超过 1.5 秒，改用预先准备的示例。` | 三个滑块 / 拖动 / 重置 / 退出 | **有** | 立即绘制首帧 + 200ms 光晕 |
 | 交互（`off` 主路径） | 唤醒即匹配 | `交互已出现，可拖动控制点改变水平位置。` | `预先准备的示例` | `这是扩展包内预先准备的示例，不代表实时识别成功。` | 同上 | **有** | 同上 |
-| **交互（识别样例）** `【P1 规划】` | `visionAdapter: fixture` + `externalAttempt: off` + 候选合法 | 待定（复用交互文案） | **`识别结果`** | **`随演示打包的识别样例，尚未接通外部识别。`** | 同上 | **有** | 同交互；**不得**显示百分比 |
-| 可恢复错误 | 无匹配预制 / 外部结果非法 / `【P1】`识别候选被拒 | `当前帧没有可用的准备结果，无法进入交互。` 或 `外部结果不可用，未进入交互。` | `等待素材` | `没有可用的准备结果，或外部结果不可用；可以重试或退出。` | **重试（primary） / 退出 / 全屏** | 无 | 状态区 warn 竖条 160ms 上移淡入 |
+| **交互（识别样例）** | `visionAdapter: fixture` + `externalAttempt: off` + 候选合法 | `交互已出现，可拖动控制点改变水平位置。` | **`识别结果`** | **`随演示打包的识别样例，尚未接通外部识别。`** | 同上 | **有** | 同交互；**不得**显示百分比 |
+| 可恢复错误 | 无匹配预制 / 外部结果非法 / 识别候选被拒 | `当前帧没有可用的准备结果，无法进入交互。` 或 `外部结果不可用，未进入交互。` | `等待素材` | `没有可用的准备结果，或外部结果不可用；可以重试或退出。` | **重试（primary） / 退出 / 全屏** | 无 | 状态区 warn 竖条 160ms 上移淡入 |
 | 取消后 | 等待中点取消 | `已取消等待，可以再次破壁。` | `等待素材` | `已取消等待，迟到结果不会再打开交互层。` | 破壁 | 无 | 等待条淡出 |
 | 视频错误 | `video` error | `视频无法加载，未挂载交互层。` | `等待素材` | 同上 | 播放 / 定位 | 无 | 素材提示条 |
 
@@ -96,7 +96,7 @@
 | `presetKey` | `demo-parabola` | 文件名 | 决定加载哪份预制 |
 | `prewarmed` | `true` | true / false | false 时视为无缓存 → 可恢复错误 |
 | `externalAttempt` | `off` | `off` / `hang` / `invalid` / `late` | `off` 立即出曲线；`hang` 1.5s 后回退；`invalid` 可恢复错误；`late` 先回退再丢弃迟到结果 |
-| `visionAdapter` `【P1 规划】` | **不存在，待新增 `off`** | `off` / `fixture`；缺省或其他值都视为 `off` | `fixture` 且 `externalAttempt: off` 时用打包识别样例进入交互；**不加设置面板** |
+| `visionAdapter` | `off`（提交值，已落地） | `off` / `fixture`；缺省或其他值都视为 `off` | `fixture` 且 `externalAttempt: off` 时用打包识别样例进入交互；**不加设置面板** |
 
 ### 4.4 其他可调项
 
@@ -106,9 +106,9 @@
 | 播放进度 | 视频原生控件 | — | 空格不作为破壁键 |
 | 拖动控制点 | 覆盖层 `circle` | — | 映射到数学坐标后写入 `h` |
 
-## 5. 【P1 规划】识别结果适配（002）新增参数与界面
+## 5. 识别结果适配（002，已实现）
 
-> 来源：`specs/002-vision-result-adapter/`（spec / plan / research / data-model / contracts / quickstart / ownership / tasks）。**规划已完成，任务 T001–T018 全部未开始。**
+> 来源：`specs/002-vision-result-adapter/`（spec / plan / research / data-model / contracts / quickstart / ownership / tasks）。**T001–T018 已实现；T017 的 quickstart 手工验收未执行。**
 
 ### 5.1 开关参数
 
@@ -146,17 +146,33 @@
 
 | 名称 | 内容 | 约束 |
 | --- | --- | --- |
-| `vision-decision` `【P1 规划】` | 识别路径从判定开始到 `interactive` 或 `recoverable-error` 的毫秒数，外加 `hot` / `cold` | 不得写入 `fallback-visible`；样本只含名称、毫秒数、缓存状态 |
+| `vision-decision` | 识别路径从判定开始到 `interactive` 或 `recoverable-error` 的毫秒数，外加 `hot` / `cold`；由 `main.js` 的 `recordVisionDecision()` 在 `wake()` 记起点、在 `applyState()` 结算 | 不得写入 `fallback-visible`；样本只含名称、毫秒数、缓存状态 |
 | `fallback-visible` | 仅判定超时 → 首个可见 SVG | 识别路径不得写入 |
 | 禁用名称 | `extension-open`、`video-first-frame`、`network-wait`、`p1-init` | `latency.js` 会直接拒收 |
 
-### 5.5 与现有按钮/动画的冲突点（实现时必须处理）
+### 5.5 实现记录：原先的冲突点如何处理
 
-1. **芯片警示色误判**：`main.js` 现在按 `result.source !== 'preset'` 加 `is-warn`，识别结果会被染成警示色。T011 必须改成显式分支（`vision` → accent + 「识别结果」）。
-2. **`evidence` 必须能被页面读到**：`session.copyResult` 目前不抄 `evidence`，不补这一抄，页面拿不到标记，就会把识别样例显示成「来源不可用」。
-3. **失败文案唯一**：识别被拒与外部结果不可用共用 `external_unavailable` 与同一句 `message`，不要为低置信度/缺字段另写话术。
-4. **样例画幅**：候选的 `frameSize` 必须等于**当前视频源尺寸**，而预制路径已经会按比例换算（`place-in-frame.js`，测试用的是 `1920×1080 → 3024×1898`）。样例若照 001 的 `1920×1080` / `time: 12.5` 写，会稳定被判 `frame_mismatch`；T008 必须按实际包内视频写。
-5. **门禁**：`.specify/memory/constitution.md` 从 1.3.0 升到 1.4.0（T002）是硬前置；修订前不得放行 `source: vision`，也不得改 `wake.js` 成功路径。
+| 冲突点 | 处理 |
+| --- | --- |
+| 芯片警示色误判 | 已改成显式分支：`is-warn = Boolean(result) && !preset && !vision`；识别结果走 accent 态，不再按「非预制即警示」判断 |
+| `evidence` 到不了页面 | `session.copyResult` 已按 `source === 'vision'` 抄写 `evidence`（有 `confidence` 时一并抄，页面不显示） |
+| 失败文案唯一 | 识别被拒统一 `external_unavailable` + 「外部结果不可用，未进入交互。」，未新增错误码，也不回落预制 |
+| 样例画幅 | `wake.js` 先按**样例自身画幅**用同一个校验器校验一次（否则越界 `region` 会被按帧换算钳制成合法），再按当前帧装订后复核上下文；预制路径的 `place-in-frame.js` 行为未改 |
+| 宪法门禁 | `.specify/memory/constitution.md` 已修订为 **1.4.0**：默认关闭时 `interactive` 的 `result.source` 仍只能是 `preset`；`fixture` + `off` 时才允许 `source: vision` + `fallback: null` + `evidence: packaged-sample` |
+| 接口统一 | `createWake` 签名、五个方法、7 个状态字段全部未变；`allowVision` 只由识别路径显式传入 |
+
+### 5.6 实现状态与未执行项
+
+| 项 | 状态 |
+| --- | --- |
+| 结果规则侧（校验、开关、样例、唤醒、会话副本） | 已实现：`extension/src/curve/validate.js`、`src/preset/load.js`、`src/session/wake.js`、`src/session/session.js`、`assets/config.json`、`assets/vision/` |
+| 页面侧（来源文案、识别计时） | 已实现：`extension/src/page/main.js` 的 `isPackagedVision` / `setSource` / `recordVisionDecision` |
+| 自动基线 | `node --test` **182 项通过 / 0 失败**；`node --check` 39 个文件通过 |
+| 新增测试 | `tests/vision-validate.test.js`、`vision-config`、`vision-wake`、`vision-reject`、`vision-latency`、`page-vision` |
+| 提交配置 | `visionAdapter: "off"`、`externalAttempt: "off"`、`fallbackAfterMs: 1500`（由 `tests/vision-config.test.js` 断言） |
+| **手工验收（quickstart §1–5、SC-002）** | **未执行**：当前环境没有可控浏览器会话，不得记为通过 |
+| 包内样例画幅 | 样例按 1920×1080 画布编写；识别路径**不做**画幅换算，演练前必须把 `extension/assets/vision/fixture-parabola.json` 的 `frameSize` 与 `region` 改成实际片子尺寸（README 给了 3024×1898 的换算示例） |
+| 外部演练路径的错误码 | 仍会把校验器 code（如 `frame_mismatch`）透传给会话，与宪法表的三种 code 不一致；本切片只让**识别路径**收敛到 `external_unavailable` |
 
 ## 6. 手势与动画线索
 
@@ -198,11 +214,11 @@
 | `#source-label` | preset | `预先准备的示例` |
 | `#source-label` | 超时回退 | `预先准备的示例 · 超时回退` |
 | `#source-label` | 非 preset | `来源不可用` |
-| `#source-label` `【P1 规划】` | 识别样例 | `识别结果` |
+| `#source-label` | 识别样例（`source: vision` + `evidence: packaged-sample`） | `识别结果` |
 | `#source-note` | 无结果 | `数据来源将在交互出现后显示。` |
 | `#source-note` | preset | `这是扩展包内预先准备的示例，不代表实时识别成功。` |
 | `#source-note` | 超时回退 | `因等待超过 1.5 秒，改用预先准备的示例。` |
-| `#source-note` `【P1 规划】` | 识别样例 | `随演示打包的识别样例，尚未接通外部识别。` |
+| `#source-note` | 识别样例 | `随演示打包的识别样例，尚未接通外部识别。` |
 | `#source-note` | 等待中 | `正在等待外部结果；超过 1.5 秒会自动改用预先准备的示例，可随时取消。` |
 | `#source-note` | 失败 | `没有可用的准备结果，或外部结果不可用；可以重试或退出。` |
 | `#source-note` | 取消 | `已取消等待，迟到结果不会再打开交互层。` |
@@ -216,7 +232,7 @@
 | `#waiting-bar` | 等待中 | `正在等待外部结果…` |
 | `#runtime-note` | 就绪 | `配置：off · 本地预制已预热 · 回退 1500ms` |
 | `#asset-empty` | 常驻提示 | `正式视频素材尚未提供。当前只能验证扩展骨架与夹具逻辑。` |
-| 覆盖层 | aria-label | `可拖动的预先准备抛物线` |
+| 覆盖层 | aria-label | `可拖动的抛物线结果`（002 起改为中性表述） |
 | 顶栏 tooltip | 各按键 | `播放` / `定位目标时间` / `破壁 Alt+B` / `取消等待` / `重试` / `重置` / `全屏` / `退出 Esc` |
 
 ## 9. 只读调试输出
@@ -224,35 +240,36 @@
 | 全局对象 | 内容 |
 | --- | --- |
 | `window.__breakglassAlignment` | `{ contentRect, scale, samples, maxRatio, tolerance, withinTolerance, at }`，`pagehide` 后为 `null` |
-| `window.__breakglassLatency.summary()` | 各计时名（`fallback-visible`，`【P1】` 另加 `vision-decision`）的 `count / p50 / p95 / max` |
+| `window.__breakglassLatency.summary()` | 各计时名（`fallback-visible` 与识别路径的 `vision-decision`）的 `count / p50 / p95 / max` |
 | `window.__breakglassLatency.snapshot()` | 原始毫秒数组 |
 | `window.BreakGlassUI.magnify` / `LiquidGlassDock` | 顶栏放大内核与控制器（`extension/src/ui/`） |
 
 ## 10. 设计时需要注意的点
 
 1. **状态区高度固定**：`#state-label` 最小高度 48px，新设计请保留。
-2. **焦点管理**：进入等待焦点移到取消，进入可恢复错误焦点移到重试；`role=status` 固定 `aria-live="polite"`（**规范 §3.3 要求错误态改 `assertive`，目前未实现**，见待实现清单）。
+2. **焦点与播报**：进入等待焦点移到取消，进入可恢复错误焦点移到重试；`role=status` 默认 `aria-live="polite"`，**错误态由 `setStatus(…, 'error')` 切到 `assertive`**（已实现）。
 3. **覆盖层定位**：靠内联 `position: absolute` + `z-index: 2`（`.video-stage` 是 `display: grid`）。若改用 CSS 类，必须在 CSS 里补 `position: absolute`。
 4. **等待条已实现**：spinner + 与 `fallbackAfterMs` 绑定的线性进度；`prefers-reduced-motion` 下退化为静态。
 5. **回退动画预算**：判定超时到首个可见 SVG 帧只有 100ms，入场动画不得推迟首帧。
-6. **禁用态不能只靠颜色**：现有实现用 `opacity`，规范要求同时给出原因（`aria-describedby` 或 tooltip）。
-7. **识别结果必须与预制可区分**：`【P1】`「识别结果」应是 accent 态而不是警示态，且不得显示 `confidence` 百分比。
+6. **禁用态原因**（已实现）：`#wake-button` / `#reset-button` 通过 `aria-describedby` 关联视觉隐藏的 `#wake-reason` / `#reset-reason`；按钮可用时原因清空。
+7. **识别结果必须与预制可区分**（已实现）：「识别结果」是 accent 态而不是警示态，且不显示可信程度百分比。
 8. **空格不作为破壁键**，`Alt+B` 与 `Esc` 在底栏标注。
 
 ## 11. 未实现 / 不在范围
 
 | 项 | 状态 |
 | --- | --- |
-| `【P1】` 识别结果适配（002） | 已规划，T001–T018 未开始 |
+| 识别结果适配（002） | 已实现（T001–T018）；**T017 手工验收未执行** |
 | `【P1】` 真实识别请求、单帧上传、感知代理、Pyodide | 不派发 |
 | 顶点拖动同时改 `h` 与 `k` | 待决策（analysis §8.2） |
-| 错误态 `aria-live="assertive"` | 待实现 |
-| 禁用态原因说明、`aria-valuetext`、控制点热区 | 待实现 |
+| 性能读数展示、空素材与视频错误的区分、目标时间对齐提示 | 待实现（见 [`BreakGlass-ui-todo.md`](./BreakGlass-ui-todo.md)） |
 | 正式演示视频与四画幅真机验收（T030/T038） | 未执行 |
 
 ## 12. 变更记录
 
 | 版本 | 日期 | 变更 |
 | --- | --- | --- |
+| 2.2.0 | 2026-10-02 | 可访问性补齐：错误态 `aria-live` 切 `assertive`；破壁/重置的禁用原因走 `aria-describedby` + `sr-only` 节点；三个滑块补 `aria-valuetext`（取值 + 范围）；控制点加透明 `r=18` 热区与 `grab/grabbing` 光标；顺带修掉「等待与可恢复错误时退出按钮仍禁用」的真实缺陷（替身此前未模拟 HTML 初始 `disabled`，属假通过） |
+| 2.1.0 | 2026-10-02 | 对齐 `前端计划02@4239d35`：识别结果适配（002）已实现——`visionAdapter` 开关落地并保持 `off`、来源芯片新增「识别结果」为 accent 态、说明区新增「尚未接通外部识别」、识别路径单独记 `vision-decision`、覆盖层 aria-label 改为中性表述；§5 由「规划」改为「已实现」并补实现记录、实现状态与未执行项 |
 | 2.0.0 | 2026-10-02 | 同步到 `main@0c1cafb`：顶栏改为 8 个圆形玻璃按键 + 来源芯片、三个参数滑块（新增 `setParameter` 通道）、等待条、全屏按钮、目标时间初值 6 秒、预制画幅按比例换算；新增 §5「P1 规划：识别结果适配」的新增参数、来源文案、计时名、冲突点与门禁；文案表、令牌表与调试输出同步 |
 | 1.0.0 | 2026-10-02 | 首次汇总按钮、控件、状态、文案与参数清单 |
