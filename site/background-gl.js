@@ -1,16 +1,16 @@
 /*
  * ASCII 涟漪背景 · three.js / WebGL 版。
  *
- * 能力：
- *  - 字符网格：片元里算「单元 -> 强度 -> 字形」，字形取自运行时生成的图集纹理；
- *  - 内容图案：按板块选一组 SDF 图案（视频画面 / 抛物线破框 / 前后对比 / 曲线与滑块 / 工具栏）；
- *  - 流动渐变：方向随机切换的正弦渐变，颜色缓慢冷暖流动；
- *  - 跟随鼠标：渐变中心朝指针偏移，指针周围叠一圈冷青光辉；
- *  - 限帧 30fps、DPR 上限 1.5、软件光栅化再降一档；不用 preserveDrawingBuffer。
+ * 背景主体是实时演算的函数曲线：正弦、阻尼波、抛物线、干涉波、波包、同心环。
+ * 曲线用高斯发光画（不是硬边），参数随 uTime 缓慢漂移；两条曲线之间做 3 秒平滑交叉变形，
+ * 每个板块从不同曲线起步，所以「每页不一样」但过渡是连续的。
  *
- * 关键约定：图案与底纹只决定「选哪个字」，渐变与光晕只决定「颜色与明暗」。
- * 两者分离后，整屏字符不会随波跳变 —— 早先混在一起时观感就是闪烁。
+ * 其余：字符网格 + 流动渐变（方向随机）+ 跟随鼠标的光晕与涟漪。
  *
+ * 关键约定：曲线与底纹只决定「选哪个字」，渐变与光晕只决定「颜色与明暗」。
+ * 两者分离后整屏字符不会随波跳变 —— 混在一起时观感就是闪烁。
+ *
+ * 性能：限帧 30fps、DPR 上限 1.5、软件光栅化再降一档、不用 preserveDrawingBuffer。
  * three.js 本地内置在 ./vendor（MIT），不引 CDN。
  */
 import * as THREE from './vendor/three.module.min.js';
@@ -23,6 +23,7 @@ var RIPPLE_SPEED = 320;
 var RIPPLE_WIDTH = 92;
 var FRAME_INTERVAL_MS = 1000 / 30;
 var FRAME_SLACK_MS = 4;
+var CURVE_COUNT = 6;
 
 var VERTEX = [
   'varying vec2 vUv;',
@@ -45,80 +46,74 @@ var FRAGMENT = [
   'uniform vec2 uFlowDir;',
   'uniform float uFlowPhase;',
   'uniform vec2 uPointer;',
-  'uniform float uMotif;',
+  'uniform float uCurveA;',
+  'uniform float uCurveB;',
+  'uniform float uCurveMix;',
   'uniform float uAspect;',
   '',
   'float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }',
-  'float sdBox(vec2 p, vec2 b, float r) { vec2 d = abs(p) - b + r; return min(max(d.x, d.y), 0.0) + length(max(d, 0.0)) - r; }',
-  'float sdCircle(vec2 p, float r) { return length(p) - r; }',
-  'float sdSegment(vec2 p, vec2 a, vec2 b) { vec2 pa = p - a; vec2 ba = b - a; float h = clamp(dot(pa, ba) / dot(ba, ba), 0.0, 1.0); return length(pa - ba * h); }',
-  'float sdParabola(vec2 p, float a, vec2 v) { vec2 q = p - v; return abs(q.y - a * q.x * q.x) * inversesqrt(1.0 + 4.0 * a * a * q.x * q.x); }',
-  'float ink(float d, float w) { return 1.0 - smoothstep(w * 0.35, w, d); }',
   '',
-  'float motifInk(vec2 p, float id) {',
-  '  float w = 0.015;',
-  '  float acc = 0.0;',
-  '  if (id < 0.5) {',
-  '    return 0.0;',
-  '  } else if (id < 1.5) {',
-  '    acc = max(acc, ink(abs(sdBox(p, vec2(0.30, 0.19), 0.02)), w));',
-  '    acc = max(acc, ink(abs(p.y - 0.235), w) * step(abs(p.x), 0.30));',
-  '    acc = max(acc, ink(abs(p.y + 0.235), w) * step(abs(p.x), 0.30));',
-  '    vec2 t1 = vec2(-0.055, -0.075);',
-  '    vec2 t2 = vec2(-0.055, 0.075);',
-  '    vec2 t3 = vec2(0.075, 0.0);',
-  '    acc = max(acc, ink(sdSegment(p, t1, t2), w * 1.1));',
-  '    acc = max(acc, ink(sdSegment(p, t2, t3), w * 1.1));',
-  '    acc = max(acc, ink(sdSegment(p, t3, t1), w * 1.1));',
-  '  } else if (id < 2.5) {',
-  '    acc = max(acc, ink(abs(sdBox(p, vec2(0.30, 0.13), 0.02)), w));',
-  '    acc = max(acc, ink(sdParabola(p, 2.4, vec2(0.0, -0.16)), w * 1.25));',
-  '    acc = max(acc, ink(sdCircle(p - vec2(0.0, -0.16), 0.018), w));',
-  '  } else if (id < 3.5) {',
-  '    acc = max(acc, ink(abs(p.y + 0.02), w) * step(length(p - vec2(-0.26, -0.02)), 0.15));',
-  '    acc = max(acc, ink(sdParabola(p, 3.2, vec2(0.26, -0.14)), w * 1.2));',
-  '    acc = max(acc, ink(abs(p.x - 0.06), w * 0.7));',
-  '    acc = max(acc, ink(sdCircle(p - vec2(0.26, -0.14), 0.016), w));',
-  '  } else if (id < 4.5) {',
-  '    acc = max(acc, ink(sdParabola(p, 2.6, vec2(0.0, -0.10)), w * 1.2));',
-  '    acc = max(acc, ink(sdCircle(p - vec2(0.0, -0.10), 0.018), w));',
-  '    for (int i = 0; i < 3; i++) {',
-  '      float y = -0.30 - float(i) * 0.052;',
-  '      acc = max(acc, ink(abs(p.y - y), w * 0.55) * step(abs(p.x), 0.20));',
-  '      acc = max(acc, ink(sdCircle(p - vec2(-0.12 + float(i) * 0.11, y), 0.013), w));',
-  '    }',
-  '  } else {',
-  '    for (int i = 0; i < 8; i++) {',
-  '      float x = -0.32 + float(i) * 0.085;',
-  '      acc = max(acc, ink(sdCircle(p - vec2(x, 0.30), 0.015), w));',
-  '    }',
-  '    acc = max(acc, ink(abs(sdBox(p - vec2(0.26, -0.02), vec2(0.16, 0.16), 0.02)), w * 0.9));',
-  '    for (int i = 0; i < 3; i++) {',
-  '      float y = 0.05 - float(i) * 0.062;',
-  '      acc = max(acc, ink(abs(p.y - y), w * 0.5) * step(abs(p.x - 0.26), 0.13));',
-  '      acc = max(acc, ink(sdCircle(p - vec2(0.21 + float(i) * 0.05, y), 0.012), w));',
-  '    }',
+  // 六类曲线。全部写成 y = f(x) 的形式，距离可以用竖直距离近似，成本很低。
+  'float curveY(float x, float mode, float t) {',
+  '  if (mode < 0.5) {',
+  '    float k = 6.0 + 1.6 * sin(t * 0.21);',
+  '    float a = 0.16 + 0.05 * sin(t * 0.17);',
+  '    return a * sin(k * x + t * 0.8);',
+  '  } else if (mode < 1.5) {',
+  '    return 0.22 * exp(-2.2 * abs(x)) * sin(9.0 * x - t * 1.1);',
+  '  } else if (mode < 2.5) {',
+  '    float h = 0.22 * sin(t * 0.19);',
+  '    float a = 1.5 + 1.1 * sin(t * 0.13);',
+  '    float k = -0.16 + 0.05 * sin(t * 0.11);',
+  '    return a * (x - h) * (x - h) + k;',
+  '  } else if (mode < 3.5) {',
+  '    float k2 = 8.4 + 1.2 * sin(t * 0.17);',
+  '    return 0.16 * sin(5.0 * x + t * 0.6) + 0.10 * sin(k2 * x - t * 0.9);',
+  '  } else if (mode < 4.5) {',
+  '    float c = 0.5 * sin(t * 0.23);',
+  '    float s = 0.22 + 0.06 * sin(t * 0.19);',
+  '    float dx = x - c;',
+  '    return 0.34 * exp(-(dx * dx) / (2.0 * s * s)) * sin(26.0 * dx - t * 2.2);',
   '  }',
-  '  return acc;',
+  '  return 0.0;',
+  '}',
+  '',
+  // 曲线到单元中心的距离 -> 柔和发光。用高斯而不是硬边，线才细腻、过渡才丝滑。
+  'float curveGlow(vec2 p, float mode, float t) {',
+  '  float sigma = 0.016 + 0.004 * sin(t * 0.3);',
+  '  if (mode > 4.5) {',
+  '    float r = length(p);',
+  '    float d = abs(sin(r * 6.0 - t * 0.8)) / 6.0;',
+  '    return exp(-(d * d) / (2.0 * 0.018 * 0.018));',
+  '  }',
+  '  float y = curveY(p.x, mode, t);',
+  '  float eps = 0.01;',
+  '  float dy = (curveY(p.x + eps, mode, t) - curveY(p.x - eps, mode, t)) / (2.0 * eps);',
+  '  float dist = abs(p.y - y) * inversesqrt(1.0 + dy * dy);',
+  '  return exp(-(dist * dist) / (2.0 * sigma * sigma));',
   '}',
   '',
   'void main() {',
   '  vec2 frag = vUv * uResolution;',
   '  vec2 cellId = floor(frag / uCell);',
   '  vec2 local = fract(frag / uCell);',
+  // 曲线在「单元中心」求值：同一个字符格内所有片元选同一个字，不会糊。
   '  vec2 cellUv = (cellId + 0.5) * uCell / uResolution;',
-  '  vec2 motifP = (cellUv - 0.5) * vec2(uAspect, 1.0);',
-  '  float pattern = motifInk(motifP, uMotif);',
-  '  float value = 0.20 + hash(cellId) * 0.10;',
-  '  value += (sin((cellId.x + uTime * 0.32) * 0.16) * 0.5 + cos((cellId.y - uTime * 0.26) * 0.19) * 0.5) * 0.07 + 0.07;',
+  '  vec2 plotP = (cellUv - 0.5) * vec2(uAspect, 1.0);',
+  '  vec2 plotWide = plotP * 1.35;',
+  '  float glowA = curveGlow(plotWide, uCurveA, uTime);',
+  '  float glowB = curveGlow(plotWide, uCurveB, uTime);',
+  '  float curve = mix(glowA, glowB, uCurveMix);',
+  '  float value = 0.16 + hash(cellId) * 0.08;',
+  '  value += (sin((cellId.x + uTime * 0.32) * 0.16) * 0.5 + cos((cellId.y - uTime * 0.26) * 0.19) * 0.5) * 0.06 + 0.06;',
+  '  value = clamp(value * (1.0 - curve * 0.72) + curve * 0.90, 0.0, 1.0);',
   '  vec2 flowAxisDir = normalize(uFlowDir + vec2(0.0001));',
   '  vec2 flowOrigin = mix(vec2(0.5), uPointer, 0.45);',
   '  float axis = dot(vUv - flowOrigin, flowAxisDir);',
   '  float flowWave = 0.5 + 0.5 * sin(axis * 2.6 - uFlowPhase);',
   '  vec2 pointerDelta = vUv - uPointer;',
   '  float halo = exp(-dot(pointerDelta, pointerDelta) / (2.0 * 0.26 * 0.26));',
-  '  value = clamp(value * (1.0 - pattern * 0.85) + pattern * 0.90, 0.0, 1.0);',
-  '  float tone = clamp(value + flowWave * 0.26 + halo * 0.22 + pattern * 0.12, 0.0, 1.0);',
+  '  float tone = clamp(value + flowWave * 0.24 + halo * 0.20 + curve * 0.16, 0.0, 1.0);',
   '  for (int i = 0; i < ' + MAX_RIPPLES + '; i++) {',
   '    if (float(i) >= uRippleCount) break;',
   '    vec4 ripple = uRipples[i];',
@@ -165,7 +160,7 @@ function buildAtlas() {
 export function createAsciiRippleGL(options) {
   var settings = options || {};
   var canvas = settings.canvas;
-  var motif = Number(settings.motif) || 0;
+  var seed = Number(settings.motif) || 0;
   if (!canvas) return null;
 
   var renderer = new THREE.WebGLRenderer({ canvas: canvas, alpha: true, antialias: false, preserveDrawingBuffer: false });
@@ -188,6 +183,11 @@ export function createAsciiRippleGL(options) {
   var ripples = [];
   for (var i = 0; i < MAX_RIPPLES; i += 1) ripples.push(new THREE.Vector4(0, 0, -999, 0));
 
+  // 每个板块从不同曲线起步：封面从抛物线开始，其余按页号轮换。
+  var startCurve = seed === 0 ? 2 : seed % CURVE_COUNT;
+  var curveA = startCurve;
+  var curveB = (startCurve + 1) % CURVE_COUNT;
+
   var uniforms = {
     uResolution: { value: new THREE.Vector2(1, 1) },
     uCell: { value: new THREE.Vector2(CELL_W, CELL_H) },
@@ -199,7 +199,9 @@ export function createAsciiRippleGL(options) {
     uFlowDir: { value: new THREE.Vector2(1, 0) },
     uFlowPhase: { value: 0 },
     uPointer: { value: new THREE.Vector2(0.5, 0.5) },
-    uMotif: { value: motif },
+    uCurveA: { value: curveA },
+    uCurveB: { value: curveB },
+    uCurveMix: { value: 0 },
     uAspect: { value: 1 },
   };
   var material = new THREE.ShaderMaterial({ vertexShader: VERTEX, fragmentShader: FRAGMENT, uniforms: uniforms, transparent: true, depthTest: false, depthWrite: false });
@@ -255,6 +257,22 @@ export function createAsciiRippleGL(options) {
     flowSpan = 6 + Math.random() * 6;
   }
 
+  // 曲线调度：一条曲线停留 5-9 秒，然后用 3 秒 smoothstep 交叉变形到下一条。
+  var curveStart = 0;
+  var curveHold = 6;
+  var curveFade = 3;
+  function pickCurve(seconds) {
+    curveA = curveB;
+    var next = curveA;
+    while (next === curveA) next = Math.floor(Math.random() * CURVE_COUNT);
+    curveB = next;
+    uniforms.uCurveA.value = curveA;
+    uniforms.uCurveB.value = curveB;
+    curveStart = seconds;
+    curveHold = 5 + Math.random() * 4;
+    curveFade = 3;
+  }
+
   function frame() {
     var stamp = performance.now();
     if (lastRenderAt >= 0 && stamp - lastRenderAt < FRAME_INTERVAL_MS - FRAME_SLACK_MS) {
@@ -272,6 +290,10 @@ export function createAsciiRippleGL(options) {
     currentAngle = flowAngleFrom + (flowAngleTo - flowAngleFrom) * eased;
     uniforms.uFlowDir.value.set(Math.cos(currentAngle), Math.sin(currentAngle));
     uniforms.uFlowPhase.value += (FRAME_INTERVAL_MS / 1000) * 0.35;
+    if (curveStart === 0) curveStart = now - curveHold;
+    if (now - curveStart > curveHold + curveFade) pickCurve(now);
+    var fade = Math.min(1, Math.max(0, (now - curveStart - curveHold) / curveFade));
+    uniforms.uCurveMix.value = fade * fade * (3 - 2 * fade);
     pointerSmooth.lerp(pointerTarget, 0.09);
     uniforms.uPointer.value.copy(pointerSmooth);
     var used = 0;
@@ -326,10 +348,13 @@ export function createAsciiRippleGL(options) {
     renderer: renderer,
     dispose: function () { window.cancelAnimationFrame(frameId); renderer.dispose(); },
     rippleAt: pushRipple,
+    forceCurve: function (index) { curveA = index; curveB = (index + 1) % CURVE_COUNT; uniforms.uCurveA.value = curveA; uniforms.uCurveB.value = curveB; uniforms.uCurveMix.value = 0; curveStart = (performance.now() - startTime) / 1000; },
     info: function () {
       var elapsed = (performance.now() - startedAt) / 1000;
       return {
-        motif: motif,
+        curveA: curveA,
+        curveB: curveB,
+        curveMix: Number(uniforms.uCurveMix.value.toFixed(2)),
         glyphs: RAMP.length,
         ripples: active.length,
         size: [width, height],
