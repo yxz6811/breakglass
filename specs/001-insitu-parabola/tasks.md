@@ -8,6 +8,8 @@
 
 **补充（2026-10-02）**: 按用户决定补登故事 2（P2，T019–T030）与故事 3（P3，T031–T039）的任务。**登记不等于开工**：实现仍受 T017 与正式素材验收门禁约束，详见下文 Phase 5/6 的治理说明。
 
+**故事 2 实现进展（2026-10-02）**: 按用户明确要求「完成 P2 前端部分」，T021–T029 已在 `p2` 分支实现；`node --test` 54 项通过，`node --check` 20 个 JavaScript 文件通过。T030 的 Chrome 手工验收仍待执行。T019、T020 的治理口径尚未确认。
+
 **Tests**: 包含宪法要求的纯函数夹具。Phase 1–4（故事 1）只覆盖 MVP 主路径，不写超时和四画幅测试；故事 2、故事 3 的测试在 Phase 5/6 各自拆分。
 
 **Organization**: Phase 1–4 只拆用户故事 1（已完成）。2026-10-02 补登故事 2、故事 3 的任务（Phase 5/6）；真实识别、单帧上传、感知代理、Pyodide 仍只登记范围，不生成任务。
@@ -104,24 +106,34 @@
 
 ### Tests for User Story 2
 
-- [ ] T021 [P] [US2] 先写会失败的 `tests/wake-timeout.test.js`：假时钟驱动 1500ms 回退、判定超时→首个可见帧 ≤0.1 秒、迟到丢弃、无匹配预制、取消、连续 5 次换帧/退出再唤醒、`requestId`/`videoId`/`time`/`frameSize` 守卫、定时器清理
-- [ ] T022 [P] [US2] 先写会失败的 `tests/external-simulator.test.js`：`off`/`hang`/`invalid`/`late` 四模式确定性、无网络调用、无遗留定时器
+- [x] T021 [P] [US2] 先写会失败的 `tests/wake-timeout.test.js`：假时钟驱动 1500ms 回退、判定超时→首个可见帧 ≤0.1 秒、迟到丢弃、无匹配预制、取消、连续 5 次换帧/退出再唤醒、`requestId`/`videoId`/`time`/`frameSize` 守卫、定时器清理
+- [x] T022 [P] [US2] 先写会失败的 `tests/external-simulator.test.js`：`off`/`hang`/`invalid`/`late` 四模式确定性、无网络调用、无遗留定时器
 
 ### Implementation for User Story 2
 
-- [ ] T023 [US2] 实现 `extension/src/attempt/simulator.js`，使 T022 通过。不得发真实请求、不得内置地址或密钥
-- [ ] T024 [US2] 实现 `extension/src/session/wake.js`，使 T021 通过：冻结请求上下文、1500ms 看门狗、回退前重校验、取消、迟到丢弃、状态与原因输出
-- [ ] T025 [US2] 收口 `extension/src/session/session.js`：移除 P0 的「非 off 即拒绝」临时护栏，改为等待语义；`off` 主路径行为保持不变
-- [ ] T026 [P] [US2] 演示页增加等待态（取消）、失败态（重试/退出）、`aria-live` 状态区与焦点管理：`extension/demo/index.html`、`extension/demo/demo.css`
-- [ ] T027 [US2] `extension/src/page/main.js` 接线：等待流程、看门狗、取消/重试、迟到丢弃、旧帧不覆盖、来源与原因持续显示
-- [ ] T028 [US2] 实现 `extension/src/telemetry/latency.js` 并接入「回退显现」打点（内存统计，不落盘、不上传）
+- [x] T023 [US2] 实现 `extension/src/attempt/simulator.js`，使 T022 通过。不得发真实请求、不得内置地址或密钥
+- [x] T024 [US2] 实现 `extension/src/session/wake.js`，使 T021 通过：冻结请求上下文、1500ms 看门狗、回退前重校验、取消、迟到丢弃、状态与原因输出
+- [x] T025 [US2] 收口 `extension/src/session/session.js`：移除 P0 的「非 off 即拒绝」临时护栏，改为等待语义；`off` 主路径行为保持不变
+- [x] T026 [P] [US2] 演示页增加等待态（取消）、失败态（重试/退出）、`aria-live` 状态区与焦点管理：`extension/demo/index.html`、`extension/demo/demo.css`
+- [x] T027 [US2] `extension/src/page/main.js` 接线：等待流程、看门狗、取消/重试、迟到丢弃、旧帧不覆盖、来源与原因持续显示
+- [x] T028 [US2] 实现 `extension/src/telemetry/latency.js` 并接入「回退显现」打点（内存统计，不落盘、不上传）
 
 ### Verification for User Story 2
 
-- [ ] T029 [US2] 更新既有测试以覆盖新状态与控件（`tests/session.test.js`、`tests/session-lifecycle.test.js`、`tests/extension-surface.test.js`、`tests/page-integration.test.js`），清单见 `plan-story-2.md` 附录 C
+- [x] T029 [US2] 更新既有测试以覆盖新状态与控件（`tests/session.test.js`、`tests/session-lifecycle.test.js`、`tests/extension-surface.test.js`、`tests/page-integration.test.js`），清单见 `plan-story-2.md` 附录 C
 - [ ] T030 [US2] 按 quickstart 第 2 节手工验收 `hang`/`invalid`/无匹配预制/取消/5 次循环，记录 SC-003 的 P50/P95、浏览器、机器与热缓存状态
 
 **Checkpoint**: `externalAttempt: off` 的主路径与今天完全一致；任何失败路径都不产生曲线、不显示为成功、都留下重试或退出。
+
+**实现记录（2026-10-02）**: T021–T029 已完成，证据为 `node --test` 54 项通过（新增 `tests/wake-timeout.test.js`、`tests/external-simulator.test.js`、`tests/page-p2.test.js`、`tests/extension-surface-p2.test.js`，并更新 `tests/session.test.js`）。新增模块：`extension/src/attempt/simulator.js`、`extension/src/session/wake.js`、`extension/src/telemetry/latency.js`；改动：`extension/src/session/session.js`（新增 `fail()`、去掉「非 off 即拒绝」的临时护栏）、`extension/src/page/main.js`、`extension/demo/index.html`、`extension/demo/demo.css`。
+
+> **例外记录（Constitution §9）**：本次在 T017 完成前开始了故事 2 的实现。
+> - 原因：用户 2026-10-02 明确要求完成 P2 前端部分。
+> - 影响：故事 2 的代码与测试先于 T017 的浏览器手工记录和正式素材验收进入 `p2`；治理结论（T019/T020）仍未确认。
+> - 责任人：前端（本仓库）。
+> - 有效期限：仅限 `p2` 分支的故事 2 实现。
+> - 恢复条件：T017 完成并记录后，本例外自动失效；T030 仍需按 quickstart 第 2 节补做手工验收。
+> - 是否阻塞 P0：不阻塞。`externalAttempt: off` 的主路径行为与改动前一致，由 `tests/page-p2.test.js` 与 `tests/session.test.js` 覆盖。
 
 ---
 
