@@ -1,17 +1,19 @@
 <!--
 Sync Impact Report
-- Version change: 1.1.0 → 1.2.0
+- Version change: 1.2.0 → 1.3.0
 - Modified principles:
-  - III. 同一契约，进入执行层前双重校验：补入服务端持有指令与 Schema、禁止补齐重试、time 单位
-  - IV. 密钥与帧数据只活在单次请求内：补入访问日志、临时文件、崩溃转储、密钥轮换与演示关闭
-  - V. 超时后的服务端结果作废：补入上游中止、P0/P1 截止时间分离、单进程去重
-- Added sections: 无新章节；后端约束扩大
+  - Governance：审查清单增加「页面与结果规则是否共用同一交接接口」
+- Added sections:
+  - VI. 页面与结果规则只通过一份交接接口
+  - 交接接口
 - Removed sections: 无
 - Templates status: 依赖模板在运行时读取本文件，本次未改模板
 - Deferred TODOs:
+  - TODO(SEAM_CODE): 代码仍同时导出 createWake 与 createWakeController；页面调用后者，session.fail 仍接受对象参数。本次只冻结契约，不改实现
+  - TODO(SEAM_DOCS): ownership.md、plan-story-2.md 附录 B、tasks.md 仍各写一套签名，须回写为引用本节
   - TODO(FRAME_UPLOAD): 单帧是否允许离开浏览器仍待团队书面确认
   - TODO(PROXY_RUNTIME): 感知代理的语言、框架和部署形态未冻结
-  - TODO(DOC_SYNC): docs/BreakGlass-constitution.md 1.1.0 尚未同步感知代理窄例外
+  - TODO(DOC_SYNC): docs/BreakGlass-constitution.md 1.1.0 尚未同步感知代理窄例外，也尚未写入交接接口
   - TODO(REPO_BOUNDARY): AGENTS.md 仍规定本仓库只负责前端
   - TODO(RESET_EXIT): 重置是否保留交互层、退出后是否保持暂停，执行计划仍标为未确认
   - TODO(CURVE_FORM): 抛物线参数形式、初值、范围和步长必须来自最终演示素材，本文件不预设公式
@@ -68,6 +70,126 @@ P0 的上游截止时间是 1500ms。客户端断开或到达该截止时间时�
 演示部署必须是单进程。进程内存可以短时保留进行中的 `requestId` 和已校验的结构化结果，以便去重；不得保留图像，不得写入磁盘，进程退出后即消失。同一 `requestId` 处理期间不得再次调用上游视觉服务。
 
 回退前必须先校验当前 `requestId`、视频和帧位置。真实业务失败、校验失败和无缓存不得被改写成识别成功；无可用缓存时保留错误、重试和退出入口。
+
+### VI. 页面与结果规则只通过一份交接接口
+
+页面和结果规则之间只有一份模块接口。工厂名、方法名、参数顺序、状态值和回调字段以「交接接口」一节为准。计划、任务、分工说明、测试和页面若再写第二套名字，视为违反本文件。
+
+同一能力不得并存两个导出名或两个状态形状。`createWakeController`、`onOutcome`、`begin`、`isWaiting`、`reason`、`decisionAt` 不是契约，现有实现在收敛前不得再扩展。超时、迟到丢弃和能否绘制只由结果规则判定；页面只渲染这份状态，不得再维护第二套 1.5 秒、容差或错误文案表。
+
+结果字段仍以 `specs/001-insitu-parabola/contracts/curve-result.md` 为准，运行配置仍以 `specs/001-insitu-parabola/contracts/runtime-config.md` 为准。这两份契约描述数据，不授权另建唤醒工厂。
+
+## 交接接口
+
+本节是扩展包内的唯一交接面，挂在 `BreakGlass` 上。它不描述感知代理，也不授权网络请求。修改名字、参数顺序或状态字段必须先修订本文件。
+
+### 时钟
+
+唤醒、替身和页面计时共用这一个时钟。禁止再提供 `schedule(fn, ms)` 与 `schedule(delayMs, handler)` 两套参数顺序。
+
+```javascript
+clock = {
+  now(): number,
+  schedule(delayMs, handler): timerId,
+  clear(timerId): void
+}
+```
+
+### 会话
+
+`BreakGlass.session.SessionController` 是唯一会话。状态只有 `paused-ready`、`waiting`、`interactive`、`recoverable-error`。
+
+```javascript
+new SessionController({
+  videoId, targetTime, frameSize,
+  timeTolerance = 0.2,
+  externalAttempt = "off"   // off | hang | invalid | late
+})
+```
+
+`getState()` 与唤醒回调收到的对象是同一形状：
+
+```javascript
+{
+  status,                  // 上面四个值之一
+  requestId,               // string | null
+  result,                  // CurveResult | null；fallback 只出现在 result.fallback
+  currentParameters,       // object | null
+  initialParameters,       // object | null
+  code,                    // string | null；仅 recoverable-error 有值
+  message                  // string | null；仅 recoverable-error 有值
+}
+```
+
+页面可以调用 `canWake({ paused, currentTime })`、`updateParameter(name, value)`、`reset()` 和 `getState()`。页面不得调用 `beginWait`、`resolve` 或 `fail`，也不得读取 `pending`、`current`、`error`。
+
+`fail` 只有一种调用：`fail(code, message)`，返回上述状态，且 `result` 为 `null`。禁止再接受 `fail({ code, message })`。
+
+进入 `recoverable-error` 时，`code` 与 `message` 只使用下表。页面显示 `message`，不得按 `code` 再写一套文案。
+
+| code | message |
+| --- | --- |
+| `preset_unavailable` | 当前帧没有可用的准备结果，无法进入交互。 |
+| `preset_disabled` | 本地预制未启用，无法进入交互。 |
+| `external_unavailable` | 外部结果不可用，未进入交互。 |
+
+`start` 在尚未暂停到目标时间时返回 `{ ok: false, code: "not_ready", message: "请先暂停在目标时间。" }`，会话保持 `paused-ready`，不进入 `recoverable-error`。
+
+### 唤醒
+
+唯一工厂是 `BreakGlass.wake.createWake`。页面、测试和计划都调用它。
+
+```javascript
+createWake({
+  session,    // SessionController
+  config,     // 每次判定重新读取 enableLocalMock、fallbackAfterMs、prewarmed、externalAttempt
+  preset,     // 已装入的预制结果；没有则为 null。不得改成 resolvePreset 回调
+  clock,
+  onChange,   // (state) => void，state 与 getState() 同形
+  attempt     // 仅测试可注入 { start, abort }；页面不得传入，也不得引用 attempt 模块
+})
+```
+
+返回的方法只有：
+
+```javascript
+start({ paused, currentTime, frameSize })
+  // => { ok, code?, message?, requestId? }
+cancel()                 // => state，回到 paused-ready
+exit()                   // => state，回到 paused-ready
+onPlaybackChange({ paused, currentTime })  // => state
+dispose()                // 清理定时器；等待、交互或可恢复错误中则结束会话
+```
+
+`onChange` 在状态变化时发出。`interactive` 时 `result.source` 为 `preset`，`result.fallback` 为 `null` 或 `"timeout"`。回调不得另带 `fallback`、`reason`、`elapsedMs`、`decisionAt` 或 `discarded`。是否等待只看 `status === "waiting"`。
+
+`externalAttempt === "off"` 时，匹配的预制结果立即进入 `interactive`。`hang` 与 `late` 在 `fallbackAfterMs`（必须为 1500）到期后才可以回退。`invalid` 不得画成成功。取消、退出、播放或离开目标时间之后，迟到结果不得再改变状态。
+
+### 替身与计时
+
+`BreakGlass.attempt.createAttempt` 只供唤醒协调器或测试使用。
+
+```javascript
+createAttempt({ mode, clock, lateAfterMs, preset })
+  // mode: "off" | "hang" | "invalid" | "late"
+  // start(ctx) => Promise<{ ctx, candidate } | null>；hang 不结束
+  // abort()
+```
+
+`BreakGlass.latency.createLatencyLog` 只在内存中保存状态、毫秒数和缓存状态。
+
+```javascript
+createLatencyLog({ clock, limit = 200, cache = "hot" })
+mark(name)                         // => number | null
+measure(from, to, cache?)          // => number | null
+record(name, ms, cache?)           // => number | null
+summary()  // { [name]: { count, p50, p95, max, cache } }
+           // cache 为 "hot" | "cold" | "mixed"
+snapshot()
+reset()
+```
+
+`cache` 只允许 `hot` 或 `cold`。`extension-open`、`video-first-frame`、`network-wait`、`p1-init` 必须拒绝。不得写磁盘、`chrome.storage`、网络或帧内容。回退耗时由页面在「判定超时」和「首个可见 SVG 帧」调用 `mark` 或 `record`，不从唤醒状态里读取时间戳。
 
 ## 后端约束
 
@@ -159,11 +281,11 @@ Spec、Plan、Tasks 和代码审查必须能指出：当前能力属于 P0 预�
 
 修订本文件必须更新版本、日期和变更记录，并同步受影响的需求分析与执行计划。MAJOR 用于删除或重定义不可协商的原则。MINOR 用于新增原则或实质扩大约束。PATCH 用于澄清和不改变含义的文字修正。
 
-每次 Spec、Plan、Tasks 和代码审查都要检查：P0 能否离线演示、技术路线是否只选一条、MV3 权限与 CSP 是否写入计划、服务端任务是否越出感知代理、密钥是否可能进入浏览器、Schema 与结构化指令是否在服务端、`time` 单位是否写明、上游调用是否在截止时间中止、调用预算用尽后是否停止、固定夹具是否覆盖拒绝与放行、超时结果是否会被当成成功、P1 是否单独开关。例外必须记录原因、影响、责任人、有效期限、恢复条件，以及是否阻塞 P0。没有记录的例外不算批准。
+每次 Spec、Plan、Tasks 和代码审查都要检查：P0 能否离线演示、技术路线是否只选一条、MV3 权限与 CSP 是否写入计划、服务端任务是否越出感知代理、密钥是否可能进入浏览器、Schema 与结构化指令是否在服务端、`time` 单位是否写明、上游调用是否在截止时间中止、调用预算用尽后是否停止、固定夹具是否覆盖拒绝与放行、超时结果是否会被当成成功、P1 是否单独开关、页面与结果规则是否调用同一份交接接口。计划或测试里出现第二套工厂名、回调名或状态字段时，必须先改回本节，再继续实现。例外必须记录原因、影响、责任人、有效期限、恢复条件，以及是否阻塞 P0。没有记录的例外不算批准。
 
 本文件不授权在 `AGENTS.md` 修订前于本仓库新建后端，也不把未实现的 P1 视为已经完成。
 
-**Version**: 1.2.0 | **Ratified**: 2026-10-02 | **Last Amended**: 2026-10-02
+**Version**: 1.3.0 | **Ratified**: 2026-10-02 | **Last Amended**: 2026-10-02
 
 ## 变更记录
 
@@ -172,3 +294,4 @@ Spec、Plan、Tasks 和代码审查必须能指出：当前能力属于 P0 预�
 | 1.0.0 | 2026-10-02 | 首次批准。确立 P0 前端闭环，并把服务端限制为尚未获准开工的无状态感知代理。 |
 | 1.1.0 | 2026-10-02 | 写入原先只在前端基线中批准的技术路线、零侵入、Pyodide 预算、预制配置、几何映射、性能口径和 P0 验收证据。 |
 | 1.2.0 | 2026-10-02 | 补齐感知代理的可执行约束：服务端持有指令与 Schema、单进程去重、上游中止、调用预算、密钥轮换，以及拒绝/放行夹具。 |
+| 1.3.0 | 2026-10-02 | 冻结页面与结果规则的唯一交接接口：一个时钟、一个会话状态、一个 `createWake`，以及替身和内存计时的调用形状。禁止并行的唤醒工厂和别名字段。 |
