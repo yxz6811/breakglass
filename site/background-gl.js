@@ -28,6 +28,11 @@ var CURVE_COUNT = 6;
 var MAX_TRAIL = 12;
 var TRAIL_INTERVAL_MS = 35;
 var TRAIL_LIFE = 0.7;
+var LIFT_MAX = 0.17;
+var LIFT_SIGMA = 0.1;
+var LIFT_BUMP = 0.07;
+var SPRING_K = 90;
+var SPRING_C = 7;
 
 var VERTEX = [
   'varying vec2 vUv;',
@@ -57,6 +62,8 @@ var FRAGMENT = [
   'uniform vec2 uPointerPlot;',
   'uniform float uPointerFade;',
   'uniform vec4 uTrail[' + MAX_TRAIL + '];',
+  'uniform float uLift;',
+  'uniform float uLiftX;',
   '',
   'float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }',
   '',
@@ -106,8 +113,11 @@ var FRAGMENT = [
   '  vec2 cellUv = (cellId + 0.5) * uCell / uResolution;',
   '  vec2 plotP = (cellUv - 0.5) * vec2(uAspect, 1.0);',
   '  vec2 plotWide = plotP * 1.35;',
-  '  float distA = curveDist(plotWide, uCurveA, uTime);',
-  '  float distB = curveDist(plotWide, uCurveB, uTime);',
+  // 鼠标靠近曲线时，曲线在鼠标那一小段抬高；uLift 由 CPU 侧的弹簧驱动，离开后弹性回落。
+  '  float liftBump = exp(-pow((plotP.x - uLiftX) / ' + LIFT_BUMP + ', 2.0));',
+  '  vec2 liftedWide = plotWide - vec2(0.0, uLift * liftBump);',
+  '  float distA = curveDist(liftedWide, uCurveA, uTime);',
+  '  float distB = curveDist(liftedWide, uCurveB, uTime);',
   '  float sigma = 0.017 + 0.004 * sin(uTime * 0.3);',
   '  float glowA = exp(-(distA * distA) / (2.0 * sigma * sigma));',
   '  float glowB = exp(-(distB * distB) / (2.0 * sigma * sigma));',
@@ -127,6 +137,7 @@ var FRAGMENT = [
   '  trailGlow = min(trailGlow, 1.0) * uPointerFade;',
   '  curve = clamp(curve + trailGlow * 0.85, 0.0, 1.4);',
   '  float curveSigned = distA * (1.0 - amt) + distB * amt;',
+  '  curveSigned += uLift * liftBump * 1.35;',
   '  float cellShift = clamp(curveSigned * 1.6, -0.6, 0.6) * 0.42;',
   '  float value = 0.16 + hash(cellId) * 0.08;',
   '  value += (sin((cellId.x + uTime * 0.32) * 0.16) * 0.5 + cos((cellId.y - uTime * 0.26) * 0.19) * 0.5) * 0.06 + 0.06;',
@@ -244,6 +255,8 @@ export function createAsciiRippleGL(options) {
     uPointerPlot: { value: new THREE.Vector2(0, 0) },
     uPointerFade: { value: 0 },
     uTrail: { value: trailSlots },
+    uLift: { value: 0 },
+    uLiftX: { value: 0 },
   };
   var material = new THREE.ShaderMaterial({ vertexShader: VERTEX, fragmentShader: FRAGMENT, uniforms: uniforms, transparent: true, depthTest: false, depthWrite: false });
   scene.add(new THREE.Mesh(new THREE.PlaneGeometry(2, 2), material));
@@ -282,6 +295,32 @@ export function createAsciiRippleGL(options) {
   function pointerToPlot(uv) {
     pointerPlotTarget.set((uv.x - 0.5) * uniforms.uAspect.value, uv.y - 0.5);
   }
+  // 与 shader 里 curveY 保持一致的 JS 版本，用来判断鼠标离曲线多远。
+  function curveYAt(x, mode, t) {
+    if (mode < 0.5) {
+      var k = 6 + 1.6 * Math.sin(t * 0.21);
+      var a = 0.16 + 0.05 * Math.sin(t * 0.17);
+      return a * Math.sin(k * x + t * 0.8);
+    }
+    if (mode < 1.5) return 0.22 * Math.exp(-2.2 * Math.abs(x)) * Math.sin(9 * x - t * 1.1);
+    if (mode < 2.5) {
+      var h = 0.22 * Math.sin(t * 0.19);
+      var pa = 1.5 + 1.1 * Math.sin(t * 0.13);
+      var pk = -0.16 + 0.05 * Math.sin(t * 0.11);
+      return pa * (x - h) * (x - h) + pk;
+    }
+    if (mode < 3.5) return 0.16 * Math.sin(5 * x + t * 0.6) + 0.1 * Math.sin((8.4 + 1.2 * Math.sin(t * 0.17)) * x - t * 0.9);
+    if (mode < 4.5) {
+      var c = 0.5 * Math.sin(t * 0.23);
+      var s = 0.22 + 0.06 * Math.sin(t * 0.19);
+      var dx = x - c;
+      return 0.34 * Math.exp(-(dx * dx) / (2 * s * s)) * Math.sin(26 * dx - t * 2.2);
+    }
+    return 0;
+  }
+  var lift = 0;
+  var liftVelocity = 0;
+  var liftX = 0;
   var pointerFade = 0;
   var pointerMovedAt = 0;
   var lastTrailAt = -999;
@@ -369,6 +408,18 @@ export function createAsciiRippleGL(options) {
       trailSlots[slot].set(point.x, point.y, point.at, weight * weight);
     }
     uniforms.uTrail.value = trailSlots;
+    // 抬升：鼠标离当前主曲线越近，目标抬升越高；离开后由欠阻尼弹簧弹性落回。
+    var dominant = uniforms.uCurveMix.value > 0.5 ? curveB : curveA;
+    var curveY = curveYAt(uniforms.uPointerPlot.value.x / 1.35, dominant, now);
+    var gap = (uniforms.uPointerPlot.value.y / 1.35) - curveY;
+    var proximity = Math.exp(-(gap * gap) / (2 * LIFT_SIGMA * LIFT_SIGMA));
+    var liftTarget = proximity * LIFT_MAX * pointerFade;
+    var dt = FRAME_INTERVAL_MS / 1000;
+    liftVelocity += (-SPRING_K * (lift - liftTarget) - SPRING_C * liftVelocity) * dt;
+    lift += liftVelocity * dt;
+    uniforms.uLift.value = lift;
+    liftX += (uniforms.uPointerPlot.value.x - liftX) * 0.15;
+    uniforms.uLiftX.value = liftX;
     var moving = performance.now() - pointerMovedAt < 2500;
     pointerFade += ((moving ? 1 : 0) - pointerFade) * (moving ? 0.12 : 0.045);
     uniforms.uPointerFade.value = pointerFade;
@@ -444,6 +495,8 @@ export function createAsciiRippleGL(options) {
         pointer: [Number(pointerSmooth.x.toFixed(2)), Number(pointerSmooth.y.toFixed(2))],
         pointerFade: Number(pointerFade.toFixed(2)),
         trailPoints: trailPoints.length,
+        lift: Number(lift.toFixed(4)),
+        liftVelocity: Number(liftVelocity.toFixed(4)),
       };
     },
   };
