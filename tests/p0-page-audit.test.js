@@ -31,6 +31,12 @@ test('空格不会破壁，点击舞台外部会退出并保持暂停', async ()
     harness.elements['wake-button'].dispatch('click');
     assert.ok(harness.overlay());
     harness.stage.dispatch('click', { target: harness.video });
+    assert.ok(harness.overlay(), '点视频或原生控制条不退出');
+    const control = harness.document.createElement('div');
+    harness.video.appendChild(control);
+    harness.stage.dispatch('click', { target: control });
+    assert.ok(harness.overlay(), '点在播放器内部也不退出');
+    harness.stage.dispatch('click', { target: harness.stage });
     assert.equal(harness.overlay(), null);
     assert.equal(harness.video.paused, true);
   } finally {
@@ -120,13 +126,33 @@ test('页面转入后台时卸下覆盖层', async () => {
   try {
     harness.elements['wake-button'].dispatch('click');
     assert.ok(harness.overlay());
+    let destroyed = 0;
+    harness.win.BreakGlassUI = { docks: [{ destroy() { destroyed += 1; } }] };
     harness.win.dispatch('pagehide');
+    assert.equal(destroyed, 1, '转入后台时应卸下顶栏');
     assert.equal(harness.overlay(), null);
     assert.equal(harness.win.__breakglassAlignment, null);
     assert.equal(harness.elements['reset-button'].disabled, true);
     assert.equal(harness.elements['exit-button'].disabled, true);
     assert.equal(harness.elements['parameter-h'].disabled, true);
     assert.equal(harness.elements['waiting-bar'].hidden, true);
+  } finally {
+    harness.restore();
+  }
+});
+
+test('配置没加载成功时不挂包内片子，随后的视频错误也不改口', async () => {
+  const harness = await createHarness({
+    config: { enableLocalMock: false },
+    packagedVideoErrors: true
+  });
+  try {
+    harness.advance(20);
+    await flush();
+    assert.equal(harness.elements['runtime-note'].textContent, '配置加载失败');
+    assert.equal(harness.elements['state-label'].textContent.includes('预制结果未启用或尚未预热'), true);
+    assert.equal(String(harness.video.src).includes('breakglass-demo-9s.mp4'), false);
+    assert.equal(harness.elements['state-label'].textContent.includes('视频无法加载'), false);
   } finally {
     harness.restore();
   }

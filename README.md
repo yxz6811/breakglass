@@ -10,7 +10,8 @@ BreakGlass 是一个 Chrome MV3 扩展原型：把已验证演示视频中的数
 - P1：真实视觉识别、Python/Pyodide 和其他扩展能力，必须单独立项和验收。
 - 不包含任意网站注入、用户账号、云端同步、数据库、代码执行服务或自建后端。
 - 正式视频和曲线素材尚未提交时，工程夹具只能用于验证状态和几何逻辑，不能作为真实视频验收证据。
-- 交付状态：故事 1（MVP）、故事 2（等待/超时回退/失败/取消）、故事 3（多画幅 2% 对齐）与识别适配切片（`visionAdapter` 默认关闭的打包样例路径）的实现与自动化测试已完成，自动化基线为 `node --test` 182 项通过；正式视频、真实画幅对齐与浏览器手工验收仍待完成，见 [前端验证记录](docs/BreakGlass-frontend-validation.md)。
+- 开播前阅读在片子可播放时自动开始。验收片子不得使用 `breakglass-demo-9s.mp4`；失败、断网、地址留空或 5 分钟内一处都没通过，才回到这个文件。阅读服务不在本仓库。没有它时，页面不会从画面里找出抛物线。
+- 交付状态：故事 1（MVP）、故事 2（等待/超时回退/失败/取消）、故事 3（多画幅 2% 对齐）、识别适配切片（`visionAdapter` 默认关闭）和开播前阅读的页面接线已有自动化测试。正式视频、真实画幅对齐、阅读服务和浏览器手工验收仍待完成，见 [前端验证记录](docs/BreakGlass-frontend-validation.md)。开播前阅读的 SC-003、SC-004、SC-005 未通过。
 
 ## 技术路线
 
@@ -46,6 +47,8 @@ python3 -m http.server 8765
 
 浏览器访问 `http://127.0.0.1:8765/demo/index.html`，点「选择本地视频」。文件只留在这台浏览器里。把视频暂停在 6 秒附近再破壁。曲线是预先准备的示例，不会识别画面内容。不要直接双击 HTML 文件，浏览器会拦住页面读取预制 JSON。
 
+选了别的视频、并且时长可用时，阅读会自动开始。验收这支片子时不要用 `breakglass-demo-9s.mp4`。「阅读地址」留空、请求失败或 5 分钟内没有通过的点，都会退回预先准备的片子。
+
 在仓库根目录运行测试：
 
 ```bash
@@ -65,6 +68,7 @@ node --test
 - [实施计划](specs/001-insitu-parabola/plan.md)
 - [任务清单](specs/001-insitu-parabola/tasks.md)
 - [快速验收](specs/001-insitu-parabola/quickstart.md)
+- [开播前阅读](specs/003-preplay-lesson-points/spec.md)
 - [视觉规范](docs/BreakGlass-visual-spec.md)
 - [UI 设计建议](docs/BreakGlass-ui-design-guide.md)
 - [UI 现状清单](docs/BreakGlass-ui-inventory.md)

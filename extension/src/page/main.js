@@ -75,6 +75,8 @@
   let dragOrigin = null;
   let placedRectKey = '';
   let videoBroken = false;
+  /** 配置没加载成功时的说明。非空就不再挂包内片子，也不让随后的视频错误改口。 */
+  let bootFailure = '';
   /** 用户选择的本地视频地址。有值时不再用包内演示片覆盖。 */
   let localVideoUrl = '';
   /** 新视频的元数据还没到。这之前不能沿用上一帧的宽高破壁。 */
@@ -132,14 +134,14 @@
    * @returns {Promise<boolean>} 是否已把地址交给演示 video
    */
   async function attachPackagedVideo() {
-    if (localVideoUrl) return true;
+    if (localVideoUrl || bootFailure) return Boolean(localVideoUrl);
     try {
       const response = await fetch(PACKAGED_VIDEO_URL, { method: 'HEAD' });
       if (response.status === 404 || response.status === 410) return false;
     } catch {
       // 断网时 HEAD 失败，不代表扩展包里没有这个文件。
     }
-    if (localVideoUrl) return true;
+    if (localVideoUrl || bootFailure) return Boolean(localVideoUrl);
     video.src = PACKAGED_VIDEO_URL;
     return true;
   }
@@ -325,6 +327,7 @@
    * @returns {string}
    */
   function idleStatus() {
+    if (bootFailure) return bootFailure;
     if (videoBroken) return '视频无法加载，未挂载交互层。';
     if (mediaPending) return '正在读取所选视频。';
     if (!hasFrameSize()) return pickStatus();
@@ -1423,8 +1426,18 @@
       setSource(null);
       maybeStartLesson();
     } catch (error) {
+      bootFailure = error.message || '配置加载失败。';
+      try {
+        await packagedPromise;
+      } catch {
+        // 挂片失败不再额外覆盖配置错误。
+      }
+      if (video && !localVideoUrl) {
+        if (video.removeAttribute) video.removeAttribute('src');
+        video.src = '';
+      }
       runtimeNote.textContent = '配置加载失败';
-      setStatus(error.message || '配置加载失败。');
+      setStatus(bootFailure);
     }
     syncControls();
   }
@@ -1447,6 +1460,7 @@
   video.addEventListener('pause', syncControls);
   video.addEventListener('ended', syncControls);
   video.addEventListener('error', () => {
+    if (bootFailure) return;
     if (lessonFallbackReason && isPreparedSource(video.src) && lessonStatus) {
       lessonStatus.textContent = lessonFallbackReason + '预先准备的片子没有加载出来。';
     }
@@ -1474,6 +1488,12 @@
       localVideoUrl = '';
     }
     releaseWatch();
+    const docks = window.BreakGlassUI && window.BreakGlassUI.docks;
+    if (Array.isArray(docks)) {
+      docks.forEach((dock) => {
+        if (dock && typeof dock.destroy === 'function') dock.destroy();
+      });
+    }
   });
   document.addEventListener('keydown', (event) => {
     if (event.altKey && event.key.toLowerCase() === 'b') {
@@ -1488,7 +1508,10 @@
     }
   });
   stage.addEventListener('click', (event) => {
-    if (overlay && !overlay.contains(event.target)) removeOverlay();
+    if (!overlay || overlay.contains(event.target)) return;
+    // 原生控制条属于 video。点它只操作播放器，不把交互层拆掉。
+    if (event.target === video || (video.contains && video.contains(event.target))) return;
+    removeOverlay();
   });
   playToggle.addEventListener('click', () => {
     if (video.paused) video.play().catch(() => setStatus('视频当前无法播放。'));

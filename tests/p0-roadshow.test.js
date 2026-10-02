@@ -37,6 +37,8 @@ test('点在画面上不会把曲线清掉，只有点到画面外面才退出',
     assert.equal(overlay.querySelector('path.curve-hit').getAttribute('stroke-width'), '24');
     assert.ok(harness.overlay(), '点在覆盖层空白处应留下曲线，方便讲解时指画面');
     harness.stage.dispatch('click', { target: harness.video });
+    assert.ok(harness.overlay(), '点视频或原生控制条不退出');
+    harness.stage.dispatch('click', { target: harness.stage });
     assert.equal(harness.overlay(), null);
     assert.equal(harness.video.paused, true);
   } finally {

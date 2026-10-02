@@ -2,8 +2,8 @@
 
 | 项 | 值 |
 | --- | --- |
-| 版本 | 2.1.0 |
-| 日期 | 2026-10-02 |
+| 版本 | 2.3.0 |
+| 日期 | 2026-10-03 |
 | 基线 | `前端计划02@4239d35`（`main@0c1cafb` + 识别结果适配 002） |
 | 用途 | 按钮 UI、交互动画、参数调节控件的设计输入 |
 | 配套 | 令牌与动效数值见 [`BreakGlass-visual-spec.md`](./BreakGlass-visual-spec.md)；逐交互设计理由见 [`BreakGlass-ui-design-guide.md`](./BreakGlass-ui-design-guide.md)；待实现项见 [`BreakGlass-ui-todo.md`](./BreakGlass-ui-todo.md) |
@@ -18,7 +18,7 @@
 | 工作台 | `.workspace` | 两栏网格：视频列 + 310px 控制面板；`<1050px` 变单列 |
 | 视频舞台 | `#video-stage`（`.video-stage`） | `position: relative; overflow: hidden; min-height: 540px`（窄屏 420px），覆盖层的定位父级 |
 | 抛物线覆盖层 | `.curve-overlay`（动态 SVG） | `position: absolute; z-index: 2`，`viewBox = 0 0 contentRect.width contentRect.height` |
-| 传输条 | `.transport` | 目标时间输入 + 当前时间 + **等待条 `#waiting-bar`** |
+| 传输条 | `.transport` | 目标时间输入 + 当前时间 + **等待条 `#waiting-bar`** + 开播前阅读一行 |
 | 控制面板 | `.control-panel` | 状态文案、**三个参数行**、来源说明 |
 | 底栏 | `.app-footer` | `Alt+B 破壁 · Esc 退出 · 空格保留给播放器` + `#runtime-note` |
 
@@ -41,7 +41,12 @@
 | 13 | 控制点 | 覆盖层可见 `<circle r=10>`、透明 `<circle r=18>`，以及 `stroke-width=24` 的透明命中路径 | SVG | 随覆盖层出现 | 仅 `interactive` | `pointerdown/move/up` 拖动。覆盖层 `pointer-events: all`，点在层内不退出 | 写入 `dragParameter`（当前 `h`），钳制在范围内；`cursor: grab / grabbing` | 可聚焦 |
 | 14 | 等待条 | `#waiting-bar` + `#waiting-progress` | div + span | **隐藏** | 仅 `waiting` | 无交互（提示 + 进度） | 1.5s 线性进度条，`--wait-ms` = `fallbackAfterMs` | — |
 | 15 | 来源芯片 | `#source-label` | span | `等待素材` | 始终 | 无交互（状态） | 见第 3 节；超时回退加虚线、非 preset 加警示色 | — |
-| 16 | 视频原生控件 | `<video controls>` | video | 始终 | 始终 | 浏览器自带播放条 | 空格保留给播放器（不作为破壁键） | — |
+| 16 | 视频原生控件 | `<video controls>` | video | 始终 | 始终 | 浏览器自带播放条 | 空格保留给播放器（不作为破壁键）。点控制条不退出已出现的曲线 | — |
+| 17 | 阅读状态 | `#lesson-status` | `p`，`role="status"` | 空 | 片子可播放且不是 9 秒片 | 无交互 | 正在读、读完了、还在读、没有下一处、已取消、已退回 | — |
+| 18 | 阅读地址 | `#lesson-endpoint` | `url` 输入 | 空，占位「留空会退回示例片」 | 始终可填 | 只用于当次请求，不写入仓库 | 留空则立刻退回预先准备的片子 | — |
+| 19 | 课程说明 | `#lesson-note` | textarea | 空 | 始终可填 | 随请求送出 | 空着会写「这次没有课程文本。」超过 8000 字不送正文 | — |
+| 20 | 下一个 | `#lesson-next` | button | **禁用**，文案「下一个」 | 已停在一处，且有更晚的已存点 | 先卸下曲线，再定位到更晚的点 | 还在读时留在原地；读完且没有更晚处时禁用 | — |
+| 21 | 取消阅读 | `#lesson-cancel` | button | **隐藏** | 仅正在读 | 停掉采样和请求 | 「已取消阅读。」已存的点留下，不退回 | — |
 
 ## 3. 状态机与界面反馈（交互动画状态表）
 
@@ -58,8 +63,14 @@
 | 可恢复错误 | 无匹配预制 / 外部结果非法 / 识别候选被拒 | `当前帧没有可用的准备结果，无法进入交互。` 或 `外部结果不可用，未进入交互。` | `等待素材` | `没有可用的准备结果，或外部结果不可用；可以重试或退出。` | **重试（primary） / 退出 / 全屏** | 无 | 状态区 warn 竖条 160ms 上移淡入 |
 | 取消后 | 等待中点取消 | `已取消等待，可以再次破壁。` | `等待素材` | `已取消等待，迟到结果不会再打开交互层。` | 破壁 | 无 | 等待条淡出 |
 | 视频错误 | `video` error | `视频无法加载，未挂载交互层。` | `等待素材` | 同上 | 播放 / 定位 | 无 | 素材提示条 |
+| 正在读 | 非 9 秒片时长可用 | `正在读，第一处读好后会停在那一帧。` | `等待素材` | 同上 | 取消阅读；破壁禁用 | 无 | 舞台时间不动 |
+| 正在定位 | 阅读点还没停稳 | `正在定位，停稳后才能破壁。` | `等待素材` | 同上 | 破壁禁用 | 无 | 先卸下已有曲线 |
+| 这次阅读 | 阅读点已落定并破壁 | `拖画面上的点，或拖右边的滑块。按 Esc 退出。` | **`这次阅读`** | **`这一帧在阅读时已经算好。`** | 滑块 / 拖动 / 重置 / 退出 / 下一个 | **有** | 不得出现「识别结果」 |
+| 还在读 | 按下「下一个」时更晚的点还没到 | 原状态句，阅读状态含「还在读」 | 不变 | 不变 | 破壁保持当前可用性 | 不变 | 不改时间，不重新计算 |
+| 没有下一处 | 阅读结束且没有更晚的点 | 原状态句，阅读状态含「没有下一处」 | 不变 | 不变 | 「下一个」禁用 | 不变 | 时间不动 |
+| 退回预先准备的片子 | 地址留空、失败、断网，或 5 分钟内零通过 | `已回到预先准备的片子。` | 退回后破壁为 `预先准备的示例` | 预先准备的示例那句 | 9 秒片上的单点演示 | 无，直到再次破壁 | 失败片子的点清空。片子缺失时不得说已经播成 |
 
-覆盖层生命周期：`interactive` 时挂载 → 播放、离开目标时间、点击覆盖层外部、退出、`Esc` 都会移除，且不会叠出第二层。
+覆盖层生命周期：`interactive` 时挂载 → 播放、离开目标时间、点击舞台上视频以外的区域、退出、`Esc` 都会移除。点视频或原生控制条不退出。不会叠出第二层。
 
 ## 4. 参数调节清单
 
@@ -187,7 +198,7 @@
 | 等待时长 | 1500ms 看门狗 + 同步线性进度条 |
 | 回退性能口径 | 判定超时 → 首个可见 SVG 帧 ≤ 100ms（SC-003） |
 | 重算触发 | `resize`、`fullscreenchange`、`orientationchange`、DPR 变化、`ResizeObserver(video)`、`loadedmetadata` |
-| 失效清理 | 播放 / 离开目标时间 → 覆盖层与定时器一起清理；`pagehide` 释放全部监听 |
+| 失效清理 | 播放 / 离开目标时间 → 覆盖层与定时器一起清理；`pagehide` 释放监听并卸下顶栏 |
 | 拖拽/滑块钳制 | 写入前钳制在 `min`–`max` |
 
 ## 7. 视觉令牌（`demo.css`；完整定义见 [BreakGlass-visual-spec.md](./BreakGlass-visual-spec.md) §2）
@@ -215,10 +226,12 @@
 | `#source-label` | 超时回退 | `预先准备的示例 · 超时回退` |
 | `#source-label` | 非 preset | `来源不可用` |
 | `#source-label` | 识别样例（`source: vision` + `evidence: packaged-sample`） | `识别结果` |
+| `#source-label` | 开播前阅读的点 | `这次阅读` |
 | `#source-note` | 无结果 | `数据来源将在交互出现后显示。` |
 | `#source-note` | preset | `这是扩展包内预先准备的示例，不代表实时识别成功。` |
 | `#source-note` | 超时回退 | `因等待超过 1.5 秒，改用预先准备的示例。` |
 | `#source-note` | 识别样例 | `随演示打包的识别样例，尚未接通外部识别。` |
+| `#source-note` | 开播前阅读的点 | `这一帧在阅读时已经算好。` |
 | `#source-note` | 等待中 | `正在等待外部结果；超过 1.5 秒会自动改用预先准备的示例，可随时取消。` |
 | `#source-note` | 失败 | `没有可用的准备结果，或外部结果不可用；可以重试或退出。` |
 | `#source-note` | 取消 | `已取消等待，迟到结果不会再打开交互层。` |
@@ -239,6 +252,15 @@
 | `#target-time-readout` | 曲线出现前 | `停在第 6 秒` |
 | `#target-time-field` | 曲线出现后 | 才显示可编辑的目标时间 |
 | `#local-video` | 选择本地视频 | 文件只留在浏览器里，换成 `blob:` 地址；不发送到服务器 |
+| `#lesson-status` | 正在读 | `正在读这段视频。` 或 `正在读，已存好 N 处。` |
+| `#lesson-status` | 课程说明为空 | `这次没有课程文本。` |
+| `#lesson-status` | 课程说明超过 8000 字 | `请把课程说明缩短到 8000 字以内。` |
+| `#lesson-status` | 读完 | `读完了，共 N 处。` |
+| `#lesson-status` | 下一处未就绪 | `下一处还在读。` |
+| `#lesson-status` | 没有更晚的点 | `没有下一处。` |
+| `#lesson-status` | 取消 | `已取消阅读。` |
+| `#lesson-status` | 退回 | `已回到预先准备的片子。` 超时另见主状态「这次没读完。」其他失败为「外部阅读没有返回可用结果。」 |
+| `#lesson-status` | 退回的片子也没加载出来 | `预先准备的片子没有加载出来。` |
 | 覆盖层 | aria-label | `可拖动的抛物线结果`（002 起改为中性表述） |
 | 顶栏 tooltip | 各按键 | `播放` / `定位目标时间` / `破壁 Alt+B` / `取消等待` / `重试` / `重置` / `全屏` / `退出 Esc` |
 
@@ -247,7 +269,9 @@
 | 全局对象 | 内容 |
 | --- | --- |
 | `window.__breakglassAlignment` | `{ contentRect, scale, samples, maxRatio, tolerance, withinTolerance, measured, at }`。页面读数 `measured` 为 `false`，`maxRatio` 与 `withinTolerance` 为 `null`，不是相对画面的 2% 结论。`pagehide` 或退出后为 `null` |
-| `window.__breakglassLatency.summary()` | 各计时名（`fallback-visible` 与识别路径的 `vision-decision`）的 `count / p50 / p95 / max` |
+| `window.__breakglassLatency.summary()` | 各计时名（`fallback-visible`、`vision-decision`、`lesson-first-point`、`lesson-wake-visible`）的 `count / p50 / p95 / max`。阅读的两条不写入前两个名字 |
+| `window.__breakglassLesson` | `binding`、`points`、`dropped`、`jumps`、`acceptance`。`acceptance().passed` 在破壁样本不足 20 次或对齐未实测时为 `false` |
+| `window.__breakglassWakeMounts` | `createWake` 的次数。尺寸不符的点不得让它增加 |
 | `window.__breakglassLatency.snapshot()` | 原始毫秒数组 |
 | `window.BreakGlassUI.magnify` / `LiquidGlassDock` | 顶栏放大内核与控制器（`extension/src/ui/`） |
 
@@ -271,11 +295,14 @@
 | 顶点拖动同时改 `h` 与 `k` | 待决策（analysis §8.2） |
 | 性能读数展示、空素材与视频错误的区分、目标时间对齐提示 | 待实现（见 [`BreakGlass-ui-todo.md`](./BreakGlass-ui-todo.md)） |
 | 正式演示视频与四画幅真机验收（T030/T038） | 未执行 |
+| 开播前阅读的页面接线（003） | 已实现：自动开始、还在读、没有下一处、这次阅读、退回预先准备的片子。阅读服务不在本仓库，没有它就不会从画面里找出抛物线 |
+| 003 的 SC-003、SC-004、SC-005 | **未通过**。没有设备上至少 20 次破壁样本，`measured` 仍是 `false`，`maxRatio` 仍是 `null` |
 
 ## 12. 变更记录
 
 | 版本 | 日期 | 变更 |
 | --- | --- | --- |
+| 2.3.0 | 2026-10-03 | 补上开播前阅读一行：自动开始、还在读、没有下一处、这次阅读、退回预先准备的片子。写明 SC-003 至 SC-005 未通过，阅读服务不在本仓库。点原生控制条不退出曲线；配置失败不再挂上包内片子；页面隐藏时卸下顶栏 |
 | 2.2.0 | 2026-10-02 | 可访问性补齐：错误态 `aria-live` 切 `assertive`；破壁/重置的禁用原因走 `aria-describedby` + `sr-only` 节点；三个滑块补 `aria-valuetext`（取值 + 范围）；控制点加透明 `r=18` 热区与 `grab/grabbing` 光标；顺带修掉「等待与可恢复错误时退出按钮仍禁用」的真实缺陷（替身此前未模拟 HTML 初始 `disabled`，属假通过） |
 | 2.1.0 | 2026-10-02 | 对齐 `前端计划02@4239d35`：识别结果适配（002）已实现——`visionAdapter` 开关落地并保持 `off`、来源芯片新增「识别结果」为 accent 态、说明区新增「尚未接通外部识别」、识别路径单独记 `vision-decision`、覆盖层 aria-label 改为中性表述；§5 由「规划」改为「已实现」并补实现记录、实现状态与未执行项 |
 | 2.0.0 | 2026-10-02 | 同步到 `main@0c1cafb`：顶栏改为 8 个圆形玻璃按键 + 来源芯片、三个参数滑块（新增 `setParameter` 通道）、等待条、全屏按钮、目标时间初值 6 秒、预制画幅按比例换算；新增 §5「P1 规划：识别结果适配」的新增参数、来源文案、计时名、冲突点与门禁；文案表、令牌表与调试输出同步 |
