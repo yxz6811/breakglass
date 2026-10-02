@@ -128,4 +128,5 @@ P1 立项至少要同时记录精确依赖版本、资源来源与完整性校�
 - [运行配置契约](../specs/001-insitu-parabola/contracts/runtime-config.md)
 - [曲线结果契约](../specs/001-insitu-parabola/contracts/curve-result.md)
 - [任务分工](../specs/001-insitu-parabola/ownership.md)
+- [前端任务与执行流程](./frontend-task-tracker.md)
 - [Spec Kit 治理记忆](../.specify/memory/constitution.md)
