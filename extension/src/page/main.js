@@ -57,6 +57,16 @@
     return Number(targetInput.value);
   }
 
+  /**
+   * 会话是否允许破壁，以目标时间输入框的当前值为准。
+   * 预设 JSON 里的时间只用来填写输入框初值，不单独卡住会话。
+   */
+  function syncSessionTarget() {
+    if (!controller) return;
+    const nextTarget = targetTime();
+    if (Number.isFinite(nextTarget)) controller.targetTime = nextTarget;
+  }
+
   function atTarget() {
     return Boolean(video && video.paused && video.videoWidth &&
       Number.isFinite(video.currentTime) && Math.abs(video.currentTime - targetTime()) <= 0.2);
@@ -190,6 +200,7 @@
 
   function syncControls() {
     if (controller) {
+      syncSessionTarget();
       const wasActive = controller.status === 'waiting' || controller.status === 'interactive';
       const playbackState = controller.onPlaybackChange({
         paused: video.paused,
@@ -207,6 +218,7 @@
 
   function wake() {
     if (overlay || (controller && controller.status === 'interactive')) return;
+    syncSessionTarget();
     if (!controller || !presetResult || !atTarget()) {
       setStatus('请先暂停在目标时间。');
       return;
@@ -216,7 +228,7 @@
       setStatus(waiting.message);
       return;
     }
-    const result = { ...presetResult, requestId: waiting.requestId };
+    const result = { ...presetResult, requestId: waiting.requestId, time: video.currentTime };
     const resolved = controller.resolve(result);
     if (!resolved.ok) {
       setStatus(resolved.message || '准备结果不可用，请重试或退出。');
