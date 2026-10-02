@@ -132,7 +132,8 @@ test('别人的片子：隐藏采样后发一次请求，舞台时间不动，�
     assert.equal(binding.duration, 12);
     assert.equal(calls.length, 1);
     const sent = JSON.parse(calls[0].init.body);
-    assert.deepEqual(Object.keys(sent).sort(), ['courseText', 'duration', 'frames', 'readingId', 'videoId']);
+    assert.deepEqual(Object.keys(sent).sort(), ['courseText', 'duration', 'frameSize', 'frames', 'readingId', 'videoId']);
+    assert.deepEqual(sent.frameSize, { width: 1920, height: 1080 });
     assert.equal(sent.readingId, binding.readingId);
     assert.equal(sent.videoId, binding.videoId);
     assert.equal(sent.frames.length, 8);
@@ -177,6 +178,34 @@ test('第一处通过就暂停并定位，停稳后才用这一处的曲线重�
     assert.equal(elements['source-note'].textContent, '这一帧在阅读时已经算好。');
     assert.equal(elements['source-note'].textContent.includes('识别结果'), false);
     assert.equal(elements['source-label'].textContent.includes('识别结果'), false);
+  } finally {
+    harness.restore();
+  }
+});
+
+test('阅读点的系数超出页面初始滑块范围时，滑块按这一处的范围走', async () => {
+  const harness = await createHarness();
+  try {
+    const { elements, win } = harness;
+    await openForeign(harness);
+    const binding = win.__breakglassLesson.binding();
+    const point = lessonPoint(binding.videoId, 4, 'p4');
+    point.curve.definition.parameters = {
+      a: { initial: -1, min: -1.5, max: -0.5, step: 0.1 },
+      h: { initial: 3, min: 1, max: 5, step: 0.1 },
+      k: { initial: -0.5, min: -2.5, max: 1.5, step: 0.1 }
+    };
+    point.curve.definition.domain = { min: 0, max: 6 };
+    assert.equal(win.__breakglassLesson.offer(point).ok, true);
+    harness.finishSeek();
+    elements['wake-button'].dispatch('click');
+    assert.ok(harness.overlay());
+    const a = elements['parameter-a'];
+    const h = elements['parameter-h'];
+    assert.deepEqual([a.min, a.max, a.step, a.value], ['-1.5', '-0.5', '0.1', '-1']);
+    assert.deepEqual([h.min, h.max, h.value], ['1', '5', '3']);
+    assert.equal(elements['parameter-k'].min, '-2.5');
+    assert.equal(elements['parameter-a-value'].textContent, '-1.0');
   } finally {
     harness.restore();
   }

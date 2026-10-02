@@ -79,7 +79,7 @@
 
 ## 请求
 
-片子可播放且当次页面有地址时发送。地址不写进仓库。
+片子可播放且当次页面有地址时发送。地址不写进仓库。外部服务怎么读这些画面、怎么把 JPEG 坐标乘回源像素，见 [reading-service.md](./reading-service.md)。本仓库不实现该服务。
 
 | 字段 | 规则 |
 | --- | --- |
@@ -87,7 +87,8 @@
 | videoId | 当次内存绑定 |
 | duration | 有限数，单位秒，大于 0 |
 | courseText | 字符串，可空，最长 8000 字。超长则不发送该字段的正文 |
-| frames | 长度 1 到 8。每项只有 `time` 与 `image` |
+| frameSize | 发起阅读时片子的源像素宽高，`{ width, height }`，都是大于 0 的有限数。不是缩小后的 JPEG 尺寸。缺了或无效时该字段为 `null`，不编一个尺寸 |
+| frames | 长度 1 到 8。每项只有 `time` 与 `image`。`image` 是宽不超过 640 的 JPEG data URL |
 
 响应的 `readingId`、`videoId` 必须与请求一致，`origin` 为 `external`。否则整份作废，原因按「不是这一段视频」说明。
 

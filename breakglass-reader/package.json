@@ -1,0 +1,14 @@
+{
+  "name": "breakglass-reader",
+  "private": true,
+  "version": "0.1.0",
+  "description": "BreakGlass 开播前阅读的外部服务：把页面送来的画面交给多模态模型，读出抛物线，回成契约里的点。",
+  "type": "module",
+  "engines": {
+    "node": ">=22.9"
+  },
+  "scripts": {
+    "start": "node --env-file-if-exists=.env src/main.mjs",
+    "test": "node --test"
+  }
+}
