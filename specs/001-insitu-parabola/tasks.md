@@ -12,6 +12,8 @@
 
 **故事 2 实现进展（2026-10-02，p2 分支）**: T021–T029 已实现并通过自动化检查：`node --test` 68 项通过（含 `tests/backend-edges.test.js`），`node --check` 通过。新增 `extension/src/attempt/simulator.js`、`extension/src/session/wake.js`、`extension/src/telemetry/latency.js`、`tests/wake-timeout.test.js`、`tests/external-simulator.test.js`、`tests/page-integration.test.js`、`tests/page-p2.test.js`、`tests/helpers/fake-clock.js`；改造 `extension/src/session/session.js`、`extension/src/page/main.js`、`extension/demo/index.html`、`extension/demo/demo.css`。T019、T020 的文档口径与 T030 的 Chrome 手工验收仍未完成。
 
+**故事 3 实现进展（2026-10-02，p2 分支）**: T031–T037、T039 已实现并通过自动化检查：node --test 88 项通过（新增 tests/alignment.test.js、tests/page-p3.test.js、tests/helpers/fake-page.js；扩展 tests/content-rect.test.js、tests/page-integration.test.js）。新增 extension/src/geometry/alignment.js；改造 extension/src/geometry/content-rect.js（长度单位、单关键字补齐另一轴、数字型、非有限尺寸防御）与 extension/src/page/main.js（全屏/方向/DPR/ResizeObserver 重算和 window.__breakglassAlignment 只读测量）与 extension/demo/index.html。T038 的四画幅手工验收仍待执行。
+
 ## Format: `[ID] [P?] [Story] Description`
 
 - **[P]**: 可与同阶段其他 `[P]` 任务并行（不同文件、不依赖未完成任务）
@@ -128,21 +130,21 @@
 
 ### Tests for User Story 3
 
-- [ ] T031 [P] [US3] 先写会失败的 `tests/alignment.test.js`：四画幅往返一致性、偏差比例、2% 边界（恰好通过 / 略超拒绝）、采样点有限性
+- [x] T031 [P] [US3] 先写会失败的 `tests/alignment.test.js`：四画幅往返一致性、偏差比例、2% 边界（恰好通过 / 略超拒绝）、采样点有限性
 
 ### Implementation for User Story 3
 
-- [ ] T032 [US3] 完善 `extension/src/geometry/content-rect.js`：`object-position` 长度单位、单关键字补齐另一轴、数字型解析；非有限 `videoWidth`/`videoHeight` 防御
-- [ ] T033 [US3] 实现 `extension/src/geometry/alignment.js`：`sourcePointToPage`、`pagePointToSource`、`deviationRatio`、`withinTolerance`、`sampleAlignment`（API 见 `plan-story-3.md` §3.2）
-- [ ] T034 [US3] 覆盖层定位收口：`position: absolute` 或等价的 CSS 规则，使 SVG 与 `contentRect` 绑定（**2% 对齐的前置**）
-- [ ] T035 [US3] 补齐重算触发：`fullscreenchange`、DPR 变化、`ResizeObserver(video)`、`loadedmetadata`、`orientationchange`，并在退出时清理监听
+- [x] T032 [US3] 完善 `extension/src/geometry/content-rect.js`：`object-position` 长度单位、单关键字补齐另一轴、数字型解析；非有限 `videoWidth`/`videoHeight` 防御
+- [x] T033 [US3] 实现 `extension/src/geometry/alignment.js`：`sourcePointToPage`、`pagePointToSource`、`deviationRatio`、`withinTolerance`、`sampleAlignment`（API 见 `plan-story-3.md` §3.2）
+- [x] T034 [US3] 覆盖层定位收口：`position: absolute` 或等价的 CSS 规则，使 SVG 与 `contentRect` 绑定（**2% 对齐的前置**）
+- [x] T035 [US3] 补齐重算触发：`fullscreenchange`、DPR 变化、`ResizeObserver(video)`、`loadedmetadata`、`orientationchange`，并在退出时清理监听
 
 ### Verification for User Story 3
 
-- [ ] T036 [P] [US3] 四画幅夹具与 2% 测量输出（演示页只读 `window.__breakglassAlignment`，不联网、不落盘）
-- [ ] T037 [US3] 更新 `tests/extension-surface.test.js`、`tests/page-integration.test.js`、`tests/geometry.test.js` 覆盖定位、监听与几何完善项
+- [x] T036 [P] [US3] 四画幅夹具与 2% 测量输出（演示页只读 `window.__breakglassAlignment`，不联网、不落盘）
+- [x] T037 [US3] 更新 `tests/extension-surface.test.js`、`tests/page-integration.test.js`、`tests/geometry.test.js` 覆盖定位、监听与几何完善项
 - [ ] T038 [US3] 按 quickstart 第 3 节手工验收并记录四画幅 + 窗口变化 + 全屏/DPR 的最大偏差比例（模板见 `plan-story-3.md` §7）
-- [ ] T039 [US3] FR-018 边界核对：不在未验证页面注入，入口不可用时有明确说明；`extension/manifest.json` 无主机权限与内容脚本
+- [x] T039 [US3] FR-018 边界核对：不在未验证页面注入，入口不可用时有明确说明；`extension/manifest.json` 无主机权限与内容脚本
 
 **Checkpoint**: 覆盖层在四种画幅下贴合内容区域；窗口/全屏/DPR 变化后自动重算；2% 记录可复现，且未把夹具证据写成正式视频验收。
 
