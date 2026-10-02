@@ -89,10 +89,11 @@ test('non-off external attempts can wait but a failed check never becomes intera
     const retry = controller({ externalAttempt });
     const waiting = retry.beginWait({ paused: true, currentTime: 12.5 });
     assert.equal(retry.resolve(result(waiting.requestId, { source: 'vision' })).ok, false);
-    const failed = retry.fail('external_invalid', '外部结果不可用，未进入交互。');
+    const failed = retry.fail('external_unavailable', '外部结果不可用，未进入交互。');
     assert.equal(failed.status, 'recoverable-error');
     assert.equal(failed.result, null);
-    assert.equal(retry.error.code, 'external_invalid');
+    assert.equal(failed.code, 'external_unavailable');
+    assert.equal(failed.message, '外部结果不可用，未进入交互。');
     assert.equal(retry.beginWait({ paused: true, currentTime: 12.5 }).ok, true);
   }
 });
@@ -100,14 +101,16 @@ test('non-off external attempts can wait but a failed check never becomes intera
 test('fail() clears the pending state and keeps the reason for retry', () => {
   const session = controller();
   const pending = session.beginWait({ paused: true, currentTime: 12.5 });
-  const state = session.fail('no_preset', '当前帧没有可用的准备结果，无法进入交互。');
+  const state = session.fail('preset_unavailable', '当前帧没有可用的准备结果，无法进入交互。');
   assert.equal(state.status, 'recoverable-error');
   assert.equal(state.requestId, null);
   assert.equal(state.result, null);
-  assert.equal(session.error.code, 'no_preset');
+  assert.equal(state.code, 'preset_unavailable');
+  assert.equal(state.message, '当前帧没有可用的准备结果，无法进入交互。');
   assert.equal(session.resolve(result(pending.requestId)).ok, false);
   assert.equal(session.cancel().status, 'paused-ready');
-  assert.equal(session.error, null);
+  assert.equal(session.getState().code, null);
+  assert.equal(session.getState().message, null);
 });
 
 test('only one session may be active at a time', () => {

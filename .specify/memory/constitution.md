@@ -9,11 +9,11 @@ Sync Impact Report
 - Removed sections: 无
 - Templates status: 依赖模板在运行时读取本文件，本次未改模板
 - Deferred TODOs:
-  - TODO(SEAM_CODE): 代码仍同时导出 createWake 与 createWakeController；页面调用后者，session.fail 仍接受对象参数。本次只冻结契约，不改实现
-  - TODO(SEAM_DOCS): ownership.md、plan-story-2.md 附录 B、tasks.md 仍各写一套签名，须回写为引用本节
+  - TODO(SEAM_CODE): 已收敛。wake.js 只导出 createWake，页面改走 onChange，fail 只接受 (code, message)
+  - TODO(SEAM_DOCS): 已回写。ownership.md、plan-story-2.md 附录 B、ownership-story-2.md 改为引用本节
   - TODO(FRAME_UPLOAD): 单帧是否允许离开浏览器仍待团队书面确认
   - TODO(PROXY_RUNTIME): 感知代理的语言、框架和部署形态未冻结
-  - TODO(DOC_SYNC): docs/BreakGlass-constitution.md 1.1.0 尚未同步感知代理窄例外，也尚未写入交接接口
+  - TODO(DOC_SYNC): docs/BreakGlass-constitution.md 1.2.0 已指向交接接口。感知代理窄例外仍以本文件原则 II 为准，该前端基线未逐条复写
   - TODO(REPO_BOUNDARY): AGENTS.md 仍规定本仓库只负责前端
   - TODO(RESET_EXIT): 重置是否保留交互层、退出后是否保持暂停，执行计划仍标为未确认
   - TODO(CURVE_FORM): 抛物线参数形式、初值、范围和步长必须来自最终演示素材，本文件不预设公式

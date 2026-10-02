@@ -40,7 +40,7 @@ function basePreset(overrides = {}) {
 
 /**
  * 同步推进的假时钟。到点的定时器按注册顺序执行。
- * @returns {{ now: () => number, schedule: Function, clearTimer: Function, advance: Function, pending: () => number }}
+ * @returns {{ now: () => number, schedule: Function, clear: Function, advance: Function, pending: () => number }}
  */
 function createClock() {
   let now = 0;
@@ -51,19 +51,19 @@ function createClock() {
       return now;
     },
     /**
-     * @param {Function} fn
-     * @param {number} ms
+     * @param {number} delayMs
+     * @param {Function} handler
      * @returns {number}
      */
-    schedule(fn, ms) {
+    schedule(delayMs, handler) {
       const id = ++sequence;
-      timers.set(id, { at: now + ms, fn });
+      timers.set(id, { at: now + delayMs, fn: handler });
       return id;
     },
     /**
      * @param {number} id
      */
-    clearTimer(id) {
+    clear(id) {
       timers.delete(id);
     },
     /**
@@ -122,9 +122,7 @@ function harness(overrides = {}) {
     session,
     config,
     preset,
-    now: () => clock.now(),
-    schedule: (fn, ms) => clock.schedule(fn, ms),
-    clearTimer: (id) => clock.clearTimer(id),
+    clock,
     onChange: (state) => changes.push(structuredClone(state)),
     ...(overrides.attempt ? { attempt: overrides.attempt } : {})
   });
@@ -154,6 +152,8 @@ function assertAligned(h) {
   const state = h.latest();
   const session = h.session.getState();
   assert.equal(session.status, state.status);
+  assert.equal(session.code, state.code);
+  assert.equal(session.message, state.message);
   if (state.result == null) {
     assert.equal(session.result, null);
     return;
