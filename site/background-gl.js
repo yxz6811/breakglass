@@ -31,6 +31,8 @@ var FRAGMENT = [
   'uniform sampler2D uAtlas;',
   'uniform float uRippleCount;',
   'uniform vec4 uRipples[' + MAX_RIPPLES + '];',
+  'uniform vec2 uFlowDir;',
+  'uniform float uFlowPhase;',
   '',
   'float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }',
   '',
@@ -38,9 +40,14 @@ var FRAGMENT = [
   '  vec2 frag = vUv * uResolution;',
   '  vec2 cellId = floor(frag / uCell);',
   '  vec2 local = fract(frag / uCell);',
-  '  float field = floor(uTime * 4.0) / 4.0;',
-  '  float value = 0.12 + hash(cellId) * 0.12;',
-  '  value += (sin((cellId.x + field * 4.0) * 0.19) * 0.5 + cos((cellId.y - field * 3.0) * 0.23) * 0.5) * 0.08 + 0.08;',
+  // 底纹用连续时间、低频漂移：按 250ms 量化会让字符每 0.25 秒跳一次，看起来就是闪。
+  '  float value = 0.20 + hash(cellId) * 0.10;',
+  '  value += (sin((cellId.x + uTime * 0.32) * 0.16) * 0.5 + cos((cellId.y - uTime * 0.26) * 0.19) * 0.5) * 0.07 + 0.07;',
+  // 流动渐变：只参与颜色与明暗，不参与“选哪个字”。
+  // 一旦让渐变参与选字，波的推进会让整屏字符在字阶之间来回跳，视觉上就是闪烁。
+  '  vec2 flowAxisDir = normalize(uFlowDir + vec2(0.0001));',
+  '  float axis = dot(vUv - 0.5, flowAxisDir);',
+  '  float flowWave = 0.5 + 0.5 * sin(axis * 2.6 - uFlowPhase);',
   '  for (int i = 0; i < ' + MAX_RIPPLES + '; i++) {',
   '    if (float(i) >= uRippleCount) break;',
   '    vec4 ripple = uRipples[i];',
@@ -53,8 +60,13 @@ var FRAGMENT = [
   '  float glyph = floor(value * (uGlyphCount - 0.001));',
   '  vec2 atlasUv = vec2((glyph + local.x) / uGlyphCount, 1.0 - local.y);',
   '  float mask = texture2D(uAtlas, atlasUv).a;',
-  '  vec3 color = mix(vec3(0.40, 0.52, 0.62), vec3(0.85, 0.95, 1.0), value);',
-  '  gl_FragColor = vec4(color, mask * (0.30 + value * 0.55));',
+  // 明暗与颜色一起被渐变推动：tone 越高越亮，但选字仍由 value 决定，所以不会闪。
+  '  float tone = clamp(value + flowWave * 0.30, 0.0, 1.0);',
+  '  vec3 base = mix(vec3(0.42, 0.52, 0.64), vec3(0.95, 0.99, 1.0), tone);',
+  // 颜色相位也要慢：0.12 rad/s 约 50 秒一个来回，只当作缓慢的冷暖流动，不会闪。
+  '  vec3 flowTint = mix(vec3(0.74, 0.92, 1.0), vec3(0.88, 0.80, 1.0), 0.5 + 0.5 * sin(uFlowPhase * 0.12 + axis * 1.4));',
+  '  vec3 color = base * mix(vec3(1.0), flowTint, 0.32);',
+  '  gl_FragColor = vec4(color, mask * (0.34 + tone * 0.56));',
   '}',
 ].join('\n');
 
@@ -122,6 +134,8 @@ export function createAsciiRippleGL(options) {
     uAtlas: { value: buildAtlas() },
     uRippleCount: { value: 0 },
     uRipples: { value: ripples },
+    uFlowDir: { value: new THREE.Vector2(1, 0) },
+    uFlowPhase: { value: 0 },
   };
   var material = new THREE.ShaderMaterial({
     vertexShader: VERTEX,
@@ -176,6 +190,14 @@ export function createAsciiRippleGL(options) {
     frames += 1;
     var now = (stamp - startTime) / 1000;
     uniforms.uTime.value = now;
+    if (flowSwitchAt === 0) pickFlowAngle(0);
+    if (now - flowSwitchAt > flowSpan) pickFlowAngle(now);
+    var flowProgress = Math.min(1, Math.max(0, (now - flowSwitchAt) / flowSpan));
+    var smoothened = flowProgress * flowProgress * (3 - 2 * flowProgress);
+    currentAngle = flowAngleFrom + (flowAngleTo - flowAngleFrom) * smoothened;
+    uniforms.uFlowDir.value.set(Math.cos(currentAngle), Math.sin(currentAngle));
+    // 相位速度 0.35 rad/s：渐变缓缓推过整屏，不会让人觉得在抖。
+    uniforms.uFlowPhase.value += (lastRenderAt >= 0 ? FRAME_INTERVAL_MS : 0) / 1000 * 0.35;
     var used = 0;
     for (var i = 0; i < MAX_RIPPLES; i += 1) {
       if (i < active.length) {
@@ -199,6 +221,24 @@ export function createAsciiRippleGL(options) {
     pushRipple(event.clientX, event.clientY, 0.55);
   }
   function onPointerDown(event) { pushRipple(event.clientX, event.clientY, 1); }
+  // 流动渐变的方向：每 6–12 秒随机换一个角度，角度之间做最短弧插值，避免跳变。
+  // 相位单独累加，保证帧率变化时流动速度不变。
+  var currentAngle = 0;
+  var flowAngleFrom = 0;
+  var flowAngleTo = 0;
+  var flowSwitchAt = 0;
+  var flowSpan = 8;
+  function pickFlowAngle(seconds) {
+    flowAngleFrom = flowAngleTo;
+    flowAngleTo = Math.random() * Math.PI * 2;
+    var delta = flowAngleTo - flowAngleFrom;
+    while (delta > Math.PI) delta -= Math.PI * 2;
+    while (delta < -Math.PI) delta += Math.PI * 2;
+    flowAngleTo = flowAngleFrom + delta;
+    flowSwitchAt = seconds;
+    flowSpan = 6 + Math.random() * 6;
+  }
+
   var resizeTimer = 0;
   function onResize() {
     if (resizeTimer) window.clearTimeout(resizeTimer);
@@ -226,7 +266,7 @@ export function createAsciiRippleGL(options) {
     rippleAt: pushRipple,
     info: function () {
       var elapsed = (performance.now() - startedAt) / 1000;
-      return { glyphs: RAMP.length, ripples: active.length, size: [width, height], dpr: dpr, frames: frames, fps: elapsed > 0 ? Math.round(frames / elapsed) : 0, software: softwareRendering, gpu: rendererName.slice(0, 60) };
+      return { glyphs: RAMP.length, ripples: active.length, size: [width, height], dpr: dpr, frames: frames, fps: elapsed > 0 ? Math.round(frames / elapsed) : 0, software: softwareRendering, gpu: rendererName.slice(0, 60), flowAngle: Math.round((currentAngle * 180) / Math.PI), flowPhase: Number(uniforms.uFlowPhase.value.toFixed(2)) };
     },
   };
 }
