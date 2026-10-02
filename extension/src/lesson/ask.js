@@ -45,9 +45,26 @@
   }
 
   /**
-   * 请求体只有阅读编号、视频编号、时长、课程说明和最多 8 张画面。
+   * 源尺寸必须是正的有限宽高。缺了或无效时不编一个尺寸。
+   * @param {unknown} value
+   * @returns {{ width: number, height: number } | null}
+   */
+  function sourceFrameSize(value) {
+    const frame = value && typeof value === 'object' ? value : null;
+    if (!frame) return null;
+    const width = frame.width;
+    const height = frame.height;
+    if (typeof width !== 'number' || typeof height !== 'number') return null;
+    if (!Number.isFinite(width) || !Number.isFinite(height)) return null;
+    if (!(width > 0) || !(height > 0)) return null;
+    return { width, height };
+  }
+
+  /**
+   * 请求体带阅读编号、视频编号、时长、源尺寸、课程说明和最多 8 张画面。
+   * 不带地址、密钥或整段视频。
    * @param {object} input
-   * @returns {{ readingId: string, videoId: string, duration: number, courseText: string, frames: { time: number, image: string }[] }}
+   * @returns {{ readingId: string, videoId: string, duration: number, frameSize: { width: number, height: number } | null, courseText: string, frames: { time: number, image: string }[] }}
    */
   function requestBody(input) {
     const source = input || {};
@@ -61,6 +78,7 @@
       readingId: source.readingId,
       videoId: source.videoId,
       duration: source.duration,
+      frameSize: sourceFrameSize(source.frameSize),
       courseText: course.ok ? course.courseText : '',
       frames
     };

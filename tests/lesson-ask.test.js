@@ -45,6 +45,7 @@ function body(extra) {
     readingId: 'reading-1',
     videoId: 'local-binding-1',
     duration: 12,
+    frameSize: { width: 1920, height: 1080 },
     courseText: '',
     frames: [{ time: 0.75, image: 'data:image/jpeg;base64,AA==' }]
   }, extra || {}));
@@ -82,12 +83,24 @@ test('课程说明：空着可以，8000 字以内照发，超过就不发正文
   assert.equal(body({ courseText: '课'.repeat(8001) }).courseText, '');
 });
 
-test('请求体只有五个字段，画面最多 8 张，每张只带时间和图片', () => {
+test('请求体带源尺寸，画面最多 8 张，每张只带时间和图片', () => {
   const frames = Array.from({ length: 10 }, (_, index) => ({ time: index, image: 'data:image/jpeg;base64,AA==', extra: 'drop' }));
-  const sent = body({ frames, secret: 'nope', origin: 'external' });
-  assert.deepEqual(Object.keys(sent).sort(), ['courseText', 'duration', 'frames', 'readingId', 'videoId']);
+  const sent = body({
+    frames,
+    secret: 'nope',
+    origin: 'external',
+    url: 'https://reader.example/lesson',
+    apiKey: 'sk-test'
+  });
+  assert.deepEqual(Object.keys(sent).sort(), ['courseText', 'duration', 'frameSize', 'frames', 'readingId', 'videoId']);
+  assert.deepEqual(sent.frameSize, { width: 1920, height: 1080 });
   assert.equal(sent.frames.length, 8);
   sent.frames.forEach((frame) => assert.deepEqual(Object.keys(frame).sort(), ['image', 'time']));
+  const serialized = JSON.stringify(sent);
+  assert.equal(/secret|api[_-]?key|token|authorization|https?:/i.test(serialized), false);
+  assert.equal(body({ frameSize: { width: 0, height: 1080 } }).frameSize, null);
+  assert.equal(body({ frameSize: { width: Number.NaN, height: 1080 } }).frameSize, null);
+  assert.equal(body({ frameSize: null }).frameSize, null);
 });
 
 test('回包要对上这一次的阅读编号、视频编号，且来源是 external', () => {

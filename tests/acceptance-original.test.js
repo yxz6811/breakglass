@@ -158,8 +158,8 @@ test('8 点击重置：h 回 0，交互层保留，视频仍暂停在目标帧�
     elements['parameter-a'].dispatch('input');
     elements['reset-button'].dispatch('click');
     assert.equal(elements['parameter-h-value'].textContent, '0.0');
-    assert.equal(elements['parameter-a-value'].textContent, '0.8');
-    assert.equal(elements['parameter-k-value'].textContent, '0.0');
+    assert.equal(elements['parameter-a-value'].textContent, '1.0');
+    assert.equal(elements['parameter-k-value'].textContent, '1.0');
     assert.notEqual(harness.overlay(), null, '交互层保留');
     assert.equal(video.paused, true, '视频仍保持暂停');
     assert.equal(video.currentTime, 6, '仍停在目标帧');

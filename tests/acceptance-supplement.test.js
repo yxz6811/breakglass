@@ -86,9 +86,9 @@ test('14 重置回到初值且交互层保留', async () => {
     elements['parameter-h'].value = '1.5';
     elements['parameter-h'].dispatch('input');
     elements['reset-button'].dispatch('click');
-    assert.equal(elements['parameter-a-value'].textContent, '0.8');
+    assert.equal(elements['parameter-a-value'].textContent, '1.0');
     assert.equal(elements['parameter-h-value'].textContent, '0.0');
-    assert.equal(elements['parameter-k-value'].textContent, '0.0');
+    assert.equal(elements['parameter-k-value'].textContent, '1.0');
     assert.notEqual(harness.overlay(), null, '交互层必须保留');
     assert.equal(elements['reset-reason'].textContent, '');
   } finally {

@@ -80,7 +80,7 @@
 
 ### Tests for User Story 3
 
-- [x] T012 [US3] 先写会失败的 `tests/lesson-ask.test.js`。请求体只有 `readingId`、`videoId`、`duration`、`courseText`、`frames`；`frames` 长度不超过 8；没有整段视频字段；`courseText` 超过 8000 字时不发送正文；截止为 300000ms；失败结果要求退回，且不调用会话 `fail`。测试不得访问网络
+- [x] T012 [US3] 先写会失败的 `tests/lesson-ask.test.js`。请求体有 `readingId`、`videoId`、`duration`、`frameSize`、`courseText`、`frames`；`frameSize` 是源像素宽高，无效时为 `null`；`frames` 长度不超过 8；没有整段视频、密钥或固定地址；`courseText` 超过 8000 字时不发送正文；截止为 300000ms；失败结果要求退回，且不调用会话 `fail`。测试不得访问网络
 - [x] T013 [P] [US3] 在 `tests/page-lesson.test.js` 增加断言：阅读失败后视频地址以 `breakglass-demo-9s.mp4` 结尾，且前一 `videoId` 的点被清空；验收片子地址等于该文件时不得开始作为阅读目标
 
 ### Implementation for User Story 3

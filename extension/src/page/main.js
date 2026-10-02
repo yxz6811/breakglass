@@ -626,9 +626,15 @@
       if (!row.input || !row.output) return;
       const value = Number(parameters[row.name]);
       if (!Number.isFinite(value)) return;
+      const item = definition.parameters[row.name];
+      // 阅读点的范围围着读数，可能超出页面写死的初值；先换范围再赋值，免得浏览器把值夹到旧边界。
+      if (item) {
+        row.input.min = String(item.min);
+        row.input.max = String(item.max);
+        row.input.step = String(item.step);
+      }
       row.input.value = String(value);
       row.output.textContent = value.toFixed(1);
-      const item = definition.parameters[row.name];
       if (item && row.input.setAttribute) {
         row.input.setAttribute('aria-valuetext', value.toFixed(1) + '（范围 ' + item.min + ' 到 ' + item.max + '）');
       }
@@ -1091,6 +1097,7 @@
           readingId: owner.readingId,
           videoId: owner.videoId,
           duration: owner.duration,
+          frameSize: { width: video.videoWidth, height: video.videoHeight },
           courseText: lessonNote ? lessonNote.value : '',
           frames
         }),
