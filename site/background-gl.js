@@ -16,8 +16,9 @@
 import * as THREE from './vendor/three.module.min.js';
 
 var RAMP = ' .`-:;+=*x#%@';
-var CELL_W = 16;
-var CELL_H = 20;
+// 格子越小字符越密；片元成本与格子大小无关，所以加密几乎不额外花性能。
+var CELL_W = 12;
+var CELL_H = 15;
 var MAX_RIPPLES = 4;
 var RIPPLE_SPEED = 320;
 var RIPPLE_WIDTH = 92;
@@ -152,6 +153,12 @@ var FRAGMENT = [
   '  vec3 flowTint = mix(vec3(0.74, 0.92, 1.0), vec3(0.88, 0.80, 1.0), 0.5 + 0.5 * sin(uFlowPhase * 0.12 + axis * 1.4));',
   '  flowTint = mix(flowTint, vec3(0.72, 0.98, 1.0), halo * 0.85);',
   '  vec3 color = base * mix(vec3(1.0), flowTint, 0.32);',
+  // 函数曲线的颜色：左蓝右紫，曲线越强越白 —— 形成紫白蓝的渐变。
+  '  float hueMix = clamp(0.5 + plotP.x * 0.85, 0.0, 1.0);',
+  // 端点更饱和：左蓝(0.32,0.50,1.0) 右紫(0.86,0.55,1.0)，只在最尖处掺白。
+  '  vec3 curveTint = mix(vec3(0.32, 0.50, 1.0), vec3(0.86, 0.55, 1.0), hueMix);',
+  '  curveTint = mix(curveTint, vec3(1.0, 0.99, 1.0), smoothstep(0.9, 1.0, curve) * 0.55);',
+  '  color = mix(color, curveTint * 1.28, clamp(curve * 1.15, 0.0, 1.0));',
   '  gl_FragColor = vec4(color, mask * (0.40 + tone * 0.58));',
   '}',
 ].join('\n');
