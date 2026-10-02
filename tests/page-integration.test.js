@@ -37,6 +37,7 @@ test('演示页按依赖顺序加载本地脚本', () => {
     '../src/session/wake.js',
     '../src/telemetry/latency.js',
     '../src/preset/load.js',
+    '../src/preset/place-in-frame.js',
     '../src/page/main.js'
   ]);
   for (const src of sources) {
@@ -92,14 +93,19 @@ test('扩展源码不发请求、不含密钥或远程地址', () => {
   assert.doesNotMatch(attemptSource, /api[_-]?key|secret|token|authorization|model/i);
 });
 
-test('替身模块只被演示页与测试引用，不进入生产主路径以外的判断', () => {
+test('页面只调用 createWake，不维护第二套唤醒或替身', () => {
   const main = readText('src/page/main.js');
+  const wake = readText('src/session/wake.js');
   assert.match(main, /wakeApi\.createWake\(/);
-  assert.match(main, /preset: presetResult/);
-  assert.match(main, /onChange: \(state\) => applyOutcome\(state\)/);
-  assert.match(main, /fallbackAfterMs/);
+  assert.match(main, /onChange:/);
+  assert.match(main, /canWake\(/);
+  assert.match(main, /mark\('timeout-decided'\)/);
+  assert.match(main, /mark\('svg-visible'\)/);
   assert.match(main, /fallback === 'timeout'/);
   assert.match(main, /不代表实时识别成功/);
+  assert.doesNotMatch(main, /createWakeController|onOutcome|resolvePreset|isWaiting|decisionAt|attemptApi|beginWait|session\.fail|\.current\b/);
+  assert.doesNotMatch(wake, /createWakeController|onOutcome|function begin\(/);
+  assert.match(wake, /schedule\(delayMs, handler\)|time\.schedule\(/);
 });
 test('覆盖层绝对定位并接入多画幅重算与测量', () => {
   const main = readText('src/page/main.js');

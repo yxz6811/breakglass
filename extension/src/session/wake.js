@@ -1,3 +1,6 @@
+/**
+ * 唤醒协调器。每次唤醒重新读配置，冻结请求上下文，并在 1500ms 看门狗到点时决定是否回退。
+ */
 (function (root, factory) {
   const api = factory(root.BreakGlass || {});
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
@@ -6,288 +9,335 @@
 })(typeof globalThis !== 'undefined' ? globalThis : this, function (BreakGlass) {
   const validate = BreakGlass.validate || (typeof require === 'function' ? require('../curve/validate') : null);
   const attemptApi = BreakGlass.attempt || (typeof require === 'function' ? require('../attempt/simulator') : null);
-  const DEFAULT_FALLBACK_AFTER_MS = 1500;
 
-  function defaultClock() {
-    return {
-      now: () => (typeof performance !== 'undefined' && performance.now ? performance.now() : Date.now()),
-      schedule: (delayMs, handler) => setTimeout(handler, delayMs),
-      clear: (handle) => clearTimeout(handle)
-    };
-  }
+  const PRESET_UNAVAILABLE = '当前帧没有可用的准备结果，无法进入交互。';
+  const EXTERNAL_UNAVAILABLE = '外部结果不可用，未进入交互。';
+  const MOCK_DISABLED = '本地预制未启用，无法进入交互。';
 
-  // 一次唤醒的协调器：冻结请求上下文、驱动 1.5 秒看门狗、在回退前重校验、取消、丢弃迟到结果。
-  // 它自己不做绘制、不读文件、不发请求；准备结果由调用方通过 resolvePreset 注入。
-  function createWakeController(options = {}) {
-    const session = options.session;
-    if (!session) throw new Error('createWakeController 需要 session。');
-    const clock = options.clock || defaultClock();
-    const resolvePreset = typeof options.resolvePreset === 'function' ? options.resolvePreset : null;
-    const attempt = options.attempt || null;
-    const fallbackAfterMs = Number.isFinite(options.fallbackAfterMs) ? options.fallbackAfterMs : DEFAULT_FALLBACK_AFTER_MS;
-    const onOutcome = typeof options.onOutcome === 'function' ? options.onOutcome : null;
-
-    let timer = null;
-    let inflight = null;
-    let outcome = {
-      status: session.status,
-      requestId: null,
-      result: null,
-      fallback: null,
-      reason: null,
-      elapsedMs: null,
-      decisionAt: null
+  /**
+   * @param {object} options
+   * @param {object} options.session 现有 SessionController
+   * @param {object} options.config enableLocalMock、fallbackAfterMs、prewarmed、externalAttempt
+   * @param {object | null} options.preset 已装入的预制结果；没有匹配预制时为 null
+   * @param {{ now: () => number, schedule: (delayMs: number, handler: Function) => unknown, clear: (timerId: unknown) => void }} options.clock
+   * @param {(state: object) => void} [options.onChange]
+   * @param {{ start: Function, abort: Function }} [options.attempt] 仅测试注入；页面不得传入
+   * @returns {{ start: Function, cancel: Function, exit: Function, onPlaybackChange: Function, dispose: Function }}
+   */
+  function createWake({ session, config, preset, clock, onChange, attempt } = {}) {
+    let generation = 0;
+    let timerId = null;
+    let activeAttempt = null;
+    const time = clock || {
+      now() { return 0; },
+      schedule() { return null; },
+      clear() {}
     };
 
-    function idle() { return { ...outcome }; }
-
-    // 每次状态变化都通知调用方，页面据此渲染等待、回退、失败与退出。
-    function publish(next) {
-      outcome = next;
-      if (onOutcome) onOutcome({ ...outcome });
-      return { ...outcome };
-    }
-    function clearTimer() { if (timer !== null) { clock.clear(timer); timer = null; } }
-    function abortAttempt() { if (attempt && typeof attempt.abort === 'function') attempt.abort(); }
-
-    function freeze(currentTime) {
-      const pending = session.pending;
+    /**
+     * 每个判定点都重新读配置，不沿用上一次唤醒时的开关。
+     * @returns {{ enableLocalMock: unknown, fallbackAfterMs: unknown, prewarmed: unknown, externalAttempt: unknown }}
+     */
+    function readConfig() {
+      const source = config || {};
       return {
-        requestId: pending ? pending.requestId : null,
-        videoId: session.videoId,
-        time: Number.isFinite(currentTime) ? currentTime : (pending ? pending.time : null),
-        frameSize: session.frameSize ? { width: session.frameSize.width, height: session.frameSize.height } : null
+        enableLocalMock: source.enableLocalMock,
+        fallbackAfterMs: source.fallbackAfterMs,
+        prewarmed: source.prewarmed,
+        externalAttempt: source.externalAttempt
       };
     }
 
-    // 回退与外部结果都必须经过同一个确定性校验器，并带上冻结上下文。
-    function validateAgainst(candidate, ctx) {
-      if (!candidate || !validate || !ctx) return null;
-      const check = validate.validateCurveResult(candidate, {
+    /**
+     * 作废当前请求，并清掉看门狗和替身定时器。
+     */
+    function disarm() {
+      generation += 1;
+      if (timerId != null) {
+        time.clear(timerId);
+        timerId = null;
+      }
+      if (activeAttempt && typeof activeAttempt.abort === 'function') activeAttempt.abort();
+    }
+
+    /**
+     * @param {string} requestId
+     * @param {number} token
+     * @returns {boolean}
+     */
+    function stillWaiting(requestId, token) {
+      if (token !== generation) return false;
+      const state = session.getState();
+      return state.status === 'waiting' && state.requestId === requestId;
+    }
+
+    /**
+     * 把会话的公开状态交给页面。不另带 reason、decisionAt 或根上的 fallback。
+     */
+    function publish() {
+      if (typeof onChange !== 'function') return;
+      onChange(session.getState());
+    }
+
+    /**
+     * @param {object} ctx
+     * @returns {object}
+     */
+    function expected(ctx) {
+      return {
         videoId: ctx.videoId,
-        targetTime: ctx.time,
+        targetTime: session.targetTime,
         timeTolerance: session.timeTolerance,
         frameSize: ctx.frameSize,
         requestId: ctx.requestId
-      });
-      return check.ok ? check.value : null;
+      };
     }
 
-    function presetCandidate(ctx, fallback) {
-      if (!resolvePreset) return null;
-      const base = resolvePreset(ctx);
-      if (!base) return null;
-      return { ...base, requestId: ctx.requestId, fallback };
-    }
-
-    function fail(code, message) {
-      clearTimer();
-      inflight = null;
-      if (typeof session.fail === 'function') session.fail(code, message);
-      else session.cancel();
-      return publish({
-        status: 'recoverable-error',
-        code: code || 'recoverable_error',
-        message: message || '结果不可用，请重试或退出。',
-        requestId: null,
-        result: null,
-        fallback: null,
-        reason: code,
-        elapsedMs: null,
-        decisionAt: null
-      });
-    }
-
-    function settle(result, fallback, startedAt) {
-      const resolved = session.resolve(result);
-      if (!resolved.ok) return fail(resolved.code || 'resolve_failed', resolved.message || '结果无法进入交互。');
-      return publish({
-        status: 'interactive',
-        code: null,
-        message: null,
-        requestId: result.requestId,
-        result,
+    /**
+     * 装订本次请求编号。视频、时间和画幅保留预制原值，交给校验器复核。
+     * @param {object} source
+     * @param {string} requestId
+     * @param {null | 'timeout'} fallback
+     * @returns {object}
+     */
+    function bindPreset(source, requestId, fallback) {
+      return {
+        requestId,
+        videoId: source.videoId,
+        time: source.time,
+        frameSize: source.frameSize
+          ? { width: source.frameSize.width, height: source.frameSize.height }
+          : source.frameSize,
+        source: 'preset',
         fallback,
-        reason: fallback === 'timeout' ? 'timeout' : null,
-        elapsedMs: clock.now() - startedAt,
-        decisionAt: fallback === 'timeout' ? startedAt : null
+        definition: source.definition
+      };
+    }
+
+    /**
+     * @param {object} candidate
+     * @param {object} ctx
+     * @returns {{ ok: boolean, code?: string, message?: string }}
+     */
+    function checkCandidate(candidate, ctx) {
+      if (!validate || typeof validate.validateCurveResult !== 'function') {
+        return { ok: false, code: 'validator_unavailable', message: '结果校验器不可用。' };
+      }
+      return validate.validateCurveResult(candidate, expected(ctx));
+    }
+
+    /**
+     * @param {object} live
+     * @returns {boolean}
+     */
+    function presetReady(live) {
+      return live.enableLocalMock === true &&
+        live.prewarmed === true &&
+        live.fallbackAfterMs === 1500 &&
+        Boolean(preset) &&
+        typeof preset === 'object';
+    }
+
+    /**
+     * @param {object} live
+     * @returns {{ code: string, message: string }}
+     */
+    function unavailableReason(live) {
+      if (live.enableLocalMock !== true) return { code: 'preset_disabled', message: MOCK_DISABLED };
+      return { code: 'preset_unavailable', message: PRESET_UNAVAILABLE };
+    }
+
+    /**
+     * @param {object} ctx
+     * @param {number} token
+     * @param {string} code
+     * @param {string} message
+     */
+    function deny(ctx, token, code, message) {
+      if (!stillWaiting(ctx.requestId, token)) return;
+      session.fail(code, message);
+      disarm();
+      publish();
+    }
+
+    /**
+     * @param {object} ctx
+     * @param {number} token
+     * @param {null | 'timeout'} fallback
+     * @returns {boolean}
+     */
+    function acceptPreset(ctx, token, fallback) {
+      if (!stillWaiting(ctx.requestId, token)) return false;
+      const live = readConfig();
+      if (!presetReady(live)) {
+        const reason = unavailableReason(live);
+        deny(ctx, token, reason.code, reason.message);
+        return false;
+      }
+      const candidate = bindPreset(preset, ctx.requestId, fallback);
+      const check = checkCandidate(candidate, ctx);
+      if (!check.ok) {
+        deny(ctx, token, check.code || 'preset_unavailable', PRESET_UNAVAILABLE);
+        return false;
+      }
+      const resolved = session.resolve(candidate);
+      if (!resolved.ok) {
+        deny(ctx, token, resolved.code || 'preset_unavailable', resolved.message || PRESET_UNAVAILABLE);
+        return false;
+      }
+      if (fallback === 'timeout') disarm();
+      publish();
+      return true;
+    }
+
+    /**
+     * 只有 hang 和 late 可以在 1500ms 回退到预制。invalid 到点也不得画成成功。
+     * @param {object} ctx
+     * @param {number} token
+     */
+    function onTimeout(ctx, token) {
+      if (!stillWaiting(ctx.requestId, token)) return;
+      const live = readConfig();
+      if (live.externalAttempt !== 'hang' && live.externalAttempt !== 'late') {
+        deny(ctx, token, 'external_unavailable', EXTERNAL_UNAVAILABLE);
+        return;
+      }
+      acceptPreset(ctx, token, 'timeout');
+    }
+
+    /**
+     * 迟到或已取消的结果直接丢掉，不改当前会话。
+     * @param {object | null | undefined} payload
+     * @param {object} ctx
+     * @param {number} token
+     */
+    function onExternal(payload, ctx, token) {
+      if (!stillWaiting(ctx.requestId, token)) return;
+      const candidate = payload && payload.candidate;
+      const check = checkCandidate(candidate, ctx);
+      if (!check.ok || candidate.source !== 'preset') {
+        deny(ctx, token, (check && check.code) || 'external_unavailable', EXTERNAL_UNAVAILABLE);
+        return;
+      }
+      const resolved = session.resolve(candidate);
+      if (!resolved.ok) {
+        deny(ctx, token, resolved.code || 'external_unavailable', EXTERNAL_UNAVAILABLE);
+        return;
+      }
+      disarm();
+      publish();
+    }
+
+    /**
+     * @param {object} ctx
+     * @param {number} token
+     * @param {object} live
+     */
+    function listen(ctx, token, live) {
+      const created = attempt || (attemptApi && attemptApi.createAttempt({
+        mode: live.externalAttempt,
+        clock: time,
+        lateAfterMs: 1500,
+        preset
+      }));
+      if (!created || typeof created.start !== 'function') {
+        deny(ctx, token, 'external_unavailable', EXTERNAL_UNAVAILABLE);
+        return;
+      }
+      activeAttempt = created;
+      let pendingResult;
+      try {
+        pendingResult = created.start(ctx);
+      } catch {
+        deny(ctx, token, 'external_unavailable', EXTERNAL_UNAVAILABLE);
+        return;
+      }
+      Promise.resolve(pendingResult).then((payload) => {
+        onExternal(payload, ctx, token);
+      }, () => {
+        deny(ctx, token, 'external_unavailable', EXTERNAL_UNAVAILABLE);
       });
     }
 
-    function discard() {
-      return publish({ ...outcome, discarded: true });
-    }
-
-    // 看门狗到点：只用与当前帧匹配的预制结果回退，否则进入可恢复错误。
-    function onTimeout() {
-      timer = null;
-      const ctx = inflight;
-      if (!ctx) return idle();
-      inflight = null;
-      const startedAt = clock.now();
-      const validated = validateAgainst(presetCandidate(ctx, 'timeout'), ctx);
-      if (!validated) return fail('no_preset', '当前帧没有可用的准备结果，无法进入交互。');
-      return settle(validated, 'timeout', startedAt);
-    }
-
-    function onExternal(payload) {
-      const ctx = inflight;
-      if (!ctx || !payload || !payload.ctx || payload.ctx.requestId !== ctx.requestId) return discard();
-      clearTimer();
-      inflight = null;
-      const startedAt = clock.now();
-      const validated = validateAgainst(payload.candidate, ctx);
-      if (!validated) return fail('external_invalid', '外部结果不可用，未进入交互。');
-      return settle(validated, null, startedAt);
-    }
-
-    function onExternalFailure() {
-      if (!inflight) return idle();
-      return fail('external_unavailable', '外部结果不可用，未进入交互。');
-    }
-
-    function begin(input = {}) {
-      clearTimer();
-      const started = session.beginWait({ paused: input.paused, currentTime: input.currentTime });
-      if (!started.ok) {
-        publish({ ...outcome, status: session.status, reason: started.code });
-        return { ok: false, code: started.code, message: started.message, status: session.status };
+    /**
+     * @param {{ paused?: boolean, currentTime?: number, frameSize?: { width: number, height: number } }} [input]
+     * @returns {{ ok: boolean, code?: string, message?: string, requestId?: string }}
+     */
+    function start(input = {}) {
+      const begun = session.beginWait({ paused: input.paused, currentTime: input.currentTime });
+      if (!begun.ok) {
+        publish();
+        return begun;
       }
-      const ctx = freeze(input.currentTime);
-
-      // off：不发起外部尝试，匹配的预热结果立即进入交互（与 P0 主路径一致）。
-      if (session.externalAttempt === 'off' || !attempt) {
-        const startedAt = clock.now();
-        const validated = validateAgainst(presetCandidate(ctx, null), ctx);
-        if (!validated) {
-          const failed = fail('no_preset', '当前帧没有可用的准备结果，无法进入交互。');
-          return { ok: false, code: 'no_preset', message: '当前帧没有可用的准备结果，无法进入交互。', ...failed };
+      const ctx = {
+        requestId: begun.requestId,
+        videoId: session.videoId,
+        time: input.currentTime,
+        frameSize: {
+          width: input.frameSize && input.frameSize.width,
+          height: input.frameSize && input.frameSize.height
         }
-        return { ok: true, ...settle(validated, null, startedAt) };
+      };
+      const token = generation;
+      const live = readConfig();
+      if (live.externalAttempt === 'off') {
+        acceptPreset(ctx, token, null);
+        const state = session.getState();
+        return {
+          ok: state.status === 'interactive',
+          requestId: ctx.requestId,
+          code: state.code || undefined,
+          message: state.message || undefined
+        };
       }
-
-      inflight = ctx;
-      publish({
-        status: 'waiting',
-        code: null,
-        message: null,
-        requestId: ctx.requestId,
-        result: null,
-        fallback: null,
-        reason: null,
-        elapsedMs: null,
-        decisionAt: null
+      timerId = time.schedule(live.fallbackAfterMs, () => {
+        timerId = null;
+        onTimeout(ctx, token);
       });
-      timer = clock.schedule(fallbackAfterMs, onTimeout);
-      if (typeof attempt.start === 'function') {
-        Promise.resolve(attempt.start(ctx))
-          .then((payload) => { if (payload) onExternal(payload); })
-          .catch(() => { onExternalFailure(); });
-      }
-      return { ok: true, ...idle() };
+      listen(ctx, token, live);
+      if (session.getState().status === 'waiting') publish();
+      return { ok: true, requestId: ctx.requestId };
     }
 
     function cancel() {
-      clearTimer();
-      abortAttempt();
-      inflight = null;
+      disarm();
       session.cancel();
-      return publish({
-        status: 'paused-ready',
-        code: null,
-        message: null,
-        requestId: null,
-        result: null,
-        fallback: null,
-        reason: 'cancelled',
-        elapsedMs: null,
-        decisionAt: null
-      });
+      publish();
+      return session.getState();
+    }
+
+    function exit() {
+      disarm();
+      session.exit();
+      publish();
+      return session.getState();
+    }
+
+    /**
+     * @param {{ paused?: boolean, currentTime?: number }} [playback]
+     * @returns {ReturnType<typeof session.getState>}
+     */
+    function onPlaybackChange(playback) {
+      const before = session.getState();
+      session.onPlaybackChange(playback || {});
+      if (before.status !== 'paused-ready' && session.status === 'paused-ready') {
+        disarm();
+      }
+      const after = session.getState();
+      if (before.status !== after.status || before.requestId !== after.requestId) publish();
+      return after;
     }
 
     function dispose() {
-      clearTimer();
-      abortAttempt();
-      inflight = null;
-    }
-
-    function onPlaybackChange(playback = {}) {
-      const wasWaiting = inflight !== null || session.status === 'waiting';
-      const state = session.onPlaybackChange(playback);
-      if (wasWaiting && state.status === 'paused-ready') {
-        clearTimer();
-        abortAttempt();
-        inflight = null;
-        publish({
-          status: 'paused-ready',
-          code: null,
-          message: null,
-          requestId: null,
-          result: null,
-          fallback: null,
-          reason: 'left_target',
-          elapsedMs: null,
-          decisionAt: null
-        });
+      disarm();
+      if (session.status === 'waiting' || session.status === 'interactive' || session.status === 'recoverable-error') {
+        session.exit();
       }
-      return state;
+      publish();
     }
 
-    return {
-      begin,
-      cancel,
-      dispose,
-      onExternal,
-      onExternalFailure,
-      onTimeout,
-      onPlaybackChange,
-      getOutcome: () => ({ ...outcome }),
-      isWaiting: () => inflight !== null,
-      pendingTimers: () => (timer === null ? 0 : 1)
-    };
+    return { start, cancel, exit, onPlaybackChange, dispose };
   }
 
-  /**
-   * ownership.md 登记的交接接口：
-   * createWake({ session, config, preset, now, schedule, clearTimer, onChange })
-   * 页面只消费 onChange 给出的状态，不自己判断超时、取消或迟到。
-   * @param {{ session, config, preset, now?, schedule?, clearTimer?, onChange? }} options
-   */
-  function createWake(options = {}) {
-    const session = options.session;
-    if (!session) throw new Error('createWake 需要 session。');
-    const config = options.config || {};
-    const preset = options.preset || null;
-    const now = typeof options.now === 'function' ? options.now : () => Date.now();
-    const scheduleHost = typeof options.schedule === 'function' ? options.schedule : (fn, ms) => setTimeout(fn, ms);
-    const clearHost = typeof options.clearTimer === 'function' ? options.clearTimer : (handle) => clearTimeout(handle);
-    const onChange = typeof options.onChange === 'function' ? options.onChange : () => {};
-    const clock = {
-      now,
-      schedule: (delayMs, handler) => scheduleHost(handler, delayMs),
-      clear: (handle) => clearHost(handle)
-    };
-    const mode = config.externalAttempt || 'off';
-    const attempt = mode === 'off' || !attemptApi ? null : attemptApi.createAttempt({ mode, clock });
-    const controller = createWakeController({
-      session,
-      clock,
-      attempt,
-      fallbackAfterMs: Number.isFinite(config.fallbackAfterMs) ? config.fallbackAfterMs : DEFAULT_FALLBACK_AFTER_MS,
-      onOutcome: (outcome) => onChange({ ...outcome }),
-      resolvePreset: () => (config.enableLocalMock === true && config.prewarmed === true ? preset : null)
-    });
-    return {
-      start(input = {}) { return controller.begin({ paused: input.paused, currentTime: input.currentTime }); },
-      cancel: () => controller.cancel(),
-      exit() { controller.dispose(); return session.exit(); },
-      onPlaybackChange: (playback) => controller.onPlaybackChange(playback),
-      dispose: () => controller.dispose(),
-      getState: () => controller.getOutcome(),
-      isWaiting: () => controller.isWaiting(),
-      pendingTimers: () => controller.pendingTimers()
-    };
-  }
-
-  return { createWake, createWakeController, DEFAULT_FALLBACK_AFTER_MS };
+  return { createWake };
 });

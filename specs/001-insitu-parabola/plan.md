@@ -32,7 +32,7 @@
 
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
-对照 `docs/BreakGlass-constitution.md` v1.1.0（仓库前端执行基线）。`.specify/memory/constitution.md` v1.2.0 是 Spec Kit 治理记忆，其感知代理约束不属于本仓库交付范围。
+对照 `docs/BreakGlass-constitution.md` v1.2.0（仓库前端执行基线）。`.specify/memory/constitution.md` v1.3.0 是 Spec Kit 治理记忆，其「交接接口」一节是本仓库的接口事实来源，感知代理约束不属于本仓库交付范围。
 
 | 门禁 | 结果 | 依据 |
 | --- | --- | --- |

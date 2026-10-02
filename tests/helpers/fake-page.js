@@ -16,6 +16,7 @@ require('../../extension/src/attempt/simulator');
 require('../../extension/src/session/wake');
 require('../../extension/src/telemetry/latency');
 require('../../extension/src/preset/load');
+require('../../extension/src/preset/place-in-frame');
 
 const ELEMENT_IDS = [
   'demo-video', 'video-stage', 'target-time', 'play-toggle', 'jump-target',
@@ -262,7 +263,7 @@ async function createHarness(options = {}) {
       video.videoWidth = 1920;
       video.videoHeight = 1080;
       video.paused = true;
-      video.currentTime = 12.5;
+      video.currentTime = 6;
       video.dispatch('loadedmetadata');
     },
     restore() {

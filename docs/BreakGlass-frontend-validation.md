@@ -7,7 +7,7 @@
 
 | 命令 | 结果 |
 | --- | --- |
-| `node --test` | **96 项通过，0 失败，0 待办** |
+| `node --test` | **118 项通过，0 失败，0 待办**（合并 `main` 后的结果） |
 | `node --check`（extension 与 tests 全部 JavaScript） | 通过 |
 | `scripts/verify.mjs`（本地工作区工具，未进入本仓库） | 语法检查 + 全量测试通过 |
 
@@ -18,7 +18,9 @@
 | `tests/validate.test.js`、`tests/evaluate.test.js`、`tests/preset-contract.test.js` | CurveResult 放行/拒绝、求值器白名单、运行配置与预制夹具契约 |
 | `tests/content-rect.test.js` | `contain` 黑边计算、`object-position` 的百分比/px/关键字/数字解析、非有限尺寸防御 |
 | `tests/session.test.js`、`tests/backend-edges.test.js` | 会话生命周期、目标时间门禁、参数钳制、复制结果副本、边缘情况 |
-| `tests/wake-timeout.test.js`、`tests/wake-contract.test.js` | 假时钟驱动的 1500ms 回退、迟到丢弃、取消、5 次循环、`createWake` 交接接口 |
+| `tests/wake-timeout.test.js` | 假时钟驱动的 1500ms 回退、迟到丢弃、取消、5 次循环 |
+| `tests/wake-contract.test.js` | 交接接口形状：`createWake({ session, config, preset, clock, onChange, attempt })`、五个方法、状态字段与别名字段禁令 |
+| `tests/latency.test.js`、`tests/place-in-frame.test.js` | 内存计时摘要与 P50/P95；预制区域按当前帧宽高比换算 |
 | `tests/external-simulator.test.js` | `off`/`hang`/`invalid`/`late` 四模式确定性、无网络、无遗留定时器 |
 | `tests/alignment.test.js` | 四画幅映射、源↔页面往返、2% 偏差比例与阈值边界、采样 |
 | `tests/page-integration.test.js` | 演示页脚本顺序、控件与 `aria-live`、覆盖层定位、无远程资源、`createWake` 接线 |
@@ -44,3 +46,4 @@
 | 日期 | 变更 |
 | --- | --- |
 | 2026-10-02 | 首次建立验证记录：自动化基线 96 项、覆盖范围、未执行项与证据口径 |
+| 2026-10-02 | 合并 `origin/main`（PR #26 `ui`、PR #27 6 秒帧适配）后重跑：基线 118 项通过；`tests/wake-contract.test.js` 改写为按 `.specify/memory/constitution.md` 1.3.0「交接接口」校验 |

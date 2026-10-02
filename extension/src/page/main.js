@@ -5,6 +5,7 @@
     geometry,
     alignment,
     preset,
+    frameFit,
     session: sessionApi,
     wake: wakeApi,
     latency: latencyApi
@@ -29,10 +30,25 @@
   const assetEmpty = $('#asset-empty');
   const runtimeNote = $('#runtime-note');
 
+  /**
+   * 相对演示页的扩展包视频。仓库落盘路径只写在 extension/assets/video/README.md。
+   * @type {string}
+   */
+  const PACKAGED_VIDEO_URL = '../assets/video/breakglass-demo-9s.mp4';
+
+  /**
+   * 包内 9 秒演示片的目标时间（秒）。输入框初值用它。
+   * 夹具 JSON 里的 time 不作为演示默认值，磁盘上的 JSON 也不改。
+   * @type {number}
+   */
+  const PACKAGED_DEMO_TARGET_SECONDS = 6;
+
   let config = null;
   let presetResult = null;
+  let preparedFrame = null;
+  let preparedRegion = null;
   let controller = null;
-  let wakeController = null;
+  let wakeHandle = null;
   let latencies = null;
   let localClock = null;
   let overlay = null;
@@ -52,6 +68,23 @@
     };
   }
 
+  /**
+   * 文件可读时才把演示 video 指到扩展包内的 mp4。
+   * 缺失时不设置 src，避免 error 事件把空状态改成加载失败。
+   * @returns {Promise<boolean>} 是否已把地址交给演示 video
+   */
+  async function attachPackagedVideo() {
+    try {
+      const response = await fetch(PACKAGED_VIDEO_URL, { headers: { Range: 'bytes=0-0' } });
+      if (response.body) await response.body.cancel();
+      if (!response.ok) return false;
+    } catch {
+      return false;
+    }
+    video.src = PACKAGED_VIDEO_URL;
+    return true;
+  }
+
   function setStatus(message) {
     stateLabel.textContent = message;
   }
@@ -60,9 +93,33 @@
     return Number(targetInput.value);
   }
 
+  /**
+   * 会话是否允许破壁，以目标时间输入框的当前值为准。
+   * 内存里的预制结果时间一并跟上，校验仍对照会话目标；磁盘上的 JSON 不改。
+   */
+  function syncSessionTarget() {
+    if (!controller) return;
+    const nextTarget = targetTime();
+    if (!Number.isFinite(nextTarget)) return;
+    controller.targetTime = nextTarget;
+    if (presetResult && typeof presetResult === 'object') presetResult.time = nextTarget;
+  }
+
+  /**
+   * 目标时间容差只问会话。页面不再自己比较 ±0.2 秒。
+   * @returns {boolean}
+   */
   function atTarget() {
-    return Boolean(video && video.paused && video.videoWidth &&
-      Number.isFinite(video.currentTime) && Math.abs(video.currentTime - targetTime()) <= 0.2);
+    syncSessionTarget();
+    if (!controller || !video || !(video.videoWidth > 0)) return false;
+    return controller.canWake({ paused: video.paused, currentTime: video.currentTime });
+  }
+
+  /**
+   * @returns {ReturnType<SessionController['getState']> | null}
+   */
+  function sessionState() {
+    return controller ? controller.getState() : null;
   }
 
   function sourceText(result) {
@@ -80,12 +137,6 @@
     sourceNote.textContent = result
       ? (result.fallback === 'timeout' ? '因等待超过 1.5 秒，改用预先准备的示例。' : '这是扩展包内预先准备的示例，不代表实时识别成功。')
       : '数据来源将在交互出现后显示。';
-  }
-
-  function errorMessage(reason) {
-    if (reason === 'no_preset') return '当前帧没有可用的准备结果，无法进入交互。';
-    if (reason === 'external_invalid' || reason === 'external_unavailable') return '外部结果不可用，未进入交互。';
-    return '准备结果不可用，请重试或退出。';
   }
 
   function hideWaitingControls() {
@@ -173,8 +224,8 @@
   }
 
   function drawCurve() {
-    if (!controller || controller.status !== 'interactive' || !overlay) return;
-    const state = controller.getState();
+    const state = sessionState();
+    if (!state || state.status !== 'interactive' || !state.result || !overlay) return;
     const result = state.result;
     const definition = result.definition;
     const videoWidth = video.videoWidth;
@@ -219,11 +270,10 @@
   }
 
   function removeOverlay({ pauseVideo = true } = {}) {
-    if (wakeController) wakeController.dispose();
+    if (wakeHandle) wakeHandle.exit();
     if (overlay) overlay.remove();
     overlay = null;
     dragging = false;
-    if (controller) controller.exit();
     if (pauseVideo && video && !video.paused) video.pause();
     resetButton.disabled = true;
     exitButton.disabled = true;
@@ -253,8 +303,9 @@
       overlay.setPointerCapture(event.pointerId);
     });
     overlay.addEventListener('pointermove', (event) => {
-      if (!dragging || !controller || !controller.current) return;
-      const result = controller.current.result;
+      const state = sessionState();
+      if (!dragging || !state || !state.result) return;
+      const result = state.result;
       const definition = result.definition;
       const videoWidth = video.videoWidth;
       const videoHeight = video.videoHeight;
@@ -281,9 +332,11 @@
   }
 
   function syncControls() {
-    if (wakeController && controller) {
-      const wasActive = wakeController.isWaiting() || controller.status === 'interactive';
-      const playbackState = wakeController.onPlaybackChange({
+    if (wakeHandle && controller) {
+      syncSessionTarget();
+      const before = controller.getState();
+      const wasActive = before.status === 'waiting' || before.status === 'interactive';
+      const playbackState = wakeHandle.onPlaybackChange({
         paused: video.paused,
         currentTime: video.currentTime
       });
@@ -295,33 +348,43 @@
         }
       }
     }
-    const waiting = Boolean(wakeController && wakeController.isWaiting());
+    const waiting = Boolean(sessionState() && sessionState().status === 'waiting');
     const ready = atTarget() && Boolean(presetResult);
     wakeButton.disabled = waiting || !ready || Boolean(overlay);
     playToggle.textContent = video.paused ? '播放' : '暂停';
     timeLabel.textContent = `当前时间：${Number.isFinite(video.currentTime) ? video.currentTime.toFixed(1) : '—'}`;
   }
 
-  function applyOutcome(outcome) {
-    if (!outcome) return;
-    if (outcome.status === 'interactive') {
-      const result = outcome.result;
+  /**
+   * 只按会话状态渲染。超时耗时用页面自己的两次 mark，不读唤醒回调里的时间戳。
+   * @param {object} state
+   */
+  function applyState(state) {
+    if (!state) return;
+    if (state.status === 'interactive') {
+      const result = state.result;
+      const timedOut = result && result.fallback === 'timeout';
+      if (timedOut && latencies) latencies.mark('timeout-decided');
       createOverlay();
+      if (timedOut && latencies) {
+        const visibleAt = latencies.mark('svg-visible');
+        const decidedAt = latencies.measure('timeout-decided', 'svg-visible');
+        if (Number.isFinite(visibleAt) && Number.isFinite(decidedAt)) {
+          latencies.record('fallback-visible', decidedAt);
+        }
+      }
       hideWaitingControls();
       resetButton.disabled = false;
       exitButton.disabled = false;
       slider.disabled = false;
       setSource(result);
-      setStatus(result.fallback === 'timeout'
+      setStatus(timedOut
         ? '已改用预先准备的示例（超时回退），可拖动控制点。'
         : '交互已出现，可拖动控制点改变水平位置。');
-      if (result.fallback === 'timeout' && latencies && Number.isFinite(outcome.decisionAt)) {
-        latencies.record('fallback-visible', localClock.now() - outcome.decisionAt);
-      }
       syncControls();
       return;
     }
-    if (outcome.status === 'waiting') {
+    if (state.status === 'waiting') {
       cancelButton.hidden = false;
       cancelButton.disabled = false;
       retryButton.hidden = true;
@@ -329,40 +392,69 @@
       resetButton.disabled = true;
       slider.disabled = true;
       wakeButton.disabled = true;
-      exitButton.disabled = false;
       setSource(null, '正在等待外部结果；超过 1.5 秒会自动改用预先准备的示例，可随时取消。');
       setStatus('正在等待外部结果…');
       if (cancelButton.focus) cancelButton.focus();
       return;
     }
-    if (outcome.status === 'recoverable-error') {
+    if (state.status === 'recoverable-error') {
       hideWaitingControls();
       retryButton.hidden = false;
       retryButton.disabled = false;
       resetButton.disabled = true;
       slider.disabled = true;
       wakeButton.disabled = true;
-      exitButton.disabled = false;
       setSource(null, '没有可用的准备结果，或外部结果不可用；可以重试或退出。');
-      setStatus(errorMessage(outcome.reason));
+      setStatus(state.message || '结果不可用，请重试或退出。');
       if (retryButton.focus) retryButton.focus();
     }
   }
 
+  /**
+   * 破壁前把包内预制区域按当前片子的宽、高比例放进这一帧。
+   * 每次都从准备画幅重算，避免连续破壁把已经换算过的坐标再乘一次。
+   * 外部结果不走这里；画幅对不上时仍由校验拒绝。
+   * @param {{ width: number, height: number }} frameSize
+   * @returns {boolean}
+   */
+  function placePreparedExample(frameSize) {
+    if (!frameFit || !presetResult || !preparedFrame || !preparedRegion) return false;
+    const placed = frameFit.placeRegionInFrame(preparedFrame, preparedRegion, frameSize);
+    if (!placed) return false;
+    presetResult.frameSize.width = placed.frameSize.width;
+    presetResult.frameSize.height = placed.frameSize.height;
+    const region = presetResult.definition.region;
+    region.x = placed.region.x;
+    region.y = placed.region.y;
+    region.width = placed.region.width;
+    region.height = placed.region.height;
+    if (controller && controller.frameSize) {
+      controller.frameSize.width = placed.frameSize.width;
+      controller.frameSize.height = placed.frameSize.height;
+    }
+    return true;
+  }
+
   function wake() {
-    if (!wakeController || !presetResult || !atTarget()) {
+    if (!wakeHandle || !presetResult || !atTarget()) {
       setStatus('请先暂停在目标时间。');
       return;
     }
-    if (overlay || (controller && controller.status === 'interactive')) return;
-    // 状态变化由 wakeController 的 onOutcome 回调驱动，页面不重复渲染。
-    const started = wakeController.start({ paused: true, currentTime: video.currentTime, frameSize: { width: video.videoWidth, height: video.videoHeight } });
+    const state = sessionState();
+    if (overlay || (state && (state.status === 'interactive' || state.status === 'waiting'))) return;
+    const frameSize = { width: video.videoWidth, height: video.videoHeight };
+    placePreparedExample(frameSize);
+    const started = wakeHandle.start({
+      paused: true,
+      currentTime: video.currentTime,
+      frameSize
+    });
     if (!started.ok) setStatus(started.message || '暂时无法破壁。');
   }
 
   function cancelWaiting() {
-    if (!wakeController || !wakeController.isWaiting()) return;
-    wakeController.cancel();
+    if (!wakeHandle || !sessionState() || sessionState().status !== 'waiting') return;
+    wakeHandle.cancel();
     hideWaitingControls();
     setSource(null, '已取消等待，迟到结果不会再打开交互层。');
     setStatus(atTarget() ? '已取消等待，可以再次破壁。' : '请暂停在目标时间。');
@@ -370,29 +462,38 @@
   }
 
   async function boot() {
+    const packagedPromise = attachPackagedVideo();
     try {
       const loaded = await preset.loadPreset();
       if (!loaded.ok) throw new Error(loaded.message);
       config = loaded.config;
       presetResult = loaded.result;
-      targetInput.value = String(presetResult.time);
+      preparedFrame = {
+        width: presetResult.frameSize.width,
+        height: presetResult.frameSize.height
+      };
+      preparedRegion = {
+        x: presetResult.definition.region.x,
+        y: presetResult.definition.region.y,
+        width: presetResult.definition.region.width,
+        height: presetResult.definition.region.height
+      };
+      targetInput.value = String(PACKAGED_DEMO_TARGET_SECONDS);
       controller = new sessionApi.SessionController({
         videoId: presetResult.videoId,
-        targetTime: presetResult.time,
+        targetTime: targetTime(),
         frameSize: presetResult.frameSize,
         externalAttempt: config.externalAttempt
       });
+      syncSessionTarget();
       localClock = createClock();
       latencies = latencyApi.createLatencyLog({ clock: localClock });
-      // ownership.md 登记的交接接口：页面只消费 onChange 给出的状态。
-      wakeController = wakeApi.createWake({
+      wakeHandle = wakeApi.createWake({
         session: controller,
         config,
         preset: presetResult,
-        now: () => localClock.now(),
-        schedule: (handler, delayMs) => localClock.schedule(delayMs, handler),
-        clearTimer: (handle) => localClock.clear(handle),
-        onChange: (state) => applyOutcome(state)
+        clock: localClock,
+        onChange: (state) => applyState(state)
       });
       window.__breakglassLatency = {
         summary: () => latencies.summary(),
@@ -401,7 +502,10 @@
       watchDevicePixelRatio();
       watchVideoSize();
       runtimeNote.textContent = `配置：${config.externalAttempt} · 本地预制已预热 · 回退 ${config.fallbackAfterMs}ms`;
-      setStatus('正式视频素材尚未提供，加载视频后可验证交互。');
+      const packaged = await packagedPromise;
+      if (!packaged && !video.error) {
+        setStatus('正式视频素材尚未提供，加载视频后可验证交互。');
+      }
       setSource(null);
     } catch (error) {
       runtimeNote.textContent = '配置加载失败';
@@ -412,6 +516,9 @@
 
   video.addEventListener('loadedmetadata', () => {
     assetEmpty.hidden = true;
+    if (!overlay) {
+      setStatus(atTarget() ? '已暂停在目标时间，可以再次破壁。' : '请暂停在目标时间。');
+    }
     syncControls();
   });
   video.addEventListener('timeupdate', syncControls);
@@ -427,7 +534,7 @@
   document.addEventListener('fullscreenchange', drawCurve);
   window.addEventListener('orientationchange', drawCurve);
   window.addEventListener('pagehide', () => {
-    if (wakeController) wakeController.dispose();
+    if (wakeHandle) wakeHandle.dispose();
     releaseWatch();
     window.__breakglassAlignment = null;
   });
@@ -438,7 +545,7 @@
     }
     if (event.key === 'Escape') {
       if (overlay) removeOverlay();
-      else if (wakeController && wakeController.isWaiting()) cancelWaiting();
+      else if (sessionState() && sessionState().status === 'waiting') cancelWaiting();
     }
   });
   stage.addEventListener('click', (event) => {
