@@ -3,5 +3,6 @@
   "fallbackAfterMs": 1500,
   "presetKey": "demo-parabola",
   "prewarmed": true,
-  "externalAttempt": "off"
+  "externalAttempt": "off",
+  "visionAdapter": "off"
 }

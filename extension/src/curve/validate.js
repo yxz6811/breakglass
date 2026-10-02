@@ -8,6 +8,9 @@
   const ALLOWED_SOURCES = new Set(['preset', 'vision']);
   const ALLOWED_FALLBACKS = new Set([null, 'timeout']);
   const DEFAULT_EQUATION_IDS = new Set(['fixture.parabola']);
+  // 识别可信程度门槛：低于它整份样例拒绝。缺省时不拒绝，也不显示百分比。
+  const MIN_VISION_CONFIDENCE = 0.5;
+  const PACKAGED_EVIDENCE = 'packaged-sample';
 
   function finite(value) {
     return typeof value === 'number' && Number.isFinite(value);
@@ -36,6 +39,27 @@
       return fail('invalid_source', '当前功能只接受预先准备的 preset 结果。');
     }
     if (!ALLOWED_FALLBACKS.has(result.fallback)) return fail('invalid_fallback', 'fallback 值不受支持。');
+
+    // 来源与证据必须成对：识别样例必须标明是随扩展打包的样例，预制结果不得夹带 evidence。
+    // 这里的 code 只在本校验器内使用，唤醒层必须把它映射成 external_unavailable，不得直接上抛给页面。
+    if (result.source === 'preset') {
+      if (Object.prototype.hasOwnProperty.call(result, 'evidence')) {
+        return fail('evidence_not_allowed', '预先准备的结果不得携带 evidence。');
+      }
+    } else {
+      if (result.fallback !== null) return fail('invalid_fallback', '识别样例的 fallback 必须是 null。');
+      if (result.evidence !== PACKAGED_EVIDENCE) {
+        return fail('invalid_evidence', '识别样例必须标明 evidence 为 packaged-sample。');
+      }
+    }
+    if (result.confidence !== undefined) {
+      if (!finite(result.confidence) || result.confidence < 0 || result.confidence > 1) {
+        return fail('invalid_confidence', 'confidence 必须是 0 到 1 之间的有限数。');
+      }
+      if (result.confidence < MIN_VISION_CONFIDENCE) {
+        return fail('low_confidence', '识别可信程度低于门槛。');
+      }
+    }
 
     const frameSize = result.frameSize;
     if (!frameSize || !positiveFinite(frameSize.width) || !positiveFinite(frameSize.height)) {
@@ -106,7 +130,7 @@
     return { ok: true, value: result };
   }
 
-  return { validateCurveResult, finite, DEFAULT_TIME_TOLERANCE };
+  return { validateCurveResult, finite, DEFAULT_TIME_TOLERANCE, MIN_VISION_CONFIDENCE, PACKAGED_EVIDENCE };
 });
 
 /**

@@ -66,6 +66,8 @@
   let localClock = null;
   let overlay = null;
   let dragging = false;
+  // 识别路径的判定起点；只在 visionAdapter 为 fixture 且外部演练为 off 时置位。
+  let visionStartedAt = null;
   let resizeObserver = null;
   let dprQuery = null;
   let dprHandler = null;
@@ -162,20 +164,39 @@
     return controller ? controller.getState() : null;
   }
 
+  /**
+   * 打包识别样例：来源必须是 vision，且必须自带 packaged-sample 证据。
+   * 合法性由结果规则侧判定，页面只决定怎么如实显示。
+   * @param {object | null} result
+   * @returns {boolean}
+   */
+  function isPackagedVision(result) {
+    return Boolean(result) && result.source === 'vision' && result.evidence === 'packaged-sample';
+  }
+
   function sourceText(result) {
     if (!result) return '等待素材';
+    if (isPackagedVision(result)) return '识别结果';
     if (result.fallback === 'timeout') return '预先准备的示例 · 超时回退';
     return result.source === 'preset' ? '预先准备的示例' : '来源不可用';
   }
 
   function setSource(result, note) {
     sourceLabel.textContent = sourceText(result);
+    const vision = isPackagedVision(result);
+    const preset = Boolean(result) && result.source === 'preset';
     if (sourceLabel.classList) {
       sourceLabel.classList.toggle('is-fallback', Boolean(result && result.fallback === 'timeout'));
-      sourceLabel.classList.toggle('is-warn', Boolean(result && result.source !== 'preset'));
+      // 预制与打包识别样例都是已知来源，只有来源不明时才用警示色。
+      sourceLabel.classList.toggle('is-warn', Boolean(result) && !preset && !vision);
     }
     if (note !== undefined) {
       sourceNote.textContent = note;
+      return;
+    }
+    // 识别样例的说明必须写明尚未接通外部识别；也不显示可信程度百分比。
+    if (vision) {
+      sourceNote.textContent = '随演示打包的识别样例，尚未接通外部识别。';
       return;
     }
     sourceNote.textContent = result
@@ -341,7 +362,7 @@
     overlay.classList.add('curve-overlay');
     overlay.style.position = 'absolute';
     overlay.style.zIndex = '2';
-    overlay.setAttribute('aria-label', '可拖动的预先准备抛物线');
+    overlay.setAttribute('aria-label', '可拖动的抛物线结果');
     overlay.innerHTML = '<path fill="none" stroke="#71ddff" stroke-width="3" stroke-linecap="round"></path><circle r="10" fill="#08111f" stroke="#ffffff" stroke-width="3" tabindex="0"></circle>';
     stage.appendChild(overlay);
 
@@ -408,12 +429,23 @@
     timeLabel.textContent = `当前时间：${Number.isFinite(video.currentTime) ? video.currentTime.toFixed(1) : '—'}`;
   }
 
+  // 识别判定从发起到进入交互或可恢复失败的耗时单独记一条，不写进预制回退那组。
+  function recordVisionDecision() {
+    if (visionStartedAt === null || !latencies) return;
+    const now = localClock ? localClock.now() : Date.now();
+    const elapsed = now - visionStartedAt;
+    visionStartedAt = null;
+    if (Number.isFinite(elapsed) && elapsed >= 0) latencies.record('vision-decision', elapsed, 'hot');
+  }
+
   /**
    * 只按会话状态渲染。超时耗时用页面自己的两次 mark，不读唤醒回调里的时间戳。
    * @param {object} state
    */
   function applyState(state) {
     if (!state) return;
+    // 取消、退出、播放或离开目标时间：判定没有结算，不记账。
+    if (state.status === 'paused-ready') visionStartedAt = null;
     if (state.status === 'interactive') {
       const result = state.result;
       const timedOut = result && result.fallback === 'timeout';
@@ -426,6 +458,8 @@
           latencies.record('fallback-visible', decidedAt);
         }
       }
+      // 识别路径单独结算；预制路径（含超时回退）不写这组。
+      if (!timedOut && isPackagedVision(result)) recordVisionDecision();
       hideWaitingControls();
       resetButton.disabled = false;
       exitButton.disabled = false;
@@ -458,6 +492,7 @@
       return;
     }
     if (state.status === 'recoverable-error') {
+      recordVisionDecision();
       hideWaitingControls();
       retryButton.hidden = false;
       retryButton.disabled = false;
@@ -506,6 +541,9 @@
     if (overlay || (state && (state.status === 'interactive' || state.status === 'waiting'))) return;
     const frameSize = { width: video.videoWidth, height: video.videoHeight };
     placePreparedExample(frameSize);
+    // 只有识别路径需要判定耗时；起点取自页面自己的时钟。
+    const visionPath = Boolean(config) && config.visionAdapter === 'fixture' && config.externalAttempt === 'off';
+    visionStartedAt = visionPath && localClock ? localClock.now() : null;
     const started = wakeHandle.start({
       paused: true,
       currentTime: video.currentTime,
