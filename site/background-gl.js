@@ -50,6 +50,9 @@ var FRAGMENT = [
   'uniform float uCurveB;',
   'uniform float uCurveMix;',
   'uniform float uAspect;',
+  'uniform vec2 uPointerPlot;',
+  'uniform float uPointerCurve;',
+  'uniform float uPointerFade;',
   '',
   'float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }',
   '',
@@ -109,6 +112,17 @@ var FRAGMENT = [
   '  amt = amt * amt * (3.0 - 2.0 * amt);',
   '  float curve = mix(glowA, glowB, amt);',
   '  curve *= 0.88 + 0.12 * sin(uTime * 0.45 + plotP.x * 1.9);',
+  // 指针周围再叠一条本地函数曲线：按屏幕 3x2 的区域换不同的函数，所以鼠标走到哪，那里就出现对应的一条。
+  '  if (uPointerFade > 0.01) {',
+  '    vec2 local = plotP - uPointerPlot;',
+  '    float reach = length(local) / 0.42;',
+  '    if (reach < 1.5) {',
+  '      float d = curveDist(local / 0.42, uPointerCurve, uTime * 1.35);',
+  '      float soft = exp(-(d * d) / (2.0 * 0.075 * 0.075));',
+  '      float falloff = 1.0 - smoothstep(0.65, 1.5, reach);',
+  '      curve = max(curve, soft * falloff * uPointerFade * 1.3);',
+  '    }',
+  '  }',
   '  float curveSigned = distA * (1.0 - amt) + distB * amt;',
   '  float cellShift = clamp(curveSigned * 1.6, -0.6, 0.6) * 0.42;',
   '  float value = 0.16 + hash(cellId) * 0.08;',
@@ -134,11 +148,11 @@ var FRAGMENT = [
   '  float localY = clamp(local.y + cellShift * 0.5, 0.0, 1.0);',
   '  vec2 atlasUv = vec2((glyph + local.x) / uGlyphCount, 1.0 - localY);',
   '  float mask = texture2D(uAtlas, atlasUv).a;',
-  '  vec3 base = mix(vec3(0.42, 0.52, 0.64), vec3(0.95, 0.99, 1.0), tone);',
+  '  vec3 base = mix(vec3(0.50, 0.60, 0.72), vec3(0.99, 1.0, 1.0), tone);',
   '  vec3 flowTint = mix(vec3(0.74, 0.92, 1.0), vec3(0.88, 0.80, 1.0), 0.5 + 0.5 * sin(uFlowPhase * 0.12 + axis * 1.4));',
   '  flowTint = mix(flowTint, vec3(0.72, 0.98, 1.0), halo * 0.85);',
   '  vec3 color = base * mix(vec3(1.0), flowTint, 0.32);',
-  '  gl_FragColor = vec4(color, mask * (0.34 + tone * 0.56));',
+  '  gl_FragColor = vec4(color, mask * (0.40 + tone * 0.58));',
   '}',
 ].join('\n');
 
@@ -211,6 +225,9 @@ export function createAsciiRippleGL(options) {
     uCurveB: { value: curveB },
     uCurveMix: { value: 0 },
     uAspect: { value: 1 },
+    uPointerPlot: { value: new THREE.Vector2(0, 0) },
+    uPointerCurve: { value: 0 },
+    uPointerFade: { value: 0 },
   };
   var material = new THREE.ShaderMaterial({ vertexShader: VERTEX, fragmentShader: FRAGMENT, uniforms: uniforms, transparent: true, depthTest: false, depthWrite: false });
   scene.add(new THREE.Mesh(new THREE.PlaneGeometry(2, 2), material));
@@ -245,8 +262,26 @@ export function createAsciiRippleGL(options) {
 
   var pointerTarget = new THREE.Vector2(0.5, 0.5);
   var pointerSmooth = new THREE.Vector2(0.5, 0.5);
+  var pointerPlotTarget = new THREE.Vector2(0, 0);
+  function pointerToPlot(uv) {
+    pointerPlotTarget.set((uv.x - 0.5) * uniforms.uAspect.value, uv.y - 0.5);
+  }
+  var pointerCurve = 0;
+  var pointerFade = 0;
+  var pointerMovedAt = 0;
+  var pointerRegion = -1;
   function trackPointer(event) {
     pointerTarget.set(event.clientX / window.innerWidth, 1 - event.clientY / window.innerHeight);
+    pointerToPlot(pointerTarget);
+    pointerMovedAt = performance.now();
+    // 屏幕分成 3x2 六个区域，每区一条不同的曲线；换区就换函数并重新淡入。
+    var nextRegion = Math.floor(pointerTarget.x * 3) + Math.floor(pointerTarget.y * 2) * 3;
+    if (nextRegion !== pointerRegion) {
+      pointerRegion = nextRegion;
+      pointerCurve = ((nextRegion % CURVE_COUNT) + CURVE_COUNT) % CURVE_COUNT;
+      uniforms.uPointerCurve.value = pointerCurve;
+      pointerFade = Math.max(pointerFade, 0.35);
+    }
   }
 
   var currentAngle = 0;
@@ -304,6 +339,12 @@ export function createAsciiRippleGL(options) {
     uniforms.uCurveMix.value = fade * fade * (3 - 2 * fade);
     pointerSmooth.lerp(pointerTarget, 0.09);
     uniforms.uPointer.value.copy(pointerSmooth);
+    pointerToPlot(pointerSmooth);
+    uniforms.uPointerPlot.value.lerp(pointerPlotTarget, 0.12);
+    // 鼠标停止约 2.5 秒后本地曲线淡出，动起来立刻回来。
+    var moving = performance.now() - pointerMovedAt < 2500;
+    pointerFade += ((moving ? 1 : 0) - pointerFade) * (moving ? 0.12 : 0.045);
+    uniforms.uPointerFade.value = pointerFade;
     var used = 0;
     for (var i = 0; i < MAX_RIPPLES; i += 1) {
       if (i < active.length) {
@@ -374,6 +415,9 @@ export function createAsciiRippleGL(options) {
         flowAngle: Math.round((currentAngle * 180) / Math.PI),
         flowPhase: Number(uniforms.uFlowPhase.value.toFixed(2)),
         pointer: [Number(pointerSmooth.x.toFixed(2)), Number(pointerSmooth.y.toFixed(2))],
+        pointerCurve: pointerCurve,
+        pointerRegion: pointerRegion,
+        pointerFade: Number(pointerFade.toFixed(2)),
       };
     },
   };
