@@ -29,6 +29,12 @@
   const assetEmpty = $('#asset-empty');
   const runtimeNote = $('#runtime-note');
 
+  /**
+   * 相对演示页的扩展包视频。仓库落盘路径只写在 extension/assets/video/README.md。
+   * @type {string}
+   */
+  const PACKAGED_VIDEO_URL = '../assets/video/breakglass-demo-9s.mp4';
+
   let config = null;
   let presetResult = null;
   let controller = null;
@@ -52,6 +58,23 @@
     };
   }
 
+  /**
+   * 文件可读时才把演示 video 指到扩展包内的 mp4。
+   * 缺失时不设置 src，避免 error 事件把空状态改成加载失败。
+   * @returns {Promise<boolean>} 是否已把地址交给演示 video
+   */
+  async function attachPackagedVideo() {
+    try {
+      const response = await fetch(PACKAGED_VIDEO_URL, { headers: { Range: 'bytes=0-0' } });
+      if (response.body) await response.body.cancel();
+      if (!response.ok) return false;
+    } catch {
+      return false;
+    }
+    video.src = PACKAGED_VIDEO_URL;
+    return true;
+  }
+
   function setStatus(message) {
     stateLabel.textContent = message;
   }
@@ -61,10 +84,24 @@
   }
 
   /**
+   * 会话是否允许破壁，以目标时间输入框的当前值为准。
+   * 预设 JSON 里的时间只用来填写输入框初值，不单独卡住会话。
+   * 内存里的预制结果时间一并跟上，校验仍对照会话目标；磁盘上的 JSON 不改。
+   */
+  function syncSessionTarget() {
+    if (!controller) return;
+    const nextTarget = targetTime();
+    if (!Number.isFinite(nextTarget)) return;
+    controller.targetTime = nextTarget;
+    if (presetResult && typeof presetResult === 'object') presetResult.time = nextTarget;
+  }
+
+  /**
    * 目标时间容差只问会话。页面不再自己比较 ±0.2 秒。
    * @returns {boolean}
    */
   function atTarget() {
+    syncSessionTarget();
     if (!controller || !video || !(video.videoWidth > 0)) return false;
     return controller.canWake({ paused: video.paused, currentTime: video.currentTime });
   }
@@ -287,6 +324,7 @@
 
   function syncControls() {
     if (wakeHandle && controller) {
+      syncSessionTarget();
       const before = controller.getState();
       const wasActive = before.status === 'waiting' || before.status === 'interactive';
       const playbackState = wakeHandle.onPlaybackChange({
@@ -388,6 +426,7 @@
   }
 
   async function boot() {
+    const packagedPromise = attachPackagedVideo();
     try {
       const loaded = await preset.loadPreset();
       if (!loaded.ok) throw new Error(loaded.message);
@@ -416,7 +455,10 @@
       watchDevicePixelRatio();
       watchVideoSize();
       runtimeNote.textContent = `配置：${config.externalAttempt} · 本地预制已预热 · 回退 ${config.fallbackAfterMs}ms`;
-      setStatus('正式视频素材尚未提供，加载视频后可验证交互。');
+      const packaged = await packagedPromise;
+      if (!packaged && !video.error) {
+        setStatus('正式视频素材尚未提供，加载视频后可验证交互。');
+      }
       setSource(null);
     } catch (error) {
       runtimeNote.textContent = '配置加载失败';
@@ -427,6 +469,9 @@
 
   video.addEventListener('loadedmetadata', () => {
     assetEmpty.hidden = true;
+    if (!overlay) {
+      setStatus(atTarget() ? '已暂停在目标时间，可以再次破壁。' : '请暂停在目标时间。');
+    }
     syncControls();
   });
   video.addEventListener('timeupdate', syncControls);

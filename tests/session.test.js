@@ -43,6 +43,19 @@ test('only wakes while paused at the target time', () => {
   assert.equal(session.beginWait({ paused: true, currentTime: 12.5 }).ok, true);
 });
 
+test('wake follows a caller-updated target time', () => {
+  const session = controller();
+  session.targetTime = 6;
+  assert.equal(session.beginWait({ paused: true, currentTime: 12.5 }).code, 'not_ready');
+  assert.equal(session.canWake({ paused: true, currentTime: 5.9 }), true);
+  const pending = session.beginWait({ paused: true, currentTime: 6.1 });
+  assert.equal(pending.ok, true);
+  const curve = result(pending.requestId);
+  curve.time = 6.1;
+  assert.equal(session.resolve(curve).ok, true);
+  assert.equal(session.onPlaybackChange({ paused: true, currentTime: 6 }).status, 'interactive');
+});
+
 test('resolves, clamps the drag parameter and resets without leaving', () => {
   const session = controller();
   const pending = session.beginWait({ paused: true, currentTime: 12.5 });
