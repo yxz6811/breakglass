@@ -21,7 +21,7 @@
     if (token === 'right') return { axis: 'x', percent: 100 };
     if (token === 'top') return { axis: 'y', percent: 0 };
     if (token === 'bottom') return { axis: 'y', percent: 100 };
-    if (token === 'center') return { axis: 'both', percent: 50 };
+    if (token === 'center') return { axis: 'both', percent: 50, keyword: 'center' };
     const match = /^([+-]?(?:\d+\.?\d*|\.\d+))(px|%)?$/.exec(token);
     if (!match) return null;
     const value = Number.parseFloat(match[1]);
@@ -55,8 +55,11 @@
     const second = parseComponent(tokens[1]);
     if (!second) return fallback;
     if (first.axis === second.axis && first.axis !== 'both') return fallback;
-    // `top left` 与 `left top` 等价：先出现的 y 关键字仍然作用在纵轴。
-    if (first.axis === 'y') return { x: axisValue(second), y: axisValue(first) };
+    // `top left` 与 `left top` 等价。`center left` 里的 left 仍是横轴，center 落到另一轴。
+    // 百分比不是 center 关键字：`50% left` 不是合法的双值位置，继续走下面的回退。
+    if (first.axis === 'y' || (first.keyword === 'center' && second.axis === 'x')) {
+      return { x: axisValue(second), y: axisValue(first) };
+    }
     return { x: axisValue(first), y: second.axis === 'x' ? { percent: 50 } : axisValue(second) };
   }
 

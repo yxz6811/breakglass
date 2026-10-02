@@ -68,6 +68,10 @@
   let localClock = null;
   let overlay = null;
   let dragging = false;
+  /** @type {{ name: string, value: number, mathX: number } | null} */
+  let dragOrigin = null;
+  let placedRectKey = '';
+  let videoBroken = false;
   // 识别路径的判定起点；只在 visionAdapter 为 fixture 且外部演练为 off 时置位。
   let visionStartedAt = null;
   let resizeObserver = null;
@@ -129,6 +133,7 @@
   }
 
   function targetTime() {
+    if (targetInput.value == null || String(targetInput.value).trim() === '') return Number.NaN;
     return Number(targetInput.value);
   }
 
@@ -157,6 +162,7 @@
    * @returns {boolean}
    */
   function atTarget() {
+    if (videoBroken) return false;
     syncSessionTarget();
     if (!controller || !hasFrameSize()) return false;
     return controller.canWake({ paused: video.paused, currentTime: video.currentTime });
@@ -217,6 +223,44 @@
     setWaitingBar(false);
   }
 
+  /**
+   * 当前视频的内容矩形。不支持的 object-fit 只跳过这一帧，不把异常抛进事件处理。
+   * @returns {ReturnType<typeof geometry.getContentRect> | null}
+   */
+  function readContentRect() {
+    const videoWidth = video.videoWidth;
+    const videoHeight = video.videoHeight;
+    if (!(videoWidth > 0 && videoHeight > 0)) return null;
+    const style = getComputedStyle(video);
+    try {
+      return geometry.getContentRect({
+        elementRect: video.getBoundingClientRect(),
+        videoWidth,
+        videoHeight,
+        objectFit: style.objectFit || 'contain',
+        objectPosition: style.objectPosition || '50% 50%'
+      });
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * 把指针位置换回数学横坐标。内容矩形无效时返回 null。
+   * @param {{ clientX?: number }} event
+   * @param {object} definition
+   * @returns {number | null}
+   */
+  function mathXFromPointer(event, definition) {
+    const rect = readContentRect();
+    const region = definition && definition.region;
+    if (!rect || !region || !(region.width > 0) || !Number.isFinite(event.clientX)) return null;
+    const sourceX = (event.clientX - rect.contentRect.left) / rect.scale;
+    const mathX = definition.domain.min +
+      ((sourceX - region.x) / region.width) * (definition.domain.max - definition.domain.min);
+    return Number.isFinite(mathX) ? mathX : null;
+  }
+
   // 坐标换算统一走 geometry/alignment.js，页面不再另写一套映射。
   function pagePointForMath(definition, parameters, mathX, rect) {
     const point = alignment.mathPointToPage(definition, parameters, mathX, rect.scale);
@@ -245,9 +289,17 @@
       samples: 9,
       readActual: (mathX) => {
         if (drawn.length === 0) return null;
-        const ratio = (mathX - definition.domain.min) / (definition.domain.max - definition.domain.min);
-        const index = Math.max(0, Math.min(drawn.length - 1, Math.round(ratio * (drawn.length - 1))));
-        return drawn[index];
+        const expected = alignment.mathPointToPage(definition, parameters, mathX, rect.scale);
+        let best = null;
+        let bestDistance = Infinity;
+        for (const point of drawn) {
+          const distance = Math.abs(point.x - expected.x);
+          if (distance < bestDistance) {
+            best = point;
+            bestDistance = distance;
+          }
+        }
+        return best;
       }
     });
     window.__breakglassAlignment = {
@@ -299,17 +351,18 @@
     if (!state || state.status !== 'interactive' || !state.result || !overlay) return;
     const result = state.result;
     const definition = result.definition;
-    const videoWidth = video.videoWidth;
-    const videoHeight = video.videoHeight;
-    if (!(videoWidth > 0 && videoHeight > 0)) return;
-    const rect = geometry.getContentRect({
-      elementRect: video.getBoundingClientRect(),
-      videoWidth,
-      videoHeight,
-      objectFit: getComputedStyle(video).objectFit || 'contain',
-      objectPosition: getComputedStyle(video).objectPosition || '50% 50%'
-    });
+    const rect = readContentRect();
     if (!rect) return;
+
+    const rectKey = [
+      rect.contentRect.left, rect.contentRect.top,
+      rect.contentRect.width, rect.contentRect.height, rect.scale
+    ].join(',');
+    if (placedRectKey && placedRectKey !== rectKey) {
+      dragging = false;
+      dragOrigin = null;
+    }
+    placedRectKey = rectKey;
 
     const stageRect = stage.getBoundingClientRect();
     overlay.style.left = `${rect.contentRect.left - stageRect.left}px`;
@@ -319,12 +372,22 @@
     overlay.setAttribute('viewBox', `0 0 ${rect.contentRect.width} ${rect.contentRect.height}`);
 
     const parameters = state.currentParameters;
-    const path = [];
+    const samples = [];
+    const span = definition.domain.max - definition.domain.min;
     for (let index = 0; index <= 80; index += 1) {
-      const x = definition.domain.min + (definition.domain.max - definition.domain.min) * index / 80;
+      samples.push(definition.domain.min + span * index / 80);
+    }
+    const vertex = Number(parameters.h);
+    if (Number.isFinite(vertex) && vertex > definition.domain.min && vertex < definition.domain.max &&
+        !samples.some((value) => Math.abs(value - vertex) <= 1e-9)) {
+      samples.push(vertex);
+    }
+    samples.sort((left, right) => left - right);
+    const path = [];
+    samples.forEach((x, index) => {
       const [px, py] = pagePointForMath(definition, parameters, x, rect);
       path.push(`${index === 0 ? 'M' : 'L'} ${px.toFixed(2)} ${py.toFixed(2)}`);
-    }
+    });
     const pathData = path.join(' ');
     overlay.querySelector('path').setAttribute('d', pathData);
     publishAlignment(definition, parameters, rect, pathData);
@@ -354,6 +417,9 @@
     if (overlay) overlay.remove();
     overlay = null;
     dragging = false;
+    dragOrigin = null;
+    placedRectKey = '';
+    window.__breakglassAlignment = null;
     if (pauseVideo && video && !video.paused) video.pause();
     resetButton.disabled = true;
     exitButton.disabled = true;
@@ -371,6 +437,7 @@
     overlay.classList.add('curve-overlay');
     overlay.style.position = 'absolute';
     overlay.style.zIndex = '2';
+    overlay.style.touchAction = 'none';
     overlay.setAttribute('aria-label', '可拖动的抛物线结果');
     // 视觉控制点 r=10，另加一个透明 r=18 的热区圆。热区放在后面，
     // 这样 querySelector('circle') 仍然拿到可见的控制点，拖动逻辑不用改。
@@ -380,39 +447,40 @@
     stage.appendChild(overlay);
 
     overlay.addEventListener('pointerdown', (event) => {
-      if (event.target === overlay) {
-        removeOverlay();
-        return;
-      }
+      if (event.target === overlay) return;
+      const state = sessionState();
+      if (!state || !state.result) return;
+      const definition = state.result.definition;
+      const mathX = mathXFromPointer(event, definition);
+      const name = definition.dragParameter;
+      if (mathX === null || !Number.isFinite(state.currentParameters[name])) return;
       dragging = true;
-      overlay.setPointerCapture(event.pointerId);
+      dragOrigin = { name, value: state.currentParameters[name], mathX };
+      if (overlay.setPointerCapture) overlay.setPointerCapture(event.pointerId);
     });
     overlay.addEventListener('pointermove', (event) => {
+      if (!dragging || !dragOrigin) return;
       const state = sessionState();
-      if (!dragging || !state || !state.result) return;
-      const result = state.result;
-      const definition = result.definition;
-      const videoWidth = video.videoWidth;
-      const videoHeight = video.videoHeight;
-      if (!(videoWidth > 0 && videoHeight > 0)) return;
-      const rect = geometry.getContentRect({
-        elementRect: video.getBoundingClientRect(),
-        videoWidth,
-        videoHeight,
-        objectFit: getComputedStyle(video).objectFit || 'contain',
-        objectPosition: getComputedStyle(video).objectPosition || '50% 50%'
-      });
-      if (!rect) return;
-      const sourceX = (event.clientX - rect.contentRect.left) / rect.scale;
-      const mathX = definition.domain.min +
-        ((sourceX - definition.region.x) / definition.region.width) * (definition.domain.max - definition.domain.min);
-      controller.updateParameter(definition.dragParameter, mathX);
+      if (!state || !state.result) return;
+      const mathX = mathXFromPointer(event, state.result.definition);
+      if (mathX === null) return;
+      controller.updateParameter(dragOrigin.name, dragOrigin.value + (mathX - dragOrigin.mathX));
       drawCurve();
     });
-    overlay.addEventListener('pointerup', (event) => {
+    /**
+     * 松手或指针被系统取消时结束拖动，避免下一次移动继续改参数。
+     * @param {PointerEvent} event
+     */
+    function endDrag(event) {
       dragging = false;
-      if (overlay.hasPointerCapture(event.pointerId)) overlay.releasePointerCapture(event.pointerId);
-    });
+      dragOrigin = null;
+      if (overlay && event && overlay.hasPointerCapture && overlay.hasPointerCapture(event.pointerId)) {
+        overlay.releasePointerCapture(event.pointerId);
+      }
+    }
+    overlay.addEventListener('pointerup', endDrag);
+    overlay.addEventListener('pointercancel', endDrag);
+    overlay.addEventListener('lostpointercapture', endDrag);
     drawCurve();
   }
 
@@ -420,7 +488,7 @@
     if (wakeHandle && controller) {
       syncSessionTarget();
       const before = controller.getState();
-      const wasActive = before.status === 'waiting' || before.status === 'interactive';
+      const wasActive = before.status === 'waiting' || before.status === 'interactive' || before.status === 'recoverable-error';
       const playbackState = wakeHandle.onPlaybackChange({
         paused: video.paused,
         currentTime: video.currentTime
@@ -429,7 +497,12 @@
         if (overlay) removeOverlay({ pauseVideo: false });
         else {
           hideWaitingControls();
+          resetButton.disabled = true;
+          exitButton.disabled = true;
+          setSlidersEnabled(false);
+          setPrimaryAction('wake');
           setSource(null);
+          setStatus(atTarget() ? '已暂停在目标时间，可以再次破壁。' : '请暂停在目标时间。');
         }
       }
     }
@@ -452,10 +525,6 @@
     if (Number.isFinite(elapsed) && elapsed >= 0) latencies.record('vision-decision', elapsed, 'hot');
   }
 
-  /**
-   * 只按会话状态渲染。超时耗时用页面自己的两次 mark，不读唤醒回调里的时间戳。
-   * @param {object} state
-   */
   /**
    * 禁用原因只在这一处生成：按钮不可用时把原因写进视觉隐藏的说明节点，
    * 由 aria-describedby 关联，读屏与 tooltip 都能解释为什么不能点。
@@ -521,6 +590,7 @@
     if (state.status === 'waiting') {
       cancelButton.hidden = false;
       cancelButton.disabled = false;
+      exitButton.disabled = false;
       retryButton.hidden = true;
       retryButton.disabled = true;
       resetButton.disabled = true;
@@ -540,6 +610,7 @@
       hideWaitingControls();
       retryButton.hidden = false;
       retryButton.disabled = false;
+      exitButton.disabled = false;
       resetButton.disabled = true;
       setSlidersEnabled(false);
       wakeButton.disabled = true;
@@ -661,6 +732,7 @@
 
   video.addEventListener('resize', syncControls);
   video.addEventListener('loadedmetadata', () => {
+    videoBroken = false;
     assetEmpty.hidden = true;
     if (!overlay) {
       setStatus(atTarget() ? '已暂停在目标时间，可以再次破壁。' : '请暂停在目标时间。');
@@ -672,6 +744,7 @@
   video.addEventListener('pause', syncControls);
   video.addEventListener('ended', syncControls);
   video.addEventListener('error', () => {
+    videoBroken = true;
     assetEmpty.hidden = false;
     removeOverlay();
     setStatus('视频无法加载，未挂载交互层。', 'error');
@@ -680,6 +753,12 @@
   document.addEventListener('fullscreenchange', drawCurve);
   window.addEventListener('orientationchange', drawCurve);
   window.addEventListener('pagehide', () => {
+    dragging = false;
+    dragOrigin = null;
+    if (overlay) {
+      overlay.remove();
+      overlay = null;
+    }
     if (wakeHandle) wakeHandle.dispose();
     releaseWatch();
     window.__breakglassAlignment = null;
@@ -690,8 +769,9 @@
       wake();
     }
     if (event.key === 'Escape') {
-      if (overlay) removeOverlay();
-      else if (sessionState() && sessionState().status === 'waiting') cancelWaiting();
+      const status = sessionState() && sessionState().status;
+      if (overlay || status === 'recoverable-error') removeOverlay();
+      else if (status === 'waiting') cancelWaiting();
     }
   });
   stage.addEventListener('click', (event) => {
@@ -706,13 +786,25 @@
       setStatus('正式视频素材尚未提供，暂时无法定位。');
       return;
     }
-    video.currentTime = targetTime();
+    const next = targetTime();
+    if (!Number.isFinite(next) || next < 0) {
+      setStatus('请输入有效的目标时间。');
+      return;
+    }
+    video.currentTime = next;
     video.pause();
+    syncControls();
+  });
+  targetInput.addEventListener('input', () => {
+    if (!Number.isFinite(targetTime())) return;
+    syncControls();
   });
   wakeButton.addEventListener('click', wake);
   cancelButton.addEventListener('click', cancelWaiting);
   retryButton.addEventListener('click', wake);
   resetButton.addEventListener('click', () => {
+    dragging = false;
+    dragOrigin = null;
     if (controller) controller.reset();
     drawCurve();
     setStatus('已恢复本次结果的初始参数。');

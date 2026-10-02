@@ -128,6 +128,20 @@ function element(tagName) {
   return node;
 }
 
+/**
+ * 按演示页标记补上 disabled / hidden。假节点默认都是可点的，否则测不到按钮初始禁用。
+ * @param {Record<string, { disabled: boolean, hidden: boolean }>} elements
+ */
+function applyMarkupState(elements) {
+  const html = fs.readFileSync(path.join(extensionDir, 'demo/index.html'), 'utf8');
+  for (const id of Object.keys(elements)) {
+    const match = new RegExp('<[^>]*\\bid="' + id + '"[^>]*>').exec(html);
+    if (!match) continue;
+    if (/(?:^|[\s/])disabled(?:=|\s|>|$)/.test(match[0])) elements[id].disabled = true;
+    if (/(?:^|[\s/])hidden(?:=|\s|>|$)/.test(match[0])) elements[id].hidden = true;
+  }
+}
+
 function assetFetch(url) {
   const rel = String(url).replace(/^\.\.\//, '');
   const file = path.join(extensionDir, rel);
@@ -215,14 +229,7 @@ async function createHarness(options = {}) {
     const tag = id === 'demo-video' ? 'video' : (id === 'parameter-h' ? 'input' : 'div');
     elements[id] = element(tag);
   }
-  // 与 demo/index.html 的初始状态一致：这些控件默认禁用，取消/重试默认隐藏。
-  // 替身不解析 HTML 属性，所以初始态要在这里显式建模，否则页面读到的是 undefined。
-  for (const id of ['wake-button', 'cancel-button', 'retry-button', 'reset-button', 'exit-button',
-    'parameter-a', 'parameter-h', 'parameter-k']) {
-    elements[id].disabled = true;
-  }
-  elements['cancel-button'].hidden = true;
-  elements['retry-button'].hidden = true;
+  applyMarkupState(elements);
   elements['demo-video'].rect = { left: 100, top: 50, width: 1280, height: 800 };
   elements['video-stage'].rect = { left: 50, top: 0, width: 1400, height: 900 };
   elements['video-stage'].appendChild(elements['demo-video']);

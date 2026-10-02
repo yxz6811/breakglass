@@ -117,8 +117,12 @@
     if (context.videoId !== undefined && result.videoId !== context.videoId) {
       return fail('video_mismatch', '结果不属于当前视频。');
     }
-    if (context.targetTime !== undefined && Math.abs(result.time - context.targetTime) > (context.timeTolerance ?? DEFAULT_TIME_TOLERANCE)) {
-      return fail('time_mismatch', '结果不属于当前目标时间。');
+    if (context.targetTime !== undefined) {
+      const tolerance = Number.isFinite(context.timeTolerance) ? context.timeTolerance : DEFAULT_TIME_TOLERANCE;
+      // 0.2 在二进制里不能精确表示，边界值要留出可忽略的误差。
+      if (Math.abs(result.time - context.targetTime) > tolerance + 1e-9) {
+        return fail('time_mismatch', '结果不属于当前目标时间。');
+      }
     }
     if (context.frameSize && (frameSize.width !== context.frameSize.width || frameSize.height !== context.frameSize.height)) {
       return fail('frame_mismatch', '结果尺寸不属于当前视频。');

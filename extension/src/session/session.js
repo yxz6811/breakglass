@@ -26,8 +26,8 @@
     }
 
     canWake({ paused, currentTime }) {
-      return Boolean(paused && Number.isFinite(currentTime) &&
-        Math.abs(currentTime - this.targetTime) <= this.timeTolerance);
+      return Boolean(paused && Number.isFinite(currentTime) && Number.isFinite(this.targetTime) &&
+        Math.abs(currentTime - this.targetTime) <= this.timeTolerance + 1e-9);
     }
 
     beginWait({ paused, currentTime }) {
@@ -156,7 +156,8 @@
      * @returns {ReturnType<SessionController['getState']>}
      */
     onPlaybackChange({ paused, currentTime } = {}) {
-      if (!paused || !Number.isFinite(currentTime) || Math.abs(currentTime - this.targetTime) > this.timeTolerance) this.exit();
+      if (!paused || !Number.isFinite(currentTime) || !Number.isFinite(this.targetTime) ||
+        Math.abs(currentTime - this.targetTime) > this.timeTolerance + 1e-9) this.exit();
       return this.getState();
     }
 
