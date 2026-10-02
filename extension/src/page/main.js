@@ -22,12 +22,25 @@
   const exitButton = $('#exit-button');
   const slider = $('#parameter-h');
   const sliderValue = $('#parameter-h-value');
+  const sliderA = $('#parameter-a');
+  const sliderAValue = $('#parameter-a-value');
+  const sliderK = $('#parameter-k');
+  const sliderKValue = $('#parameter-k-value');
+  const sliderRows = [
+    { name: 'a', input: sliderA, output: sliderAValue },
+    { name: 'h', input: slider, output: sliderValue },
+    { name: 'k', input: sliderK, output: sliderKValue }
+  ];
   const sourceLabel = $('#source-label');
   const sourceNote = $('#source-note');
   const stateLabel = $('#state-label');
   const timeLabel = $('#time-label');
   const assetEmpty = $('#asset-empty');
   const runtimeNote = $('#runtime-note');
+  const waitingBar = $('#waiting-bar');
+  const waitingProgress = $('#waiting-progress');
+  const fullscreenButton = $('#fullscreen-button');
+  const playTip = playToggle ? playToggle.querySelector('.lg-tip') : null;
 
   /**
    * 相对演示页的扩展包视频。仓库落盘路径只写在 extension/assets/video/README.md。
@@ -75,8 +88,27 @@
     return true;
   }
 
-  function setStatus(message) {
+  function setStatus(message, variant) {
     stateLabel.textContent = message;
+    if (stateLabel.classList) stateLabel.classList.toggle('is-error', variant === 'error');
+  }
+
+  function setSlidersEnabled(enabled) {
+    sliderRows.forEach((row) => { if (row.input) row.input.disabled = !enabled; });
+  }
+
+  function setPrimaryAction(action) {
+    if (wakeButton) wakeButton.dataset.variant = action === 'wake' ? 'primary' : 'ghost';
+    if (retryButton) retryButton.dataset.variant = action === 'retry' ? 'primary' : 'ghost';
+  }
+
+  // 等待条随等待态出现，进度条时长与 fallbackAfterMs 对齐（规范 §3.5）。
+  function setWaitingBar(active) {
+    if (!waitingBar) return;
+    waitingBar.hidden = !active;
+    if (!active) return;
+    const ms = config && Number.isFinite(config.fallbackAfterMs) ? config.fallbackAfterMs : 1500;
+    waitingBar.style.setProperty('--wait-ms', ms + 'ms');
   }
 
   function targetTime() {
@@ -121,6 +153,10 @@
 
   function setSource(result, note) {
     sourceLabel.textContent = sourceText(result);
+    if (sourceLabel.classList) {
+      sourceLabel.classList.toggle('is-fallback', Boolean(result && result.fallback === 'timeout'));
+      sourceLabel.classList.toggle('is-warn', Boolean(result && result.source !== 'preset'));
+    }
     if (note !== undefined) {
       sourceNote.textContent = note;
       return;
@@ -135,6 +171,7 @@
     cancelButton.disabled = true;
     retryButton.hidden = true;
     retryButton.disabled = true;
+    setWaitingBar(false);
   }
 
   // 坐标换算统一走 geometry/alignment.js，页面不再另写一套映射。
@@ -256,8 +293,13 @@
     handle.setAttribute('cx', cx.toFixed(2));
     handle.setAttribute('cy', cy.toFixed(2));
 
-    slider.value = String(parameters.h ?? 0);
-    sliderValue.textContent = Number(parameters.h ?? 0).toFixed(1);
+    sliderRows.forEach((row) => {
+      if (!row.input || !row.output) return;
+      const value = Number(parameters[row.name]);
+      if (!Number.isFinite(value)) return;
+      row.input.value = String(value);
+      row.output.textContent = value.toFixed(1);
+    });
   }
 
   function removeOverlay({ pauseVideo = true } = {}) {
@@ -268,8 +310,9 @@
     if (pauseVideo && video && !video.paused) video.pause();
     resetButton.disabled = true;
     exitButton.disabled = true;
-    slider.disabled = true;
+    setSlidersEnabled(false);
     hideWaitingControls();
+    setPrimaryAction('wake');
     setSource(null);
     setStatus(atTarget() ? '已暂停在目标时间，可以再次破壁。' : '请暂停在目标时间。');
     wakeButton.disabled = !(atTarget() && Boolean(presetResult));
@@ -342,7 +385,9 @@
     const waiting = Boolean(sessionState() && sessionState().status === 'waiting');
     const ready = atTarget() && Boolean(presetResult);
     wakeButton.disabled = waiting || !ready || Boolean(overlay);
-    playToggle.textContent = video.paused ? '播放' : '暂停';
+    const playLabel = video.paused ? '播放' : '暂停';
+    playToggle.setAttribute('aria-label', playLabel + '视频');
+    if (playTip) playTip.textContent = playLabel;
     timeLabel.textContent = `当前时间：${Number.isFinite(video.currentTime) ? video.currentTime.toFixed(1) : '—'}`;
   }
 
@@ -367,7 +412,12 @@
       hideWaitingControls();
       resetButton.disabled = false;
       exitButton.disabled = false;
-      slider.disabled = false;
+      setSlidersEnabled(true);
+      setPrimaryAction('wake');
+      if (overlay) {
+        overlay.classList.add('is-entering');
+        window.setTimeout(() => { if (overlay) overlay.classList.remove('is-entering'); }, 240);
+      }
       setSource(result);
       setStatus(timedOut
         ? '已改用预先准备的示例（超时回退），可拖动控制点。'
@@ -381,8 +431,10 @@
       retryButton.hidden = true;
       retryButton.disabled = true;
       resetButton.disabled = true;
-      slider.disabled = true;
+      setSlidersEnabled(false);
       wakeButton.disabled = true;
+      setPrimaryAction('wake');
+      setWaitingBar(true);
       setSource(null, '正在等待外部结果；超过 1.5 秒会自动改用预先准备的示例，可随时取消。');
       setStatus('正在等待外部结果…');
       if (cancelButton.focus) cancelButton.focus();
@@ -393,10 +445,12 @@
       retryButton.hidden = false;
       retryButton.disabled = false;
       resetButton.disabled = true;
-      slider.disabled = true;
+      setSlidersEnabled(false);
       wakeButton.disabled = true;
+      setPrimaryAction('retry');
+      setWaitingBar(false);
       setSource(null, '没有可用的准备结果，或外部结果不可用；可以重试或退出。');
-      setStatus(state.message || '结果不可用，请重试或退出。');
+      setStatus(state.message || '结果不可用，请重试或退出。', 'error');
       if (retryButton.focus) retryButton.focus();
     }
   }
@@ -481,7 +535,7 @@
   video.addEventListener('error', () => {
     assetEmpty.hidden = false;
     removeOverlay();
-    setStatus('视频无法加载，未挂载交互层。');
+    setStatus('视频无法加载，未挂载交互层。', 'error');
   });
   window.addEventListener('resize', drawCurve);
   document.addEventListener('fullscreenchange', drawCurve);
@@ -525,10 +579,22 @@
     setStatus('已恢复本次结果的初始参数。');
   });
   exitButton.addEventListener('click', removeOverlay);
-  slider.addEventListener('input', () => {
-    if (!controller) return;
-    controller.updateParameter('h', Number(slider.value));
-    drawCurve();
+  // 滑块按参数逐个调节（会话层 setParameter）；控制点拖动仍走 updateParameter。
+  sliderRows.forEach((row) => {
+    if (!row.input) return;
+    row.input.addEventListener('input', () => {
+      if (!controller) return;
+      controller.setParameter(row.name, Number(row.input.value));
+      drawCurve();
+    });
+  });
+  fullscreenButton.addEventListener('click', () => {
+    if (document.fullscreenElement) {
+      if (document.exitFullscreen) document.exitFullscreen();
+      return;
+    }
+    const target = stage || document.documentElement;
+    if (target && target.requestFullscreen) target.requestFullscreen();
   });
 
   boot();

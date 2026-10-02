@@ -20,9 +20,21 @@ require('../../extension/src/preset/load');
 const ELEMENT_IDS = [
   'demo-video', 'video-stage', 'target-time', 'play-toggle', 'jump-target',
   'wake-button', 'cancel-button', 'retry-button', 'reset-button', 'exit-button',
-  'parameter-h', 'parameter-h-value', 'source-label', 'source-note',
-  'state-label', 'time-label', 'asset-empty', 'runtime-note'
+  'parameter-a', 'parameter-a-value', 'parameter-h', 'parameter-h-value',
+  'parameter-k', 'parameter-k-value', 'source-label', 'source-note',
+  'state-label', 'time-label', 'asset-empty', 'runtime-note',
+  'waiting-bar', 'waiting-progress', 'fullscreen-button'
 ];
+
+// 忠实一点的 style 替身：main.js 会同时用 style.left = ... 和 style.setProperty。
+function createStyle() {
+  const values = {};
+  return {
+    setProperty(name, value) { values[name] = String(value); },
+    getPropertyValue(name) { return values[name] || ''; },
+    removeProperty(name) { delete values[name]; }
+  };
+}
 
 function element(tagName) {
   const listeners = new Map();
@@ -37,7 +49,8 @@ function element(tagName) {
     disabled: false,
     hidden: false,
     className: '',
-    style: {},
+    dataset: {},
+    style: createStyle(),
     paused: false,
     currentTime: 0,
     videoWidth: 0,
@@ -46,7 +59,16 @@ function element(tagName) {
     classList: {
       add(name) { node.className = node.className ? node.className + ' ' + name : name; },
       contains(name) { return node.className.split(/\s+/).indexOf(name) >= 0; },
-      remove() {}
+      toggle(name, force) {
+        const has = node.classList.contains(name);
+        const next = force === undefined ? !has : Boolean(force);
+        if (next && !has) node.classList.add(name);
+        if (!next && has) node.classList.remove(name);
+        return next;
+      },
+      remove(name) {
+        node.className = node.className.split(/\s+/).filter((item) => item && item !== name).join(' ');
+      }
     },
     setAttribute(name, value) { attributes.set(name, String(value)); },
     getAttribute(name) { return attributes.has(name) ? attributes.get(name) : null; },

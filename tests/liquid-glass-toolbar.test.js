@@ -1,7 +1,7 @@
 // 液态玻璃顶栏的放大内核（纯函数）。
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { DEFAULTS, resolveOptions, falloff, sample, smooth, settle, isSettled } = require('../prototypes/liquid-glass-toolbar/magnify.js');
+const { DEFAULTS, resolveOptions, falloff, sample, smooth, settle, isSettled } = require('../extension/src/ui/magnify.js');
 
 test('衰减曲线：中心为 1、边界为 0、单调不增', () => {
   assert.equal(falloff(0, 100), 1);

@@ -36,6 +36,8 @@ test('演示页按依赖顺序加载本地脚本', () => {
     '../src/attempt/simulator.js',
     '../src/session/wake.js',
     '../src/telemetry/latency.js',
+    '../src/ui/magnify.js',
+    '../src/ui/liquid-glass.js',
     '../src/preset/load.js',
     '../src/page/main.js'
   ]);
@@ -124,4 +126,52 @@ test('入口不可用时不会注入未验证页面', () => {
   assert.equal('content_scripts' in manifest, false);
   assert.deepEqual(manifest.host_permissions, []);
   assert.equal('web_accessible_resources' in manifest, false);
+});
+
+test('液态玻璃顶栏承载既有控件，且都带无障碍名称', () => {
+  const html = readText('demo/index.html');
+  assert.match(html, /class="lg-dock"[^>]*data-liquid-glass/);
+  assert.match(html, /class="lg-glass" aria-hidden="true"/);
+  for (const id of ['play-toggle', 'jump-target', 'wake-button', 'cancel-button', 'retry-button', 'reset-button', 'fullscreen-button', 'exit-button']) {
+    const tag = new RegExp('<button[^>]*id="' + id + '"[^>]*>').exec(html);
+    assert.ok(tag, '缺少顶栏按钮 ' + id);
+    assert.match(tag[0], /class="lg-item"/, id + ' 应在液态玻璃顶栏内');
+    assert.match(tag[0], /aria-label="[^"]+"/, id + ' 需要无障碍名称');
+  }
+  assert.match(html, /id="source-label"/);
+  assert.match(html, /id="waiting-bar"[^>]*aria-busy="true"/);
+  assert.match(html, /id="waiting-progress"/);
+});
+
+test('三个参数滑块的范围与预制一致', () => {
+  const html = readText('demo/index.html');
+  const preset = readJson('assets/presets/demo-parabola.json');
+  for (const name of ['a', 'h', 'k']) {
+    const tag = new RegExp('<input[^>]*id="parameter-' + name + '"[^>]*>').exec(html);
+    assert.ok(tag, '缺少滑块 parameter-' + name);
+    const item = preset.definition.parameters[name];
+    assert.match(tag[0], new RegExp('min="' + item.min + '"'));
+    assert.match(tag[0], new RegExp('max="' + item.max + '"'));
+    assert.match(tag[0], new RegExp('step="' + item.step + '"'));
+  }
+});
+
+test('样式表包含玻璃令牌、焦点可见与降级规则', () => {
+  const css = readText('demo/demo.css');
+  assert.match(css, /--glass-tint-top/);
+  assert.match(css, /--motion-enter/);
+  assert.match(css, /:focus-visible[^{]*\{[^}]*outline:\s*2px solid var\(--accent\)/);
+  assert.match(css, /\.lg-dock\s*\{/);
+  assert.match(css, /\.lg-item\s*\{/);
+  assert.match(css, /\.waiting-bar__fill\s*\{/);
+  assert.match(css, /@media \(prefers-reduced-motion: reduce\)/);
+  assert.match(css, /\[hidden\] \{ display: none !important; \}/);
+});
+
+test('顶栏脚本在扩展包内且不引远程资源', () => {
+  for (const rel of ['src/ui/magnify.js', 'src/ui/liquid-glass.js']) {
+    assert.equal(fs.existsSync(path.join(extensionDir, rel)), true, '缺少 ' + rel);
+    const source = readText(rel);
+    assert.doesNotMatch(source, /https?:\/\//, rel + ' 不得引远程资源');
+  }
 });

@@ -4,11 +4,11 @@
 | --- | --- |
 | 版本 | 1.0.0 |
 | 日期 | 2026-10-02 |
-| 状态 | 设计基线，待团队冻结 |
+| 状态 | 设计基线 v1.1.0，已落地到 `extension/demo/` 与 `extension/src/ui/` |
 | 适用范围 | `extension/demo/` 演示页的全部视觉与动效；不含 P1（识别/Pyodide） |
 | 依据 | `AGENTS.md` §6（视觉、响应式与可访问性）、`docs/BreakGlass-constitution.md`（§4 来源标识、§6 超时保底、§7 对齐、§10 验收）、`specs/001-insitu-parabola/spec.md`（FR-001~019、SC-001~006）、`docs/BreakGlass-frontend-execution-plan.md`（P-01~P-05、§10） |
 | 配套 | 令牌与组件说明见本文；逐交互的设计理由见 [`BreakGlass-ui-design-guide.md`](./BreakGlass-ui-design-guide.md)；现状清单见 [`BreakGlass-ui-inventory.md`](./BreakGlass-ui-inventory.md)；待实现项见 [`BreakGlass-ui-todo.md`](./BreakGlass-ui-todo.md)；液态玻璃原型见 [`../prototypes/liquid-glass-toolbar/README.md`](../prototypes/liquid-glass-toolbar/README.md) |
-| 边界 | **本文只定义规范，不代表已经实现。** 文中标注 `【新】` 的条目当前代码中不存在 |
+| 边界 | v1.1.0 起文中 `【新】` 的条目已实现（含液态玻璃顶栏、等待条、三参数滑块、焦点与动效）；**浏览器手工验收（T030/T038）仍未执行**，不得记为通过 |
 
 ## 1. 设计原则
 
@@ -175,7 +175,7 @@
 | 属性 | 规格 |
 | --- | --- |
 | 结构 | 左 16px 环形 spinner ｜ 中间文案 ｜ 右侧「取消等待」次按钮 |
-| 位置 | 顶栏中部（若顶栏未启用，则位于控制面板状态区下方） |
+| 位置 | 视频舞台下方的传输条内（等待与当前帧强相关）；控制面板状态区下方为备选 |
 | 视觉 | `--panel` 底 + `--line` 描边；spinner 为 accent 2px 圆弧，1s 旋转 |
 | 进度 | **1.5 秒线性进度条**（accent 20% → 100%），与 `fallbackAfterMs` 严格对齐 |
 | 语义 | `aria-busy="true"`；进入等待时焦点移到「取消等待」 |
@@ -377,4 +377,5 @@
 
 | 版本 | 日期 | 变更 |
 | --- | --- | --- |
+| 1.1.0 | 2026-10-02 | 规范落地到实现：液态玻璃顶栏替换原传输条与面板按钮、新增 a/k 滑块与等待条、焦点可见样式、状态样式与动效降级；等待条位置改为舞台下方；新增 `tests/page-ui.test.js` 与静态断言。 |
 | 1.0.0 | 2026-10-02 | 首次建立视觉规范：设计原则、设计令牌（颜色/排版/间距/圆角/层级/玻璃）、组件规范（液态玻璃顶栏、参数滑块、状态区、来源芯片、等待条、覆盖层、空态、通用状态）、状态→视觉映射、动效规范（时长/缓动/逐交互/Dock 算法/降级/性能）、融入项目方式、验收清单 |
