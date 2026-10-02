@@ -37,6 +37,7 @@ test('演示页按依赖顺序加载本地脚本', () => {
     '../src/session/wake.js',
     '../src/telemetry/latency.js',
     '../src/preset/load.js',
+    '../src/preset/place-in-frame.js',
     '../src/page/main.js'
   ]);
   for (const src of sources) {
