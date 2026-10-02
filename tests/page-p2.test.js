@@ -41,6 +41,7 @@ test('hang：等待态可取消，1.5 秒后自动回退并持续显示原因', 
     assert.equal(harness.overlay(), null, '等待中不得有曲线');
     assert.equal(elements['cancel-button'].hidden, false);
     assert.equal(elements['wake-button'].disabled, true);
+    assert.equal(elements['exit-button'].disabled, false, '等待中仍然可以退出');
     assert.equal(elements['state-label'].textContent.includes('正在等待外部结果'), true);
     harness.advance(1499);
     assert.equal(harness.overlay(), null);
@@ -86,6 +87,7 @@ test('invalid：非法外部结果进入可恢复错误并提供重试', async (
     await flush();
     assert.equal(harness.overlay(), null);
     assert.equal(elements['retry-button'].hidden, false);
+    assert.equal(elements['exit-button'].disabled, false, '可恢复错误必须提供重试与退出');
     assert.equal(elements['state-label'].textContent.includes('外部结果不可用'), true);
     assert.equal(elements['source-label'].textContent, '等待素材');
     elements['retry-button'].dispatch('click');
