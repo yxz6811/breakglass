@@ -44,6 +44,8 @@ node --test
 ## 文档入口
 
 - [项目约定](AGENTS.md)
+- [前后端职责边界](docs/frontend-backend-boundary.md)
+- [前端任务与执行流程](docs/frontend-task-tracker.md)
 - [BreakGlass Constitution](docs/BreakGlass-constitution.md)
 - [最新功能规格](specs/001-insitu-parabola/spec.md)
 - [实施计划](specs/001-insitu-parabola/plan.md)

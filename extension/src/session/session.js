@@ -16,6 +16,9 @@
       this.targetTime = targetTime;
       this.frameSize = frameSize;
       this.timeTolerance = timeTolerance;
+      // Only the deterministic, prewarmed P0 path may create an interactive
+      // session. Values such as `hang`, `invalid`, and `late` belong to the
+      // future external-attempt story and must never be treated as success.
       this.externalAttempt = externalAttempt;
       this.status = 'paused-ready';
       this.pending = null;
@@ -32,6 +35,12 @@
       if (!this.canWake({ paused, currentTime })) {
         return { ok: false, code: 'not_ready', message: '请先暂停在目标时间。' };
       }
+      if (this.externalAttempt !== 'off') {
+        return { ok: false, code: 'external_attempt_disabled', message: '当前配置未启用本地预制交互。' };
+      }
+      if (this.pending || this.current || this.status === 'waiting' || this.status === 'interactive') {
+        return { ok: false, code: 'session_active', message: '当前已有交互会话。' };
+      }
       const requestId = `request-${++this.sequence}`;
       this.pending = { requestId, videoId: this.videoId, time: currentTime };
       this.current = null;
@@ -40,13 +49,10 @@
     }
 
     resolve(result) {
-      if (!this.pending) return { ok: false, code: 'no_pending', message: '当前没有等待中的请求。' };
       if (this.externalAttempt !== 'off') {
-        this.pending = null;
-        this.current = null;
-        this.status = 'paused-ready';
-        return { ok: false, code: 'external_attempt_blocked', message: '当前配置不能进入交互。' };
+        return { ok: false, code: 'external_attempt_disabled', message: '当前配置未启用本地预制交互。' };
       }
+      if (!this.pending) return { ok: false, code: 'no_pending', message: '当前没有等待中的请求。' };
       if (!validate) return { ok: false, code: 'validator_unavailable', message: '结果校验器不可用。' };
       const expectedRequestId = this.pending.requestId;
       const check = validate.validateCurveResult(result, {
@@ -102,13 +108,11 @@
 
     /**
      * 播放或离开目标时间时，由会话自己结束。仍暂停在容差内则保持当前会话。
-     * @param {{ paused: boolean, currentTime: number }} playback
+     * @param {{ paused?: boolean, currentTime?: number }} [playback]
      * @returns {ReturnType<SessionController['getState']>}
      */
-    onPlaybackChange({ paused, currentTime }) {
-      const leftTarget = !Number.isFinite(currentTime) ||
-        Math.abs(currentTime - this.targetTime) > this.timeTolerance;
-      if (!paused || leftTarget) this.exit();
+    onPlaybackChange({ paused, currentTime } = {}) {
+      if (!paused || !Number.isFinite(currentTime) || Math.abs(currentTime - this.targetTime) > this.timeTolerance) this.exit();
       return this.getState();
     }
 

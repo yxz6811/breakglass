@@ -41,8 +41,7 @@
 
   function sourceText(result) {
     if (!result) return '等待素材';
-    if (result.fallback === 'timeout') return '本地预制 · 超时回退';
-    return result.source === 'preset' ? '本地预制示例' : '视觉结果';
+    return '预先准备的示例';
   }
 
   function setSource(result) {
@@ -69,10 +68,13 @@
     const state = controller.getState();
     const result = state.result;
     const definition = result.definition;
+    const videoWidth = video.videoWidth;
+    const videoHeight = video.videoHeight;
+    if (!(videoWidth > 0 && videoHeight > 0)) return;
     const rect = geometry.getContentRect({
       elementRect: video.getBoundingClientRect(),
-      videoWidth: result.frameSize.width,
-      videoHeight: result.frameSize.height,
+      videoWidth,
+      videoHeight,
       objectFit: getComputedStyle(video).objectFit || 'contain',
       objectPosition: getComputedStyle(video).objectPosition || '50% 50%'
     });
@@ -105,11 +107,12 @@
     sliderValue.textContent = Number(parameters.h ?? 0).toFixed(1);
   }
 
-  function removeOverlay() {
+  function removeOverlay({ pauseVideo = true } = {}) {
     if (overlay) overlay.remove();
     overlay = null;
     dragging = false;
     if (controller) controller.exit();
+    if (pauseVideo && video && !video.paused) video.pause();
     resetButton.disabled = true;
     exitButton.disabled = true;
     slider.disabled = true;
@@ -120,6 +123,8 @@
   function createOverlay() {
     overlay = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
     overlay.classList.add('curve-overlay');
+    overlay.style.position = 'absolute';
+    overlay.style.zIndex = '2';
     overlay.setAttribute('aria-label', '可拖动的预先准备抛物线');
     overlay.innerHTML = '<path fill="none" stroke="#71ddff" stroke-width="3" stroke-linecap="round"></path><circle r="10" fill="#08111f" stroke="#ffffff" stroke-width="3" tabindex="0"></circle>';
     stage.appendChild(overlay);
@@ -136,10 +141,13 @@
       if (!dragging || !controller || !controller.current) return;
       const result = controller.current.result;
       const definition = result.definition;
+      const videoWidth = video.videoWidth;
+      const videoHeight = video.videoHeight;
+      if (!(videoWidth > 0 && videoHeight > 0)) return;
       const rect = geometry.getContentRect({
         elementRect: video.getBoundingClientRect(),
-        videoWidth: result.frameSize.width,
-        videoHeight: result.frameSize.height,
+        videoWidth,
+        videoHeight,
         objectFit: getComputedStyle(video).objectFit || 'contain',
         objectPosition: getComputedStyle(video).objectPosition || '50% 50%'
       });
@@ -158,14 +166,24 @@
   }
 
   function syncControls() {
+    if (controller) {
+      const wasActive = controller.status === 'waiting' || controller.status === 'interactive';
+      const playbackState = controller.onPlaybackChange({
+        paused: video.paused,
+        currentTime: video.currentTime
+      });
+      if (overlay && wasActive && playbackState.status === 'paused-ready') {
+        removeOverlay({ pauseVideo: false });
+      }
+    }
     const ready = atTarget() && Boolean(presetResult);
     wakeButton.disabled = !ready || Boolean(overlay);
     playToggle.textContent = video.paused ? '播放' : '暂停';
     timeLabel.textContent = `当前时间：${Number.isFinite(video.currentTime) ? video.currentTime.toFixed(1) : '—'}`;
-    if (controller && (video.paused === false || !atTarget()) && controller.status === 'interactive') removeOverlay();
   }
 
   function wake() {
+    if (overlay || (controller && controller.status === 'interactive')) return;
     if (!controller || !presetResult || !atTarget()) {
       setStatus('请先暂停在目标时间。');
       return;
@@ -200,7 +218,8 @@
       controller = new sessionApi.SessionController({
         videoId: presetResult.videoId,
         targetTime: presetResult.time,
-        frameSize: presetResult.frameSize
+        frameSize: presetResult.frameSize,
+        externalAttempt: config.externalAttempt
       });
       runtimeNote.textContent = `配置：${config.externalAttempt} · 本地预制已预热`;
       setStatus('正式视频素材尚未提供，加载视频后可验证交互。');
@@ -234,7 +253,7 @@
     if (event.key === 'Escape' && overlay) removeOverlay();
   });
   stage.addEventListener('click', (event) => {
-    if (overlay && event.target === stage) removeOverlay();
+    if (overlay && !overlay.contains(event.target)) removeOverlay();
   });
   playToggle.addEventListener('click', () => {
     if (video.paused) video.play().catch(() => setStatus('视频当前无法播放。'));
