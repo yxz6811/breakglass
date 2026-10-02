@@ -107,7 +107,7 @@
 
 ## 7. 开播前阅读的本机联调（2026-10-03，替身模型）
 
-阅读服务的参考实现放在仓库外的同级目录 `../breakglass-reader`，不进入本仓库和扩展包。它按 `specs/003-preplay-lesson-points/contracts/reading-service.md` 回点，密钥只从环境变量读。
+阅读服务的实现在本仓库的 `breakglass-reader/`，不打进扩展包。它按 `specs/003-preplay-lesson-points/contracts/reading-service.md` 回点，密钥只从该目录的环境变量读，不提交。
 
 这次联调没有真实模型。模型位置上是一个本机替身：它不看图，只按提示里的秒数回答。5 到 7 秒之间回 9 秒片上量出的 `y = x^2 + 1` 锚点，其余回没有抛物线。
 

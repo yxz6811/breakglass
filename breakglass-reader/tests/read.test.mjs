@@ -1,0 +1,232 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { checkRequest, readLesson } from '../src/read.mjs';
+import { parseAnswer } from '../src/model.mjs';
+import {
+  FRAME_DATA_URL,
+  SOURCE_SIZE,
+  fakeModel,
+  lessonRequest,
+  pageRules,
+  parabolaAnswer,
+  settings
+} from './helpers/fixtures.mjs';
+
+/**
+ * @param {object} body
+ * @param {object} model
+ * @param {object} [overrides]
+ */
+async function read(body, model, overrides = {}) {
+  const logs = [];
+  const result = await readLesson(body, {
+    settings: settings(overrides),
+    pageRules,
+    fetchImpl: model.fetchImpl,
+    log: (entry) => logs.push(entry)
+  });
+  return { ...result, logs };
+}
+
+test('一帧读到抛物线：回一个能被页面收下的点', async () => {
+  const model = fakeModel(() => parabolaAnswer());
+  const { status, payload } = await read(lessonRequest(), model);
+  assert.equal(status, 200);
+  assert.equal(payload.readingId, 'reading-1');
+  assert.equal(payload.videoId, 'local-binding-1');
+  assert.equal(payload.origin, 'external');
+  assert.equal(payload.points.length, 1);
+
+  const [point] = payload.points;
+  assert.equal(point.time, 6.451);
+  assert.equal(point.curve.time, 6.451);
+  assert.equal(point.curve.source, 'preset');
+  assert.equal(point.curve.fallback, null);
+  assert.deepEqual(point.curve.frameSize, SOURCE_SIZE);
+  assert.equal(point.curve.definition.equationId, 'fixture.parabola');
+  assert.deepEqual(
+    Object.fromEntries(Object.entries(point.curve.definition.parameters).map(([name, item]) => [name, item.initial])),
+    { a: 1, h: 0, k: 1 }
+  );
+
+  const again = pageRules.validateLessonReading(payload, SOURCE_SIZE);
+  assert.equal(again.ok, true);
+  assert.equal(again.points.length, 1);
+  assert.deepEqual(again.dropped, []);
+});
+
+test('发给模型的是 OpenAI 兼容格式：带图、带密钥头，温度为 0', async () => {
+  const model = fakeModel(() => parabolaAnswer());
+  await read(lessonRequest(), model);
+  assert.equal(model.calls.length, 1);
+  const [call] = model.calls;
+  assert.equal(call.url, 'https://model.example/v1/chat/completions');
+  assert.equal(call.init.headers.authorization, 'Bearer test-key-not-real');
+  assert.equal(call.body.model, 'vision-test');
+  assert.equal(call.body.temperature, 0);
+  assert.equal(call.body.response_format, undefined);
+  const parts = call.body.messages[1].content;
+  assert.equal(parts[1].type, 'image_url');
+  assert.equal(parts[1].image_url.url, FRAME_DATA_URL);
+  assert.match(parts[0].text, /宽 640 像素、高 402 像素/);
+  assert.match(parts[0].text, /顶点式二次函数的图象/);
+
+  const json = fakeModel(() => parabolaAnswer());
+  await read(lessonRequest(), json, { jsonMode: true });
+  assert.deepEqual(json.calls[0].body.response_format, { type: 'json_object' });
+});
+
+test('响应和日志里没有画面、课程正文和密钥', async () => {
+  const model = fakeModel(() => parabolaAnswer());
+  const { payload, logs } = await read(lessonRequest({ courseText: '这段正文只给模型看' }), model);
+  const exposed = JSON.stringify(payload) + JSON.stringify(logs);
+  assert.doesNotMatch(exposed, /data:image/);
+  assert.doesNotMatch(exposed, /这段正文只给模型看/);
+  assert.doesNotMatch(exposed, /test-key-not-real/);
+  assert.deepEqual(Object.keys(logs.at(-1)).sort(), ['event', 'frames', 'ms', 'points', 'readingId', 'reasons']);
+});
+
+test('点按时间排好，最早的在前；同一句讲解补上秒数', async () => {
+  const model = fakeModel(() => parabolaAnswer());
+  const body = lessonRequest({
+    frames: [
+      { time: 6.451, image: FRAME_DATA_URL },
+      { time: 5.278, image: FRAME_DATA_URL }
+    ]
+  });
+  const { payload } = await read(body, model);
+  assert.deepEqual(payload.points.map((point) => point.time), [5.278, 6.451]);
+  const lines = payload.points.map((point) => point.lessonLine);
+  assert.equal(new Set(lines).size, 2);
+  assert.match(lines[1], /（第 6\.5 秒）$/);
+  assert.deepEqual(payload.points.map((point) => point.id), ['p1', 'p2']);
+});
+
+test('相隔不到 1 秒的两帧只留较早的一处', async () => {
+  const model = fakeModel(() => parabolaAnswer());
+  const body = lessonRequest({
+    frames: [
+      { time: 6.0, image: FRAME_DATA_URL },
+      { time: 6.451, image: FRAME_DATA_URL }
+    ]
+  });
+  const { payload } = await read(body, model);
+  assert.deepEqual(payload.points.map((point) => point.time), [6]);
+  assert.ok(payload.dropped.some((item) => item.reason === '和上一个点靠得太近'));
+});
+
+test('模型说没有抛物线时回空点，由页面退回 9 秒片', async () => {
+  const model = fakeModel(() => ({ hasParabola: false }));
+  const { status, payload } = await read(lessonRequest(), model);
+  assert.equal(status, 200);
+  assert.deepEqual(payload.points, []);
+  assert.deepEqual(payload.dropped, [{ reason: 'no_parabola' }]);
+});
+
+test('锚点对不上、方程无效或回答读不懂的帧都丢掉', async () => {
+  const anchors = parabolaAnswer().anchors;
+  anchors[2] = { ...anchors[2], py: anchors[2].py - 40 };
+  const cases = [
+    [parabolaAnswer({ anchors }), 'anchors_disagree'],
+    [parabolaAnswer({ equation: { a: 0, h: 0, k: 1 } }), 'equation_invalid'],
+    [parabolaAnswer({ equation: { a: '一', h: 0, k: 1 } }), 'equation_invalid'],
+    ['抱歉，我看不清这张图。', 'answer_unreadable']
+  ];
+  for (const [answer, reason] of cases) {
+    const { status, payload } = await read(lessonRequest(), fakeModel(() => answer));
+    assert.equal(status, 200);
+    assert.deepEqual(payload.points, [], reason);
+    assert.deepEqual(payload.dropped, [{ reason }]);
+  }
+});
+
+test('源尺寸为 null 时不猜尺寸，也不去问模型', async () => {
+  const model = fakeModel(() => parabolaAnswer());
+  const { status, payload } = await read(lessonRequest({ frameSize: null }), model);
+  assert.equal(status, 200);
+  assert.deepEqual(payload.points, []);
+  assert.equal(model.calls.length, 0);
+});
+
+test('截帧比例和源尺寸对不上时丢掉这一帧', async () => {
+  const model = fakeModel(() => parabolaAnswer());
+  const { payload } = await read(lessonRequest({ frameSize: { width: 1920, height: 1080 } }), model);
+  assert.deepEqual(payload.points, []);
+  assert.deepEqual(payload.dropped, [{ reason: 'size_mismatch' }]);
+  assert.equal(model.calls.length, 0);
+});
+
+test('没配模型时回 503，不发请求', async () => {
+  for (const missing of [{ apiKey: '' }, { model: '' }, { baseUrl: '' }]) {
+    const model = fakeModel(() => parabolaAnswer());
+    const { status } = await read(lessonRequest(), model, missing);
+    assert.equal(status, 503);
+    assert.equal(model.calls.length, 0);
+  }
+});
+
+test('每一帧都连不上模型时回 502；部分帧读完时照常回 200', async () => {
+  const offline = await read(lessonRequest(), fakeModel(() => new TypeError('fetch failed')));
+  assert.equal(offline.status, 502);
+
+  const refused = await read(lessonRequest(), fakeModel(() => ({ status: 401 })));
+  assert.equal(refused.status, 502);
+
+  const body = lessonRequest({
+    frames: [
+      { time: 2.0, image: FRAME_DATA_URL },
+      { time: 6.451, image: FRAME_DATA_URL }
+    ]
+  });
+  const mixed = await read(body, fakeModel((time) => (time < 3 ? new TypeError('fetch failed') : parabolaAnswer())));
+  assert.equal(mixed.status, 200);
+  assert.deepEqual(mixed.payload.points.map((point) => point.time), [6.451]);
+  assert.ok(mixed.payload.dropped.some((item) => item.reason === 'model_unreachable'));
+});
+
+test('单帧超时按时限放弃，不重试', async () => {
+  const calls = [];
+  const fetchImpl = (url, init) => {
+    calls.push(url);
+    return new Promise((resolve, reject) => {
+      init.signal.addEventListener('abort', () => reject(init.signal.reason));
+    });
+  };
+  // AbortSignal.timeout 的计时器不占住进程；真服务有监听端口撑着，测试里要自己撑。
+  const keepAlive = setInterval(() => {}, 1000);
+  const result = await readLesson(lessonRequest(), {
+    settings: settings({ timeoutMs: 30 }),
+    pageRules,
+    fetchImpl
+  }).finally(() => clearInterval(keepAlive));
+  assert.equal(result.status, 502);
+  assert.equal(calls.length, 1);
+});
+
+test('请求形状不对时回 400', async () => {
+  const bad = [
+    lessonRequest({ readingId: '' }),
+    lessonRequest({ videoId: 'fixture-parabola' }),
+    lessonRequest({ duration: 0 }),
+    lessonRequest({ frames: [] }),
+    lessonRequest({ frames: Array.from({ length: 9 }, (_, index) => ({ time: index, image: FRAME_DATA_URL })) }),
+    lessonRequest({ frames: [{ time: 20, image: FRAME_DATA_URL }] }),
+    null
+  ];
+  for (const body of bad) {
+    const { status } = await read(body, fakeModel(() => parabolaAnswer()));
+    assert.equal(status, 400);
+  }
+  assert.equal(checkRequest(lessonRequest({ frameSize: { width: 0, height: 10 } })).request.frameSize, null);
+});
+
+test('回答外面包了代码块或多了几句话也能取出 JSON', () => {
+  assert.deepEqual(parseAnswer('```json\n{"hasParabola": false}\n```'), { hasParabola: false });
+  assert.deepEqual(parseAnswer('结果如下：{"hasParabola": true, "equation": {"a": 1}} 以上。'), {
+    hasParabola: true,
+    equation: { a: 1 }
+  });
+  assert.deepEqual(parseAnswer([{ type: 'text', text: '{"hasParabola": false}' }]), { hasParabola: false });
+  assert.equal(parseAnswer('[1, 2]'), null);
+  assert.equal(parseAnswer(null), null);
+});

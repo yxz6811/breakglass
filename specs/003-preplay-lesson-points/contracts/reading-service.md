@@ -1,6 +1,6 @@
 # Contract: 外部阅读服务
 
-**Status**: 给扩展外的阅读服务用的契约。本仓库不实现这个服务。仓库外的同级目录 `../breakglass-reader` 有一份参考实现（OpenAI 兼容的多模态模型），只用替身模型联调过，见 `docs/BreakGlass-frontend-validation.md` §7。  
+**Status**: 给扩展外的阅读服务用的契约。实现在本仓库的 `breakglass-reader/`，不打进扩展包，密钥不入库。只用替身模型把页面联调通过，见 `docs/BreakGlass-frontend-validation.md` §7。智谱 `glm-4.6v-flash` 读过一帧，方程对上了，像素锚点被丢掉。  
 **Consumers**: 演示页通过当次填写的地址发一次 `POST`。  
 **Non-consumers**: 破壁点击、1.5 秒预制回退、识别样例。服务不进入扩展包，模型密钥和阅读地址不进入仓库。
 
