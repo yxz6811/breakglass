@@ -84,25 +84,7 @@ T011 和 T012 已完成。前端已按会话状态收完 T015。
 
 ### 交接接口
 
-后端把下面的形状实现在 `extension/src/session/wake.js`，并挂到 `BreakGlass.wake`。前端按这个形状调用，不读取替身模块。
-
-```javascript
-createWake({
-  session,      // 现有 SessionController
-  config,       // enableLocalMock、fallbackAfterMs、prewarmed、externalAttempt
-  preset,       // 已校验的预制结果；没有匹配预制时为 null
-  now,          // () => number，测试注入假时钟
-  schedule,     // (fn, ms) => timerId
-  clearTimer,   // (timerId) => void
-  onChange      // (state) => void
-})
-
-// state.status：paused-ready | waiting | interactive | recoverable-error
-// interactive 时 state.result.source 为 preset，state.result.fallback 为 null 或 timeout
-// recoverable-error 时带 state.code 与 state.message，state.result 为 null
-// 方法：start({ paused, currentTime, frameSize })、cancel()、exit()、
-//       onPlaybackChange({ paused, currentTime })、dispose()
-```
+模块签名只以 `.specify/memory/constitution.md` 的「交接接口」为准。这里不再另写一份。`BreakGlass.wake` 只导出 `createWake`。页面调用 `start`、`cancel`、`exit`、`onPlaybackChange`、`dispose`，并只消费 `onChange` 里的 `getState()`。页面不读取替身模块，也不自己判断 1.5 秒。
 
 页面按 `state.status` 和 `result.fallback` 显示文案：
 

@@ -73,21 +73,18 @@
 
     /**
      * 结束等待并进入可恢复错误。不留下可绘制曲线。
-     * 页面传 fail(code, message)；唤醒协调器也可以传 fail({ code, message })。
-     * @param {string | { code?: string, message?: string }} codeOrReason
-     * @param {string} [message]
+     * 只接受 fail(code, message)。错误码和说明进入 getState()。
+     * @param {string} code
+     * @param {string} message
      * @returns {ReturnType<SessionController['getState']>}
      */
-    fail(codeOrReason, message) {
-      const reason = codeOrReason && typeof codeOrReason === 'object'
-        ? codeOrReason
-        : { code: codeOrReason, message };
+    fail(code, message) {
       this.pending = null;
       this.current = null;
       this.status = 'recoverable-error';
       this.error = {
-        code: reason.code || 'recoverable_error',
-        message: reason.message || '结果不可用，请重试或退出。'
+        code: typeof code === 'string' && code ? code : 'external_unavailable',
+        message: typeof message === 'string' && message ? message : '结果不可用，请重试或退出。'
       };
       return this.getState();
     }
@@ -138,13 +135,20 @@
       return this.getState();
     }
 
+    /**
+     * 页面和唤醒回调共用这一形状。code 与 message 只在可恢复错误时有值。
+     * @returns {{ status: string, requestId: string | null, result: object | null, currentParameters: object | null, initialParameters: object | null, code: string | null, message: string | null }}
+     */
     getState() {
+      const failed = this.status === 'recoverable-error' && this.error;
       return {
         status: this.status,
         requestId: this.pending?.requestId || this.current?.result.requestId || null,
         result: this.current?.result || null,
         currentParameters: this.current ? { ...this.current.currentParameters } : null,
-        initialParameters: this.current ? { ...this.current.initialParameters } : null
+        initialParameters: this.current ? { ...this.current.initialParameters } : null,
+        code: failed ? this.error.code : null,
+        message: failed ? this.error.message : null
       };
     }
   }

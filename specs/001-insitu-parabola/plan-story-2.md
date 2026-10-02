@@ -73,6 +73,8 @@ interactive
 
 ### 3.3 时序（评审用伪代码）
 
+页面只调用 `createWake.start` 和 `onChange`。下面是唤醒协调器内部步骤，不是第二套页面接口。
+
 ```text
 wake():
   守卫：paused 且处于目标时间 且 已加载预制 且 当前无覆盖层
@@ -209,46 +211,11 @@ exit():   清理 timer；中止外部尝试；session.exit()；移除覆盖层
 
 约束：任何一行都不得出现「识别成功」；超时回退的标签与原因必须从曲线出现持续到退出。
 
-## 附录 B：模块接口签名草案（供 T021–T024 冻结）
+## 附录 B：模块接口
 
-```ts
-// 注入式时钟，便于纯函数测试（生产传真实实现）
-type Clock = {
-  now(): number
-  schedule(delayMs: number, handler: () => void): unknown   // 返回句柄
-  clear(handle: unknown): void
-}
+签名已冻结在 `.specify/memory/constitution.md` 的「交接接口」。本附录不再维护第二份草案。
 
-// extension/src/attempt/simulator.js
-type AttemptMode = 'off' | 'hang' | 'invalid' | 'late'
-type FrozenContext = { requestId: string, videoId: string, time: number, frameSize: { width: number, height: number } }
-createAttempt({ mode, clock, lateAfterMs }): {
-  start(ctx: FrozenContext): Promise<{ ctx: FrozenContext, candidate: unknown } | null>  // hang 永不 settle
-  abort(): void
-}
-
-// extension/src/session/wake.js
-createWakeController({ session, clock, fallbackAfterMs, tolerance }): {
-  begin(ctx: FrozenContext): { requestId: string }
-  onExternal(payload: unknown): WakeOutcome
-  cancel(): WakeOutcome
-  dispose(): void
-}
-type WakeOutcome = {
-  status: 'waiting' | 'interactive' | 'recoverable-error' | 'paused-ready'
-  fallback?: 'timeout' | null
-  reason?: string,
-  elapsedMs?: number,          // 判定超时 → 结果可用
-}
-
-// extension/src/telemetry/latency.js
-createLatencyLog({ clock, limit }): {
-  mark(name: string): void
-  measure(from: string, to: string): number
-  record(name: string, ms: number): void
-  summary(): { count: number, p50: number, p95: number, max: number }
-}
-```
+页面调用 `BreakGlass.wake.createWake({ session, config, preset, clock, onChange })`。时钟是 `schedule(delayMs, handler)` 与 `clear(timerId)`。状态与 `SessionController.getState()` 相同。`fallback` 只在 `result.fallback`。计时用 `createLatencyLog` 的 `mark`、`measure`、`record` 和 `summary`。不存在 `createWakeController`、`begin`、`onOutcome`、`reason` 或 `decisionAt`。
 
 ## 附录 C：受影响的既有测试清单（T029 必须逐项处理）
 
