@@ -17,7 +17,7 @@ test('三个参数滑块随会话出现，并可以逐个调节', async () => {
     assert.equal(elements['parameter-a'].disabled, false);
     assert.equal(elements['parameter-h'].disabled, false);
     assert.equal(elements['parameter-k'].disabled, false);
-    assert.equal(elements['parameter-a-value'].textContent, '0.8');
+    assert.equal(elements['parameter-a-value'].textContent, '1.0');
     assert.equal(elements['parameter-h-value'].textContent, '0.0');
     elements['parameter-a'].value = '1.2';
     elements['parameter-a'].dispatch('input');

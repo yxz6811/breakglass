@@ -106,7 +106,7 @@ test('目标时间默认是 6 秒，会话仍跟随输入框当前值', async ()
     assert.equal(elements['target-time'].value, '6');
     assert.equal(elements['state-label'].textContent, '先选择一个视频。文件留在这台浏览器里。');
     assert.equal(elements['asset-empty'].hidden, false);
-    assert.equal(video.src, '');
+    assert.equal(video.src, '../assets/video/breakglass-demo-9s.mp4');
     harness.ready();
     assert.equal(elements['wake-button'].disabled, false);
     elements['wake-button'].dispatch('click');
@@ -156,14 +156,14 @@ test('只有宽度、高度还是 0 时不把破壁记成准备结果不可用',
   }
 });
 
-test('3024×1898 破壁时把预制区域换算进当前帧，来源仍是预先准备的示例', async () => {
+test('3024×1898 破壁时使用片子上的区域，别的画幅才按比例换算', async () => {
   const harness = await createHarness();
   try {
     const { elements, video } = harness;
-    const frame = { width: 3024, height: 1898 };
+    const native = { width: 3024, height: 1898 };
     harness.ready();
-    video.videoWidth = frame.width;
-    video.videoHeight = frame.height;
+    video.videoWidth = native.width;
+    video.videoHeight = native.height;
     video.paused = true;
     video.currentTime = 6;
     video.dispatch('pause');
@@ -174,22 +174,36 @@ test('3024×1898 破壁时把预制区域换算进当前帧，来源仍是预先
     assert.equal(elements['source-label'].textContent, '预先准备的示例');
     const pathNode = overlay.querySelector('path');
     const points = [...pathNode.getAttribute('d').matchAll(/([ML])\s+(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)/g)];
-    const scaleX = frame.width / preset.frameSize.width;
-    const scaleY = frame.height / preset.frameSize.height;
     const region = preset.definition.region;
-    const sourceX = (region.x + region.width / 2) * scaleX;
-    const sourceY = (region.y + region.height / 2) * scaleY;
-    const displayScale = Math.min(video.rect.width / frame.width, video.rect.height / frame.height);
+    const domain = preset.definition.domain;
+    const range = preset.definition.range;
+    const mathX = domain.min + (domain.max - domain.min) * 40 / 80;
+    const parameters = preset.definition.parameters;
+    const curveY = parameters.a.initial * (mathX - parameters.h.initial) ** 2 + parameters.k.initial;
+    const sourceX = region.x + ((mathX - domain.min) / (domain.max - domain.min)) * region.width;
+    const sourceY = region.y + ((range.max - curveY) / (range.max - range.min)) * region.height;
+    const displayScale = Math.min(video.rect.width / native.width, video.rect.height / native.height);
     const mid = points[40];
     assert.ok(Math.abs(Number(mid[2]) - sourceX * displayScale) < 0.02);
     assert.ok(Math.abs(Number(mid[3]) - sourceY * displayScale) < 0.02);
-    const unscaledX = (region.x + region.width / 2) * displayScale;
-    assert.ok(Math.abs(Number(mid[2]) - unscaledX) > 1, '不能只改 frameSize 而留下 1920×1080 的区域');
     harness.document.dispatch('keydown', { key: 'Escape' });
     elements['wake-button'].dispatch('click');
     const again = [...harness.overlay().querySelector('path').getAttribute('d').matchAll(/([ML])\s+(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)/g)];
     assert.equal(again[40][2], mid[2]);
     assert.equal(again[40][3], mid[3]);
+    harness.document.dispatch('keydown', { key: 'Escape' });
+    const other = { width: 1920, height: 1080 };
+    video.videoWidth = other.width;
+    video.videoHeight = other.height;
+    video.dispatch('pause');
+    elements['wake-button'].dispatch('click');
+    const scaledPoints = [...harness.overlay().querySelector('path').getAttribute('d').matchAll(/([ML])\s+(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)/g)];
+    const scaleX = other.width / preset.frameSize.width;
+    const otherScale = Math.min(video.rect.width / other.width, video.rect.height / other.height);
+    const scaledX = sourceX * scaleX * otherScale;
+    const unscaledX = sourceX * otherScale;
+    assert.ok(Math.abs(Number(scaledPoints[40][2]) - scaledX) < 0.02);
+    assert.ok(Math.abs(Number(scaledPoints[40][2]) - unscaledX) > 1, '不能只改 frameSize 而留下另一画幅的区域');
   } finally {
     harness.restore();
   }

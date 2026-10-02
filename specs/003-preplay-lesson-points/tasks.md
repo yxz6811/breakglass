@@ -17,7 +17,7 @@
 
 **Purpose**: 准备不打进扩展包的尺寸不符夹具
 
-- [ ] T001 按 `specs/003-preplay-lesson-points/contracts/lesson-reading.md` 创建 `tests/fixtures/lesson-size-mismatch.json`：一份 `frameSize` 与假设源尺寸不同的点，以及一份 `videoId` 不符的点。不得放入 `extension/assets/`，不得包含密钥，不得把 `demo-parabola` 写成本帧的替身
+- [x] T001 按 `specs/003-preplay-lesson-points/contracts/lesson-reading.md` 创建 `tests/fixtures/lesson-size-mismatch.json`：一份 `frameSize` 与假设源尺寸不同的点，以及一份 `videoId` 不符的点。不得放入 `extension/assets/`，不得包含密钥，不得把 `demo-parabola` 写成本帧的替身
 
 ---
 
@@ -25,8 +25,8 @@
 
 **Purpose**: 采样时刻、存点和校验。完成前不改演示页
 
-- [ ] T002 先写会失败的 `tests/lesson-reading.test.js`。断言时长 < 2 秒只产生 1 个采样中点；更长的片子等分后最多 8 个中点；相邻不足 1 秒的较晚中点不保留；不是从 0 逐帧递增。校验覆盖 `curve.source` 必须是 `preset`、`curve.fallback` 必须是 `null`、`curve.time` 等于点的 `time`、`curve.frameSize` 必须等于当前源尺寸。丢掉原因必须能出现「抛物线没有通过检查」「不是这一段视频」「时间无效」「落在视频外面」「和上一个点靠得太近」「超出八个点」。最多保留 8 个点，相邻 `time` 至少相隔 1 秒，`lessonLine` 非空且最长 80 字
-- [ ] T003 实现 `extension/src/lesson/reading.js`，使 T002 通过。采样与取舍以 `specs/003-preplay-lesson-points/data-model.md` 为准。第一处按校验完成顺序选出；`nextPoint` 只返回 `time` 严格更大的已存点。新函数使用 JSDoc。不修改 `extension/src/session/wake.js`
+- [x] T002 先写会失败的 `tests/lesson-reading.test.js`。断言时长 < 2 秒只产生 1 个采样中点；更长的片子等分后最多 8 个中点；相邻不足 1 秒的较晚中点不保留；不是从 0 逐帧递增。校验覆盖 `curve.source` 必须是 `preset`、`curve.fallback` 必须是 `null`、`curve.time` 等于点的 `time`、`curve.frameSize` 必须等于当前源尺寸。丢掉原因必须能出现「抛物线没有通过检查」「不是这一段视频」「时间无效」「落在视频外面」「和上一个点靠得太近」「超出八个点」。最多保留 8 个点，相邻 `time` 至少相隔 1 秒，`lessonLine` 非空且最长 80 字
+- [x] T003 实现 `extension/src/lesson/reading.js`，使 T002 通过。采样与取舍以 `specs/003-preplay-lesson-points/data-model.md` 为准。第一处按校验完成顺序选出；`nextPoint` 只返回 `time` 严格更大的已存点。新函数使用 JSDoc。不修改 `extension/src/session/wake.js`
 
 **Checkpoint**: `node --test tests/lesson-reading.test.js` 可单独验收
 
@@ -40,14 +40,14 @@
 
 ### Tests for User Story 1
 
-- [ ] T004 [US1] 先写会失败的 `tests/page-lesson.test.js`：可播放后阅读状态变为进行中；第一处通过后暂停时间与该点相差不超过 0.2 秒；破壁使用的 `preset` 是该点已存 `curve`，且 `createWake` 参数名仍是 `session`、`config`、`preset`、`clock`、`onChange`；T001 的尺寸不符点不调用 `createWake`
+- [x] T004 [US1] 先写会失败的 `tests/page-lesson.test.js`：可播放后阅读状态变为进行中；第一处通过后暂停时间与该点相差不超过 0.2 秒；破壁使用的 `preset` 是该点已存 `curve`，且 `createWake` 参数名仍是 `session`、`config`、`preset`、`clock`、`onChange`；T001 的尺寸不符点不调用 `createWake`
 
 ### Implementation for User Story 1
 
-- [ ] T005 [P] [US1] 在 `extension/demo/index.html` 增加阅读状态 `#lesson-status` 和取消 `#lesson-cancel`。不预填阅读地址，不放置「识别结果」文案
-- [ ] T006 [P] [US1] 在 `extension/demo/demo.css` 为 `#lesson-status` 增加与现有演示页一致的状态样式，窄屏下不挡住破壁入口
-- [ ] T007 [US1] 在 `tests/helpers/fake-page.js` 登记 `#lesson-status` 与 `#lesson-cancel`
-- [ ] T008 [US1] 在 `extension/src/page/main.js` 于视频时长可用时调用 T003 的采样并开始阅读。第一处通过后暂停到该 `time`。落定前禁用破壁。落定后 `dispose` 并再次 `createWake`，`preset` 只用该点已存曲线。尺寸不符只写入丢掉原因。交互文案为「这次阅读」。不修改 `extension/src/session/wake.js`，不改 `fallbackAfterMs`
+- [x] T005 [P] [US1] 在 `extension/demo/index.html` 增加阅读状态 `#lesson-status` 和取消 `#lesson-cancel`。不预填阅读地址，不放置「识别结果」文案
+- [x] T006 [P] [US1] 在 `extension/demo/demo.css` 为 `#lesson-status` 增加与现有演示页一致的状态样式，窄屏下不挡住破壁入口
+- [x] T007 [US1] 在 `tests/helpers/fake-page.js` 登记 `#lesson-status` 与 `#lesson-cancel`
+- [x] T008 [US1] 在 `extension/src/page/main.js` 于视频时长可用时调用 T003 的采样并开始阅读。第一处通过后暂停到该 `time`。落定前禁用破壁。落定后 `dispose` 并再次 `createWake`，`preset` 只用该点已存曲线。尺寸不符只写入丢掉原因。交互文案为「这次阅读」。不修改 `extension/src/session/wake.js`，不改 `fallbackAfterMs`
 
 **Checkpoint**: quickstart 第 1 节可以核对。不要把第 4 节记为通过
 
@@ -61,12 +61,12 @@
 
 ### Tests for User Story 2
 
-- [ ] T009 [US2] 在 `tests/page-lesson.test.js` 增加断言：已存的更晚点被选中时先卸下覆盖层，落定前破壁禁用，落定后 `currentTime` 更大；无已存更晚点且仍在读时状态含「还在读」且 `currentTime` 不变；阅读结束后状态含「没有下一处」且按钮禁用；更早的迟到点不改变 `currentTime`
+- [x] T009 [US2] 在 `tests/page-lesson.test.js` 增加断言：已存的更晚点被选中时先卸下覆盖层，落定前破壁禁用，落定后 `currentTime` 更大；无已存更晚点且仍在读时状态含「还在读」且 `currentTime` 不变；阅读结束后状态含「没有下一处」且按钮禁用；更早的迟到点不改变 `currentTime`
 
 ### Implementation for User Story 2
 
-- [ ] T010 [US2] 在 `extension/demo/index.html` 增加 `#lesson-next`。可用、还在读、没有下一处三种状态的文案分别为按钮可点、「还在读」、「没有下一处」
-- [ ] T011 [US2] 在 `extension/src/page/main.js` 实现这三种状态。按下已就绪的下一处时先退出当前交互层再定位。未落定（未暂停或时间差大于 0.2 秒）保持破壁禁用，不挂新层。未就绪时不调用阅读计算。后台入库不得改写当前 `currentTime` 和当前覆盖层
+- [x] T010 [US2] 在 `extension/demo/index.html` 增加 `#lesson-next`。可用、还在读、没有下一处三种状态的文案分别为按钮可点、「还在读」、「没有下一处」
+- [x] T011 [US2] 在 `extension/src/page/main.js` 实现这三种状态。按下已就绪的下一处时先退出当前交互层再定位。未落定（未暂停或时间差大于 0.2 秒）保持破壁禁用，不挂新层。未就绪时不调用阅读计算。后台入库不得改写当前 `currentTime` 和当前覆盖层
 
 **Checkpoint**: quickstart 第 2 节的交互可以核对。前后时间的正式记录仍算 SC-003 未通过，直到 T015 把它们存下来
 
@@ -80,14 +80,14 @@
 
 ### Tests for User Story 3
 
-- [ ] T012 [US3] 先写会失败的 `tests/lesson-ask.test.js`。请求体只有 `readingId`、`videoId`、`duration`、`courseText`、`frames`；`frames` 长度不超过 8；没有整段视频字段；`courseText` 超过 8000 字时不发送正文；截止为 300000ms；失败结果要求退回，且不调用会话 `fail`。测试不得访问网络
-- [ ] T013 [P] [US3] 在 `tests/page-lesson.test.js` 增加断言：阅读失败后视频地址以 `breakglass-demo-9s.mp4` 结尾，且前一 `videoId` 的点被清空；验收片子地址等于该文件时不得开始作为阅读目标
+- [x] T012 [US3] 先写会失败的 `tests/lesson-ask.test.js`。请求体只有 `readingId`、`videoId`、`duration`、`courseText`、`frames`；`frames` 长度不超过 8；没有整段视频字段；`courseText` 超过 8000 字时不发送正文；截止为 300000ms；失败结果要求退回，且不调用会话 `fail`。测试不得访问网络
+- [x] T013 [P] [US3] 在 `tests/page-lesson.test.js` 增加断言：阅读失败后视频地址以 `breakglass-demo-9s.mp4` 结尾，且前一 `videoId` 的点被清空；验收片子地址等于该文件时不得开始作为阅读目标
 
 ### Implementation for User Story 3
 
-- [ ] T014 [US3] 实现 `extension/src/lesson/ask.js`。只在当次地址非空时发送 T003 给出的采样。用调用方的 `fetch` 与时钟 `schedule(300000, handler)`。取消时中止未完成请求，保留已存点。新函数使用 JSDoc。地址不写入 `extension/assets/config.json`
-- [ ] T015 [US3] 在 `extension/src/page/main.js` 把失败、断网、空地址和 5 分钟内零通过点转成退回 `../assets/video/breakglass-demo-9s.mp4`。清空失败片子的点。退回后的单点文案仍是「预先准备的示例」。用 `lesson-first-point` 与 `lesson-wake-visible` 分开 `record`，禁止写入 `fallback-visible`、`network-wait`、`vision-decision`。`lesson-wake-visible` 只在点已存好时记录
-- [ ] T016 [US3] 在 `extension/src/page/main.js` 的破壁成功路径保留 `contentRect`。在已有测量能够写出有限 `maxRatio` 之前，保持 `measured: false`，并不得把 SC-005 标成通过。不把 `maxRatio: null` 当作 ≤ 0.02
+- [x] T014 [US3] 实现 `extension/src/lesson/ask.js`。只在当次地址非空时发送 T003 给出的采样。用调用方的 `fetch` 与时钟 `schedule(300000, handler)`。取消时中止未完成请求，保留已存点。新函数使用 JSDoc。地址不写入 `extension/assets/config.json`
+- [x] T015 [US3] 在 `extension/src/page/main.js` 把失败、断网、空地址和 5 分钟内零通过点转成退回 `../assets/video/breakglass-demo-9s.mp4`。清空失败片子的点。退回后的单点文案仍是「预先准备的示例」。用 `lesson-first-point` 与 `lesson-wake-visible` 分开 `record`，禁止写入 `fallback-visible`、`network-wait`、`vision-decision`。`lesson-wake-visible` 只在点已存好时记录
+- [x] T016 [US3] 在 `extension/src/page/main.js` 的破壁成功路径保留 `contentRect`。在已有测量能够写出有限 `maxRatio` 之前，保持 `measured: false`，并不得把 SC-005 标成通过。不把 `maxRatio: null` 当作 ≤ 0.02
 
 **Checkpoint**: quickstart 第 3 节可以核对退回。第 4 节保持未通过，直到至少 20 次 `lesson-wake-visible` 且 `maxRatio` ≤ 0.02 被实际记下来
 
@@ -95,9 +95,9 @@
 
 ## Phase 6: Polish
 
-- [ ] T017 [P] 更新 `docs/BreakGlass-ui-inventory.md`：自动开始、还在读、没有下一处、这次阅读、退回预先准备的片子，以及 SC-003 至 SC-005 尚未通过
-- [ ] T018 [P] 更新 `README.md`：阅读在片子可播放时开始；验收片子不得使用 `breakglass-demo-9s.mp4`；失败才回到该文件
-- [ ] T019 按 `specs/003-preplay-lesson-points/quickstart.md` 执行 `node --test`。第 4 节若记录仍缺，在结果里写明 SC-003、SC-004、SC-005 未通过
+- [x] T017 [P] 更新 `docs/BreakGlass-ui-inventory.md`：自动开始、还在读、没有下一处、这次阅读、退回预先准备的片子，以及 SC-003 至 SC-005 尚未通过
+- [x] T018 [P] 更新 `README.md`：阅读在片子可播放时开始；验收片子不得使用 `breakglass-demo-9s.mp4`；失败才回到该文件
+- [x] T019 按 `specs/003-preplay-lesson-points/quickstart.md` 执行 `node --test`。第 4 节若记录仍缺，在结果里写明 SC-003、SC-004、SC-005 未通过
 
 ---
 

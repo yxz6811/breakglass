@@ -95,7 +95,7 @@ test('滑块带读屏用的取值与范围说明', async () => {
   const harness = await interactive();
   try {
     const { elements } = harness;
-    assert.equal(elements['parameter-a'].getAttribute('aria-valuetext'), '0.8（范围 0.4 到 1.2）');
+    assert.equal(elements['parameter-a'].getAttribute('aria-valuetext'), '1.0（范围 0.4 到 1.2）');
     assert.equal(elements['parameter-h'].getAttribute('aria-valuetext'), '0.0（范围 -2 到 2）');
     elements['parameter-k'].value = '-1.5';
     elements['parameter-k'].dispatch('input');

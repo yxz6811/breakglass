@@ -314,8 +314,24 @@ async function createHarness(options = {}) {
     if (String(url).indexOf('config.json') >= 0) {
       return Promise.resolve({ ok: true, status: 200, json: async () => ({ ...config }) });
     }
+    if (options.packagedVideoErrors && String(url).indexOf('breakglass-demo-9s.mp4') >= 0) {
+      return Promise.resolve({ ok: true, status: 200, json: async () => ({}) });
+    }
     return assetFetch(url);
   };
+  if (options.packagedVideoErrors) {
+    const probe = elements['demo-video'];
+    let src = '';
+    Object.defineProperty(probe, 'src', {
+      configurable: true,
+      enumerable: true,
+      get() { return src; },
+      set(value) {
+        src = value == null ? '' : String(value);
+        if (src.indexOf('breakglass-demo-9s.mp4') >= 0) fake.win.setTimeout(() => probe.dispatch('error'), 0);
+      }
+    });
+  }
 
   vm.runInThisContext(mainSource, { filename: 'main.js' });
   await flush();
