@@ -195,3 +195,81 @@ exit():   清理 timer；中止外部尝试；session.exit()；移除覆盖层
 ## 8. 明确不做（超出 P2）
 
 真实视觉识别与其接口、单帧上传、感知代理、Pyodide/Worker、任何后端或数据库、故事 3 的四画幅 2% 验收、任意网站注入。
+## 附录 A：用户可见文案表（T020 冻结对象）
+
+| 状态 | 来源标签 | 说明文字 | 可用操作 |
+| --- | --- | --- | --- |
+| 等待外部结果 | 保持上一次来源或「等待中」 | 「正在等待外部结果…」 | 取消 |
+| `preset` + `fallback: null` | 预先准备的示例 | 这是扩展包内预先准备的示例，不代表实时识别成功。 | 拖动 / 重置 / 退出 |
+| `preset` + `fallback: timeout` | 预先准备的示例 · 超时回退 | 因等待超过 1.5 秒，改用预先准备的示例。 | 拖动 / 重置 / 退出 |
+| 外部结果非法 | 外部结果不可用 | 外部结果不可用，未进入交互。 | 重试 / 退出 |
+| 无匹配准备结果 | 没有可用的准备结果 | 当前帧没有可用的准备结果，无法进入交互。 | 重试 / 退出 |
+| 用户取消 | 保持上一次来源 | 已取消等待，回到暂停画面。 | 再次破壁 |
+| 视频不可用 | — | 视频无法加载，未挂载交互层。 | 退出 |
+
+约束：任何一行都不得出现「识别成功」；超时回退的标签与原因必须从曲线出现持续到退出。
+
+## 附录 B：模块接口签名草案（供 T021–T024 冻结）
+
+```ts
+// 注入式时钟，便于纯函数测试（生产传真实实现）
+type Clock = {
+  now(): number
+  schedule(delayMs: number, handler: () => void): unknown   // 返回句柄
+  clear(handle: unknown): void
+}
+
+// extension/src/attempt/simulator.js
+type AttemptMode = 'off' | 'hang' | 'invalid' | 'late'
+type FrozenContext = { requestId: string, videoId: string, time: number, frameSize: { width: number, height: number } }
+createAttempt({ mode, clock, lateAfterMs }): {
+  start(ctx: FrozenContext): Promise<{ ctx: FrozenContext, candidate: unknown } | null>  // hang 永不 settle
+  abort(): void
+}
+
+// extension/src/session/wake.js
+createWakeController({ session, clock, fallbackAfterMs, tolerance }): {
+  begin(ctx: FrozenContext): { requestId: string }
+  onExternal(payload: unknown): WakeOutcome
+  cancel(): WakeOutcome
+  dispose(): void
+}
+type WakeOutcome = {
+  status: 'waiting' | 'interactive' | 'recoverable-error' | 'paused-ready'
+  fallback?: 'timeout' | null
+  reason?: string,
+  elapsedMs?: number,          // 判定超时 → 结果可用
+}
+
+// extension/src/telemetry/latency.js
+createLatencyLog({ clock, limit }): {
+  mark(name: string): void
+  measure(from: string, to: string): number
+  record(name: string, ms: number): void
+  summary(): { count: number, p50: number, p95: number, max: number }
+}
+```
+
+## 附录 C：受影响的既有测试清单（T029 必须逐项处理）
+
+| 文件 | 现在断言的内容 | P2 之后应改成 |
+| --- | --- | --- |
+| `tests/session.test.js` | 非 `off` 直接不可进入交互 | 「非 `off` 可以等待，但绝不产生 `vision` 成功；只能超时回退或进入可恢复错误」 |
+| `tests/session-lifecycle.test.js` | `external_attempt_unavailable` + `recoverable-error` | 按附录 B 的新语义重写；保留单会话、钳制、重置、退出、旧编号失效 |
+| `tests/extension-surface.test.js` | 只有播放/定位/破壁/重置/退出五个控件 | 增加取消、重试控件；`aria-live` 状态区；`externalAttempt` 默认 `off` |
+| `tests/page-integration.test.js` | 唤醒是同步的 | 用假时钟驱动等待→超时→取消→失败重试；断言覆盖层与定时器都被清理 |
+
+注意：P2 会移除 `session.js` 的 P0 临时护栏（`external_attempt_unavailable`），因此上表中前两项的改动是**预期内**的语义变更，不是回归。
+
+## 附录 D：`data-model.md` 增量（T019/T020 一并回写）
+
+| 实体 | 新增字段 | 说明 |
+| --- | --- | --- |
+| `InteractionSession` | `frozenContext` | 本次唤醒冻结的 `requestId` / `videoId` / `time` / `frameSize` |
+| `InteractionSession` | `fallbackReason` | 超时回退原因，交互期间持续可见 |
+| `InteractionSession` | `invalidatedRequestIds` | 取消、退出、换帧后作废的编号集合，用于丢弃迟到结果 |
+| `CurveResult` | 无新增 | `fallback` 已存在，P2 只是首次真正产生 `timeout` |
+| `RuntimeConfig` | 无新增 | `fallbackAfterMs` 已存在，P2 首次真正读取它 |
+
+状态机增量见本文件第 3.1 节；迁移规则：`waiting` 之外的状态不得保留未清理的定时器或未作废的编号。
+
