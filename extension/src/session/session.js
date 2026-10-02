@@ -52,7 +52,7 @@
       const expectedRequestId = this.pending.requestId;
       const check = validate.validateCurveResult(result, {
         videoId: this.videoId,
-        targetTime: this.pending.time,
+        targetTime: this.targetTime,
         timeTolerance: this.timeTolerance,
         frameSize: this.frameSize,
         requestId: expectedRequestId
@@ -60,10 +60,11 @@
       if (!check.ok) {
         return { ok: false, code: check.code || 'request_mismatch', message: check.message || '结果不属于当前请求。' };
       }
+      const accepted = copyResult(result);
       this.current = {
-        result,
-        initialParameters: Object.fromEntries(Object.entries(result.definition.parameters).map(([name, item]) => [name, item.initial])),
-        currentParameters: Object.fromEntries(Object.entries(result.definition.parameters).map(([name, item]) => [name, item.initial]))
+        result: accepted,
+        initialParameters: Object.fromEntries(Object.entries(accepted.definition.parameters).map(([name, item]) => [name, item.initial])),
+        currentParameters: Object.fromEntries(Object.entries(accepted.definition.parameters).map(([name, item]) => [name, item.initial]))
       };
       this.pending = null;
       this.status = 'interactive';
@@ -91,8 +92,11 @@
       if (name !== definition.dragParameter || !definition.parameters[name]) {
         return { ok: false, code: 'parameter_not_draggable' };
       }
+      if (typeof value !== 'number' || Number.isNaN(value)) {
+        return { ok: false, code: 'invalid_parameter_value', message: '参数必须是有限数值。' };
+      }
       const item = definition.parameters[name];
-      this.current.currentParameters[name] = clamp(Number(value), item.min, item.max);
+      this.current.currentParameters[name] = clamp(value, item.min, item.max);
       return { ok: true, session: this.getState() };
     }
 
@@ -141,3 +145,37 @@
 
   return { SessionController, clamp };
 });
+
+/**
+ * 收下调用方结果的副本。之后改原对象的 min / max 不能放宽这次会话。
+ * @param {object} result
+ * @returns {object}
+ */
+function copyResult(result) {
+  const parameters = {};
+  for (const [name, item] of Object.entries(result.definition.parameters)) {
+    parameters[name] = { initial: item.initial, min: item.min, max: item.max, step: item.step };
+  }
+  return {
+    requestId: result.requestId,
+    videoId: result.videoId,
+    time: result.time,
+    frameSize: { width: result.frameSize.width, height: result.frameSize.height },
+    source: result.source,
+    fallback: result.fallback,
+    definition: {
+      equationId: result.definition.equationId,
+      parameters,
+      dragParameter: result.definition.dragParameter,
+      domain: { min: result.definition.domain.min, max: result.definition.domain.max },
+      range: { min: result.definition.range.min, max: result.definition.range.max },
+      yAxis: result.definition.yAxis,
+      region: {
+        x: result.definition.region.x,
+        y: result.definition.region.y,
+        width: result.definition.region.width,
+        height: result.definition.region.height
+      }
+    }
+  };
+}

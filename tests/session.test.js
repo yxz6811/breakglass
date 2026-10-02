@@ -13,7 +13,9 @@ function result(requestId, overrides = {}) {
     definition: {
       equationId: 'fixture.parabola',
       parameters: {
-        h: { initial: 0, min: -2, max: 2, step: 0.1 }
+        a: { initial: 1, min: 0.4, max: 1.2, step: 0.1 },
+        h: { initial: 0, min: -2, max: 2, step: 0.1 },
+        k: { initial: 0, min: -2, max: 2, step: 0.1 }
       },
       dragParameter: 'h',
       domain: { min: -4, max: 4 },

@@ -30,7 +30,11 @@
       fallback: null,
       definition: {
         equationId: 'fixture.parabola',
-        parameters: { h: { initial: 0, min: -2, max: 2, step: 0.1 } },
+        parameters: {
+          a: { initial: 1, min: 0.4, max: 1.2, step: 0.1 },
+          h: { initial: 0, min: -2, max: 2, step: 0.1 },
+          k: { initial: 0, min: -2, max: 2, step: 0.1 }
+        },
         dragParameter: 'h',
         domain: { min: -4, max: 4 },
         range: { min: -4, max: 4 },
@@ -52,7 +56,11 @@
       fallback: null,
       definition: {
         equationId: 'fixture.parabola',
-        parameters: { h: { initial: 0, min: -2, max: 2, step: 0.1 } },
+        parameters: {
+          a: { initial: 1, min: 0.4, max: 1.2, step: 0.1 },
+          h: { initial: 0, min: -2, max: 2, step: 0.1 },
+          k: { initial: 0, min: -2, max: 2, step: 0.1 }
+        },
         dragParameter: 'h',
         domain: { min: -4, max: 4 },
         range: { min: -4, max: 4 },
