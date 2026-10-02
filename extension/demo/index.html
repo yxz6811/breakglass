@@ -16,6 +16,7 @@
     <script defer src="../src/ui/magnify.js"></script>
     <script defer src="../src/ui/liquid-glass.js"></script>
     <script defer src="../src/preset/load.js"></script>
+    <script defer src="../src/preset/place-in-frame.js"></script>
     <script defer src="../src/page/main.js"></script>
   </head>
   <body>
@@ -86,7 +87,7 @@
             <div class="asset-empty" id="asset-empty">正式视频素材尚未提供。当前只能验证扩展骨架与夹具逻辑。</div>
           </div>
           <div class="transport" aria-label="视频控制">
-            <label>目标时间（秒） <input id="target-time" type="number" min="0" step="0.1" value="12.5"></label>
+            <label>目标时间（秒） <input id="target-time" type="number" min="0" step="0.1" value="6"></label>
             <span id="time-label">当前时间：—</span>
             <div class="waiting-bar" id="waiting-bar" role="status" aria-live="polite" aria-busy="true" hidden>
               <span class="waiting-bar__spinner" aria-hidden="true"></span>

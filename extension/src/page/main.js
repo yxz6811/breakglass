@@ -5,6 +5,7 @@
     geometry,
     alignment,
     preset,
+    frameFit,
     session: sessionApi,
     wake: wakeApi,
     latency: latencyApi
@@ -48,8 +49,17 @@
    */
   const PACKAGED_VIDEO_URL = '../assets/video/breakglass-demo-9s.mp4';
 
+  /**
+   * 包内 9 秒演示片的目标时间（秒）。输入框初值用它。
+   * 夹具 JSON 里的 time 不作为演示默认值，磁盘上的 JSON 也不改。
+   * @type {number}
+   */
+  const PACKAGED_DEMO_TARGET_SECONDS = 6;
+
   let config = null;
   let presetResult = null;
+  let preparedFrame = null;
+  let preparedRegion = null;
   let controller = null;
   let wakeHandle = null;
   let latencies = null;
@@ -117,7 +127,6 @@
 
   /**
    * 会话是否允许破壁，以目标时间输入框的当前值为准。
-   * 预设 JSON 里的时间只用来填写输入框初值，不单独卡住会话。
    * 内存里的预制结果时间一并跟上，校验仍对照会话目标；磁盘上的 JSON 不改。
    */
   function syncSessionTarget() {
@@ -455,6 +464,31 @@
     }
   }
 
+  /**
+   * 破壁前把包内预制区域按当前片子的宽、高比例放进这一帧。
+   * 每次都从准备画幅重算，避免连续破壁把已经换算过的坐标再乘一次。
+   * 外部结果不走这里；画幅对不上时仍由校验拒绝。
+   * @param {{ width: number, height: number }} frameSize
+   * @returns {boolean}
+   */
+  function placePreparedExample(frameSize) {
+    if (!frameFit || !presetResult || !preparedFrame || !preparedRegion) return false;
+    const placed = frameFit.placeRegionInFrame(preparedFrame, preparedRegion, frameSize);
+    if (!placed) return false;
+    presetResult.frameSize.width = placed.frameSize.width;
+    presetResult.frameSize.height = placed.frameSize.height;
+    const region = presetResult.definition.region;
+    region.x = placed.region.x;
+    region.y = placed.region.y;
+    region.width = placed.region.width;
+    region.height = placed.region.height;
+    if (controller && controller.frameSize) {
+      controller.frameSize.width = placed.frameSize.width;
+      controller.frameSize.height = placed.frameSize.height;
+    }
+    return true;
+  }
+
   function wake() {
     if (!wakeHandle || !presetResult || !atTarget()) {
       setStatus('请先暂停在目标时间。');
@@ -462,10 +496,12 @@
     }
     const state = sessionState();
     if (overlay || (state && (state.status === 'interactive' || state.status === 'waiting'))) return;
+    const frameSize = { width: video.videoWidth, height: video.videoHeight };
+    placePreparedExample(frameSize);
     const started = wakeHandle.start({
       paused: true,
       currentTime: video.currentTime,
-      frameSize: { width: video.videoWidth, height: video.videoHeight }
+      frameSize
     });
     if (!started.ok) setStatus(started.message || '暂时无法破壁。');
   }
@@ -486,13 +522,24 @@
       if (!loaded.ok) throw new Error(loaded.message);
       config = loaded.config;
       presetResult = loaded.result;
-      targetInput.value = String(presetResult.time);
+      preparedFrame = {
+        width: presetResult.frameSize.width,
+        height: presetResult.frameSize.height
+      };
+      preparedRegion = {
+        x: presetResult.definition.region.x,
+        y: presetResult.definition.region.y,
+        width: presetResult.definition.region.width,
+        height: presetResult.definition.region.height
+      };
+      targetInput.value = String(PACKAGED_DEMO_TARGET_SECONDS);
       controller = new sessionApi.SessionController({
         videoId: presetResult.videoId,
-        targetTime: presetResult.time,
+        targetTime: targetTime(),
         frameSize: presetResult.frameSize,
         externalAttempt: config.externalAttempt
       });
+      syncSessionTarget();
       localClock = createClock();
       latencies = latencyApi.createLatencyLog({ clock: localClock });
       wakeHandle = wakeApi.createWake({
