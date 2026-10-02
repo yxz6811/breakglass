@@ -22,7 +22,9 @@ var CELL_H = 15;
 var MAX_RIPPLES = 4;
 var RIPPLE_SPEED = 320;
 var RIPPLE_WIDTH = 92;
-var FRAME_INTERVAL_MS = 1000 / 30;
+// 不设帧率上限：每帧都渲染，跟随浏览器 rAF（通常 60fps）。
+// 保留 setFpsCap() 以便需要省电时手动降档，例如 setFpsCap(30)。
+var FRAME_INTERVAL_MS = 0;
 var FRAME_SLACK_MS = 4;
 var CURVE_COUNT = 6;
 var MAX_TRAIL = 12;
@@ -270,6 +272,7 @@ export function createAsciiRippleGL(options) {
   var frames = 0;
   var startedAt = performance.now();
   var lastRenderAt = -1;
+  var frameIntervalMs = FRAME_INTERVAL_MS;
   var active = [];
 
   function resize() {
@@ -364,7 +367,7 @@ export function createAsciiRippleGL(options) {
 
   function frame() {
     var stamp = performance.now();
-    if (lastRenderAt >= 0 && stamp - lastRenderAt < FRAME_INTERVAL_MS - FRAME_SLACK_MS) {
+    if (frameIntervalMs > 0 && lastRenderAt >= 0 && stamp - lastRenderAt < frameIntervalMs - FRAME_SLACK_MS) {
       frameId = window.requestAnimationFrame(frame);
       return;
     }
@@ -378,7 +381,8 @@ export function createAsciiRippleGL(options) {
     var eased = progress * progress * (3 - 2 * progress);
     currentAngle = flowAngleFrom + (flowAngleTo - flowAngleFrom) * eased;
     uniforms.uFlowDir.value.set(Math.cos(currentAngle), Math.sin(currentAngle));
-    uniforms.uFlowPhase.value += (FRAME_INTERVAL_MS / 1000) * 0.35;
+    var frameSeconds = (frameIntervalMs > 0 ? frameIntervalMs : 1000 / 60) / 1000;
+    uniforms.uFlowPhase.value += frameSeconds * 0.35;
     if (curveStart === 0) curveStart = now - curveHold;
     if (now - curveStart > curveHold + curveFade) pickCurve(now);
     var fade = Math.min(1, Math.max(0, (now - curveStart - curveHold) / curveFade));
@@ -414,7 +418,7 @@ export function createAsciiRippleGL(options) {
     var gap = (uniforms.uPointerPlot.value.y / 1.35) - curveY;
     var proximity = Math.exp(-(gap * gap) / (2 * LIFT_SIGMA * LIFT_SIGMA));
     var liftTarget = proximity * LIFT_MAX * pointerFade;
-    var dt = FRAME_INTERVAL_MS / 1000;
+    var dt = frameSeconds;
     liftVelocity += (-SPRING_K * (lift - liftTarget) - SPRING_C * liftVelocity) * dt;
     lift += liftVelocity * dt;
     uniforms.uLift.value = lift;
@@ -475,6 +479,8 @@ export function createAsciiRippleGL(options) {
     renderer: renderer,
     dispose: function () { window.cancelAnimationFrame(frameId); renderer.dispose(); },
     rippleAt: pushRipple,
+    // 0 表示不设上限，用于实测真实渲染能力。
+    setFpsCap: function (fps) { frameIntervalMs = fps > 0 ? 1000 / fps : 0; },
     forceCurve: function (index) { curveA = index; curveB = (index + 1) % CURVE_COUNT; uniforms.uCurveA.value = curveA; uniforms.uCurveB.value = curveB; uniforms.uCurveMix.value = 0; curveStart = (performance.now() - startTime) / 1000; },
     info: function () {
       var elapsed = (performance.now() - startedAt) / 1000;
