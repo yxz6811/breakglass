@@ -6,9 +6,11 @@
 
 **进度（2026-10-02）**: 对照当前扩展实现更新。T001–T016、T018 已完成；`node --test` 14 项通过。T017 尚未做浏览器手工记录，正式视频和原位验收素材也仍未提供。这些证据齐备前不要开始故事 2。
 
-**Tests**: 包含宪法要求的纯函数夹具。只覆盖 MVP 主路径，不写超时和四画幅测试。
+**补充（2026-10-02）**: 按用户决定补登故事 2（P2，T019–T030）与故事 3（P3，T031–T039）的任务。**登记不等于开工**：实现仍受 T017 与正式素材验收门禁约束，详见下文 Phase 5/6 的治理说明。
 
-**Organization**: 本次只拆用户故事 1。故事 2、故事 3 和真实识别只登记范围，不生成任务。
+**Tests**: 包含宪法要求的纯函数夹具。Phase 1–4（故事 1）只覆盖 MVP 主路径，不写超时和四画幅测试；故事 2、故事 3 的测试在 Phase 5/6 各自拆分。
+
+**Organization**: Phase 1–4 只拆用户故事 1（已完成）。2026-10-02 补登故事 2、故事 3 的任务（Phase 5/6）；真实识别、单帧上传、感知代理、Pyodide 仍只登记范围，不生成任务。
 
 ## Format: `[ID] [P?] [Story] Description`
 
@@ -81,25 +83,77 @@
 
 ---
 
-## 后续内容（本次不拆分）
+## 后续阶段：故事 2 与故事 3（已登记任务，未开始实现）
 
-下面各项仍然属于规格或宪法里的后续范围。本次没有任务编号，实现故事 1 时不要提前做。
+> **治理门禁**：本节任务已完成规划登记（编号、依赖、验收与测试口径），但**不得先于 T017 的浏览器手工记录与正式素材验收开始实现**。若要在 T017 之前实现，必须按 Constitution §9 记录例外（原因、影响、责任人、有效期限、恢复条件、是否阻塞 P0）。登记本身不等于开工。
+>
+> 详细规划：故事 2 见 [`plan-story-2.md`](./plan-story-2.md)（含文案表、接口签名草案、既有测试影响清单、data-model 增量）与 [`ownership-story-2.md`](./ownership-story-2.md)（前后端分工与边界）；故事 3 见 [`plan-story-3.md`](./plan-story-3.md)。
 
-### User Story 2 - 等待失败时仍然诚实、可恢复 (Priority: P2)
+---
+
+## Phase 5: User Story 2 - 等待失败时仍然诚实、可恢复 (Priority: P2)
 
 **Goal**: 外部结果超过 1.5 秒、结果非法、没有匹配准备结果，以及用户取消时，界面可恢复，且不把准备结果说成识别成功。
 
 **Independent Test**: 分别使用 `externalAttempt` 的 `hang`、`invalid`、`late`，以及一份不匹配的准备结果。详见 quickstart.md 第 2 节。
 
-尚未拆分的工作包括：1.5 秒后自动回退、超时文案、迟到结果丢弃、取消后旧编号失效、无准备结果时的重试和退出、连续 5 次换帧不被旧结果覆盖，以及超时到曲线出现的 0.1 秒记录。
+### 治理与决策前置
 
-### User Story 3 - 换画幅后曲线仍然贴住原图 (Priority: P3)
+- [ ] T019 [US2] 按 Constitution §9 处理版本与口径冲突：修订 Constitution（如确认升到 v1.2.0）或更正 `spec.md` 的版本假设；澄清本节与「只覆盖 MVP 主路径」的措辞；同步 `plan.md`、`data-model.md`
+- [ ] T020 [US2] 冻结 D1–D5 决策与全部用户可见文案（等待/超时回退/失败/取消/迟到），写入 `plan-story-2.md` 附录 A 与 `contracts/runtime-config.md`
+
+### Tests for User Story 2
+
+- [ ] T021 [P] [US2] 先写会失败的 `tests/wake-timeout.test.js`：假时钟驱动 1500ms 回退、判定超时→首个可见帧 ≤0.1 秒、迟到丢弃、无匹配预制、取消、连续 5 次换帧/退出再唤醒、`requestId`/`videoId`/`time`/`frameSize` 守卫、定时器清理
+- [ ] T022 [P] [US2] 先写会失败的 `tests/external-simulator.test.js`：`off`/`hang`/`invalid`/`late` 四模式确定性、无网络调用、无遗留定时器
+
+### Implementation for User Story 2
+
+- [ ] T023 [US2] 实现 `extension/src/attempt/simulator.js`，使 T022 通过。不得发真实请求、不得内置地址或密钥
+- [ ] T024 [US2] 实现 `extension/src/session/wake.js`，使 T021 通过：冻结请求上下文、1500ms 看门狗、回退前重校验、取消、迟到丢弃、状态与原因输出
+- [ ] T025 [US2] 收口 `extension/src/session/session.js`：移除 P0 的「非 off 即拒绝」临时护栏，改为等待语义；`off` 主路径行为保持不变
+- [ ] T026 [P] [US2] 演示页增加等待态（取消）、失败态（重试/退出）、`aria-live` 状态区与焦点管理：`extension/demo/index.html`、`extension/demo/demo.css`
+- [ ] T027 [US2] `extension/src/page/main.js` 接线：等待流程、看门狗、取消/重试、迟到丢弃、旧帧不覆盖、来源与原因持续显示
+- [ ] T028 [US2] 实现 `extension/src/telemetry/latency.js` 并接入「回退显现」打点（内存统计，不落盘、不上传）
+
+### Verification for User Story 2
+
+- [ ] T029 [US2] 更新既有测试以覆盖新状态与控件（`tests/session.test.js`、`tests/session-lifecycle.test.js`、`tests/extension-surface.test.js`、`tests/page-integration.test.js`），清单见 `plan-story-2.md` 附录 C
+- [ ] T030 [US2] 按 quickstart 第 2 节手工验收 `hang`/`invalid`/无匹配预制/取消/5 次循环，记录 SC-003 的 P50/P95、浏览器、机器与热缓存状态
+
+**Checkpoint**: `externalAttempt: off` 的主路径与今天完全一致；任何失败路径都不产生曲线、不显示为成功、都留下重试或退出。
+
+---
+
+## Phase 6: User Story 3 - 换画幅后曲线仍然贴住原图 (Priority: P3)
 
 **Goal**: 同一目标帧在 16:9、4:3、竖屏和带黑边下，以及一次窗口变化后，偏差不超过内容区域较短边的 2%。
 
 **Independent Test**: quickstart.md 第 3 节。未验证网站不被注入。
 
-尚未拆分的工作包括：四种画幅夹具、2% 测量记录、全屏和设备像素比变化后的重算验收。
+**2% 口径**：偏差 = 采样点上 `|实测 SVG 点 − 期望画面点|` 的最大值 ÷ `min(contentRect.width, contentRect.height)`；只比较 `contentRect` 内部，黑边不参与。采样含顶点、`domain` 两端与等距 9 点。
+
+### Tests for User Story 3
+
+- [ ] T031 [P] [US3] 先写会失败的 `tests/alignment.test.js`：四画幅往返一致性、偏差比例、2% 边界（恰好通过 / 略超拒绝）、采样点有限性
+
+### Implementation for User Story 3
+
+- [ ] T032 [US3] 完善 `extension/src/geometry/content-rect.js`：`object-position` 长度单位、单关键字补齐另一轴、数字型解析；非有限 `videoWidth`/`videoHeight` 防御
+- [ ] T033 [US3] 实现 `extension/src/geometry/alignment.js`：`sourcePointToPage`、`pagePointToSource`、`deviationRatio`、`withinTolerance`、`sampleAlignment`（API 见 `plan-story-3.md` §3.2）
+- [ ] T034 [US3] 覆盖层定位收口：`position: absolute` 或等价的 CSS 规则，使 SVG 与 `contentRect` 绑定（**2% 对齐的前置**）
+- [ ] T035 [US3] 补齐重算触发：`fullscreenchange`、DPR 变化、`ResizeObserver(video)`、`loadedmetadata`、`orientationchange`，并在退出时清理监听
+
+### Verification for User Story 3
+
+- [ ] T036 [P] [US3] 四画幅夹具与 2% 测量输出（演示页只读 `window.__breakglassAlignment`，不联网、不落盘）
+- [ ] T037 [US3] 更新 `tests/extension-surface.test.js`、`tests/page-integration.test.js`、`tests/geometry.test.js` 覆盖定位、监听与几何完善项
+- [ ] T038 [US3] 按 quickstart 第 3 节手工验收并记录四画幅 + 窗口变化 + 全屏/DPR 的最大偏差比例（模板见 `plan-story-3.md` §7）
+- [ ] T039 [US3] FR-018 边界核对：不在未验证页面注入，入口不可用时有明确说明；`extension/manifest.json` 无主机权限与内容脚本
+
+**Checkpoint**: 覆盖层在四种画幅下贴合内容区域；窗口/全屏/DPR 变化后自动重算；2% 记录可复现，且未把夹具证据写成正式视频验收。
+
+---
 
 ### 不在本功能任务内
 
@@ -113,13 +167,13 @@
 - **Foundational (Phase 2)**: 依赖 Phase 1，并挡住故事 1
 - **User Story 1 (Phase 3)**: 依赖 Phase 2
 - **Polish (Phase 4)**: 依赖故事 1
-- **故事 2 与故事 3**: 未排期。故事 1 验收前不开始
+- **故事 2 (Phase 5) 与故事 3 (Phase 6)**: 任务已登记（T019–T039），但依赖 T017 的浏览器手工记录与正式素材验收；在此之前不开始实现
 
 ### User Story Dependencies
 
 - **User Story 1 (P1)**: 只依赖 Foundational。不依赖故事 2 或故事 3
-- **User Story 2 (P2)**: 以后再拆。预期复用会话和准备结果，但本次不实现
-- **User Story 3 (P3)**: 以后再拆。预期复用内容矩形，但本次不测四种画幅
+- **User Story 2 (P2)**: 已拆分（T019–T030）。复用会话与准备结果；T021/T022 先于 T023–T027，T029 在实现之后
+- **User Story 3 (P3)**: 已拆分（T031–T039）。复用内容矩形；T031 先于 T032/T033；T034（覆盖层定位）是 2% 对齐的前置，必须先于 T036/T038
 
 ### Within User Story 1
 
@@ -177,6 +231,12 @@
 
 - 前后端分工见 [ownership.md](./ownership.md)。编号任务前端 10 项、后端 8 项
 - `[P]` 表示不同文件且不依赖未完成任务
-- 故事 2 和故事 3 故意没有任务编号
+- 故事 2、故事 3 已于 2026-10-02 登记任务编号（T019–T039），但仍受 T017 门禁约束，登记不等于开工
 - 夹具视频和 `fixture.parabola` 只用于工程验证
 - 不要把 `externalAttempt` 的非 `off` 值做成半成品识别
+
+## 变更记录
+
+| 日期 | 变更 | 验证 |
+| --- | --- | --- |
+| 2026-10-02 | 补登故事 2（P2，T019–T030）与故事 3（P3，T031–T039）的任务、依赖与验收口径；同步进度、Tests、Organization、Dependencies、Notes 的措辞 | 文档审查；`plan-story-2.md`、`plan-story-3.md`、`ownership-story-2.md` 已创建 |
