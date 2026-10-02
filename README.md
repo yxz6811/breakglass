@@ -9,7 +9,8 @@ BreakGlass 是一个 Chrome MV3 扩展原型：把已验证演示视频中的数
 - P0：单个录屏或固定机位数学抛物线场景。
 - P1：真实视觉识别、Python/Pyodide 和其他扩展能力，必须单独立项和验收。
 - 不包含任意网站注入、用户账号、云端同步、数据库、代码执行服务或自建后端。
-- P0 主路径已在 Chrome 中手工确认通过，记录见 [验收记录](docs/BreakGlass-frontend-validation.md)。仓库仍未提交正式视频文件。quickstart 第 2 节的耗时和第 3 节的四画幅偏差还没记。
+- 正式视频和曲线素材尚未提交时，工程夹具只能用于验证状态和几何逻辑，不能作为真实视频验收证据。
+- 交付状态：故事 1（MVP）、故事 2（等待/超时回退/失败/取消）和故事 3（多画幅 2% 对齐）的实现与自动化测试已完成，自动化基线为 `node --test` 137 项通过；正式视频与浏览器手工验收仍待完成，见 [前端验证记录](docs/BreakGlass-frontend-validation.md)。
 
 ## 技术路线
 
@@ -52,3 +53,7 @@ node --test
 - [实施计划](specs/001-insitu-parabola/plan.md)
 - [任务清单](specs/001-insitu-parabola/tasks.md)
 - [快速验收](specs/001-insitu-parabola/quickstart.md)
+- [视觉规范](docs/BreakGlass-visual-spec.md)
+- [UI 设计建议](docs/BreakGlass-ui-design-guide.md)
+- [UI 现状清单](docs/BreakGlass-ui-inventory.md)
+- [UI 待实现清单](docs/BreakGlass-ui-todo.md)

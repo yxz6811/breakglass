@@ -526,6 +526,34 @@ test('a vision candidate never becomes interactive', async () => {
   assert.equal(h.session.getState().result, null);
 });
 
+test('an external result with a different frameSize is not drawn as success', async () => {
+  const h = harness({
+    config: { externalAttempt: 'invalid' },
+    attempt: {
+      /**
+       * @param {object} ctx
+       * @returns {Promise<object>}
+       */
+      start(ctx) {
+        const candidate = basePreset();
+        candidate.requestId = ctx.requestId;
+        candidate.frameSize = { width: 3024, height: 1898 };
+        candidate.definition.region = { x: 0, y: 0, width: 1512, height: 900 };
+        return Promise.resolve({ ctx, candidate });
+      },
+      abort() {}
+    }
+  });
+  start(h);
+  await flush();
+  assert.equal(h.changes.some((state) => state.status === 'interactive'), false);
+  assert.equal(h.latest().status, 'recoverable-error');
+  assert.equal(h.latest().code, 'frame_mismatch');
+  assert.equal(h.latest().result, null);
+  assert.equal(h.session.getState().result, null);
+  assertAligned(h);
+});
+
 test('enableLocalMock false does not turn a timeout into a preset success', async () => {
   const h = harness({ config: { externalAttempt: 'hang', enableLocalMock: false } });
   start(h);

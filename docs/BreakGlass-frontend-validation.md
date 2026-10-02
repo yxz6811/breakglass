@@ -1,20 +1,50 @@
-# BreakGlass 前端验收记录
+# BreakGlass 前端验证记录
 
-日期：2026-10-02。操作者确认：P0 主路径在 Chrome 中手工验收通过，未发现问题。
+> 本文是前端自动化与手工验收的落盘记录，目标路径见 `specs/001-insitu-parabola/tasks.md` 的 T030。
+> 更新日期：2026-10-02。
 
-本次记录对应 [quickstart.md](../specs/001-insitu-parabola/quickstart.md) 第 1 节，也就是任务 T017。配置为 `externalAttempt: off`。覆盖暂停后定位、按钮与 Alt+B 唤醒、拖动一个参数、重置、Esc / 退出 / 点击交互层外部，以及来源始终显示为预先准备的示例。
+## 1. 自动化基线
 
-未记下的项目保持空白，不补写：
-
-| 项目 | 记录 |
+| 命令 | 结果 |
 | --- | --- |
-| 浏览器 | Google Chrome。具体版本号未提供 |
-| 机器 | Linux 虚拟机。发行版和配置未提供 |
-| 热缓存 | 未提供 |
-| 事件起点与终点 | 未提供 |
-| P50 / P95 | 未测，属于 quickstart 第 2 节 |
-| 四画幅偏差比例 | 未测，属于 quickstart 第 3 节 |
+| `node --test` | **137 项通过，0 失败，0 待办**（把 PR #30 合入当前 `main` 后重跑） |
+| `node --check`（extension 与 tests 全部 JavaScript） | 通过 |
+| `scripts/verify.mjs`（本地工作区工具，未进入本仓库） | 语法检查 + 全量测试通过 |
 
-仓库里的 `extension/assets/video/` 仍只有说明，没有提交视频文件。本记录是操作者对 Chrome 主路径的确认，不把夹具写成已经对准某段未入库的正式网课。
+### 覆盖范围
 
-quickstart 第 2 节（T030）和第 3 节（T038）不在本次确认范围内。
+| 测试文件 | 覆盖 |
+| --- | --- |
+| `tests/validate.test.js`、`tests/evaluate.test.js`、`tests/preset-contract.test.js` | CurveResult 放行/拒绝、求值器白名单、运行配置与预制夹具契约 |
+| `tests/content-rect.test.js` | `contain` 黑边计算、`object-position` 的百分比/px/关键字/数字解析、非有限尺寸防御 |
+| `tests/session.test.js`、`tests/backend-edges.test.js` | 会话生命周期、目标时间门禁、参数钳制、复制结果副本、边缘情况 |
+| `tests/wake-timeout.test.js` | 假时钟驱动的 1500ms 回退、迟到丢弃、取消、5 次循环 |
+| `tests/wake-contract.test.js` | 交接接口形状：`createWake({ session, config, preset, clock, onChange, attempt })`、五个方法、状态字段与别名字段禁令 |
+| `tests/latency.test.js`、`tests/place-in-frame.test.js` | 内存计时摘要与 P50/P95；预制区域按当前帧宽高比换算 |
+| `tests/external-simulator.test.js` | `off`/`hang`/`invalid`/`late` 四模式确定性、无网络、无遗留定时器 |
+| `tests/alignment.test.js` | 四画幅映射、源↔页面往返、2% 偏差比例与阈值边界、采样 |
+| `tests/page-integration.test.js` | 演示页脚本顺序、控件与 `aria-live`、覆盖层定位、无远程资源、`createWake` 接线 |
+| `tests/page-p2.test.js`、`tests/page-p3.test.js` | 假 DOM 驱动真实 `main.js`：等待/回退/取消/重试、窗口/全屏/方向/DPR 重算与测量输出 |
+
+## 2. 尚未执行（不得写成已通过）
+
+| 项 | 原因 |
+| --- | --- |
+| T017：扩展内演示页的浏览器手工主路径 | 当前环境没有可控浏览器会话 |
+| T030：quickstart 第 2 节的 `hang`/`invalid`/无缓存/取消手工演练与 SC-003 的 P50/P95 | 同上；且需要连续多次采样 |
+| T038：四画幅 + 窗口变化 + 全屏/DPR 的真机 2% 记录 | 同上；正式视频素材也未提供 |
+| 正式视频与配套曲线素材 | 团队尚未提供，当前只有工程夹具 |
+
+## 3. 证据口径
+
+- 自动化测试证明的是**状态机、校验与坐标映射**；假 DOM 测试不能替代真实浏览器的布局与事件语义。
+- 在正式视频到位前，夹具只能证明交互状态与几何逻辑，**不能**作为原位对齐的验收证据。
+- 性能类结论（回退 ≤100ms）目前只有假时钟下的确定性断言，没有真实采样数据。
+
+## 4. 变更记录
+
+| 日期 | 变更 |
+| --- | --- |
+| 2026-10-02 | 首次建立验证记录：自动化基线 96 项、覆盖范围、未执行项与证据口径 |
+| 2026-10-02 | 合并 `origin/main`（PR #26 `ui`、PR #27 6 秒帧适配）后重跑：基线 118 项通过；`tests/wake-contract.test.js` 改写为按 `.specify/memory/constitution.md` 1.3.0「交接接口」校验 |
+| 2026-10-02 | 解决 PR #30 与 `main` 的冲突后重跑：`node --test` 137 项通过。残缺帧尺寸不再记成准备结果不可用 |
