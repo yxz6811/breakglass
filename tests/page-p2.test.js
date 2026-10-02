@@ -92,6 +92,30 @@ test('invalid：非法外部结果进入可恢复错误并提供重试', async (
   }
 });
 
+test('目标时间跟随输入框：默认仍是 12.5，改成 6 并暂停在 6 可以破壁', async () => {
+  const harness = await createHarness();
+  try {
+    const { elements, video } = harness;
+    assert.equal(elements['target-time'].value, '12.5');
+    assert.equal(elements['state-label'].textContent, '正式视频素材尚未提供，加载视频后可验证交互。');
+    assert.equal(elements['asset-empty'].hidden, false);
+    assert.equal(video.src, undefined);
+    harness.ready();
+    video.currentTime = 6;
+    video.dispatch('pause');
+    assert.equal(elements['wake-button'].disabled, true);
+    elements['wake-button'].dispatch('click');
+    assert.equal(harness.overlay(), null);
+    elements['target-time'].value = '6';
+    video.dispatch('pause');
+    assert.equal(elements['wake-button'].disabled, false);
+    elements['wake-button'].dispatch('click');
+    assert.ok(harness.overlay(), '输入 6 并暂停在 6 应出现曲线');
+  } finally {
+    harness.restore();
+  }
+});
+
 test('播放会让等待或交互状态一起结束', async () => {
   const harness = await createHarness({ config: { externalAttempt: 'hang' } });
   try {
