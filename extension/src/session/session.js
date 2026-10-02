@@ -16,9 +16,7 @@
       this.targetTime = targetTime;
       this.frameSize = frameSize;
       this.timeTolerance = timeTolerance;
-      // Only the deterministic, prewarmed P0 path may create an interactive
-      // session. Values such as `hang`, `invalid`, and `late` belong to the
-      // future external-attempt story and must never be treated as success.
+      // 非 off 也可以等待。能否进入交互仍由结果校验决定。
       this.externalAttempt = externalAttempt;
       this.status = 'paused-ready';
       this.pending = null;
@@ -35,9 +33,6 @@
       if (!this.canWake({ paused, currentTime })) {
         return { ok: false, code: 'not_ready', message: '请先暂停在目标时间。' };
       }
-      if (this.externalAttempt !== 'off') {
-        return { ok: false, code: 'external_attempt_disabled', message: '当前配置未启用本地预制交互。' };
-      }
       if (this.pending || this.current || this.status === 'waiting' || this.status === 'interactive') {
         return { ok: false, code: 'session_active', message: '当前已有交互会话。' };
       }
@@ -49,9 +44,6 @@
     }
 
     resolve(result) {
-      if (this.externalAttempt !== 'off') {
-        return { ok: false, code: 'external_attempt_disabled', message: '当前配置未启用本地预制交互。' };
-      }
       if (!this.pending) return { ok: false, code: 'no_pending', message: '当前没有等待中的请求。' };
       if (!validate) return { ok: false, code: 'validator_unavailable', message: '结果校验器不可用。' };
       const expectedRequestId = this.pending.requestId;
@@ -74,6 +66,26 @@
       this.pending = null;
       this.status = 'interactive';
       return { ok: true, session: this.getState() };
+    }
+
+    /**
+     * 结束一次等待并进入可恢复错误。不留下可绘制曲线。
+     * @param {{ code?: string, message?: string }} [reason]
+     * @returns {{ ok: boolean, code: string, message: string, session?: ReturnType<SessionController['getState']> }}
+     */
+    fail(reason = {}) {
+      if (this.status !== 'waiting' || !this.pending) {
+        return { ok: false, code: 'no_pending', message: '当前没有等待中的请求。' };
+      }
+      this.pending = null;
+      this.current = null;
+      this.status = 'recoverable-error';
+      return {
+        ok: true,
+        code: reason.code || 'unavailable',
+        message: reason.message || '当前无法进入交互。',
+        session: this.getState()
+      };
     }
 
     updateParameter(name, value) {

@@ -60,16 +60,32 @@ test('old request results cannot replace a newer wait', () => {
   assert.equal(session.resolve(result(second.requestId)).ok, true);
 });
 
-test('non-off external attempts never enter interactive or report success', () => {
+test('non-off external attempts can wait but a failed check never becomes interactive', () => {
   for (const externalAttempt of ['hang', 'invalid', 'late']) {
     const session = controller({ externalAttempt });
-    const denied = session.beginWait({ paused: true, currentTime: 12.5 });
-    assert.equal(denied.ok, false);
-    assert.equal(denied.code, 'external_attempt_disabled');
-    assert.equal(session.getState().status, 'paused-ready');
-    assert.equal(session.resolve(result('request-never-created')).ok, false);
+    const pending = session.beginWait({ paused: true, currentTime: 12.5 });
+    assert.equal(pending.ok, true);
+    assert.equal(session.getState().status, 'waiting');
+    assert.equal(session.getState().result, null);
+
+    const vision = result(pending.requestId);
+    vision.source = 'vision';
+    assert.equal(session.resolve(vision).ok, false);
     assert.notEqual(session.getState().status, 'interactive');
     assert.equal(session.getState().result, null);
+    assert.equal(/识别成功/.test(JSON.stringify(session.getState())), false);
+
+    const broken = result(pending.requestId);
+    delete broken.definition;
+    assert.equal(session.resolve(broken).ok, false);
+    assert.notEqual(session.getState().status, 'interactive');
+    assert.equal(session.getState().result, null);
+
+    const accepted = session.resolve(result(pending.requestId));
+    assert.equal(accepted.ok, true);
+    assert.equal(session.getState().status, 'interactive');
+    assert.equal(session.getState().result.source, 'preset');
+    assert.equal(/识别成功/.test(JSON.stringify(session.getState())), false);
   }
 });
 

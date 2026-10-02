@@ -47,6 +47,7 @@ node --test
 - [前后端职责边界](docs/frontend-backend-boundary.md)
 - [前端任务与执行流程](docs/frontend-task-tracker.md)
 - [BreakGlass Constitution](docs/BreakGlass-constitution.md)
+- [OpenMAIC 学习笔记](docs/BreakGlass-openmaic-learning.md)
 - [最新功能规格](specs/001-insitu-parabola/spec.md)
 - [实施计划](specs/001-insitu-parabola/plan.md)
 - [任务清单](specs/001-insitu-parabola/tasks.md)
