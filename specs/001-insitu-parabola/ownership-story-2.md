@@ -1,6 +1,6 @@
 # Story 2（P2）前后端分工与边界
 
-> 状态：**规划稿，未实现**。日期：2026-10-02。
+> 状态：**已派发，两人可并行**。日期：2026-10-02。MVP 已接受，P2 按本文的写权限开工。
 > 配套文件：[`plan-story-2.md`](./plan-story-2.md)（P2 实施规划）、[`ownership.md`](./ownership.md)（P0 分工）、[`spec.md`](./spec.md)（User Story 2、FR-009~012、SC-003/005/006）、[`quickstart.md`](./quickstart.md) 第 2 节、[`contracts/runtime-config.md`](./contracts/runtime-config.md)。
 > 仓库级约定：`AGENTS.md` §2/§9/§11、`docs/BreakGlass-constitution.md` §1/§2/§4/§6/§8。
 > 注：上游 `main` 有仓库级的 `docs/frontend-backend-boundary.md`，工作区当前没有该文件；本文件沿用其第 8 节对「后端」的定义，不复制其全文。
@@ -99,22 +99,27 @@ P2 的分工只有一条主轴：**结果规则侧决定「能不能进交互」
 | 外部识别的地址、方法、请求/响应字段、鉴权、限流、数据保留 | **未确认、未派发** |
 | 单帧上传 | **未获准**，需先修订 Constitution 与仓库边界 |
 
-## 6. 交付清单与归属（对应 `plan-story-2.md` 的 T019–T030）
+## 6. 交付清单与写权限（对应 `tasks.md` 的 T019–T030）
 
-| 任务 | 归属 | 交付物 | 写权限范围（建议） |
+T020 的决定已经写入 `tasks.md`。两人按该决定开工，不等待宪法版本文字同步。T019 只改 `docs/BreakGlass-constitution.md`、`spec.md`、`plan.md`，与下表代码路径并行，且不改变 T020 的行为。
+
+同一时间一个路径只属于一个人。
+
+| 任务 | 归属 | 交付物 | 独占写权限 |
 | --- | --- | --- | --- |
-| T019 宪法/规格口径澄清 | 共同（前端牵头） | `docs/BreakGlass-constitution.md`、`specs/001-insitu-parabola/{spec,plan,tasks}.md` | `docs/`、`specs/` |
-| T020 冻结决策与文案表 | 共同 | 本文件、`plan-story-2.md`、`contracts/runtime-config.md` | 同上 |
-| T021 超时/取消用例测试（先红） | 后端（结果规则侧） | `tests/wake-timeout.test.js` | `tests/` |
-| T022 替身行为测试（先红） | 后端（结果规则侧） | `tests/external-simulator.test.js` | `tests/` |
-| T023 外部尝试替身 | 后端（结果规则侧） | `extension/src/attempt/simulator.js` | `extension/src/attempt/` |
-| T024 唤醒协调器（看门狗/重校验/取消/迟到丢弃） | 后端（结果规则侧） | `extension/src/session/wake.js` | `extension/src/session/` |
-| T025 会话护栏改造成等待语义 | 后端（结果规则侧） | `extension/src/session/session.js` | `extension/src/session/` |
-| T026 等待态/取消/失败态/可访问性 | 前端（页面侧） | `extension/demo/index.html`、`extension/demo/demo.css` | `extension/demo/` |
-| T027 页面接线 | 前端（页面侧） | `extension/src/page/main.js` | `extension/src/page/` |
-| T028 度量打点 | 后端提供接口 + 前端接点 | `extension/src/telemetry/latency.js`、`main.js` | `extension/src/telemetry/`、`extension/src/page/` |
-| T029 既有测试更新 | 前端 + 后端 | `tests/extension-surface.test.js`、`tests/page-integration.test.js`、`tests/session*.test.js` | `tests/` |
-| T030 quickstart §2 手工验收与记录 | 前端 | `docs/BreakGlass-frontend-validation.md` | `docs/` |
+| T019 宪法/规格口径澄清 | 前端牵头，可与代码并行 | `docs/BreakGlass-constitution.md`、`specs/001-insitu-parabola/spec.md`、`plan.md` | 这三份文档 |
+| T021 超时/取消用例测试（先红） | 后端 | `tests/wake-timeout.test.js` | 该文件 |
+| T022 替身行为测试（先红） | 后端 | `tests/external-simulator.test.js` | 该文件 |
+| T023 外部尝试替身 | 后端 | `extension/src/attempt/simulator.js` | `extension/src/attempt/` |
+| T024 唤醒协调器 | 后端 | `extension/src/session/wake.js` 的 `createWake` | `extension/src/session/wake.js` |
+| T025 会话护栏改造成等待语义 | 后端 | `extension/src/session/session.js`，以及 `tests/session.test.js`、必要时 `tests/backend-edges.test.js` | 这三份文件 |
+| T026 等待态/取消/失败态/可访问性 | 前端 | `extension/demo/index.html`、`extension/demo/demo.css` | `extension/demo/` |
+| T027 页面接线 | 前端 | `extension/src/page/main.js` | `extension/src/page/` |
+| T028 度量打点 | 后端写模块，前端在 T027 里调用 | `extension/src/telemetry/latency.js` | 后端只写该文件；前端不改它 |
+| T029 页面契约测试 | 前端 | `tests/page-integration.test.js` | 该文件 |
+| T030 quickstart §2 手工验收 | 前端 | `docs/BreakGlass-frontend-validation.md` | 该文件 |
+
+`extension/assets/config.json` 双方都不改提交内容，`externalAttempt` 保持 `off`。`extension/src/curve/`、`extension/src/preset/`、`extension/src/geometry/` 本次不改。
 
 归属原则与 `ownership.md` 一致：**决定「哪一次结果还能进入交互」的规则归后端（结果规则侧）；演示页上看得见的状态与文案归前端。**
 
@@ -127,14 +132,14 @@ P2 的分工只有一条主轴：**结果规则侧决定「能不能进交互」
 
 ## 8. 交接顺序与并行
 
-与 `ownership.md` 的「交接顺序」同一模式：
+`createWake` 的形状以 [`ownership.md`](./ownership.md)「交接接口」为准。页面只消费 `onChange` 的状态。
 
-1. 共同先完成 T019、T020（治理口径与决策冻结）。
-2. 后端（结果规则侧）先交 T021 与 T022 的失败测试，再做 T023–T025。
-3. 前端在 T024 接口稳定后接 T026、T027；T026 可与 T023/T024 并行（不同文件）。
-4. T028 由后端提供打点接口、前端接入两个触发点。
-5. 前端做 T029、T030，并把手工记录与 P50/P95 写回验证文档。
-6. 页面只消费会话给出的状态，**不得在页面里另写一套「能不能画」的判断**（沿用 `ownership.md` 第 2 条交接约定）。
+1. 后端立即写 T021、T022，再实现 T023、T024、T025 和 `latency.js`。
+2. 前端同时做 T026。此阶段不改 `main.js`，也不添加尚未存在的脚本。
+3. 后端 `node --test` 通过后，把 `createWake` 交给前端。
+4. 前端改 `main.js`：接入等待、取消、重试、退出，并在判定超时和首个可见 SVG 帧调用 `mark`。
+5. 前端补 `tests/page-integration.test.js`，再做 quickstart 第 2 节手工记录。
+6. 接线期间后端停在自己的目录里，不再改 `extension/src/page/` 与 `extension/demo/`。
 
 ## 9. 合并前的边界检查（P2 版）
 
@@ -165,10 +170,11 @@ P2 的分工只有一条主轴：**结果规则侧决定「能不能进交互」
 
 - 上游 `main`（提交 `2438bd19f708`）有仓库级 `docs/frontend-backend-boundary.md`；工作区当前没有该文件，本文件只覆盖 P2，并在第 1 节沿用其「后端 = 结果规则侧」的定义。
 - `ownership.md` 里故事 2 的既有归属与本文件一致：超时文案、重试/退出、换帧不覆盖、0.1 秒记录归前端；1.5 秒后才允许回退、迟到丢弃、取消后旧 `requestId` 失效归后端。
-- 本文件未修改任何实现代码或既有文档；`tasks.md`、`spec.md`、`constitution.md` 的修订属于 T019，需要先获得团队确认。
+- `tasks.md` 已登记 T019–T030。T020 的行为决定以该文件和本文的写权限为准，代码可以按此开工。宪法版本号同步仍是 T019，不改变这些行为。
 
 ## 变更记录
 
 | 日期 | 变更 |
 | --- | --- |
 | 2026-10-02 | 首次编写 P2（故事 2）前后端分工与边界，含名词约定、硬边界、职责矩阵、外部接口接缝契约（未确认）、交付归属、交接顺序与合并前检查 |
+| 2026-10-02 | MVP 已接受。把 T019–T030 改成两人独占路径：后端交 `createWake` 与 `latency.js`，前端交演示页、`main.js` 和手工记录 |

@@ -41,7 +41,7 @@
 | source | 只有 `preset` 或 `vision`。本功能的生产者只能写 `preset` |
 | fallback | `null` 或 `timeout` |
 | equationId | 必须存在对应求值器 |
-| parameters | 至少一个。initial、min、max、step 均为有限数，且 min ≤ initial ≤ max，step > 0 |
+| parameters | 至少一个。initial、min、max、step 均为有限数，且 min ≤ initial ≤ max，step > 0。`fixture.parabola` 还必须同时给出有限的 a、h、k |
 | dragParameter | 必须是 parameters 的键 |
 | region | 宽高为正，且完全落在 frameSize 内 |
 | domain、range | min < max，端点有限 |
