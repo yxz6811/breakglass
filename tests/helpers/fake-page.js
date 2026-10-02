@@ -262,7 +262,7 @@ async function createHarness(options = {}) {
       video.videoWidth = 1920;
       video.videoHeight = 1080;
       video.paused = true;
-      video.currentTime = 12.5;
+      video.currentTime = 6;
       video.dispatch('loadedmetadata');
     },
     restore() {

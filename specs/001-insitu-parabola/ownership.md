@@ -21,7 +21,7 @@ P0 不新建服务、数据库或 FastAPI。这里的「后端」指结果契约
 | T014 | 已完成 | `extension/demo/index.html`、`extension/demo/demo.css` |
 | T015 | 已完成 | `extension/src/page/main.js`：来源始终是「预先准备的示例」；已有覆盖层时 Alt+B 不再挂第二层；点击覆盖层外部退出并保持暂停；源尺寸使用当前视频的 `videoWidth` 与 `videoHeight` |
 | T016 | 已完成 | 视频缺失时的说明，`extension/assets/video/README.md` |
-| T017 | 不阻塞 P2 | 正式视频仍未提供。故事 1 的夹具主路径已作为 MVP 接受，P2 用同一套夹具演练等待，不把夹具记成正式素材验收 |
+| T017 | 已完成 | 2026-10-02 操作者确认 Chrome 主路径通过。记录在 `docs/BreakGlass-frontend-validation.md`。仓库仍未提交正式视频文件 |
 
 故事 1 的页面与会话已经收口。P2 不再等待 T017。
 

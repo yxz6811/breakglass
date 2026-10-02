@@ -46,9 +46,9 @@ P0 不加载 Pyodide、WASM、远程脚本或任意代码执行容器。若未�
 | T007 | 计算元素矩形、视频内容矩形和源像素到 CSS 像素比例 | `extension/src/geometry/content-rect.js` | 已完成 | 16:9/容器宽高夹具通过；正式四画幅仍待验收 |
 | T010 | 读取运行配置和预制 JSON，并把校验失败转成可展示状态 | `extension/src/preset/load.js` | 已完成 | 加载路径和失败路径可测试 |
 | T014 | 建立扩展内演示页、视频控制、破壁/重置/退出和来源区域 | `extension/demo/index.html`、`extension/demo/demo.css` | 已完成 | 页面结构和控件存在 |
-| T015 | 收口页面会话：Alt+B、单 overlay、拖动、重置、退出、外部点按、当前视频尺寸映射 | `extension/src/page/main.js` | 已完成 | `node --check`；14 项测试通过；手工验收待记录 |
+| T015 | 收口页面会话：Alt+B、单 overlay、拖动、重置、退出、外部点按、当前视频尺寸映射 | `extension/src/page/main.js` | 已完成 | `node --check`；页面测试通过；Chrome 主路径见 T017 |
 | T016 | 视频缺失或打不开时只提示，不挂夹具曲线冒充正式对齐 | `extension/assets/video/README.md`、`extension/src/page/main.js` | 已完成 | 错误状态和素材说明存在 |
-| T017 | 按 quickstart 第 1 节在 Chrome 加载未打包扩展并记录主路径 | `specs/001-insitu-parabola/quickstart.md`、本文 | 阻塞：待 Chrome 手工验收 | 预检已完成；需要可控 Chrome 窗口，正式视频到位后再做原位结论 |
+| T017 | 按 quickstart 第 1 节在 Chrome 加载未打包扩展并记录主路径 | `docs/BreakGlass-frontend-validation.md` | 已完成 | 2026-10-02 操作者确认通过。环境为 Google Chrome、Linux 虚拟机；版本号未提供 |
 
 ### 协作但不归前端任务表的结果规则
 
@@ -87,10 +87,10 @@ P0 不加载 Pyodide、WASM、远程脚本或任意代码执行容器。若未�
 
 ## 6. 当前交付状态
 
-- P0 扩展脚手架、扩展内演示页、预制结果、会话规则和前端边界文档已提交。
-- 自动化检查：`node --test` 14 项通过；`node --check extension/src/page/main.js` 和 `node --check extension/src/session/session.js` 通过。
-- T017 的 Chrome 手工记录、正式演示视频、目标时间、曲线定义和四画幅原位误差证据仍待补齐。
-- 故事 2、故事 3、真实识别、单帧上传、Pyodide 和后端服务不属于当前已完成范围。
+- P0 主路径的代码、自动测试和 Chrome 手工确认都已完成。记录见 `docs/BreakGlass-frontend-validation.md`。
+- 自动化检查最近一次为 `node --test tests/*.js`，102 项通过。
+- 仓库仍未提交正式视频文件。quickstart 第 2 节的耗时记录和第 3 节的四画幅偏差还没写。
+- 真实识别、单帧上传、Pyodide 和后端服务仍未派发。
 
 ### T017 预检记录
 
@@ -101,7 +101,7 @@ P0 不加载 Pyodide、WASM、远程脚本或任意代码执行容器。若未�
 - 扩展页 CSP 为 `script-src 'self'; object-src 'self'`，演示页入口、service worker 和本地脚本均存在。
 - `node --test` 14 项通过；`node --check extension/src/page/main.js` 和 `node --check extension/src/session/session.js` 通过。
 
-尚不能记录为手工通过的部分：当前执行环境没有可控 Chrome 窗口，仓库也没有正式视频、目标时间和匹配曲线素材。T017 的下一步是加载 `extension/` 未打包扩展，打开扩展内演示页，确认缺失素材提示和主路径控件，再用正式素材完成 quickstart 第 1 节；在此之前不宣称故事 1 原位验收通过。
+2026-10-02 操作者确认：在 Google Chrome、Linux 虚拟机上按 quickstart 第 1 节走完主路径，未发现问题。Chrome 具体版本号和虚拟机发行版未提供。仓库仍未提交正式视频文件。quickstart 第 2 节和第 3 节不在这次确认里。
 
 ## 变更记录
 
@@ -109,3 +109,4 @@ P0 不加载 Pyodide、WASM、远程脚本或任意代码执行容器。若未�
 | --- | --- | --- | --- | --- |
 | 2026-10-02 | 文档初始化 | 建立前端职责、技术路线、任务表、执行流程和逐项更新规则 | 文档审查；`node --test` 14 项通过 | PR #6 |
 | 2026-10-02 | T017 | 完成 manifest/入口/脚本确定性预检，记录 Chrome 窗口和正式素材阻塞 | 自动检查通过；手工验收未执行 | PR #7 |
+| 2026-10-02 | T017 | 操作者确认 Chrome 主路径通过 | 手工确认无问题；版本与机器未提供 | 未提交 |
