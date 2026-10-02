@@ -94,23 +94,59 @@
     }
 
     /**
-     * 装订本次请求编号。视频、时间和画幅保留预制原值，交给校验器复核。
+     * 把预制区域从它自己的源像素，按比例放进当前视频帧。不改已装入的预制对象。
+     * @param {object} source
+     * @param {{ width: number, height: number }} frameSize
+     * @returns {object}
+     */
+    function fitDefinition(source, frameSize) {
+      const definition = source.definition;
+      const authored = source.frameSize;
+      const region = definition && definition.region;
+      if (!definition || !region || !authored || !(authored.width > 0) || !(authored.height > 0)) {
+        return definition;
+      }
+      const sx = frameSize.width / authored.width;
+      const sy = frameSize.height / authored.height;
+      const x = region.x * sx;
+      const y = region.y * sy;
+      let width = region.width * sx;
+      let height = region.height * sy;
+      if (x + width > frameSize.width) width = frameSize.width - x;
+      if (y + height > frameSize.height) height = frameSize.height - y;
+      return {
+        equationId: definition.equationId,
+        parameters: definition.parameters,
+        dragParameter: definition.dragParameter,
+        domain: definition.domain,
+        range: definition.range,
+        yAxis: definition.yAxis,
+        region: { x, y, width, height }
+      };
+    }
+
+    /**
+     * 装订本次请求编号。区域按当前视频源尺寸缩放，结果画幅改为这一帧，再交给校验器复核。
      * @param {object} source
      * @param {string} requestId
      * @param {null | 'timeout'} fallback
+     * @param {{ width: number, height: number }} frameSize
      * @returns {object}
      */
-    function bindPreset(source, requestId, fallback) {
+    function bindPreset(source, requestId, fallback, frameSize) {
+      const size = frameSize && frameSize.width > 0 && frameSize.height > 0
+        ? { width: frameSize.width, height: frameSize.height }
+        : (source.frameSize
+          ? { width: source.frameSize.width, height: source.frameSize.height }
+          : source.frameSize);
       return {
         requestId,
         videoId: source.videoId,
         time: source.time,
-        frameSize: source.frameSize
-          ? { width: source.frameSize.width, height: source.frameSize.height }
-          : source.frameSize,
+        frameSize: size,
         source: 'preset',
         fallback,
-        definition: source.definition
+        definition: fitDefinition(source, size)
       };
     }
 
@@ -174,7 +210,7 @@
         deny(ctx, token, reason.code, reason.message);
         return false;
       }
-      const candidate = bindPreset(preset, ctx.requestId, fallback);
+      const candidate = bindPreset(preset, ctx.requestId, fallback, ctx.frameSize);
       const check = checkCandidate(candidate, ctx);
       if (!check.ok) {
         deny(ctx, token, check.code || 'preset_unavailable', PRESET_UNAVAILABLE);
@@ -264,6 +300,11 @@
      * @returns {{ ok: boolean, code?: string, message?: string, requestId?: string }}
      */
     function start(input = {}) {
+      const width = input.frameSize && input.frameSize.width;
+      const height = input.frameSize && input.frameSize.height;
+      if (!(width > 0) || !(height > 0)) {
+        return { ok: false, code: 'not_ready', message: '请先暂停在目标时间。' };
+      }
       const begun = session.beginWait({ paused: input.paused, currentTime: input.currentTime });
       if (!begun.ok) {
         publish();
@@ -278,6 +319,9 @@
           height: input.frameSize && input.frameSize.height
         }
       };
+      if (ctx.frameSize.width > 0 && ctx.frameSize.height > 0) {
+        session.frameSize = { width: ctx.frameSize.width, height: ctx.frameSize.height };
+      }
       const token = generation;
       const live = readConfig();
       if (live.externalAttempt === 'off') {

@@ -7,7 +7,7 @@
 
 | 命令 | 结果 |
 | --- | --- |
-| `node --test` | **118 项通过，0 失败，0 待办**（合并 `main` 后的结果） |
+| `node --test` | **137 项通过，0 失败，0 待办**（把 PR #30 合入当前 `main` 后重跑） |
 | `node --check`（extension 与 tests 全部 JavaScript） | 通过 |
 | `scripts/verify.mjs`（本地工作区工具，未进入本仓库） | 语法检查 + 全量测试通过 |
 
@@ -47,3 +47,4 @@
 | --- | --- |
 | 2026-10-02 | 首次建立验证记录：自动化基线 96 项、覆盖范围、未执行项与证据口径 |
 | 2026-10-02 | 合并 `origin/main`（PR #26 `ui`、PR #27 6 秒帧适配）后重跑：基线 118 项通过；`tests/wake-contract.test.js` 改写为按 `.specify/memory/constitution.md` 1.3.0「交接接口」校验 |
+| 2026-10-02 | 解决 PR #30 与 `main` 的冲突后重跑：`node --test` 137 项通过。残缺帧尺寸不再记成准备结果不可用 |

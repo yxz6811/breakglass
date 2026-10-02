@@ -129,6 +129,26 @@ test('目标时间默认是 6 秒，会话仍跟随输入框当前值', async ()
   }
 });
 
+test('只有宽度、高度还是 0 时不把破壁记成准备结果不可用', async () => {
+  const harness = await createHarness();
+  try {
+    const { elements, video } = harness;
+    harness.ready();
+    video.videoWidth = 3024;
+    video.videoHeight = 0;
+    video.currentTime = 6;
+    video.paused = true;
+    video.dispatch('pause');
+    assert.equal(elements['wake-button'].disabled, true);
+    elements['wake-button'].dispatch('click');
+    assert.equal(harness.overlay(), null);
+    assert.equal(elements['state-label'].textContent, '请先暂停在目标时间。');
+    assert.equal(elements['source-label'].textContent, '等待素材');
+  } finally {
+    harness.restore();
+  }
+});
+
 test('3024×1898 破壁时把预制区域换算进当前帧，来源仍是预先准备的示例', async () => {
   const harness = await createHarness();
   try {

@@ -82,17 +82,17 @@
   }
 
   /**
-   * 文件可读时才把演示 video 指到扩展包内的 mp4。
-   * 缺失时不设置 src，避免 error 事件把空状态改成加载失败。
+   * 文件明确不存在时才不挂 src。
+   * 不用 Range 探测：只取 1 个字节会写进缓存，断网重载后 video 可能只拿到残缺尺寸。
+   * fetch 在断网时会失败，这时仍把地址交给 video，扩展包内的文件可以由播放器自己读。
    * @returns {Promise<boolean>} 是否已把地址交给演示 video
    */
   async function attachPackagedVideo() {
     try {
-      const response = await fetch(PACKAGED_VIDEO_URL, { headers: { Range: 'bytes=0-0' } });
-      if (response.body) await response.body.cancel();
-      if (!response.ok) return false;
+      const response = await fetch(PACKAGED_VIDEO_URL, { method: 'HEAD' });
+      if (response.status === 404 || response.status === 410) return false;
     } catch {
-      return false;
+      // 断网时 HEAD 失败，不代表扩展包里没有这个文件。
     }
     video.src = PACKAGED_VIDEO_URL;
     return true;
@@ -138,12 +138,20 @@
   }
 
   /**
+   * 宽高必须同时就绪。只有宽度时去校验，会把残缺尺寸当成帧不匹配。
+   * @returns {boolean}
+   */
+  function hasFrameSize() {
+    return Boolean(video && video.videoWidth > 0 && video.videoHeight > 0);
+  }
+
+  /**
    * 目标时间容差只问会话。页面不再自己比较 ±0.2 秒。
    * @returns {boolean}
    */
   function atTarget() {
     syncSessionTarget();
-    if (!controller || !video || !(video.videoWidth > 0)) return false;
+    if (!controller || !hasFrameSize()) return false;
     return controller.canWake({ paused: video.paused, currentTime: video.currentTime });
   }
 
@@ -568,6 +576,7 @@
     syncControls();
   }
 
+  video.addEventListener('resize', syncControls);
   video.addEventListener('loadedmetadata', () => {
     assetEmpty.hidden = true;
     if (!overlay) {

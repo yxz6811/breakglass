@@ -112,10 +112,11 @@ function harness(overrides = {}) {
     ...overrides.config
   };
   const preset = Object.prototype.hasOwnProperty.call(overrides, 'preset') ? overrides.preset : basePreset();
+  const sessionOptions = overrides.session || {};
   const session = new SessionController({
-    videoId: 'fixture-parabola',
-    targetTime: 12.5,
-    frameSize: { ...FRAME },
+    videoId: sessionOptions.videoId || 'fixture-parabola',
+    targetTime: sessionOptions.targetTime ?? 12.5,
+    frameSize: sessionOptions.frameSize || { ...FRAME },
     externalAttempt: config.externalAttempt
   });
   const wake = api.createWake({
@@ -271,16 +272,70 @@ test('time outside ±0.2s at fallback does not draw', async () => {
   assertAligned(h);
 });
 
-test('frameSize mismatch at fallback does not draw', async () => {
+test('a preset authored at another resolution scales onto the current frame', async () => {
+  const region = { x: 100, y: 80, width: 640, height: 360 };
+  const preset = basePreset({
+    frameSize: { width: 1280, height: 720 },
+    definition: { ...basePreset().definition, region: { ...region } }
+  });
   const h = harness({
     config: { externalAttempt: 'hang' },
-    preset: basePreset({ frameSize: { width: 1280, height: 720 } })
+    preset
   });
   start(h);
   h.clock.advance(1500);
   await flush();
-  assert.equal(h.latest().status, 'recoverable-error');
-  assert.equal(h.latest().result, null);
+  const state = h.latest();
+  assert.equal(state.status, 'interactive');
+  assert.equal(state.result.frameSize.width, FRAME.width);
+  assert.equal(state.result.frameSize.height, FRAME.height);
+  assert.equal(state.result.definition.region.x, 150);
+  assert.equal(state.result.definition.region.y, 120);
+  assert.equal(state.result.definition.region.width, 960);
+  assert.equal(state.result.definition.region.height, 540);
+  assert.equal(preset.definition.region.x, 100);
+  assert.equal(preset.frameSize.width, 1280);
+  assertAligned(h);
+});
+
+test('an incomplete frame size does not become a preset failure', async () => {
+  const h = harness();
+  const started = h.wake.start({
+    paused: true,
+    currentTime: 12.5,
+    frameSize: { width: 3024, height: 0 }
+  });
+  await flush();
+  assert.equal(started.ok, false);
+  assert.equal(started.code, 'not_ready');
+  assert.equal(h.session.getState().status, 'paused-ready');
+  assert.equal(h.session.getState().result, null);
+  assert.equal(h.changes.length, 0);
+});
+
+test('the shipped preset draws on a 3024×1898 frame paused at 6s', async () => {
+  const shipped = require('../extension/assets/presets/demo-parabola.json');
+  const frame = { width: 3024, height: 1898 };
+  const h = harness({
+    config: { externalAttempt: 'off' },
+    preset: shipped,
+    session: {
+      targetTime: shipped.time,
+      frameSize: { width: shipped.frameSize.width, height: shipped.frameSize.height }
+    }
+  });
+  h.wake.start({ paused: true, currentTime: 6, frameSize: frame });
+  await flush();
+  const state = h.latest();
+  assert.equal(shipped.time, 6);
+  assert.equal(state.status, 'interactive');
+  assert.equal(state.result.frameSize.width, 3024);
+  assert.equal(state.result.frameSize.height, 1898);
+  assert.equal(state.result.definition.region.x, shipped.definition.region.x * (3024 / 1920));
+  assert.equal(state.result.definition.region.y, shipped.definition.region.y * (1898 / 1080));
+  assert.equal(state.result.source, 'preset');
+  assert.equal(state.result.fallback, null);
+  assert.equal(shipped.frameSize.width, 1920);
   assertAligned(h);
 });
 

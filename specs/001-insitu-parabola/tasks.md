@@ -4,7 +4,7 @@
 
 **Prerequisites**: plan.md, spec.md, research.md, data-model.md, contracts/, quickstart.md
 
-**进度（2026-10-02）**: T001–T016、T018 已完成。MVP 已接受，正式视频仍未提供。故事 2 的 T019–T030 已派发，两人写权限见 [`ownership.md`](./ownership.md)。
+**进度（2026-10-02）**: T001–T018 已完成。P0 主路径的 Chrome 手工验收已由操作者确认为通过，见 `docs/BreakGlass-frontend-validation.md`。仓库仍未提交正式视频文件。故事 2 的 T019、T020、T030 仍开着。
 
 **Tests**: 故事 1 保留已有纯函数夹具。故事 2 先写超时、取消和替身的失败测试。故事 3 的四画幅测试已登记为 T031，本轮不实现。
 
@@ -74,7 +74,7 @@
 - [x] T015 [US1] 收紧 `extension/src/page/main.js`：暂停且时间匹配时按钮和 Alt+B 能唤醒；已有覆盖层时不重复挂层；来源持续显示「预先准备的示例」；点击舞台中覆盖层外部退出并保持暂停；SVG 绘制和拖动使用当前视频的 `videoWidth` 与 `videoHeight`；窗口变化时重算内容矩形
 - [x] T016 [US1] 在 `extension/assets/video/README.md` 写明正式视频文件尚未提供。`extension/src/page/main.js` 在视频缺失或打不开时只显示说明，不挂覆盖层，不用夹具曲线冒充已经对齐的真实画面
 
-**Checkpoint**: 夹具主路径已经能离线跑通。T011、T012、T015 已收口；正式视频、原位素材和 T017 浏览器手工记录完成前，故事 1 仍不算最终验收通过。不要继续实现故事 2
+**Checkpoint**: 夹具主路径已经能离线跑通。T011、T012、T015、T017 已收口。操作者确认 Chrome 主路径无问题。仓库仍未提交正式视频文件。
 
 ---
 
@@ -82,7 +82,7 @@
 
 **Purpose**: 只验收已拆分的 MVP
 
-- [ ] T017 按 `specs/001-insitu-parabola/quickstart.md` 第 1 节加载未打包扩展并记录结果。不执行该文件第 2 节和第 3 节。manifest、入口和脚本预检已通过；Chrome 手工点击因当前环境无可控窗口、正式视频未提供而阻塞
+- [x] T017 按 `specs/001-insitu-parabola/quickstart.md` 第 1 节加载未打包扩展并记录结果。不执行该文件第 2 节和第 3 节。2026-10-02 操作者确认 Chrome 主路径通过、未发现问题，记录见 `docs/BreakGlass-frontend-validation.md`。环境为 Google Chrome、Linux 虚拟机；具体版本号、发行版和正式视频文件未写入该记录
 - [x] T018 [P] 对照 `specs/001-insitu-parabola/contracts/extension-surface.md` 检查 `extension/manifest.json`，确认没有主机权限、内容脚本和远程脚本。2026-10-02 核对通过：权限与主机权限为空，未声明 `content_scripts`，扩展页 CSP 为 `script-src 'self'; object-src 'self'`
 
 ---
@@ -271,3 +271,4 @@
 | 日期 | 变更 | 验证 |
 | --- | --- | --- |
 | 2026-10-02 | 从 main 接上故事 3（T031–T039）。故事 2 保留两人独占路径，并按 MVP 已接受开始实现 | 冲突已消掉；任务编号 T001–T039 各出现一次 |
+| 2026-10-02 | T017 改为完成。操作者确认 Chrome 主路径通过 | 记录见 `docs/BreakGlass-frontend-validation.md`；未写浏览器版本、机器、P50/P95 和四画幅比例 |
