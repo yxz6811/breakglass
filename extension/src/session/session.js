@@ -16,9 +16,7 @@
       this.targetTime = targetTime;
       this.frameSize = frameSize;
       this.timeTolerance = timeTolerance;
-      // externalAttempt 由唤醒协调器（session/wake.js）消费：off 直接使用预热结果，
-      // hang / invalid / late 先进入 waiting，再由看门狗或外部候选决定结果。
-      // 会话本身不再因为非 off 而拒绝，但任何路径都不得把预制结果标成识别成功。
+      // 非 off 也可以等待。看门狗决定能否回退，会话不把预制结果标成识别成功。
       this.externalAttempt = externalAttempt;
       this.error = null;
       this.status = 'paused-ready';
@@ -42,6 +40,7 @@
       const requestId = `request-${++this.sequence}`;
       this.pending = { requestId, videoId: this.videoId, time: currentTime };
       this.current = null;
+      this.error = null;
       this.status = 'waiting';
       return { ok: true, requestId };
     }
@@ -73,16 +72,23 @@
     }
 
     /**
-     * 进入可恢复错误：清空等待与当前结果，但保留视频与目标时间，便于重试或退出。
-     * 失败路径不得留下任何可绘制结果。
-     * @param {string} code
+     * 结束等待并进入可恢复错误。不留下可绘制曲线。
+     * 页面传 fail(code, message)；唤醒协调器也可以传 fail({ code, message })。
+     * @param {string | { code?: string, message?: string }} codeOrReason
      * @param {string} [message]
+     * @returns {ReturnType<SessionController['getState']>}
      */
-    fail(code, message) {
+    fail(codeOrReason, message) {
+      const reason = codeOrReason && typeof codeOrReason === 'object'
+        ? codeOrReason
+        : { code: codeOrReason, message };
       this.pending = null;
       this.current = null;
       this.status = 'recoverable-error';
-      this.error = { code: code || 'recoverable_error', message: message || '结果不可用，请重试或退出。' };
+      this.error = {
+        code: reason.code || 'recoverable_error',
+        message: reason.message || '结果不可用，请重试或退出。'
+      };
       return this.getState();
     }
 

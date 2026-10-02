@@ -1,125 +1,129 @@
+/**
+ * 外部尝试的确定性替身。只模拟 off、hang、invalid、late，不访问网络。
+ */
 (function (root, factory) {
   const api = factory();
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   root.BreakGlass = root.BreakGlass || {};
   root.BreakGlass.attempt = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this, function () {
-  // 故事 2 的确定性替身：用来演练「等待外部结果」的四种情况。
-  // 它不联网、不带地址或密钥，也不是半成品识别：只按 externalAttempt 返回可预期的候选。
-  const ATTEMPT_MODES = ['off', 'hang', 'invalid', 'late'];
-  const DEFAULT_LATE_AFTER_MS = 2200;
+  /**
+   * 复制一份普通数据，避免调用方事后改动这次候选。
+   * @param {unknown} value
+   * @returns {unknown}
+   */
+  function copyValue(value) {
+    if (Array.isArray(value)) return value.map(copyValue);
+    if (value && typeof value === 'object') {
+      const copy = {};
+      for (const name of Object.keys(value)) copy[name] = copyValue(value[name]);
+      return copy;
+    }
+    return value;
+  }
 
-  function frozenContext(ctx) {
+  /**
+   * 用冻结上下文盖住预制结果的定位字段。没有预制时返回 null。
+   * @param {object | null | undefined} source
+   * @param {object} ctx
+   * @returns {object | null}
+   */
+  function bindPreset(source, ctx) {
+    if (!source || typeof source !== 'object') return null;
+    const candidate = copyValue(source);
+    candidate.requestId = ctx.requestId;
+    candidate.videoId = ctx.videoId;
+    candidate.time = ctx.time;
+    candidate.frameSize = { width: ctx.frameSize.width, height: ctx.frameSize.height };
+    candidate.source = 'preset';
+    candidate.fallback = null;
+    return candidate;
+  }
+
+  /**
+   * 非法候选。有预制就拿掉 definition；页面没传入预制时，用一份不能通过校验的 vision 结果。
+   * @param {object | null | undefined} source
+   * @param {object} ctx
+   * @returns {object}
+   */
+  function invalidCandidate(source, ctx) {
+    const candidate = bindPreset(source, ctx);
+    if (candidate) {
+      delete candidate.definition;
+      return candidate;
+    }
     return {
       requestId: ctx.requestId,
       videoId: ctx.videoId,
       time: ctx.time,
-      frameSize: { width: ctx.frameSize.width, height: ctx.frameSize.height }
-    };
-  }
-
-  // 非法候选：故意越出 frameSize 的 region，并标成本功能没有生产者的 vision。
-  function buildInvalidCandidate(ctx) {
-    const frozen = frozenContext(ctx);
-    return {
-      requestId: frozen.requestId,
-      videoId: frozen.videoId,
-      time: frozen.time,
-      frameSize: frozen.frameSize,
+      frameSize: ctx.frameSize ? { width: ctx.frameSize.width, height: ctx.frameSize.height } : null,
       source: 'vision',
-      fallback: null,
-      definition: {
-        equationId: 'fixture.parabola',
-        parameters: {
-          a: { initial: 1, min: 0.4, max: 1.2, step: 0.1 },
-          h: { initial: 0, min: -2, max: 2, step: 0.1 },
-          k: { initial: 0, min: -2, max: 2, step: 0.1 }
-        },
-        dragParameter: 'h',
-        domain: { min: -4, max: 4 },
-        range: { min: -4, max: 4 },
-        yAxis: 'up',
-        region: { x: frozen.frameSize.width - 10, y: 0, width: 100, height: 100 }
+      fallback: null
+    };
+  }
+
+  /**
+   * @param {{ mode?: string, clock?: { schedule: Function, clear: Function }, lateAfterMs?: number, preset?: object }} options
+   * @returns {{ start: Function, abort: Function }}
+   */
+  function createAttempt({ mode, clock, lateAfterMs = 1500, preset } = {}) {
+    const handles = new Set();
+    let stopped = false;
+
+    /**
+     * 清掉尚未触发的计时句柄。
+     */
+    function clearHandles() {
+      if (!clock || typeof clock.clear !== 'function') {
+        handles.clear();
+        return;
       }
-    };
-  }
-
-  // 迟到候选：结构合法，但编号已经过期，唯一被拒绝的原因就是「迟到」。
-  function buildLateCandidate(ctx) {
-    const frozen = frozenContext(ctx);
-    return {
-      requestId: frozen.requestId + '-late',
-      videoId: frozen.videoId,
-      time: frozen.time,
-      frameSize: frozen.frameSize,
-      source: 'preset',
-      fallback: null,
-      definition: {
-        equationId: 'fixture.parabola',
-        parameters: {
-          a: { initial: 1, min: 0.4, max: 1.2, step: 0.1 },
-          h: { initial: 0, min: -2, max: 2, step: 0.1 },
-          k: { initial: 0, min: -2, max: 2, step: 0.1 }
-        },
-        dragParameter: 'h',
-        domain: { min: -4, max: 4 },
-        range: { min: -4, max: 4 },
-        yAxis: 'up',
-        region: { x: 0, y: 0, width: 100, height: 100 }
-      }
-    };
-  }
-
-  function defaultClock() {
-    return {
-      now: () => Date.now(),
-      schedule: (delayMs, handler) => setTimeout(handler, delayMs),
-      clear: (handle) => clearTimeout(handle)
-    };
-  }
-
-  function createAttempt(options = {}) {
-    const mode = options.mode === undefined ? 'off' : options.mode;
-    if (ATTEMPT_MODES.indexOf(mode) < 0) throw new Error('未知 externalAttempt: ' + mode);
-    const clock = options.clock || defaultClock();
-    const lateAfterMs = Number.isFinite(options.lateAfterMs) ? options.lateAfterMs : DEFAULT_LATE_AFTER_MS;
-    let handle = null;
-    let aborted = false;
-
-    function abort() {
-      aborted = true;
-      if (handle !== null) { clock.clear(handle); handle = null; }
+      for (const id of handles) clock.clear(id);
+      handles.clear();
     }
 
+    /**
+     * @param {object} ctx
+     * @returns {Promise<{ ctx: object, candidate: object } | never>}
+     */
     function start(ctx) {
-      if (aborted || mode === 'off') return Promise.resolve(null);
-      // hang：外部尝试永远不返回。没有定时器，也没有结果。
-      if (mode === 'hang') return new Promise(() => {});
-      const candidate = mode === 'invalid' ? buildInvalidCandidate(ctx) : buildLateCandidate(ctx);
-      const delay = mode === 'invalid' ? 0 : lateAfterMs;
-      return new Promise((resolve) => {
-        handle = clock.schedule(delay, () => {
-          handle = null;
-          if (aborted) return;
-          resolve({ ctx: frozenContext(ctx), candidate });
+      if (stopped || mode === 'hang') return new Promise(() => {});
+      if (mode === 'off') return Promise.resolve({ ctx, candidate: bindPreset(preset, ctx) });
+      if (mode === 'invalid') {
+        return new Promise((resolve) => {
+          const id = clock.schedule(0, () => {
+            handles.delete(id);
+            if (stopped) return;
+            resolve({ ctx, candidate: invalidCandidate(preset, ctx) });
+          });
+          handles.add(id);
         });
-      });
+      }
+      if (mode === 'late') {
+        return new Promise((resolve) => {
+          const id = clock.schedule(lateAfterMs, () => {
+            handles.delete(id);
+            if (stopped) return;
+            const candidate = bindPreset(preset, ctx);
+            if (!candidate) return;
+            resolve({ ctx, candidate });
+          });
+          handles.add(id);
+        });
+      }
+      return new Promise(() => {});
     }
 
-    return {
-      mode,
-      start,
-      abort,
-      isAborted: () => aborted,
-      pendingTimers: () => (handle === null ? 0 : 1)
-    };
+    /**
+     * 放弃当前尝试。已排队的回调不再兑现。
+     */
+    function abort() {
+      stopped = true;
+      clearHandles();
+    }
+
+    return { start, abort };
   }
 
-  return {
-    ATTEMPT_MODES,
-    DEFAULT_LATE_AFTER_MS,
-    createAttempt,
-    buildInvalidCandidate,
-    buildLateCandidate
-  };
+  return { createAttempt };
 });
