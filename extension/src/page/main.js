@@ -330,6 +330,7 @@
       resetButton.disabled = true;
       slider.disabled = true;
       wakeButton.disabled = true;
+      exitButton.disabled = false;
       setSource(null, '正在等待外部结果；超过 1.5 秒会自动改用预先准备的示例，可随时取消。');
       setStatus('正在等待外部结果…');
       if (cancelButton.focus) cancelButton.focus();
@@ -342,6 +343,7 @@
       resetButton.disabled = true;
       slider.disabled = true;
       wakeButton.disabled = true;
+      exitButton.disabled = false;
       setSource(null, '没有可用的准备结果，或外部结果不可用；可以重试或退出。');
       setStatus(errorMessage(outcome.reason));
       if (retryButton.focus) retryButton.focus();
