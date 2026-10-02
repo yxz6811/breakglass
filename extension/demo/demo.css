@@ -269,7 +269,8 @@ button:disabled, input:disabled { opacity: 0.45; }
 @keyframes lg-flash { from { background: rgba(113, 221, 255, 0.18); } to { background: transparent; } }
 
 /* ---------- 曲线入场：只做光晕，不推迟首帧（规范 §5.2）---------- */
-.curve-overlay { cursor: grab; }
+.curve-overlay { cursor: grab; pointer-events: all; }
+.curve-overlay path.curve-hit { pointer-events: stroke; }
 .curve-overlay:active { cursor: grabbing; }
 .curve-overlay.is-entering path { animation: lg-curve var(--motion-enter) var(--ease-out); }
 @keyframes lg-curve { from { filter: drop-shadow(0 0 10px rgba(113, 221, 255, 0.85)); } to { filter: none; } }

@@ -11,7 +11,7 @@
 **进度**: T001–T016、T018 已完成（2026-10-02）。提交配置保持 `visionAdapter: off`。T017 的 quickstart 手工验收**未执行**：当前环境没有可控浏览器会话。修改 `extension/src/session/wake.js` 之前必须先完成 T002。两人同时开发时的写权限和样例装入方式以 [`ownership.md`](./ownership.md) 为准。
 
 
-**执行记录（2026-10-02）**: 宪法修订到 1.4.0；新增 `visionAdapter`（提交值 `off`）与 `loadVisionFixture`；`validateCurveResult` 增加 `allowVision` 下的 `evidence` / `confidence` 规则；`wake.js` 在 `fixture` + `off` 时按样例自身画幅先校验、再按当前帧装订，失败一律 `external_unavailable`；`session.copyResult` 抄写 `evidence`；页面按 `evidence` 显示「识别结果」并单独记 `vision-decision`。`node --test` 182 项通过。
+**执行记录（2026-10-02）**: 宪法修订到 1.4.0；新增 `visionAdapter`（提交值 `off`）与 `loadVisionFixture`；`validateCurveResult` 增加 `allowVision` 下的 `evidence` / `confidence` 规则；`wake.js` 在 `fixture` + `off` 时先校验样例自身，画幅与当前帧不一致则直接 `external_unavailable`，不换算成识别成功；`session.copyResult` 抄写 `evidence`；页面按 `evidence` 显示「识别结果」并单独记 `vision-decision`。`node --test` 通过。
 未执行：T017 的手工演练与 SC-002；包内样例的 `frameSize` 仍需按实际视频改写。
 ## Format: `[ID] [P?] [Story] Description`
 

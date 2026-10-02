@@ -121,9 +121,16 @@ test('目标时间默认是 6 秒，会话仍跟随输入框当前值', async ()
     assert.equal(harness.overlay(), null);
     video.currentTime = 4;
     video.dispatch('pause');
+    assert.equal(elements['wake-button'].disabled, true, '准备结果是 6 秒，停在 4 秒不能破壁');
+    elements['wake-button'].dispatch('click');
+    assert.equal(harness.overlay(), null);
+    assert.match(elements['state-label'].textContent, /6/);
+    elements['target-time'].value = '6.1';
+    video.currentTime = 6.1;
+    video.dispatch('pause');
     assert.equal(elements['wake-button'].disabled, false);
     elements['wake-button'].dispatch('click');
-    assert.ok(harness.overlay(), '输入框改成 4 并暂停在 4 应出现曲线');
+    assert.ok(harness.overlay(), '停在准备结果时间容差内仍可破壁');
   } finally {
     harness.restore();
   }
