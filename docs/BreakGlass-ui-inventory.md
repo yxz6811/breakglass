@@ -38,7 +38,7 @@
 | 10 | 水平位置 `h` | `#parameter-h` + `#parameter-h-value` | range + output | 禁用，值 `0`，输出 `—` | 仅 `interactive` | 同上（`setParameter('h', …)`） | 同上；也是**控制点拖动**写入的参数 | ← / → 原生 |
 | 11 | 顶点高度 `k` | `#parameter-k` + `#parameter-k-value` | range + output | 禁用，值 `0`，输出 `—` | 仅 `interactive` | 同上（`setParameter('k', …)`） | 同上 | ← / → 原生 |
 | 12 | 目标时间 | `#target-time` | number | `value=6`、`min=0`、`step=0.1` | 始终可编辑 | 破壁门禁与定位依据 | 不在目标时间时破壁禁用 | ↑ / ↓ 原生 |
-| 13 | 控制点 | 覆盖层 `<circle r=10 tabindex=0>` | SVG circle | 随覆盖层出现 | 仅 `interactive` | `pointerdown/move/up` 拖动 | 写入 `dragParameter`（当前 `h`），钳制在范围内 | 可聚焦 |
+| 13 | 控制点 | 覆盖层 `<circle r=10 tabindex=0>` + 透明热区 `<circle r=18>` | SVG circle | 随覆盖层出现 | 仅 `interactive` | `pointerdown/move/up` 拖动 | 写入 `dragParameter`（当前 `h`），钳制在范围内；`cursor: grab / grabbing` | 可聚焦 |
 | 14 | 等待条 | `#waiting-bar` + `#waiting-progress` | div + span | **隐藏** | 仅 `waiting` | 无交互（提示 + 进度） | 1.5s 线性进度条，`--wait-ms` = `fallbackAfterMs` | — |
 | 15 | 来源芯片 | `#source-label` | span | `等待素材` | 始终 | 无交互（状态） | 见第 3 节；超时回退加虚线、非 preset 加警示色 | — |
 | 16 | 视频原生控件 | `<video controls>` | video | 始终 | 始终 | 浏览器自带播放条 | 空格保留给播放器（不作为破壁键） | — |
@@ -247,11 +247,11 @@
 ## 10. 设计时需要注意的点
 
 1. **状态区高度固定**：`#state-label` 最小高度 48px，新设计请保留。
-2. **焦点管理**：进入等待焦点移到取消，进入可恢复错误焦点移到重试；`role=status` 固定 `aria-live="polite"`（**规范 §3.3 要求错误态改 `assertive`，目前未实现**，见待实现清单）。
+2. **焦点与播报**：进入等待焦点移到取消，进入可恢复错误焦点移到重试；`role=status` 默认 `aria-live="polite"`，**错误态由 `setStatus(…, 'error')` 切到 `assertive`**（已实现）。
 3. **覆盖层定位**：靠内联 `position: absolute` + `z-index: 2`（`.video-stage` 是 `display: grid`）。若改用 CSS 类，必须在 CSS 里补 `position: absolute`。
 4. **等待条已实现**：spinner + 与 `fallbackAfterMs` 绑定的线性进度；`prefers-reduced-motion` 下退化为静态。
 5. **回退动画预算**：判定超时到首个可见 SVG 帧只有 100ms，入场动画不得推迟首帧。
-6. **禁用态不能只靠颜色**：现有实现用 `opacity`，规范要求同时给出原因（`aria-describedby` 或 tooltip）。
+6. **禁用态原因**（已实现）：`#wake-button` / `#reset-button` 通过 `aria-describedby` 关联视觉隐藏的 `#wake-reason` / `#reset-reason`；按钮可用时原因清空。
 7. **识别结果必须与预制可区分**（已实现）：「识别结果」是 accent 态而不是警示态，且不显示可信程度百分比。
 8. **空格不作为破壁键**，`Alt+B` 与 `Esc` 在底栏标注。
 
@@ -262,14 +262,14 @@
 | 识别结果适配（002） | 已实现（T001–T018）；**T017 手工验收未执行** |
 | `【P1】` 真实识别请求、单帧上传、感知代理、Pyodide | 不派发 |
 | 顶点拖动同时改 `h` 与 `k` | 待决策（analysis §8.2） |
-| 错误态 `aria-live="assertive"` | 待实现 |
-| 禁用态原因说明、`aria-valuetext`、控制点热区 | 待实现 |
+| 性能读数展示、空素材与视频错误的区分、目标时间对齐提示 | 待实现（见 [`BreakGlass-ui-todo.md`](./BreakGlass-ui-todo.md)） |
 | 正式演示视频与四画幅真机验收（T030/T038） | 未执行 |
 
 ## 12. 变更记录
 
 | 版本 | 日期 | 变更 |
 | --- | --- | --- |
+| 2.2.0 | 2026-10-02 | 可访问性补齐：错误态 `aria-live` 切 `assertive`；破壁/重置的禁用原因走 `aria-describedby` + `sr-only` 节点；三个滑块补 `aria-valuetext`（取值 + 范围）；控制点加透明 `r=18` 热区与 `grab/grabbing` 光标；顺带修掉「等待与可恢复错误时退出按钮仍禁用」的真实缺陷（替身此前未模拟 HTML 初始 `disabled`，属假通过） |
 | 2.1.0 | 2026-10-02 | 对齐 `前端计划02@4239d35`：识别结果适配（002）已实现——`visionAdapter` 开关落地并保持 `off`、来源芯片新增「识别结果」为 accent 态、说明区新增「尚未接通外部识别」、识别路径单独记 `vision-decision`、覆盖层 aria-label 改为中性表述；§5 由「规划」改为「已实现」并补实现记录、实现状态与未执行项 |
 | 2.0.0 | 2026-10-02 | 同步到 `main@0c1cafb`：顶栏改为 8 个圆形玻璃按键 + 来源芯片、三个参数滑块（新增 `setParameter` 通道）、等待条、全屏按钮、目标时间初值 6 秒、预制画幅按比例换算；新增 §5「P1 规划：识别结果适配」的新增参数、来源文案、计时名、冲突点与门禁；文案表、令牌表与调试输出同步 |
 | 1.0.0 | 2026-10-02 | 首次汇总按钮、控件、状态、文案与参数清单 |

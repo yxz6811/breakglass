@@ -41,6 +41,8 @@
   const waitingBar = $('#waiting-bar');
   const waitingProgress = $('#waiting-progress');
   const fullscreenButton = $('#fullscreen-button');
+  const wakeReason = $('#wake-reason');
+  const resetReason = $('#reset-reason');
   const playTip = playToggle ? playToggle.querySelector('.lg-tip') : null;
 
   /**
@@ -102,7 +104,10 @@
 
   function setStatus(message, variant) {
     stateLabel.textContent = message;
-    if (stateLabel.classList) stateLabel.classList.toggle('is-error', variant === 'error');
+    const isError = variant === 'error';
+    if (stateLabel.classList) stateLabel.classList.toggle('is-error', isError);
+    // 失败要立刻播报；普通状态变化保持礼貌播报，避免打断用户。
+    if (stateLabel.setAttribute) stateLabel.setAttribute('aria-live', isError ? 'assertive' : 'polite');
   }
 
   function setSlidersEnabled(enabled) {
@@ -337,6 +342,10 @@
       if (!Number.isFinite(value)) return;
       row.input.value = String(value);
       row.output.textContent = value.toFixed(1);
+      const item = definition.parameters[row.name];
+      if (item && row.input.setAttribute) {
+        row.input.setAttribute('aria-valuetext', value.toFixed(1) + '（范围 ' + item.min + ' 到 ' + item.max + '）');
+      }
     });
   }
 
@@ -363,7 +372,11 @@
     overlay.style.position = 'absolute';
     overlay.style.zIndex = '2';
     overlay.setAttribute('aria-label', '可拖动的抛物线结果');
-    overlay.innerHTML = '<path fill="none" stroke="#71ddff" stroke-width="3" stroke-linecap="round"></path><circle r="10" fill="#08111f" stroke="#ffffff" stroke-width="3" tabindex="0"></circle>';
+    // 视觉控制点 r=10，另加一个透明 r=18 的热区圆。热区放在后面，
+    // 这样 querySelector('circle') 仍然拿到可见的控制点，拖动逻辑不用改。
+    overlay.innerHTML = '<path fill="none" stroke="#71ddff" stroke-width="3" stroke-linecap="round"></path>'
+      + '<circle r="10" fill="#08111f" stroke="#ffffff" stroke-width="3" tabindex="0"></circle>'
+      + '<circle class="curve-hit" r="18" fill="transparent" stroke="none" aria-hidden="true"></circle>';
     stage.appendChild(overlay);
 
     overlay.addEventListener('pointerdown', (event) => {
@@ -427,6 +440,7 @@
     playToggle.setAttribute('aria-label', playLabel + '视频');
     if (playTip) playTip.textContent = playLabel;
     timeLabel.textContent = `当前时间：${Number.isFinite(video.currentTime) ? video.currentTime.toFixed(1) : '—'}`;
+    syncDisabledReasons();
   }
 
   // 识别判定从发起到进入交互或可恢复失败的耗时单独记一条，不写进预制回退那组。
@@ -442,8 +456,36 @@
    * 只按会话状态渲染。超时耗时用页面自己的两次 mark，不读唤醒回调里的时间戳。
    * @param {object} state
    */
+  /**
+   * 禁用原因只在这一处生成：按钮不可用时把原因写进视觉隐藏的说明节点，
+   * 由 aria-describedby 关联，读屏与 tooltip 都能解释为什么不能点。
+   */
+  function syncDisabledReasons() {
+    if (wakeReason) {
+      let reason = '';
+      if (wakeButton.disabled) {
+        const state = sessionState();
+        if (state && state.status === 'waiting') reason = '正在等待外部结果，可以先取消或退出。';
+        else if (overlay) reason = '交互层已经出现，不需要再次破壁。';
+        else if (!video.paused) reason = '请先暂停视频。';
+        else if (!atTarget()) reason = '请把视频暂停在目标时间 ±0.2 秒内。';
+        else if (!presetResult) reason = '当前没有可用的准备结果。';
+        else reason = '当前还不能破壁。';
+      }
+      wakeReason.textContent = reason;
+    }
+    if (resetReason) {
+      resetReason.textContent = resetButton.disabled ? '需要先出现可交互的曲线再重置。' : '';
+    }
+  }
+
   function applyState(state) {
     if (!state) return;
+    renderState(state);
+    syncDisabledReasons();
+  }
+
+  function renderState(state) {
     // 取消、退出、播放或离开目标时间：判定没有结算，不记账。
     if (state.status === 'paused-ready') visionStartedAt = null;
     if (state.status === 'interactive') {
@@ -484,6 +526,8 @@
       resetButton.disabled = true;
       setSlidersEnabled(false);
       wakeButton.disabled = true;
+      // 等待态必须能退出：FR-010 的可操作路径 + FR-011 的取消之外还要有退路。
+      exitButton.disabled = false;
       setPrimaryAction('wake');
       setWaitingBar(true);
       setSource(null, '正在等待外部结果；超过 1.5 秒会自动改用预先准备的示例，可随时取消。');
@@ -499,6 +543,7 @@
       resetButton.disabled = true;
       setSlidersEnabled(false);
       wakeButton.disabled = true;
+      exitButton.disabled = false;
       setPrimaryAction('retry');
       setWaitingBar(false);
       setSource(null, '没有可用的准备结果，或外部结果不可用；可以重试或退出。');
