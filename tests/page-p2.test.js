@@ -92,25 +92,45 @@ test('invalid：非法外部结果进入可恢复错误并提供重试', async (
   }
 });
 
-test('目标时间跟随输入框：默认仍是 12.5，改成 6 并暂停在 6 可以破壁', async () => {
+test('目标时间跟随输入框：默认是预制时间，改到别的时间并暂停在那里可以破壁', async () => {
   const harness = await createHarness();
   try {
     const { elements, video } = harness;
-    assert.equal(elements['target-time'].value, '12.5');
+    assert.equal(elements['target-time'].value, '6');
     assert.equal(elements['state-label'].textContent, '正式视频素材尚未提供，加载视频后可验证交互。');
     assert.equal(elements['asset-empty'].hidden, false);
     assert.equal(video.src, undefined);
     harness.ready();
-    video.currentTime = 6;
+    video.currentTime = 4;
     video.dispatch('pause');
     assert.equal(elements['wake-button'].disabled, true);
     elements['wake-button'].dispatch('click');
     assert.equal(harness.overlay(), null);
-    elements['target-time'].value = '6';
+    elements['target-time'].value = '4';
     video.dispatch('pause');
     assert.equal(elements['wake-button'].disabled, false);
     elements['wake-button'].dispatch('click');
-    assert.ok(harness.overlay(), '输入 6 并暂停在 6 应出现曲线');
+    assert.ok(harness.overlay(), '输入 4 并暂停在 4 应出现曲线');
+  } finally {
+    harness.restore();
+  }
+});
+
+test('只有宽度、高度还是 0 时不把破壁记成准备结果不可用', async () => {
+  const harness = await createHarness();
+  try {
+    const { elements, video } = harness;
+    harness.ready();
+    video.videoWidth = 3024;
+    video.videoHeight = 0;
+    video.currentTime = 6;
+    video.paused = true;
+    video.dispatch('pause');
+    assert.equal(elements['wake-button'].disabled, true);
+    elements['wake-button'].dispatch('click');
+    assert.equal(harness.overlay(), null);
+    assert.equal(elements['state-label'].textContent, '请先暂停在目标时间。');
+    assert.equal(elements['source-label'].textContent, '等待素材');
   } finally {
     harness.restore();
   }

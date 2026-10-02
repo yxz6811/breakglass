@@ -298,6 +298,21 @@ test('a preset authored at another resolution scales onto the current frame', as
   assertAligned(h);
 });
 
+test('an incomplete frame size does not become a preset failure', async () => {
+  const h = harness();
+  const started = h.wake.start({
+    paused: true,
+    currentTime: 12.5,
+    frameSize: { width: 3024, height: 0 }
+  });
+  await flush();
+  assert.equal(started.ok, false);
+  assert.equal(started.code, 'not_ready');
+  assert.equal(h.session.getState().status, 'paused-ready');
+  assert.equal(h.session.getState().result, null);
+  assert.equal(h.changes.length, 0);
+});
+
 test('the shipped preset draws on a 3024×1898 frame paused at 6s', async () => {
   const shipped = require('../extension/assets/presets/demo-parabola.json');
   const frame = { width: 3024, height: 1898 };

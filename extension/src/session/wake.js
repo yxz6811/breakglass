@@ -300,6 +300,11 @@
      * @returns {{ ok: boolean, code?: string, message?: string, requestId?: string }}
      */
     function start(input = {}) {
+      const width = input.frameSize && input.frameSize.width;
+      const height = input.frameSize && input.frameSize.height;
+      if (!(width > 0) || !(height > 0)) {
+        return { ok: false, code: 'not_ready', message: '请先暂停在目标时间。' };
+      }
       const begun = session.beginWait({ paused: input.paused, currentTime: input.currentTime });
       if (!begun.ok) {
         publish();
