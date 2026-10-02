@@ -16,10 +16,11 @@
       this.targetTime = targetTime;
       this.frameSize = frameSize;
       this.timeTolerance = timeTolerance;
-      // Only the deterministic, prewarmed P0 path may create an interactive
-      // session. Values such as `hang`, `invalid`, and `late` belong to the
-      // future external-attempt story and must never be treated as success.
+      // externalAttempt 由唤醒协调器（session/wake.js）消费：off 直接使用预热结果，
+      // hang / invalid / late 先进入 waiting，再由看门狗或外部候选决定结果。
+      // 会话本身不再因为非 off 而拒绝，但任何路径都不得把预制结果标成识别成功。
       this.externalAttempt = externalAttempt;
+      this.error = null;
       this.status = 'paused-ready';
       this.pending = null;
       this.current = null;
@@ -35,9 +36,6 @@
       if (!this.canWake({ paused, currentTime })) {
         return { ok: false, code: 'not_ready', message: '请先暂停在目标时间。' };
       }
-      if (this.externalAttempt !== 'off') {
-        return { ok: false, code: 'external_attempt_disabled', message: '当前配置未启用本地预制交互。' };
-      }
       if (this.pending || this.current || this.status === 'waiting' || this.status === 'interactive') {
         return { ok: false, code: 'session_active', message: '当前已有交互会话。' };
       }
@@ -49,9 +47,6 @@
     }
 
     resolve(result) {
-      if (this.externalAttempt !== 'off') {
-        return { ok: false, code: 'external_attempt_disabled', message: '当前配置未启用本地预制交互。' };
-      }
       if (!this.pending) return { ok: false, code: 'no_pending', message: '当前没有等待中的请求。' };
       if (!validate) return { ok: false, code: 'validator_unavailable', message: '结果校验器不可用。' };
       const expectedRequestId = this.pending.requestId;
@@ -73,7 +68,22 @@
       };
       this.pending = null;
       this.status = 'interactive';
+      this.error = null;
       return { ok: true, session: this.getState() };
+    }
+
+    /**
+     * 进入可恢复错误：清空等待与当前结果，但保留视频与目标时间，便于重试或退出。
+     * 失败路径不得留下任何可绘制结果。
+     * @param {string} code
+     * @param {string} [message]
+     */
+    fail(code, message) {
+      this.pending = null;
+      this.current = null;
+      this.status = 'recoverable-error';
+      this.error = { code: code || 'recoverable_error', message: message || '结果不可用，请重试或退出。' };
+      return this.getState();
     }
 
     updateParameter(name, value) {
@@ -100,6 +110,7 @@
       this.pending = null;
       this.current = null;
       this.status = 'paused-ready';
+      this.error = null;
       return this.getState();
     }
 
@@ -107,6 +118,7 @@
       this.pending = null;
       this.current = null;
       this.status = 'paused-ready';
+      this.error = null;
       return this.getState();
     }
 

@@ -2,7 +2,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const { SessionController } = require('../extension/src/session/session');
 
-function result(requestId) {
+function result(requestId, overrides = {}) {
   return {
     requestId,
     videoId: 'fixture-parabola',
@@ -22,7 +22,8 @@ function result(requestId) {
       range: { min: -4, max: 4 },
       yAxis: 'up',
       region: { x: 100, y: 80, width: 640, height: 360 }
-    }
+    },
+    ...overrides
   };
 }
 
@@ -60,17 +61,37 @@ test('old request results cannot replace a newer wait', () => {
   assert.equal(session.resolve(result(second.requestId)).ok, true);
 });
 
-test('non-off external attempts never enter interactive or report success', () => {
+test('non-off external attempts wait, and never report vision success', () => {
   for (const externalAttempt of ['hang', 'invalid', 'late']) {
     const session = controller({ externalAttempt });
-    const denied = session.beginWait({ paused: true, currentTime: 12.5 });
-    assert.equal(denied.ok, false);
-    assert.equal(denied.code, 'external_attempt_disabled');
-    assert.equal(session.getState().status, 'paused-ready');
-    assert.equal(session.resolve(result('request-never-created')).ok, false);
+    const started = session.beginWait({ paused: true, currentTime: 12.5 });
+    assert.equal(started.ok, true);
+    assert.equal(session.getState().status, 'waiting');
+    assert.equal(session.getState().result, null, '等待中不得有可绘制结果');
+    // 外部候选如果标成 vision，仍然被确定性校验拒绝（本功能没有 vision 生产者）。
+    assert.equal(session.resolve(result(started.requestId, { source: 'vision' })).ok, false);
     assert.notEqual(session.getState().status, 'interactive');
     assert.equal(session.getState().result, null);
+    // 失败路径只留下可恢复错误，不留下曲线。
+    session.fail('external_invalid', '外部结果不可用，未进入交互。');
+    assert.equal(session.getState().status, 'recoverable-error');
+    assert.equal(session.getState().result, null);
+    // 可恢复错误之后可以重新等待。
+    assert.equal(session.beginWait({ paused: true, currentTime: 12.5 }).ok, true);
   }
+});
+
+test('fail() clears the pending state and keeps the reason for retry', () => {
+  const session = controller();
+  const pending = session.beginWait({ paused: true, currentTime: 12.5 });
+  const state = session.fail('no_preset', '当前帧没有可用的准备结果，无法进入交互。');
+  assert.equal(state.status, 'recoverable-error');
+  assert.equal(state.requestId, null);
+  assert.equal(state.result, null);
+  assert.equal(session.error.code, 'no_preset');
+  assert.equal(session.resolve(result(pending.requestId)).ok, false);
+  assert.equal(session.cancel().status, 'paused-ready');
+  assert.equal(session.error, null);
 });
 
 test('only one session may be active at a time', () => {

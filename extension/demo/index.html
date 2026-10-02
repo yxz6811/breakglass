@@ -9,6 +9,9 @@
     <script defer src="../src/curve/evaluate.js"></script>
     <script defer src="../src/geometry/content-rect.js"></script>
     <script defer src="../src/session/session.js"></script>
+    <script defer src="../src/attempt/simulator.js"></script>
+    <script defer src="../src/session/wake.js"></script>
+    <script defer src="../src/telemetry/latency.js"></script>
     <script defer src="../src/preset/load.js"></script>
     <script defer src="../src/page/main.js"></script>
   </head>
@@ -40,7 +43,7 @@
         <aside class="control-panel" aria-label="交互控制">
           <p class="panel-kicker">INTERACTION</p>
           <h2>抛物线参数</h2>
-          <p id="state-label" role="status">请加载演示视频并暂停在目标时间。</p>
+          <p id="state-label" role="status" aria-live="polite">请加载演示视频并暂停在目标时间。</p>
           <button class="primary" type="button" id="wake-button" disabled>破壁 <span>Alt+B</span></button>
           <div class="parameter-row">
             <label for="parameter-h">水平位置 h</label>
@@ -48,6 +51,8 @@
             <input id="parameter-h" type="range" min="-2" max="2" step="0.1" value="0" disabled>
           </div>
           <div class="panel-actions">
+            <button type="button" id="cancel-button" hidden disabled>取消等待</button>
+            <button type="button" id="retry-button" hidden disabled>重试</button>
             <button type="button" id="reset-button" disabled>重置</button>
             <button type="button" id="exit-button" disabled>退出</button>
           </div>
