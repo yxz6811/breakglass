@@ -2,7 +2,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const { SessionController } = require('../extension/src/session/session');
 
-function result(requestId) {
+function result(requestId, overrides = {}) {
   return {
     requestId,
     videoId: 'fixture-parabola',
@@ -22,7 +22,8 @@ function result(requestId) {
       range: { min: -4, max: 4 },
       yAxis: 'up',
       region: { x: 100, y: 80, width: 640, height: 360 }
-    }
+    },
+    ...overrides
   };
 }
 
@@ -68,9 +69,7 @@ test('non-off external attempts can wait but a failed check never becomes intera
     assert.equal(session.getState().status, 'waiting');
     assert.equal(session.getState().result, null);
 
-    const vision = result(pending.requestId);
-    vision.source = 'vision';
-    assert.equal(session.resolve(vision).ok, false);
+    assert.equal(session.resolve(result(pending.requestId, { source: 'vision' })).ok, false);
     assert.notEqual(session.getState().status, 'interactive');
     assert.equal(session.getState().result, null);
     assert.equal(/识别成功/.test(JSON.stringify(session.getState())), false);
@@ -86,7 +85,29 @@ test('non-off external attempts can wait but a failed check never becomes intera
     assert.equal(session.getState().status, 'interactive');
     assert.equal(session.getState().result.source, 'preset');
     assert.equal(/识别成功/.test(JSON.stringify(session.getState())), false);
+
+    const retry = controller({ externalAttempt });
+    const waiting = retry.beginWait({ paused: true, currentTime: 12.5 });
+    assert.equal(retry.resolve(result(waiting.requestId, { source: 'vision' })).ok, false);
+    const failed = retry.fail('external_invalid', '外部结果不可用，未进入交互。');
+    assert.equal(failed.status, 'recoverable-error');
+    assert.equal(failed.result, null);
+    assert.equal(retry.error.code, 'external_invalid');
+    assert.equal(retry.beginWait({ paused: true, currentTime: 12.5 }).ok, true);
   }
+});
+
+test('fail() clears the pending state and keeps the reason for retry', () => {
+  const session = controller();
+  const pending = session.beginWait({ paused: true, currentTime: 12.5 });
+  const state = session.fail('no_preset', '当前帧没有可用的准备结果，无法进入交互。');
+  assert.equal(state.status, 'recoverable-error');
+  assert.equal(state.requestId, null);
+  assert.equal(state.result, null);
+  assert.equal(session.error.code, 'no_preset');
+  assert.equal(session.resolve(result(pending.requestId)).ok, false);
+  assert.equal(session.cancel().status, 'paused-ready');
+  assert.equal(session.error, null);
 });
 
 test('only one session may be active at a time', () => {

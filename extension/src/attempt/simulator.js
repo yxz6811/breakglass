@@ -23,13 +23,14 @@
   }
 
   /**
-   * 用冻结上下文盖住预制结果的定位字段。
-   * @param {object} preset
+   * 用冻结上下文盖住预制结果的定位字段。没有预制时返回 null。
+   * @param {object | null | undefined} source
    * @param {object} ctx
-   * @returns {object}
+   * @returns {object | null}
    */
-  function bindPreset(preset, ctx) {
-    const candidate = copyValue(preset);
+  function bindPreset(source, ctx) {
+    if (!source || typeof source !== 'object') return null;
+    const candidate = copyValue(source);
     candidate.requestId = ctx.requestId;
     candidate.videoId = ctx.videoId;
     candidate.time = ctx.time;
@@ -37,6 +38,28 @@
     candidate.source = 'preset';
     candidate.fallback = null;
     return candidate;
+  }
+
+  /**
+   * 非法候选。有预制就拿掉 definition；页面没传入预制时，用一份不能通过校验的 vision 结果。
+   * @param {object | null | undefined} source
+   * @param {object} ctx
+   * @returns {object}
+   */
+  function invalidCandidate(source, ctx) {
+    const candidate = bindPreset(source, ctx);
+    if (candidate) {
+      delete candidate.definition;
+      return candidate;
+    }
+    return {
+      requestId: ctx.requestId,
+      videoId: ctx.videoId,
+      time: ctx.time,
+      frameSize: ctx.frameSize ? { width: ctx.frameSize.width, height: ctx.frameSize.height } : null,
+      source: 'vision',
+      fallback: null
+    };
   }
 
   /**
@@ -67,16 +90,23 @@
       if (stopped || mode === 'hang') return new Promise(() => {});
       if (mode === 'off') return Promise.resolve({ ctx, candidate: bindPreset(preset, ctx) });
       if (mode === 'invalid') {
-        const candidate = bindPreset(preset, ctx);
-        delete candidate.definition;
-        return Promise.resolve({ ctx, candidate });
+        return new Promise((resolve) => {
+          const id = clock.schedule(0, () => {
+            handles.delete(id);
+            if (stopped) return;
+            resolve({ ctx, candidate: invalidCandidate(preset, ctx) });
+          });
+          handles.add(id);
+        });
       }
       if (mode === 'late') {
         return new Promise((resolve) => {
           const id = clock.schedule(lateAfterMs, () => {
             handles.delete(id);
             if (stopped) return;
-            resolve({ ctx, candidate: bindPreset(preset, ctx) });
+            const candidate = bindPreset(preset, ctx);
+            if (!candidate) return;
+            resolve({ ctx, candidate });
           });
           handles.add(id);
         });

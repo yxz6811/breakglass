@@ -16,8 +16,9 @@
       this.targetTime = targetTime;
       this.frameSize = frameSize;
       this.timeTolerance = timeTolerance;
-      // 非 off 也可以等待。能否进入交互仍由结果校验决定。
+      // 非 off 也可以等待。看门狗决定能否回退，会话不把预制结果标成识别成功。
       this.externalAttempt = externalAttempt;
+      this.error = null;
       this.status = 'paused-ready';
       this.pending = null;
       this.current = null;
@@ -39,6 +40,7 @@
       const requestId = `request-${++this.sequence}`;
       this.pending = { requestId, videoId: this.videoId, time: currentTime };
       this.current = null;
+      this.error = null;
       this.status = 'waiting';
       return { ok: true, requestId };
     }
@@ -65,27 +67,29 @@
       };
       this.pending = null;
       this.status = 'interactive';
+      this.error = null;
       return { ok: true, session: this.getState() };
     }
 
     /**
-     * 结束一次等待并进入可恢复错误。不留下可绘制曲线。
-     * @param {{ code?: string, message?: string }} [reason]
-     * @returns {{ ok: boolean, code: string, message: string, session?: ReturnType<SessionController['getState']> }}
+     * 结束等待并进入可恢复错误。不留下可绘制曲线。
+     * 页面传 fail(code, message)；唤醒协调器也可以传 fail({ code, message })。
+     * @param {string | { code?: string, message?: string }} codeOrReason
+     * @param {string} [message]
+     * @returns {ReturnType<SessionController['getState']>}
      */
-    fail(reason = {}) {
-      if (this.status !== 'waiting' || !this.pending) {
-        return { ok: false, code: 'no_pending', message: '当前没有等待中的请求。' };
-      }
+    fail(codeOrReason, message) {
+      const reason = codeOrReason && typeof codeOrReason === 'object'
+        ? codeOrReason
+        : { code: codeOrReason, message };
       this.pending = null;
       this.current = null;
       this.status = 'recoverable-error';
-      return {
-        ok: true,
-        code: reason.code || 'unavailable',
-        message: reason.message || '当前无法进入交互。',
-        session: this.getState()
+      this.error = {
+        code: reason.code || 'recoverable_error',
+        message: reason.message || '结果不可用，请重试或退出。'
       };
+      return this.getState();
     }
 
     updateParameter(name, value) {
@@ -112,6 +116,7 @@
       this.pending = null;
       this.current = null;
       this.status = 'paused-ready';
+      this.error = null;
       return this.getState();
     }
 
@@ -119,6 +124,7 @@
       this.pending = null;
       this.current = null;
       this.status = 'paused-ready';
+      this.error = null;
       return this.getState();
     }
 
