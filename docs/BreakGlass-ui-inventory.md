@@ -107,7 +107,7 @@
 | 失效清理 | 播放 / 离开目标时间 → 覆盖层与定时器一起清理；`pagehide` 释放全部监听 |
 | 拖拽钳制 | 参数写入前钳制在 `min`–`max` |
 
-## 6. 视觉令牌（来自 `demo.css`）
+## 6. 视觉令牌（来自 `demo.css`；规范定义见 [BreakGlass-visual-spec.md](./BreakGlass-visual-spec.md) §2）
 
 | 令牌 / 样式 | 值 |
 | --- | --- |

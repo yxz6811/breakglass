@@ -52,3 +52,7 @@ node --test
 - [实施计划](specs/001-insitu-parabola/plan.md)
 - [任务清单](specs/001-insitu-parabola/tasks.md)
 - [快速验收](specs/001-insitu-parabola/quickstart.md)
+- [视觉规范](docs/BreakGlass-visual-spec.md)
+- [UI 设计建议](docs/BreakGlass-ui-design-guide.md)
+- [UI 现状清单](docs/BreakGlass-ui-inventory.md)
+- [UI 待实现清单](docs/BreakGlass-ui-todo.md)

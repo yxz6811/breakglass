@@ -2,6 +2,8 @@
 
 > 本分支：`ui`。文档基于 `p2@77423ab` 的界面元素逐项核对；`ui` 分支的控件 id、状态名与设计令牌一致，但 `extension/src/page/main.js` 的接线实现与 `p2` 不同。
 
+> **令牌与动效数值以 [BreakGlass-visual-spec.md](./BreakGlass-visual-spec.md) 为准**；本文只解释每项交互「为什么这样设计」。
+>
 > 覆盖范围：所有**需要用户真实操作**的功能（按钮、输入、滑块、拖动、键盘路径、持续反馈）。
 > 依据：`spec.md`（FR-001~FR-019、SC-001~006）、`docs/BreakGlass-frontend-execution-plan.md`（P-01~P-05、FE-06、§10）、`docs/BreakGlass-constitution.md`（§4/§6/§7）、`AGENTS.md`（§6 动效与可访问性、§7 状态完整性）、`demo/demo.css`（现有令牌）、`p2@77423ab` 的真实行为。
 > 状态与文案的现状清单见 [`BreakGlass-ui-inventory.md`](./BreakGlass-ui-inventory.md)；待实现项见 [`BreakGlass-ui-todo.md`](./BreakGlass-ui-todo.md)。

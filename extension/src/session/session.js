@@ -103,6 +103,24 @@
       return { ok: true, session: this.getState() };
     }
 
+    /**
+     * 滑块调节任意已声明参数。拖动只改 dragParameter，滑块按 parameters 的范围逐个调 a/h/k。
+     * @param {string} name
+     * @param {number} value
+     */
+    setParameter(name, value) {
+      if (this.status !== 'interactive' || !this.current) return { ok: false, code: 'not_interactive' };
+      const definition = this.current.result.definition;
+      if (!Object.prototype.hasOwnProperty.call(definition.parameters, name)) {
+        return { ok: false, code: 'unknown_parameter', message: '未知参数 ' + name + '。' };
+      }
+      if (typeof value !== 'number' || Number.isNaN(value)) {
+        return { ok: false, code: 'invalid_parameter_value', message: '参数必须是有限数值。' };
+      }
+      const item = definition.parameters[name];
+      this.current.currentParameters[name] = clamp(value, item.min, item.max);
+      return { ok: true, session: this.getState() };
+    }
     reset() {
       if (this.status !== 'interactive' || !this.current) return { ok: false, code: 'not_interactive' };
       this.current.currentParameters = { ...this.current.initialParameters };

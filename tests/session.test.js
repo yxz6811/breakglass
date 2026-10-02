@@ -156,3 +156,20 @@ test('exit clears the active session and returns to paused-ready', () => {
   assert.equal(session.exit().status, 'paused-ready');
   assert.equal(session.getState().result, null);
 });
+
+test('setParameter 支持任意已声明参数，并做有限性与范围校验', () => {
+  const session = controller();
+  assert.equal(session.setParameter('a', 1).code, 'not_interactive');
+  const pending = session.beginWait({ paused: true, currentTime: 12.5 });
+  assert.equal(session.resolve(result(pending.requestId)).ok, true);
+  assert.equal(session.setParameter('a', 1.2).session.currentParameters.a, 1.2);
+  assert.equal(session.setParameter('a', 9).session.currentParameters.a, 1.2, '高于 max 时钳制');
+  assert.equal(session.setParameter('a', 0).session.currentParameters.a, 0.4, '低于 min 时钳制');
+  assert.equal(session.setParameter('k', -2).session.currentParameters.k, -2);
+  assert.equal(session.setParameter('nope', 1).code, 'unknown_parameter');
+  assert.equal(session.setParameter('h', Number.NaN).code, 'invalid_parameter_value');
+  assert.equal(session.setParameter('h', '1').code, 'invalid_parameter_value');
+  assert.equal(session.setParameter('h', 1).session.currentParameters.h, 1);
+  assert.equal(session.updateParameter('a', 1).code, 'parameter_not_draggable', '拖动仍只允许 dragParameter');
+  assert.equal(session.reset().session.currentParameters.a, 1, '重置回到初值');
+});
