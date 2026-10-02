@@ -32,7 +32,7 @@
 
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
-对照 `.specify/memory/constitution.md` v1.4.0 与 `docs/BreakGlass-constitution.md` v1.2.0。产品范围以这两份文件为准；本仓库仍只做前端。
+对照 `.specify/memory/constitution.md` v1.3.0 与 `docs/BreakGlass-constitution.md` v1.2.0。产品范围以这两份文件为准；本仓库仍只做前端。
 
 | 门禁 | 结果 | 依据 |
 | --- | --- | --- |
@@ -46,7 +46,7 @@
 | P1 单独开关 | 通过 | `visionAdapter` 默认 `off` |
 | 零侵入与已验证页面 | 通过 | 仍只覆盖扩展内演示页视频 |
 | 不另建唤醒工厂或第二套状态名 | 通过 | 仍是 `createWake`；状态仍是 `paused-ready`、`waiting`、`interactive`、`recoverable-error` |
-| 交互态来源 | 通过 | 宪法 1.4.0：`visionAdapter` 为 `off` 时仍只能是 `preset`；仅为 `fixture` 且 `externalAttempt` 为 `off` 时允许 `source: "vision"`、`fallback: null`、`evidence: "packaged-sample"`。`wake.js` 尚未按该句子改代码 |
+| 交互态来源在开关打开时允许 `vision` | 通过 | `.specify/memory/constitution.md` 已修订为 **1.4.0**（T002 完成）：`visionAdapter` 为 `fixture` 且 `externalAttempt` 为 `off` 时允许 `source: vision` + `fallback: null` + `evidence: packaged-sample`；默认 `off` 时仍只允许 `preset` |
 
 无未解决的 NEEDS CLARIFICATION。[research.md](./research.md) 已写明修订句子。
 
@@ -94,8 +94,10 @@ tests/
 
 Phase 1 契约没有新增端点、密钥、第二种工厂或 WASM。`vision-adapter.md` 把 `evidence: "packaged-sample"` 定为进入交互的必要条件，因此界面不能把样例说成外部服务已接通。
 
-交互态来源门禁已由宪法 1.4.0 关闭。T002 只改了治理文档和本计划的门禁，没有改 `extension/src/session/wake.js`。
+交互态允许 `source: "vision"` 这一门禁仍依赖宪法 1.4.0 修订。设计文档只冻结修订文本，本命令不改 `.specify/memory/constitution.md`。实现任务必须把该修订放在修改 `wake.js` 之前。
 
 ## Complexity Tracking
 
-无未关闭的宪法违例。原先「交互态来源只能是 preset」的句子已在 1.4.0 改为带开关的允许条件。
+| Violation | Why Needed | Simpler Alternative Rejected Because |
+|-----------|------------|-------------------------------------|
+| 交接接口写明 `interactive` 时 `result.source` 为 `preset` | 合法识别样例必须显示「识别结果」，不能显示成预先准备的示例 | 把样例标成 `preset` 会违反「识别与预制来源必须能区分」；不修订文件就放行 `vision` 等于另写状态。研究结论 8 给出 1.4.0 的替换句子，并禁止在修订前改唤醒成功路径 |

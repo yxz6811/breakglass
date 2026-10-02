@@ -10,6 +10,24 @@
   const validate = BreakGlass.validate || (typeof require === 'function' ? require('../curve/validate') : null);
   const attemptApi = BreakGlass.attempt || (typeof require === 'function' ? require('../attempt/simulator') : null);
 
+  /**
+   * 懒取样例装载器：页面里 preset/load.js 比 wake.js 后加载，所以只在调用时查找。
+   * @returns {{ loadVisionFixture: Function } | null}
+   */
+  function visionLoader() {
+    const live = BreakGlass.preset;
+    if (live && typeof live.loadVisionFixture === 'function') return live;
+    if (typeof require === 'function') {
+      try {
+        const api = require('../preset/load');
+        if (api && typeof api.loadVisionFixture === 'function') return api;
+      } catch (error) {
+        return null;
+      }
+    }
+    return null;
+  }
+
   const PRESET_UNAVAILABLE = '当前帧没有可用的准备结果，无法进入交互。';
   const EXTERNAL_UNAVAILABLE = '外部结果不可用，未进入交互。';
   const MOCK_DISABLED = '本地预制未启用，无法进入交互。';
@@ -17,7 +35,7 @@
   /**
    * @param {object} options
    * @param {object} options.session 现有 SessionController
-   * @param {object} options.config enableLocalMock、fallbackAfterMs、prewarmed、externalAttempt、visionAdapter
+   * @param {object} options.config enableLocalMock、fallbackAfterMs、prewarmed、externalAttempt
    * @param {object | null} options.preset 已装入的预制结果；没有匹配预制时为 null
    * @param {{ now: () => number, schedule: (delayMs: number, handler: Function) => unknown, clear: (timerId: unknown) => void }} options.clock
    * @param {(state: object) => void} [options.onChange]
@@ -36,7 +54,7 @@
 
     /**
      * 每个判定点都重新读配置，不沿用上一次唤醒时的开关。
-     * @returns {{ enableLocalMock: unknown, fallbackAfterMs: unknown, prewarmed: unknown, externalAttempt: unknown, visionAdapter: 'off' | 'fixture' }}
+     * @returns {{ enableLocalMock: unknown, fallbackAfterMs: unknown, prewarmed: unknown, externalAttempt: unknown }}
      */
     function readConfig() {
       const source = config || {};
@@ -45,26 +63,9 @@
         fallbackAfterMs: source.fallbackAfterMs,
         prewarmed: source.prewarmed,
         externalAttempt: source.externalAttempt,
+        // 只有显式写 fixture 才算打开；缺省或其他值一律按 off。
         visionAdapter: source.visionAdapter === 'fixture' ? 'fixture' : 'off'
       };
-    }
-
-    /**
-     * 调用时再找样例读取器。load.js 在页面里后于本文件执行，不能在工厂创建时抓取。
-     * @returns {{ loadVisionFixture: Function } | null}
-     */
-    function visionLoader() {
-      if (BreakGlass.preset && typeof BreakGlass.preset.loadVisionFixture === 'function') {
-        return BreakGlass.preset;
-      }
-      if (typeof require === 'function') {
-        try {
-          return require('../preset/load');
-        } catch (error) {
-          return null;
-        }
-      }
-      return null;
     }
 
     /**
@@ -170,62 +171,44 @@
     }
 
     /**
-     * 把打包样例装订到本次请求。视频、时间和画幅仍用样例原值，方便校验器核对是否属于这一帧。
-     * @param {object | null | undefined} source
+     * 识别样例同样按当前视频帧装订区域，并保留它自己的溯源标记。
+     * 与 bindPreset 的差别只有来源、fallback 固定为 null，以及 evidence / confidence 原样带过。
+     * @param {object} source
      * @param {string} requestId
-     * @returns {object | null}
+     * @param {{ width: number, height: number }} frameSize
+     * @returns {object}
      */
-    function bindVision(source, requestId) {
-      if (!source || typeof source !== 'object') return null;
-      const frame = source.frameSize;
+    function bindVision(source, requestId, frameSize) {
+      const size = frameSize && frameSize.width > 0 && frameSize.height > 0
+        ? { width: frameSize.width, height: frameSize.height }
+        : (source.frameSize
+          ? { width: source.frameSize.width, height: source.frameSize.height }
+          : source.frameSize);
       const candidate = {
         requestId,
         videoId: source.videoId,
         time: source.time,
-        frameSize: frame && typeof frame === 'object'
-          ? { width: frame.width, height: frame.height }
-          : frame,
-        source: source.source,
-        fallback: source.fallback,
-        evidence: source.evidence,
-        definition: source.definition
+        frameSize: size,
+        source: 'vision',
+        fallback: null,
+        definition: fitDefinition(source, size)
       };
-      if (Object.prototype.hasOwnProperty.call(source, 'confidence')) {
-        candidate.confidence = source.confidence;
-      }
+      if (source.evidence !== undefined) candidate.evidence = source.evidence;
+      if (source.confidence !== undefined) candidate.confidence = source.confidence;
       return candidate;
     }
 
     /**
      * @param {object} candidate
      * @param {object} ctx
+     * @param {object} [extra] 追加的校验上下文；只有识别路径才传 `{ allowVision: true }`
      * @returns {{ ok: boolean, code?: string, message?: string }}
      */
-    function checkCandidate(candidate, ctx) {
+    function checkCandidate(candidate, ctx, extra) {
       if (!validate || typeof validate.validateCurveResult !== 'function') {
         return { ok: false, code: 'validator_unavailable', message: '结果校验器不可用。' };
       }
-      return validate.validateCurveResult(candidate, expected(ctx));
-    }
-
-    /**
-     * 识别样例必须显式允许 vision。预制校验不走这里。
-     * @param {object} candidate
-     * @param {object} ctx
-     * @returns {{ ok: boolean, code?: string, message?: string }}
-     */
-    function checkVision(candidate, ctx) {
-      if (!validate || typeof validate.validateCurveResult !== 'function') {
-        return { ok: false, code: 'validator_unavailable', message: '结果校验器不可用。' };
-      }
-      return validate.validateCurveResult(candidate, {
-        videoId: ctx.videoId,
-        targetTime: session.targetTime,
-        timeTolerance: session.timeTolerance,
-        frameSize: ctx.frameSize,
-        requestId: ctx.requestId,
-        allowVision: true
-      });
+      return validate.validateCurveResult(candidate, { ...expected(ctx), ...(extra || {}) });
     }
 
     /**
@@ -293,54 +276,49 @@
     }
 
     /**
-     * 样例校验失败时不改画预制。异步读取只发生在页面里，Node 直接拿到文件对象。
-     * @param {object | null | undefined} raw
+     * 识别样例路径：读包内样例 → 按冻结上下文装订 → 用同一个校验器放行。
+     * 任何失败都只走 external_unavailable，不回落预制，也不新增错误码。
      * @param {object} ctx
      * @param {number} token
-     */
-    function settleVision(raw, ctx, token) {
-      if (!stillWaiting(ctx.requestId, token)) return;
-      const candidate = bindVision(raw, ctx.requestId);
-      const check = candidate ? checkVision(candidate, ctx) : { ok: false };
-      if (!check.ok) {
-        deny(ctx, token, 'external_unavailable', EXTERNAL_UNAVAILABLE);
-        return;
-      }
-      const resolved = session.resolve(candidate);
-      if (!resolved.ok) {
-        deny(ctx, token, 'external_unavailable', EXTERNAL_UNAVAILABLE);
-        return;
-      }
-      publish();
-    }
-
-    /**
-     * @param {object} ctx
-     * @param {number} token
-     * @returns {Promise<void> | null}
      */
     function acceptVision(ctx, token) {
       const loader = visionLoader();
-      if (!loader || typeof loader.loadVisionFixture !== 'function') {
+      if (!loader) {
         deny(ctx, token, 'external_unavailable', EXTERNAL_UNAVAILABLE);
-        return null;
+        return;
       }
-      let loaded;
-      try {
-        loaded = loader.loadVisionFixture();
-      } catch (error) {
-        deny(ctx, token, 'external_unavailable', EXTERNAL_UNAVAILABLE);
-        return null;
-      }
-      if (loaded && typeof loaded.then === 'function') {
-        return Promise.resolve(loaded).then((raw) => {
-          settleVision(raw, ctx, token);
+      Promise.resolve()
+        .then(() => loader.loadVisionFixture())
+        .then((loaded) => {
+          // 取消、退出、播放或离开目标时间之后到达的结果一律丢弃。
+          if (!stillWaiting(ctx.requestId, token)) return;
+          if (!loaded || loaded.ok !== true || !loaded.candidate) {
+            deny(ctx, token, 'external_unavailable', EXTERNAL_UNAVAILABLE);
+            return;
+          }
+          // 先按样例自己的画幅校验一次：缺证据、低可信度、越界区域等在这里就要被拒，
+          // 否则后面的按帧换算会把越界区域钳制掉，等于把坏样例洗成好结果。
+          const authored = checkCandidate(loaded.candidate, {}, { allowVision: true });
+          if (!authored.ok) {
+            deny(ctx, token, 'external_unavailable', EXTERNAL_UNAVAILABLE);
+            return;
+          }
+          const candidate = bindVision(authored.value, ctx.requestId, ctx.frameSize);
+          const check = checkCandidate(candidate, ctx, { allowVision: true });
+          if (!check.ok) {
+            deny(ctx, token, 'external_unavailable', EXTERNAL_UNAVAILABLE);
+            return;
+          }
+          const resolved = session.resolve(check.value, { allowVision: true });
+          if (!resolved.ok) {
+            deny(ctx, token, 'external_unavailable', EXTERNAL_UNAVAILABLE);
+            return;
+          }
+          disarm();
+          publish();
         }, () => {
           deny(ctx, token, 'external_unavailable', EXTERNAL_UNAVAILABLE);
         });
-      }
-      settleVision(loaded, ctx, token);
-      return null;
     }
 
     /**
@@ -442,17 +420,10 @@
       const token = generation;
       const live = readConfig();
       if (live.externalAttempt === 'off' && live.visionAdapter === 'fixture') {
-        const pending = acceptVision(ctx, token);
-        if (pending && typeof pending.then === 'function') {
-          return { ok: true, requestId: ctx.requestId };
-        }
-        const state = session.getState();
-        return {
-          ok: state.status === 'interactive',
-          requestId: ctx.requestId,
-          code: state.code || undefined,
-          message: state.message || undefined
-        };
+        // 识别样例不人为等待：本地读完即结算，失败即 external_unavailable。
+        acceptVision(ctx, token);
+        if (session.getState().status === 'waiting') publish();
+        return { ok: true, requestId: ctx.requestId };
       }
       if (live.externalAttempt === 'off') {
         acceptPreset(ctx, token, null);

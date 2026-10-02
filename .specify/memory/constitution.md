@@ -2,7 +2,7 @@
 Sync Impact Report
 - Version change: 1.3.0 → 1.4.0
 - Modified principles:
-  - 交接接口：配置读取增加 visionAdapter。交互态在开关关闭时仍只能是 preset；仅 fixture 且 externalAttempt 为 off 时允许 source 为 vision
+  - VI. 页面与结果规则只通过一份交接接口：为已经存在的 `vision` 来源开一条受开关约束的进入路径，工厂名、方法名、参数顺序和状态名不变
 - Added sections: 无
 - Removed sections: 无
 - Templates status: 依赖模板在运行时读取本文件，本次未改模板
@@ -10,6 +10,7 @@ Sync Impact Report
   - TODO(SEAM_CODE): 已收敛。wake.js 只导出 createWake，页面改走 onChange，fail 只接受 (code, message)
   - TODO(SEAM_DOCS): 已回写。ownership.md、plan-story-2.md 附录 B、ownership-story-2.md 改为引用本节
   - TODO(FRAME_UPLOAD): 单帧是否允许离开浏览器仍待团队书面确认
+  - TODO(VISION_FIXTURE): `visionAdapter` 只允许 `fixture`（随扩展打包的识别样例）；它不等于外部识别已接通，也不改变 TODO(FRAME_UPLOAD) 的结论
   - TODO(PROXY_RUNTIME): 感知代理的语言、框架和部署形态未冻结
   - TODO(DOC_SYNC): docs/BreakGlass-constitution.md 1.2.0 已指向交接接口。感知代理窄例外仍以本文件原则 II 为准，该前端基线未逐条复写
   - TODO(REPO_BOUNDARY): AGENTS.md 仍规定本仓库只负责前端
@@ -159,9 +160,9 @@ onPlaybackChange({ paused, currentTime })  // => state
 dispose()                // 清理定时器；等待、交互或可恢复错误中则结束会话
 ```
 
-`onChange` 在状态变化时发出。`visionAdapter` 缺省、为空或其他值时视为 `off`。此时 `interactive` 的 `result.source` 只能是 `preset`，`result.fallback` 为 `null` 或 `"timeout"`。仅当 `visionAdapter` 为 `fixture` 且 `externalAttempt` 为 `off` 时，`interactive` 的 `result.source` 可以为 `vision`，`result.fallback` 必须为 `null`，`result.evidence` 必须为 `packaged-sample`。回调不得另带 `fallback`、`reason`、`elapsedMs`、`decisionAt` 或 `discarded`。是否等待只看 `status === "waiting"`。
+`onChange` 在状态变化时发出。`visionAdapter` 缺省或为 `"off"` 时，`interactive` 的 `result.source` 只能是 `preset`，`result.fallback` 为 `null` 或 `"timeout"`；仅当 `visionAdapter` 为 `"fixture"` 且 `externalAttempt` 为 `"off"` 时，允许 `result.source` 为 `"vision"`、`result.fallback` 为 `null`，并且必须携带 `result.evidence === "packaged-sample"`。其他 `visionAdapter` 取值一律视为 `"off"`。回调不得另带 `fallback`、`reason`、`elapsedMs`、`decisionAt` 或 `discarded`。是否等待只看 `status === "waiting"`。
 
-`visionAdapter` 为 `off` 且 `externalAttempt === "off"` 时，匹配的预制结果立即进入 `interactive`。`visionAdapter` 为 `fixture` 且 `externalAttempt` 为 `off` 时，由打包识别样例进入交互；样例未通过校验时不得改画预制。`hang` 与 `late` 在 `fallbackAfterMs`（必须为 1500）到期后才可以回退。`invalid` 不得画成成功。`externalAttempt` 不是 `off` 时，不得进入 `source: "vision"`。取消、退出、播放或离开目标时间之后，迟到结果不得再改变状态。
+`externalAttempt === "off"` 时，匹配的预制结果立即进入 `interactive`。`hang` 与 `late` 在 `fallbackAfterMs`（必须为 1500）到期后才可以回退。`invalid` 不得画成成功。取消、退出、播放或离开目标时间之后，迟到结果不得再改变状态。
 
 ### 替身与计时
 
@@ -292,5 +293,5 @@ Spec、Plan、Tasks 和代码审查必须能指出：当前能力属于 P0 预�
 | 1.0.0 | 2026-10-02 | 首次批准。确立 P0 前端闭环，并把服务端限制为尚未获准开工的无状态感知代理。 |
 | 1.1.0 | 2026-10-02 | 写入原先只在前端基线中批准的技术路线、零侵入、Pyodide 预算、预制配置、几何映射、性能口径和 P0 验收证据。 |
 | 1.2.0 | 2026-10-02 | 补齐感知代理的可执行约束：服务端持有指令与 Schema、单进程去重、上游中止、调用预算、密钥轮换，以及拒绝/放行夹具。 |
+| 1.4.0 | 2026-10-02 | MINOR：只为已经存在的 `vision` 来源开一条受开关约束的进入路径。`visionAdapter` 缺省或 `off` 时 `interactive` 的 `result.source` 仍只能是 `preset`；`visionAdapter` 为 `fixture` 且 `externalAttempt` 为 `off` 时允许 `source` 为 `vision`、`fallback` 为 `null`、`evidence` 为 `packaged-sample`。不新增来源枚举、不新增错误码、不改 `createWake` 的方法名与参数顺序、不改状态名。 |
 | 1.3.0 | 2026-10-02 | 冻结页面与结果规则的唯一交接接口：一个时钟、一个会话状态、一个 `createWake`，以及替身和内存计时的调用形状。禁止并行的唤醒工厂和别名字段。 |
-| 1.4.0 | 2026-10-02 | 配置读取增加 `visionAdapter`。开关关闭时交互来源仍只能是 `preset`。仅当值为 `fixture` 且 `externalAttempt` 为 `off` 时，允许 `source` 为 `vision`、`fallback` 为 `null`、`evidence` 为 `packaged-sample`。不新增工厂、状态名或错误码。 |

@@ -41,6 +41,8 @@
   const waitingBar = $('#waiting-bar');
   const waitingProgress = $('#waiting-progress');
   const fullscreenButton = $('#fullscreen-button');
+  const wakeReason = $('#wake-reason');
+  const resetReason = $('#reset-reason');
   const playTip = playToggle ? playToggle.querySelector('.lg-tip') : null;
 
   /**
@@ -68,6 +70,10 @@
   let dragging = false;
   /** @type {{ name: string, value: number, mathX: number } | null} */
   let dragOrigin = null;
+  let placedRectKey = '';
+  let videoBroken = false;
+  // 识别路径的判定起点；只在 visionAdapter 为 fixture 且外部演练为 off 时置位。
+  let visionStartedAt = null;
   let resizeObserver = null;
   let dprQuery = null;
   let dprHandler = null;
@@ -102,7 +108,10 @@
 
   function setStatus(message, variant) {
     stateLabel.textContent = message;
-    if (stateLabel.classList) stateLabel.classList.toggle('is-error', variant === 'error');
+    const isError = variant === 'error';
+    if (stateLabel.classList) stateLabel.classList.toggle('is-error', isError);
+    // 失败要立刻播报；普通状态变化保持礼貌播报，避免打断用户。
+    if (stateLabel.setAttribute) stateLabel.setAttribute('aria-live', isError ? 'assertive' : 'polite');
   }
 
   function setSlidersEnabled(enabled) {
@@ -124,6 +133,7 @@
   }
 
   function targetTime() {
+    if (targetInput.value == null || String(targetInput.value).trim() === '') return Number.NaN;
     return Number(targetInput.value);
   }
 
@@ -152,6 +162,7 @@
    * @returns {boolean}
    */
   function atTarget() {
+    if (videoBroken) return false;
     syncSessionTarget();
     if (!controller || !hasFrameSize()) return false;
     return controller.canWake({ paused: video.paused, currentTime: video.currentTime });
@@ -164,20 +175,39 @@
     return controller ? controller.getState() : null;
   }
 
+  /**
+   * 打包识别样例：来源必须是 vision，且必须自带 packaged-sample 证据。
+   * 合法性由结果规则侧判定，页面只决定怎么如实显示。
+   * @param {object | null} result
+   * @returns {boolean}
+   */
+  function isPackagedVision(result) {
+    return Boolean(result) && result.source === 'vision' && result.evidence === 'packaged-sample';
+  }
+
   function sourceText(result) {
     if (!result) return '等待素材';
+    if (isPackagedVision(result)) return '识别结果';
     if (result.fallback === 'timeout') return '预先准备的示例 · 超时回退';
     return result.source === 'preset' ? '预先准备的示例' : '来源不可用';
   }
 
   function setSource(result, note) {
     sourceLabel.textContent = sourceText(result);
+    const vision = isPackagedVision(result);
+    const preset = Boolean(result) && result.source === 'preset';
     if (sourceLabel.classList) {
       sourceLabel.classList.toggle('is-fallback', Boolean(result && result.fallback === 'timeout'));
-      sourceLabel.classList.toggle('is-warn', Boolean(result && result.source !== 'preset'));
+      // 预制与打包识别样例都是已知来源，只有来源不明时才用警示色。
+      sourceLabel.classList.toggle('is-warn', Boolean(result) && !preset && !vision);
     }
     if (note !== undefined) {
       sourceNote.textContent = note;
+      return;
+    }
+    // 识别样例的说明必须写明尚未接通外部识别；也不显示可信程度百分比。
+    if (vision) {
+      sourceNote.textContent = '随演示打包的识别样例，尚未接通外部识别。';
       return;
     }
     sourceNote.textContent = result
@@ -259,9 +289,17 @@
       samples: 9,
       readActual: (mathX) => {
         if (drawn.length === 0) return null;
-        const ratio = (mathX - definition.domain.min) / (definition.domain.max - definition.domain.min);
-        const index = Math.max(0, Math.min(drawn.length - 1, Math.round(ratio * (drawn.length - 1))));
-        return drawn[index];
+        const expected = alignment.mathPointToPage(definition, parameters, mathX, rect.scale);
+        let best = null;
+        let bestDistance = Infinity;
+        for (const point of drawn) {
+          const distance = Math.abs(point.x - expected.x);
+          if (distance < bestDistance) {
+            best = point;
+            bestDistance = distance;
+          }
+        }
+        return best;
       }
     });
     window.__breakglassAlignment = {
@@ -316,6 +354,16 @@
     const rect = readContentRect();
     if (!rect) return;
 
+    const rectKey = [
+      rect.contentRect.left, rect.contentRect.top,
+      rect.contentRect.width, rect.contentRect.height, rect.scale
+    ].join(',');
+    if (placedRectKey && placedRectKey !== rectKey) {
+      dragging = false;
+      dragOrigin = null;
+    }
+    placedRectKey = rectKey;
+
     const stageRect = stage.getBoundingClientRect();
     overlay.style.left = `${rect.contentRect.left - stageRect.left}px`;
     overlay.style.top = `${rect.contentRect.top - stageRect.top}px`;
@@ -324,12 +372,22 @@
     overlay.setAttribute('viewBox', `0 0 ${rect.contentRect.width} ${rect.contentRect.height}`);
 
     const parameters = state.currentParameters;
-    const path = [];
+    const samples = [];
+    const span = definition.domain.max - definition.domain.min;
     for (let index = 0; index <= 80; index += 1) {
-      const x = definition.domain.min + (definition.domain.max - definition.domain.min) * index / 80;
+      samples.push(definition.domain.min + span * index / 80);
+    }
+    const vertex = Number(parameters.h);
+    if (Number.isFinite(vertex) && vertex > definition.domain.min && vertex < definition.domain.max &&
+        !samples.some((value) => Math.abs(value - vertex) <= 1e-9)) {
+      samples.push(vertex);
+    }
+    samples.sort((left, right) => left - right);
+    const path = [];
+    samples.forEach((x, index) => {
       const [px, py] = pagePointForMath(definition, parameters, x, rect);
       path.push(`${index === 0 ? 'M' : 'L'} ${px.toFixed(2)} ${py.toFixed(2)}`);
-    }
+    });
     const pathData = path.join(' ');
     overlay.querySelector('path').setAttribute('d', pathData);
     publishAlignment(definition, parameters, rect, pathData);
@@ -347,6 +405,10 @@
       if (!Number.isFinite(value)) return;
       row.input.value = String(value);
       row.output.textContent = value.toFixed(1);
+      const item = definition.parameters[row.name];
+      if (item && row.input.setAttribute) {
+        row.input.setAttribute('aria-valuetext', value.toFixed(1) + '（范围 ' + item.min + ' 到 ' + item.max + '）');
+      }
     });
   }
 
@@ -356,6 +418,8 @@
     overlay = null;
     dragging = false;
     dragOrigin = null;
+    placedRectKey = '';
+    window.__breakglassAlignment = null;
     if (pauseVideo && video && !video.paused) video.pause();
     resetButton.disabled = true;
     exitButton.disabled = true;
@@ -373,15 +437,17 @@
     overlay.classList.add('curve-overlay');
     overlay.style.position = 'absolute';
     overlay.style.zIndex = '2';
-    overlay.setAttribute('aria-label', '可拖动的预先准备抛物线');
-    overlay.innerHTML = '<path fill="none" stroke="#71ddff" stroke-width="3" stroke-linecap="round"></path><circle r="10" fill="#08111f" stroke="#ffffff" stroke-width="3" tabindex="0"></circle>';
+    overlay.style.touchAction = 'none';
+    overlay.setAttribute('aria-label', '可拖动的抛物线结果');
+    // 视觉控制点 r=10，另加一个透明 r=18 的热区圆。热区放在后面，
+    // 这样 querySelector('circle') 仍然拿到可见的控制点，拖动逻辑不用改。
+    overlay.innerHTML = '<path fill="none" stroke="#71ddff" stroke-width="3" stroke-linecap="round"></path>'
+      + '<circle r="10" fill="#08111f" stroke="#ffffff" stroke-width="3" tabindex="0"></circle>'
+      + '<circle class="curve-hit" r="18" fill="transparent" stroke="none" aria-hidden="true"></circle>';
     stage.appendChild(overlay);
 
     overlay.addEventListener('pointerdown', (event) => {
-      if (event.target === overlay) {
-        removeOverlay();
-        return;
-      }
+      if (event.target === overlay) return;
       const state = sessionState();
       if (!state || !state.result) return;
       const definition = state.result.definition;
@@ -414,6 +480,7 @@
     }
     overlay.addEventListener('pointerup', endDrag);
     overlay.addEventListener('pointercancel', endDrag);
+    overlay.addEventListener('lostpointercapture', endDrag);
     drawCurve();
   }
 
@@ -446,14 +513,50 @@
     playToggle.setAttribute('aria-label', playLabel + '视频');
     if (playTip) playTip.textContent = playLabel;
     timeLabel.textContent = `当前时间：${Number.isFinite(video.currentTime) ? video.currentTime.toFixed(1) : '—'}`;
+    syncDisabledReasons();
+  }
+
+  // 识别判定从发起到进入交互或可恢复失败的耗时单独记一条，不写进预制回退那组。
+  function recordVisionDecision() {
+    if (visionStartedAt === null || !latencies) return;
+    const now = localClock ? localClock.now() : Date.now();
+    const elapsed = now - visionStartedAt;
+    visionStartedAt = null;
+    if (Number.isFinite(elapsed) && elapsed >= 0) latencies.record('vision-decision', elapsed, 'hot');
   }
 
   /**
-   * 只按会话状态渲染。超时耗时用页面自己的两次 mark，不读唤醒回调里的时间戳。
-   * @param {object} state
+   * 禁用原因只在这一处生成：按钮不可用时把原因写进视觉隐藏的说明节点，
+   * 由 aria-describedby 关联，读屏与 tooltip 都能解释为什么不能点。
    */
+  function syncDisabledReasons() {
+    if (wakeReason) {
+      let reason = '';
+      if (wakeButton.disabled) {
+        const state = sessionState();
+        if (state && state.status === 'waiting') reason = '正在等待外部结果，可以先取消或退出。';
+        else if (overlay) reason = '交互层已经出现，不需要再次破壁。';
+        else if (!video.paused) reason = '请先暂停视频。';
+        else if (!atTarget()) reason = '请把视频暂停在目标时间 ±0.2 秒内。';
+        else if (!presetResult) reason = '当前没有可用的准备结果。';
+        else reason = '当前还不能破壁。';
+      }
+      wakeReason.textContent = reason;
+    }
+    if (resetReason) {
+      resetReason.textContent = resetButton.disabled ? '需要先出现可交互的曲线再重置。' : '';
+    }
+  }
+
   function applyState(state) {
     if (!state) return;
+    renderState(state);
+    syncDisabledReasons();
+  }
+
+  function renderState(state) {
+    // 取消、退出、播放或离开目标时间：判定没有结算，不记账。
+    if (state.status === 'paused-ready') visionStartedAt = null;
     if (state.status === 'interactive') {
       const result = state.result;
       const timedOut = result && result.fallback === 'timeout';
@@ -466,6 +569,8 @@
           latencies.record('fallback-visible', decidedAt);
         }
       }
+      // 识别路径单独结算；预制路径（含超时回退）不写这组。
+      if (!timedOut && isPackagedVision(result)) recordVisionDecision();
       hideWaitingControls();
       resetButton.disabled = false;
       exitButton.disabled = false;
@@ -491,6 +596,8 @@
       resetButton.disabled = true;
       setSlidersEnabled(false);
       wakeButton.disabled = true;
+      // 等待态必须能退出：FR-010 的可操作路径 + FR-011 的取消之外还要有退路。
+      exitButton.disabled = false;
       setPrimaryAction('wake');
       setWaitingBar(true);
       setSource(null, '正在等待外部结果；超过 1.5 秒会自动改用预先准备的示例，可随时取消。');
@@ -499,6 +606,7 @@
       return;
     }
     if (state.status === 'recoverable-error') {
+      recordVisionDecision();
       hideWaitingControls();
       retryButton.hidden = false;
       retryButton.disabled = false;
@@ -506,6 +614,7 @@
       resetButton.disabled = true;
       setSlidersEnabled(false);
       wakeButton.disabled = true;
+      exitButton.disabled = false;
       setPrimaryAction('retry');
       setWaitingBar(false);
       setSource(null, '没有可用的准备结果，或外部结果不可用；可以重试或退出。');
@@ -548,6 +657,9 @@
     if (overlay || (state && (state.status === 'interactive' || state.status === 'waiting'))) return;
     const frameSize = { width: video.videoWidth, height: video.videoHeight };
     placePreparedExample(frameSize);
+    // 只有识别路径需要判定耗时；起点取自页面自己的时钟。
+    const visionPath = Boolean(config) && config.visionAdapter === 'fixture' && config.externalAttempt === 'off';
+    visionStartedAt = visionPath && localClock ? localClock.now() : null;
     const started = wakeHandle.start({
       paused: true,
       currentTime: video.currentTime,
@@ -620,6 +732,7 @@
 
   video.addEventListener('resize', syncControls);
   video.addEventListener('loadedmetadata', () => {
+    videoBroken = false;
     assetEmpty.hidden = true;
     if (!overlay) {
       setStatus(atTarget() ? '已暂停在目标时间，可以再次破壁。' : '请暂停在目标时间。');
@@ -631,6 +744,7 @@
   video.addEventListener('pause', syncControls);
   video.addEventListener('ended', syncControls);
   video.addEventListener('error', () => {
+    videoBroken = true;
     assetEmpty.hidden = false;
     removeOverlay();
     setStatus('视频无法加载，未挂载交互层。', 'error');
@@ -672,13 +786,25 @@
       setStatus('正式视频素材尚未提供，暂时无法定位。');
       return;
     }
-    video.currentTime = targetTime();
+    const next = targetTime();
+    if (!Number.isFinite(next) || next < 0) {
+      setStatus('请输入有效的目标时间。');
+      return;
+    }
+    video.currentTime = next;
     video.pause();
+    syncControls();
+  });
+  targetInput.addEventListener('input', () => {
+    if (!Number.isFinite(targetTime())) return;
+    syncControls();
   });
   wakeButton.addEventListener('click', wake);
   cancelButton.addEventListener('click', cancelWaiting);
   retryButton.addEventListener('click', wake);
   resetButton.addEventListener('click', () => {
+    dragging = false;
+    dragOrigin = null;
     if (controller) controller.reset();
     drawCurve();
     setStatus('已恢复本次结果的初始参数。');

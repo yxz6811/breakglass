@@ -124,7 +124,7 @@
 - 交互期间的来源已统一显示为「预先准备的示例」；已有覆盖层时再次用快捷键不会叠出第二层。正式视频和手工验收记录仍未完成。
 - 故事 2 的代码与自动化测试已完成（T021–T029）：`off` 仍立即进入交互；`hang` 在 1500ms 后无需再次点击即回退并持续显示原因；`invalid` 与无匹配预制进入可恢复错误并提供「重试」「退出」；等待中可取消；迟到结果被丢弃。`createWake` 已按 `.specify/memory/constitution.md` 1.3.0「交接接口」交付（`{ session, config, preset, clock, onChange }`，时钟只有 `schedule(delayMs, handler)` 一种参数顺序）。SC-003 的现场 P50/P95 记录（T030）仍待执行。
 - 故事 3 的代码与自动化测试已完成（T031–T037、T039）：四种画幅的映射与 2% 偏差口径已有夹具；窗口、全屏、方向、设备像素比和视频元素尺寸变化都会重算。T038 的真机四画幅与 2% 记录仍待执行。
-- 当前自动化基线为 `node --test` 137 项通过，记录见 [`docs/BreakGlass-frontend-validation.md`](../../docs/BreakGlass-frontend-validation.md)。
+- 当前自动化基线为 `node --test` 182 项通过（含 002 识别适配切片的 6 个测试文件），记录见 [`docs/BreakGlass-frontend-validation.md`](../../docs/BreakGlass-frontend-validation.md)。
 
 ## Assumptions
 

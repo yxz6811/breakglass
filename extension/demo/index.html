@@ -42,7 +42,7 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="6"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>
           <span class="lg-tip">定位目标时间</span>
         </button>
-        <button class="lg-item" type="button" id="wake-button" data-variant="primary" disabled aria-label="破壁" aria-keyshortcuts="Alt+B">
+        <button class="lg-item" type="button" id="wake-button" data-variant="primary" disabled aria-label="破壁" aria-keyshortcuts="Alt+B" aria-describedby="wake-reason">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 2 4.5 13.5H11l-1 8.5 8.5-11.5H12l1-8.5Z"/></svg>
           <span class="lg-tip">破壁 Alt+B</span>
         </button>
@@ -55,7 +55,7 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.4-5.7"/><path d="M20 4v4h-4"/></svg>
           <span class="lg-tip">重试</span>
         </button>
-        <button class="lg-item" type="button" id="reset-button" disabled aria-label="重置参数">
+        <button class="lg-item" type="button" id="reset-button" disabled aria-label="重置参数" aria-describedby="reset-reason">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12a8 8 0 1 0 2.4-5.7"/><path d="M4 4v4h4"/></svg>
           <span class="lg-tip">重置</span>
         </button>
@@ -101,6 +101,9 @@
           <p class="panel-kicker">INTERACTION</p>
           <h2>抛物线参数</h2>
           <p id="state-label" role="status" aria-live="polite">请加载演示视频并暂停在目标时间。</p>
+          <!-- 禁用原因：视觉隐藏，只在对应按钮不可用时填字，供读屏说明为什么不能点。 -->
+          <p class="sr-only" id="wake-reason"></p>
+          <p class="sr-only" id="reset-reason"></p>
           <div class="parameter-row">
             <label for="parameter-a">开口宽窄 a</label>
             <output id="parameter-a-value">—</output>

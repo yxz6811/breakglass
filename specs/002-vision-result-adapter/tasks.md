@@ -8,8 +8,11 @@
 
 **Organization**: 故事 1 是默认可演示的识别样例成功路径。故事 2 拒绝坏候选。故事 3 把识别耗时与预制回退分开。上传、感知代理和 Pyodide 不编号。
 
-**进度**: T002–T008、T010 已完成。`visionAdapter: fixture` 且 `externalAttempt: off` 时，打包样例进入 `interactive`，`evidence` 会抄进 `getState().result`。提交配置仍是 `off`。页面来源文案仍是 T009、T011。两人同时开发时的写权限以 [`ownership.md`](./ownership.md) 为准。
+**进度**: T001–T016、T018 已完成（2026-10-02）。提交配置保持 `visionAdapter: off`。T017 的 quickstart 手工验收**未执行**：当前环境没有可控浏览器会话。修改 `extension/src/session/wake.js` 之前必须先完成 T002。两人同时开发时的写权限和样例装入方式以 [`ownership.md`](./ownership.md) 为准。
 
+
+**执行记录（2026-10-02）**: 宪法修订到 1.4.0；新增 `visionAdapter`（提交值 `off`）与 `loadVisionFixture`；`validateCurveResult` 增加 `allowVision` 下的 `evidence` / `confidence` 规则；`wake.js` 在 `fixture` + `off` 时按样例自身画幅先校验、再按当前帧装订，失败一律 `external_unavailable`；`session.copyResult` 抄写 `evidence`；页面按 `evidence` 显示「识别结果」并单独记 `vision-decision`。`node --test` 182 项通过。
+未执行：T017 的手工演练与 SC-002；包内样例的 `frameSize` 仍需按实际视频改写。
 ## Format: `[ID] [P?] [Story] Description`
 
 - **[P]**: 可与同阶段其他 `[P]` 任务并行（不同文件、不依赖未完成任务）
@@ -27,7 +30,7 @@
 
 **Purpose**: 确认本切片不扩大扩展表面
 
-- [ ] T001 核对 `extension/manifest.json`：`permissions` 与 `host_permissions` 为空；不声明 `content_scripts`；`content_security_policy.extension_pages` 保持 `script-src 'self'; object-src 'self'`；不含 `wasm-unsafe-eval`。本功能不修改这些字段，不新增依赖，不创建 `backend/`
+- [x] T001 核对 `extension/manifest.json`：`permissions` 与 `host_permissions` 为空；不声明 `content_scripts`；`content_security_policy.extension_pages` 保持 `script-src 'self'; object-src 'self'`；不含 `wasm-unsafe-eval`。本功能不修改这些字段，不新增依赖，不创建 `backend/`
 
 ---
 
@@ -57,12 +60,12 @@
 
 - [x] T007 [P] [US1] 先写会失败的 `tests/vision-wake.test.js`。注入假时钟，不使用真实 `setTimeout`。覆盖：`visionAdapter` 为 `off` 时立即进入预制交互，`source` 为 `preset`，`fallback` 为 `null`，不出现 vision；`visionAdapter` 为 `fixture`、`externalAttempt` 为 `off`、样例匹配当前 `requestId`、`videoId`、`time` ±0.2 秒和 `frameSize` 时进入 `interactive`，`source` 为 `vision`，`fallback` 为 `null`，`evidence` 为 `packaged-sample`；参数仍满足 `min ≤ initial ≤ max` 且 `step > 0`。调用形状保持 `createWake({ session, config, preset, clock, onChange, attempt })`，页面状态只有 `status/requestId/result/currentParameters/initialParameters/code/message`
 - [x] T008 [P] [US1] 编写 `extension/assets/vision/fixture-parabola.json` 与 `extension/assets/vision/README.md`。JSON 的 `source` 为 `vision`，`fallback` 为 `null`，`evidence` 为 `packaged-sample`，`videoId` 含 `fixture`，`equationId` 为 `fixture.parabola`。参数满足 `min ≤ initial ≤ max` 且 `step > 0`，region 宽高为正且完全落在 frameSize 内。不写 `confidence`，JSON 内不写注释。README 写明这不是正式网课素材，也不代表外部识别已接通。文件不含密钥、上传地址或模型名
-- [ ] T009 [P] [US1] 先写会失败的 `tests/page-vision.test.js`。用 Node 读取 `extension/demo/index.html` 与 `extension/src/page/main.js`，断言存在 `#source-label`，且脚本在 `evidence === "packaged-sample"` 时能呈现「识别结果」和「随演示打包的识别样例，尚未接通外部识别。」。断言这两个文件不出现 `fetch` 的远程地址、`XMLHttpRequest`、`WebSocket`、密钥或模型名。默认 `visionAdapter: off` 的来源分支仍包含「预先准备的示例」
+- [x] T009 [P] [US1] 先写会失败的 `tests/page-vision.test.js`。用 Node 读取 `extension/demo/index.html` 与 `extension/src/page/main.js`，断言存在 `#source-label`，且脚本在 `evidence === "packaged-sample"` 时能呈现「识别结果」和「随演示打包的识别样例，尚未接通外部识别。」。断言这两个文件不出现 `fetch` 的远程地址、`XMLHttpRequest`、`WebSocket`、密钥或模型名。默认 `visionAdapter: off` 的来源分支仍包含「预先准备的示例」
 
 ### Implementation for User Story 1
 
 - [x] T010 [US1] 在 T002、T004、T007、T008 之后修改 `extension/src/session/wake.js`、`extension/src/preset/load.js` 和 `extension/src/session/session.js`。`load.js` 新增 `loadVisionFixture`，读取 `extension/assets/vision/fixture-parabola.json`。`wake.js` 在 `visionAdapter` 为 `fixture` 且 `externalAttempt` 为 `off` 时自己调用它，再用 `validateCurveResult(..., { allowVision: true })` 检查；通过则进入 `interactive`。`createWake` 不新增参数，`preset` 仍是预先准备的结果。`session.js` 的 `copyResult` 必须把 `evidence` 抄进 `getState().result`。`visionAdapter` 为 `off`、缺省或其他值时保持现有预制路径。保留单会话、拖动钳制、重置、退出，以及播放或离开目标时间时结束会话。不把样例等待 1500ms，不发起网络请求
-- [ ] T011 [US1] 在 T009 与 T010 之后修改 `extension/src/page/main.js` 与 `extension/demo/index.html`。`#source-label` 在 `source === "vision"` 且 `evidence === "packaged-sample"` 时显示「识别结果」；说明区显示「随演示打包的识别样例，尚未接通外部识别。」。无论 `confidence` 缺省还是大于等于 0.5，都不显示百分比。预制与超时文案保持「预先准备的示例」「预先准备的示例 · 超时回退」「因等待超过 1.5 秒，改用预先准备的示例。」。不把空格设为破壁键
+- [x] T011 [US1] 在 T009 与 T010 之后修改 `extension/src/page/main.js` 与 `extension/demo/index.html`。`#source-label` 在 `source === "vision"` 且 `evidence === "packaged-sample"` 时显示「识别结果」；说明区显示「随演示打包的识别样例，尚未接通外部识别。」。无论 `confidence` 缺省还是大于等于 0.5，都不显示百分比。预制与超时文案保持「预先准备的示例」「预先准备的示例 · 超时回退」「因等待超过 1.5 秒，改用预先准备的示例。」。不把空格设为破壁键
 
 **Checkpoint**: 关闭开关时与 001 的预制主路径一致。打开开关且样例合法时，离线可见识别样例曲线。坏候选尚未在本阶段验收。
 
@@ -76,11 +79,11 @@
 
 ### Tests for User Story 2
 
-- [ ] T012 [P] [US2] 先写会失败的 `tests/vision-reject.test.js`。覆盖：`evidence` 不是 `packaged-sample`、`confidence < 0.5`、`confidence` 非有限、region 越界、`videoId` 或 `time` 超出 ±0.2 秒或 `frameSize` 不一致时，状态为 `recoverable-error`，`code` 为 `external_unavailable`，`message` 为「外部结果不可用，未进入交互。」，`result` 为 `null`，且不进入 `interactive`。当前存在匹配预制时也不得绘制该预制。`visionAdapter` 为 `fixture` 且 `externalAttempt` 为 `hang`、`invalid` 或 `late` 时，不得进入 `source: "vision"`。取消、退出或离开目标时间后，旧 `requestId` 不得打开交互。`fallbackAfterMs` 仍是 1500
+- [x] T012 [P] [US2] 先写会失败的 `tests/vision-reject.test.js`。覆盖：`evidence` 不是 `packaged-sample`、`confidence < 0.5`、`confidence` 非有限、region 越界、`videoId` 或 `time` 超出 ±0.2 秒或 `frameSize` 不一致时，状态为 `recoverable-error`，`code` 为 `external_unavailable`，`message` 为「外部结果不可用，未进入交互。」，`result` 为 `null`，且不进入 `interactive`。当前存在匹配预制时也不得绘制该预制。`visionAdapter` 为 `fixture` 且 `externalAttempt` 为 `hang`、`invalid` 或 `late` 时，不得进入 `source: "vision"`。取消、退出或离开目标时间后，旧 `requestId` 不得打开交互。`fallbackAfterMs` 仍是 1500
 
 ### Implementation for User Story 2
 
-- [ ] T013 [US2] 在 T010 与 T012 之后收紧 `extension/src/session/wake.js`，使 T012 通过。识别校验失败时只调用 `fail("external_unavailable", "外部结果不可用，未进入交互。")`。不得在该失败上调用预制接受。`externalAttempt` 不是 `off` 时忽略识别样例，沿用现有等待、非法、迟到和超时回退。不新增 `code` 或 `message`
+- [x] T013 [US2] 在 T010 与 T012 之后收紧 `extension/src/session/wake.js`，使 T012 通过。识别校验失败时只调用 `fail("external_unavailable", "外部结果不可用，未进入交互。")`。不得在该失败上调用预制接受。`externalAttempt` 不是 `off` 时忽略识别样例，沿用现有等待、非法、迟到和超时回退。不新增 `code` 或 `message`
 
 **Checkpoint**: 坏样例可重试或退出，0 次被画成识别成功。`hang` 仍在 1500ms 后显示预制超时回退。
 
@@ -94,11 +97,11 @@
 
 ### Tests for User Story 3
 
-- [ ] T014 [P] [US3] 先写会失败的 `tests/vision-latency.test.js`。识别路径从判定开始到 `interactive` 或 `recoverable-error` 调用 `extension/src/telemetry/latency.js` 的 `record("vision-decision", ms)` 或等价的 `mark` 组合。断言不调用 `extension-open`、`video-first-frame`、`network-wait`、`p1-init`。断言识别成功或失败的样本不出现在 `fallback-visible`。记录只含名称、毫秒数和 `hot` 或 `cold`。`visionAdapter: off` 且超时回退时，`fallback-visible` 行为与现有 `extension/src/page/main.js` 一致
+- [x] T014 [P] [US3] 先写会失败的 `tests/vision-latency.test.js`。识别路径从判定开始到 `interactive` 或 `recoverable-error` 调用 `extension/src/telemetry/latency.js` 的 `record("vision-decision", ms)` 或等价的 `mark` 组合。断言不调用 `extension-open`、`video-first-frame`、`network-wait`、`p1-init`。断言识别成功或失败的样本不出现在 `fallback-visible`。记录只含名称、毫秒数和 `hot` 或 `cold`。`visionAdapter: off` 且超时回退时，`fallback-visible` 行为与现有 `extension/src/page/main.js` 一致
 
 ### Implementation for User Story 3
 
-- [ ] T015 [US3] 在 T011 与 T014 之后修改 `extension/src/page/main.js`，使 T014 通过。只在识别路径实际运行时记录 `vision-decision`。识别成功不得同时写入 `fallback-visible`。不改 `extension/src/telemetry/latency.js` 的排除名单，不落盘，不写 `chrome.storage` 或 `indexedDB`
+- [x] T015 [US3] 在 T011 与 T014 之后修改 `extension/src/page/main.js`，使 T014 通过。只在识别路径实际运行时记录 `vision-decision`。识别成功不得同时写入 `fallback-visible`。不改 `extension/src/telemetry/latency.js` 的排除名单，不落盘，不写 `chrome.storage` 或 `indexedDB`
 
 **Checkpoint**: 两组成对耗时可以分开读取。默认配置不再显示「识别结果」。
 
@@ -108,9 +111,9 @@
 
 **Purpose**: 边界说明与手工验收记录。未运行的步骤不得写成通过
 
-- [ ] T016 [P] 在 `docs/frontend-backend-boundary.md` 标明：本切片的 `source: "vision"` 只表示 `evidence: "packaged-sample"` 的打包样例，不表示外部接口已返回，也不表示单帧已离开浏览器。真实上传仍是未批准的外部依赖
+- [x] T016 [P] 在 `docs/frontend-backend-boundary.md` 标明：本切片的 `source: "vision"` 只表示 `evidence: "packaged-sample"` 的打包样例，不表示外部接口已返回，也不表示单帧已离开浏览器。真实上传仍是未批准的外部依赖
 - [ ] T017 按 `specs/002-vision-result-adapter/quickstart.md` 第 1 至第 5 节做手工验收，把实际操作与结果写入 `docs/BreakGlass-frontend-validation.md`。记录浏览器、是否断网，以及配置已恢复为 `visionAdapter: off`、`externalAttempt: off`、`fallbackAfterMs: 1500`。未点击的步骤保持未通过
-- [ ] T018 运行 `node --test`。若 `tests/preset-contract.test.js`、`tests/page-integration.test.js` 或 `tests/wake-contract.test.js` 因新增字段失败，只修正断言，使默认配置仍要求 `visionAdapter` 为 `off`、`externalAttempt` 为 `off`、`fallbackAfterMs` 为 1500。不放宽 001 已有的预制、超时和来源断言
+- [x] T018 运行 `node --test`。若 `tests/preset-contract.test.js`、`tests/page-integration.test.js` 或 `tests/wake-contract.test.js` 因新增字段失败，只修正断言，使默认配置仍要求 `visionAdapter` 为 `off`、`externalAttempt` 为 `off`、`fallbackAfterMs` 为 1500。不放宽 001 已有的预制、超时和来源断言
 
 ---
 

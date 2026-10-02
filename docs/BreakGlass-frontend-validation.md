@@ -7,7 +7,7 @@
 
 | 命令 | 结果 |
 | --- | --- |
-| `node --test` | **137 项通过，0 失败，0 待办**（把 PR #30 合入当前 `main` 后重跑） |
+| `node --test` | **182 项通过，0 失败，0 待办**（当前 `main`；本轮识别适配切片见 §4） |
 | `node --check`（extension 与 tests 全部 JavaScript） | 通过 |
 | `scripts/verify.mjs`（本地工作区工具，未进入本仓库） | 语法检查 + 全量测试通过 |
 
@@ -41,10 +41,43 @@
 - 在正式视频到位前，夹具只能证明交互状态与几何逻辑，**不能**作为原位对齐的验收证据。
 - 性能类结论（回退 ≤100ms）目前只有假时钟下的确定性断言，没有真实采样数据。
 
-## 4. 变更记录
+## 4. 识别适配切片（`specs/002-vision-result-adapter/`）
+
+### 4.1 自动检查（2026-10-02 执行）
+
+| 命令 | 结果 |
+| --- | --- |
+| `node --test` | **182 项通过，0 失败，0 待办** |
+| `node --check`（extension 与 tests 全部 JavaScript） | 39 个文件通过 |
+
+新增的测试文件：
+
+| 测试文件 | 覆盖 |
+| --- | --- |
+| `tests/vision-validate.test.js` | 没有 `allowVision` 时 vision 仍被拒；`evidence` 必须是 `packaged-sample`；识别样例的 `fallback` 必须为 `null`；可信程度缺省时可放行、存在时必须落在 0–1 且低于 0.5 拒绝；`preset` 不得夹带 `evidence` |
+| `tests/vision-config.test.js` | 提交配置 `visionAdapter: off`；缺省、空串或其他值一律按 `off`；读取失败路径同样归一化，不残留 `fixture` |
+| `tests/vision-wake.test.js` | `off` 走预制；`fixture` + 匹配样例进入 `interactive`，`source: vision` 与 `evidence` 一路到页面；即使没有预制结果也能成功；识别成功不人为等待 1500ms |
+| `tests/vision-reject.test.js` | 九类坏样例全部进入可恢复错误（`external_unavailable` + 同一句 `message`、`result` 为 `null`、从未进入交互）；外部演练优先于识别样例；取消/退出/离开目标时间后丢弃迟到结果；`hang` 仍在 1500ms 回退到预制 |
+| `tests/vision-latency.test.js` | 识别成功与识别失败各记一条 `vision-decision`；识别路径不写 `fallback-visible`；预制路径不写识别计时；样本只含名称、毫秒数与缓存状态 |
+| `tests/page-vision.test.js` | 页面按 `evidence === 'packaged-sample'` 显示「识别结果」；识别来源不是警示态；不读也不显示可信程度；页面文件无远程地址、动态代码或密钥 |
+
+### 4.2 尚未执行（不得写成已通过）
+
+| 项 | 原因 |
+| --- | --- |
+| `quickstart.md` 第 1–5 节：关闭开关连唤 10 次、打开样例离线走通、三类非法样例、`hang` 回退复核、配置改回 `off` | 当前环境没有可控浏览器会话 |
+| SC-002（90 秒内完成唤醒、改参、重置、退出） | 同上 |
+| 包内 9 秒片子的真实 `frameSize` 对齐 | 视频素材仍未提交。样例当前按 1920×1080 画布编写；识别路径**不做**画幅换算，演练前必须按实际尺寸改写 `extension/assets/vision/fixture-parabola.json`（README 给了 3024×1898 的换算示例） |
+
+### 4.3 提交配置
+
+由 `tests/vision-config.test.js` 自动断言：`visionAdapter: off`、`externalAttempt: off`、`fallbackAfterMs: 1500`。任何演练结束后必须回到这三个值。
+
+## 5. 变更记录
 
 | 日期 | 变更 |
 | --- | --- |
 | 2026-10-02 | 首次建立验证记录：自动化基线 96 项、覆盖范围、未执行项与证据口径 |
 | 2026-10-02 | 合并 `origin/main`（PR #26 `ui`、PR #27 6 秒帧适配）后重跑：基线 118 项通过；`tests/wake-contract.test.js` 改写为按 `.specify/memory/constitution.md` 1.3.0「交接接口」校验 |
 | 2026-10-02 | 解决 PR #30 与 `main` 的冲突后重跑：`node --test` 137 项通过。残缺帧尺寸不再记成准备结果不可用 |
+| 2026-10-02 | T001–T018 执行完毕：宪法修订到 1.4.0、识别开关与样例、同一个校验器放行识别样例、页面来源文案与识别计时接入。自动基线 **182 项通过**；quickstart 手工验收与真实画幅对齐**未执行** |

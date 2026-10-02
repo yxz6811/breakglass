@@ -24,7 +24,8 @@ const ELEMENT_IDS = [
   'parameter-a', 'parameter-a-value', 'parameter-h', 'parameter-h-value',
   'parameter-k', 'parameter-k-value', 'source-label', 'source-note',
   'state-label', 'time-label', 'asset-empty', 'runtime-note',
-  'waiting-bar', 'waiting-progress', 'fullscreen-button'
+  'waiting-bar', 'waiting-progress', 'fullscreen-button',
+  'wake-reason', 'reset-reason'
 ];
 
 // 忠实一点的 style 替身：main.js 会同时用 style.left = ... 和 style.setProperty。

@@ -69,7 +69,8 @@ Spec Kit 的治理记忆还保留了一个未来的窄例外：如果团队书�
 | --- | --- | --- |
 | `preset` | 使用与当前视频、时间和帧尺寸匹配的预制结果 | 已完成真实识别 |
 | `preset` + `timeout` | 外部等待超时后使用预热的本地结果，并显示原因 | 外部服务成功返回 |
-| `vision` | 外部接口按已确认契约返回并通过确定性校验的结果 | 结果天然正确或模型没有幻觉 |
+| `vision` + `evidence: packaged-sample`（001 之后的识别适配切片） | 这是**随扩展打包的识别样例**，走与预制结果同一套校验，界面全程显示「识别结果」与「尚未接通外部识别」 | 外部接口已返回、单帧已离开浏览器、识别已接通 |
+| `vision`（未来真实接口） | 外部接口按已确认契约返回并通过确定性校验的结果 | 结果天然正确或模型没有幻觉 |
 | `mock`/fixture | 前端状态、几何和交互验证数据 | 已对齐正式视频或已完成产品验收 |
 | `error`/`cancelled` | 失败或取消已被用户看见，提供重试/退出路径 | 静默转成成功结果 |
 
@@ -103,6 +104,16 @@ P1 立项至少要同时记录精确依赖版本、资源来源与完整性校�
 | 后端/识别任务 | 真实识别、单帧上传、感知代理 | 当前不派发；需先完成上传决定、Constitution 修订和独立 P1 立项 |
 
 当前承诺仍是扩展自带演示页上的单场景抛物线。2026-10-02 操作者确认 P0 主路径的 Chrome 手工验收通过，见 `docs/BreakGlass-frontend-validation.md`。仓库仍未提交正式视频文件。故事 2、故事 3 已有自动测试；它们的耗时记录和四画幅实测比例还没写。真实识别仍未派发。
+
+### 识别适配切片（`specs/002-vision-result-adapter/`）的边界
+
+该切片新增默认关闭的 `visionAdapter` 开关（只允许 `off` / `fixture`），打开且外部演练为 `off` 时读取**随扩展打包**的识别样例，并用同一个 `validateCurveResult` 放行。边界仍然成立：
+
+- `source: "vision"` 在本切片**只**表示 `evidence: "packaged-sample"` 的打包样例；它不表示外部接口已返回，不表示单帧已离开浏览器，也不表示识别服务已接通。
+- 不新增上传地址、主机权限、内容脚本、远程脚本或后端进程；样例读取路径只有扩展包内的 `extension/assets/vision/fixture-parabola.json`。
+- 真实上传仍是未批准的外部依赖；`.specify/memory/constitution.md` 的 `TODO(FRAME_UPLOAD)` 仍未解除。
+- 识别适配的开关、样例、校验与会话规则属于本仓库的「结果规则」侧；页面只消费 `createWake` 的 `onChange` 状态并显示来源文案。
+- `.specify/memory/constitution.md` 已由 1.3.0 修订为 1.4.0：默认关闭时 `interactive` 的 `result.source` 仍只能是 `preset`，只有 `visionAdapter: "fixture"` + `externalAttempt: "off"` 时才允许 `source: "vision"` + `fallback: null` + `evidence: "packaged-sample"`。
 
 ## 9. 合并前的边界检查
 

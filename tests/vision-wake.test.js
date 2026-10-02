@@ -1,5 +1,6 @@
 /**
- * 识别样例的唤醒夹具。T010 完成前，打开 fixture 仍会走预制成功路径。
+ * T007：识别样例的成功路径。实现见 extension/src/session/wake.js 等（T010）。
+ * 时钟由测试注入；样例通过真实 fetch 读取包内文件，不使用真实 setTimeout。
  */
 const test = require('node:test');
 const assert = require('node:assert/strict');
@@ -7,54 +8,34 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { SessionController } = require('../extension/src/session/session');
 const wakeApi = require('../extension/src/session/wake');
-const { createFakeClock } = require('./helpers/fake-clock.js');
+const { createFakeClock, flush } = require('./helpers/fake-clock.js');
 
+const PRESET = require('../extension/assets/presets/demo-parabola.json');
+const VISION = require('../extension/assets/vision/fixture-parabola.json');
 const FRAME = { width: 1920, height: 1080 };
 const TARGET_TIME = 6;
-const WAKE_OPTIONS = ['session', 'config', 'preset', 'clock', 'onChange', 'attempt'];
 const STATE_KEYS = ['status', 'requestId', 'result', 'currentParameters', 'initialParameters', 'code', 'message'];
-const FIXTURE_PATH = path.join(__dirname, '..', 'extension', 'assets', 'vision', 'fixture-parabola.json');
-const README_PATH = path.join(__dirname, '..', 'extension', 'assets', 'vision', 'README.md');
 
-/**
- * @param {object} [overrides]
- * @returns {object}
- */
-function preset(overrides = {}) {
-  return {
-    requestId: 'fixture-request',
-    videoId: 'fixture-parabola',
-    time: TARGET_TIME,
-    frameSize: { ...FRAME },
-    source: 'preset',
-    fallback: null,
-    definition: {
-      equationId: 'fixture.parabola',
-      parameters: {
-        a: { initial: 1, min: 0.4, max: 1.2, step: 0.1 },
-        h: { initial: 0, min: -2, max: 2, step: 0.1 },
-        k: { initial: 0, min: -2, max: 2, step: 0.1 }
-      },
-      dragParameter: 'h',
-      domain: { min: -4, max: 4 },
-      range: { min: -4, max: 4 },
-      yAxis: 'up',
-      region: { x: 100, y: 80, width: 640, height: 360 }
-    },
-    ...overrides
+async function withVisionFile(run, candidate = VISION) {
+  const original = global.fetch;
+  global.fetch = async (url) => {
+    const target = String(url);
+    if (!target.includes('vision/fixture-parabola.json')) throw new Error('意外的读取路径：' + target);
+    return { ok: true, status: 200, json: async () => JSON.parse(JSON.stringify(candidate)) };
   };
+  try {
+    return await run();
+  } finally {
+    global.fetch = original;
+  }
 }
 
-/**
- * @param {{ visionAdapter?: string, externalAttempt?: string, presetResult?: object | null, config?: object }} [options]
- * @returns {{ clock: object, session: SessionController, wake: object, states: object[] }}
- */
-function setup({ visionAdapter, externalAttempt = 'off', presetResult, config = {} } = {}) {
+function setup({ visionAdapter = 'off', externalAttempt = 'off', frameSize = { ...FRAME } } = {}) {
   const clock = createFakeClock();
   const session = new SessionController({
-    videoId: 'fixture-parabola',
+    videoId: VISION.videoId,
     targetTime: TARGET_TIME,
-    frameSize: { ...FRAME },
+    frameSize: { ...frameSize },
     externalAttempt
   });
   const states = [];
@@ -65,141 +46,97 @@ function setup({ visionAdapter, externalAttempt = 'off', presetResult, config = 
       prewarmed: true,
       fallbackAfterMs: 1500,
       externalAttempt,
-      visionAdapter,
-      ...config
+      visionAdapter
     },
-    preset: presetResult === undefined ? preset() : presetResult,
+    preset: JSON.parse(JSON.stringify(PRESET)),
     clock,
     onChange: (state) => states.push(state)
   });
-  return { clock, session, wake, states };
+  return { clock, session, wake, states, latest: () => states[states.length - 1] };
 }
 
-/**
- * @param {object} wake
- * @returns {{ ok: boolean, requestId?: string, code?: string, message?: string }}
- */
-function start(wake) {
-  return wake.start({ paused: true, currentTime: TARGET_TIME, frameSize: { ...FRAME } });
+function start(wake, frameSize = { ...FRAME }) {
+  return wake.start({ paused: true, currentTime: TARGET_TIME, frameSize });
 }
 
-/**
- * @param {object[]} states
- * @returns {object}
- */
-function latest(states) {
-  return states[states.length - 1];
-}
-
-/**
- * @param {object} parameters
- */
-function assertParameterBounds(parameters) {
-  for (const [name, item] of Object.entries(parameters)) {
-    assert.equal(item.min <= item.initial && item.initial <= item.max, true, name);
-    assert.equal(item.step > 0, true, name);
-  }
-}
-
-test('打包样例标明识别证据，且说明它不是正式素材', () => {
-  const fixture = JSON.parse(fs.readFileSync(FIXTURE_PATH, 'utf8'));
-  const readme = fs.readFileSync(README_PATH, 'utf8');
-  assert.equal(fixture.source, 'vision');
-  assert.equal(fixture.fallback, null);
-  assert.equal(fixture.evidence, 'packaged-sample');
-  assert.equal(fixture.videoId.includes('fixture'), true);
-  assert.equal(fixture.definition.equationId, 'fixture.parabola');
-  assert.equal(Object.prototype.hasOwnProperty.call(fixture, 'confidence'), false);
-  assertParameterBounds(fixture.definition.parameters);
-  const region = fixture.definition.region;
-  assert.equal(region.width > 0 && region.height > 0, true);
-  assert.equal(region.x >= 0 && region.y >= 0, true);
-  assert.equal(region.x + region.width <= fixture.frameSize.width, true);
-  assert.equal(region.y + region.height <= fixture.frameSize.height, true);
-  assert.match(readme, /不是正式网课素材/);
-  assert.match(readme, /也不代表外部识别已接通/);
-  const serialized = JSON.stringify(fixture) + readme;
-  assert.equal(/secret|api[_-]?key|token|authorization|https?:|upload|\bmodel\b/i.test(serialized), false);
-});
-
-test('createWake 不新增参数，页面状态也不新增字段', () => {
-  const source = fs.readFileSync(path.join(__dirname, '..', 'extension', 'src', 'session', 'wake.js'), 'utf8');
-  const signature = /function createWake\(\{([^}]*)\}/.exec(source);
-  assert.ok(signature, '找不到 createWake 的签名');
-  const params = signature[1].split(',').map((item) => item.trim().split(/[=\s]/)[0]).filter(Boolean);
-  assert.deepEqual(params, WAKE_OPTIONS);
-  const { wake, states } = setup();
-  start(wake);
-  assert.deepEqual(Object.keys(latest(states)).sort(), [...STATE_KEYS].sort());
-});
-
-test('visionAdapter 为 off、缺省或其他值时立即进入预制交互', () => {
-  for (const visionAdapter of ['off', undefined, '', 'live', 'Fixture']) {
-    const { clock, wake, states } = setup({ visionAdapter });
-    const started = start(wake);
-    assert.equal(started.ok, true, String(visionAdapter));
-    const state = latest(states);
-    assert.equal(state.status, 'interactive', String(visionAdapter));
-    assert.equal(state.result.source, 'preset', String(visionAdapter));
-    assert.equal(state.result.fallback, null, String(visionAdapter));
-    assert.equal(state.result.evidence, undefined, String(visionAdapter));
-    assert.equal(clock.pending(), 0, String(visionAdapter));
-  }
-});
-
-test('fixture 且 externalAttempt 为 off 时，匹配样例进入识别交互', () => {
-  const fixture = JSON.parse(fs.readFileSync(FIXTURE_PATH, 'utf8'));
-  const { clock, session, wake, states } = setup({ visionAdapter: 'fixture' });
-  const started = start(wake);
+test('visionAdapter 为 off 时走预制主路径，不出现 vision', async () => {
+  const h = setup({ visionAdapter: 'off' });
+  const started = start(h.wake);
   assert.equal(started.ok, true);
-  assert.equal(clock.pending(), 0, '识别样例不得留下 1500ms 看门狗');
-  const state = latest(states);
+  const state = h.latest();
   assert.equal(state.status, 'interactive');
-  assert.equal(state.result.source, 'vision');
+  assert.equal(state.result.source, 'preset');
   assert.equal(state.result.fallback, null);
-  assert.equal(state.result.evidence, 'packaged-sample');
-  assert.equal(Object.prototype.hasOwnProperty.call(state.result, 'confidence'), false);
-  assert.equal(state.result.requestId, started.requestId);
-  assert.equal(state.requestId, started.requestId);
-  assert.notEqual(state.result.requestId, fixture.requestId);
-  assert.equal(state.result.videoId, fixture.videoId);
-  assert.equal(Math.abs(state.result.time - TARGET_TIME) <= 0.2, true);
-  assert.deepEqual(state.result.frameSize, FRAME);
-  assertParameterBounds(state.result.definition.parameters);
-  assert.deepEqual(Object.keys(state).sort(), [...STATE_KEYS].sort());
-
-  session.updateParameter('h', 99);
-  assert.equal(session.getState().currentParameters.h, 2);
-  session.reset();
-  assert.equal(session.getState().currentParameters.h, 0);
-  assert.equal(wake.exit().status, 'paused-ready');
+  assert.equal(state.result.evidence, undefined);
+  assert.equal(h.clock.pending(), 0, '主路径不得留下定时器');
 });
 
-test('识别样例不依赖同时传入的预制结果', () => {
-  const { wake, states } = setup({ visionAdapter: 'fixture', presetResult: null });
-  const started = start(wake);
-  assert.equal(started.ok, true);
-  assert.equal(latest(states).result.source, 'vision');
-  assert.equal(latest(states).result.evidence, 'packaged-sample');
+test('visionAdapter 缺省或其他值时按 off 处理，不读识别样例', async () => {
+  for (const value of [undefined, '', 'on', 'FIXTURE', true]) {
+    const h = setup({ visionAdapter: value });
+    start(h.wake);
+    assert.equal(h.latest().result.source, 'preset', 'visionAdapter=' + JSON.stringify(value));
+  }
 });
 
-test('fixture 不能压过 hang 的预制超时回退', () => {
-  const { clock, wake, states } = setup({ visionAdapter: 'fixture', externalAttempt: 'hang' });
-  assert.equal(start(wake).ok, true);
-  assert.equal(latest(states).status, 'waiting');
-  assert.equal(latest(states).result, null);
-  clock.advance(1500);
-  const settled = latest(states);
-  assert.equal(settled.status, 'interactive');
-  assert.equal(settled.result.source, 'preset');
-  assert.equal(settled.result.fallback, 'timeout');
-  assert.equal(settled.result.evidence, undefined);
+test('fixture + 样例匹配时进入 interactive，来源为 vision 且带 evidence', async () => {
+  await withVisionFile(async () => {
+    const h = setup({ visionAdapter: 'fixture' });
+    const started = start(h.wake);
+    assert.equal(started.ok, true);
+    await flush();
+    const state = h.latest();
+    assert.equal(state.status, 'interactive');
+    assert.equal(state.result.source, 'vision');
+    assert.equal(state.result.fallback, null);
+    assert.equal(state.result.evidence, 'packaged-sample');
+    assert.equal(state.requestId, state.result.requestId);
+    assert.deepEqual(Object.keys(state).sort(), [...STATE_KEYS].sort());
+    assert.equal(h.clock.pending(), 0, '识别成功不得人为等待 1500ms');
+  });
 });
 
-test('播放离开目标时间后结束识别会话', () => {
-  const { wake } = setup({ visionAdapter: 'fixture' });
-  start(wake);
-  const state = wake.onPlaybackChange({ paused: false, currentTime: TARGET_TIME });
-  assert.equal(state.status, 'paused-ready');
-  assert.equal(state.result, null);
+test('识别样例的参数范围仍然满足 min ≤ initial ≤ max 且 step > 0', async () => {
+  await withVisionFile(async () => {
+    const h = setup({ visionAdapter: 'fixture' });
+    start(h.wake);
+    await flush();
+    const parameters = h.latest().result.definition.parameters;
+    for (const name of Object.keys(parameters)) {
+      const item = parameters[name];
+      assert.equal(item.min <= item.initial && item.initial <= item.max, true, name);
+      assert.equal(item.step > 0, true, name);
+    }
+    assert.equal(h.session.getState().currentParameters.a >= 0.4, true);
+  });
+});
+
+test('识别样例不经过预制缓存：preset 为 null 时也能进入交互', async () => {
+  await withVisionFile(async () => {
+    const clock = createFakeClock();
+    const session = new SessionController({ videoId: VISION.videoId, targetTime: TARGET_TIME, frameSize: { ...FRAME }, externalAttempt: 'off' });
+    const states = [];
+    const wake = wakeApi.createWake({
+      session,
+      config: { enableLocalMock: true, prewarmed: true, fallbackAfterMs: 1500, externalAttempt: 'off', visionAdapter: 'fixture' },
+      preset: null,
+      clock,
+      onChange: (state) => states.push(state)
+    });
+    start(wake);
+    await flush();
+    assert.equal(states[states.length - 1].result.source, 'vision');
+  });
+});
+
+test('包内样例文件本身符合契约（可被同一校验器放行）', () => {
+  const { validateCurveResult } = require('../extension/src/curve/validate');
+  const check = validateCurveResult(VISION, { allowVision: true });
+  assert.equal(check.ok, true, check.message);
+  assert.equal(VISION.evidence, 'packaged-sample');
+  assert.equal(VISION.videoId.includes('fixture'), true);
+  assert.equal(Object.prototype.hasOwnProperty.call(VISION, 'confidence'), false);
+  const raw = fs.readFileSync(path.join(__dirname, '..', 'extension', 'assets', 'vision', 'fixture-parabola.json'), 'utf8');
+  assert.equal(raw.includes('//'), false, 'JSON 内不得写注释');
+  assert.doesNotMatch(raw, /https?:\/\/|api[_-]?key|secret|token|authorization|\bmodel\b/i);
 });
