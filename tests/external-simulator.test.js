@@ -166,6 +166,22 @@ test('off returns the preset immediately', async () => {
   assert.equal(check.ok, true);
 });
 
+test('off keeps the preset video, time and frame when the context differs', async () => {
+  const { clock, run } = attempt('off');
+  const ctx = context();
+  ctx.videoId = 'other-video';
+  ctx.time = 99;
+  ctx.frameSize = { width: 3024, height: 1898 };
+  const seen = await observe(run.start(ctx), clock, 0);
+  assert.equal(seen.settled, true);
+  assert.equal(seen.value.candidate.requestId, 'request-1');
+  assert.equal(seen.value.candidate.videoId, 'fixture-parabola');
+  assert.equal(seen.value.candidate.time, 12.5);
+  assert.equal(seen.value.candidate.frameSize.width, 1920);
+  assert.equal(seen.value.candidate.frameSize.height, 1080);
+  assert.equal(seen.value.candidate.definition.region.x, 100);
+});
+
 test('hang does not return before cancel or timeout', async () => {
   const { clock, run } = attempt('hang');
   const seen = await observe(run.start(context()), clock, 5000);

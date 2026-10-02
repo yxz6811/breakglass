@@ -176,6 +176,17 @@ test('callers cannot widen bounds after the result has been accepted', () => {
   assert.ok(session.getState().currentParameters.h <= 2);
 });
 
+test('getState returns a copy so callers cannot widen accepted bounds', () => {
+  const session = controller();
+  const pending = session.beginWait({ paused: true, currentTime: 12.5 });
+  assert.equal(session.resolve(result(pending.requestId)).ok, true);
+  const exposed = session.getState().result;
+  exposed.definition.parameters.h.max = 50;
+  session.updateParameter('h', 40);
+  assert.ok(session.getState().currentParameters.h <= 2);
+  assert.equal(session.getState().result.definition.parameters.h.max, 2);
+});
+
 test('result time is compared with the session target, not only the wake instant', () => {
   const session = controller(10);
   const pending = session.beginWait({ paused: true, currentTime: 10.051 });

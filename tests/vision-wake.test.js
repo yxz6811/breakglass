@@ -79,6 +79,26 @@ test('visionAdapter 缺省或其他值时按 off 处理，不读识别样例', a
   }
 });
 
+test('识别样例读取挂起超过 1500ms 时进入可恢复错误', async () => {
+  const original = global.fetch;
+  global.fetch = () => new Promise(() => {});
+  try {
+    const h = setup({ visionAdapter: 'fixture' });
+    start(h.wake);
+    await flush();
+    assert.equal(h.latest().status, 'waiting');
+    h.clock.advance(1499);
+    assert.equal(h.latest().status, 'waiting');
+    h.clock.advance(1);
+    assert.equal(h.latest().status, 'recoverable-error');
+    assert.equal(h.latest().code, 'external_unavailable');
+    assert.equal(h.latest().result, null);
+    assert.equal(h.clock.pending(), 0);
+  } finally {
+    global.fetch = original;
+  }
+});
+
 test('fixture + 样例匹配时进入 interactive，来源为 vision 且带 evidence', async () => {
   await withVisionFile(async () => {
     const h = setup({ visionAdapter: 'fixture' });

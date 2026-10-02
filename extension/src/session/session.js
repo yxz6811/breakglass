@@ -11,13 +11,12 @@
   }
 
   class SessionController {
-    constructor({ videoId, targetTime, frameSize, timeTolerance = 0.2, externalAttempt = 'off' } = {}) {
+    constructor({ videoId, targetTime, frameSize, timeTolerance = 0.2 } = {}) {
       this.videoId = videoId;
       this.targetTime = targetTime;
       this.frameSize = frameSize;
       this.timeTolerance = timeTolerance;
-      // 非 off 也可以等待。看门狗决定能否回退，会话不把预制结果标成识别成功。
-      this.externalAttempt = externalAttempt;
+      // externalAttempt 只存在于配置，由 createWake 每次读取。会话不另存一份。
       this.error = null;
       this.status = 'paused-ready';
       this.pending = null;
@@ -170,7 +169,7 @@
       return {
         status: this.status,
         requestId: this.pending?.requestId || this.current?.result.requestId || null,
-        result: this.current?.result || null,
+        result: this.current ? copyResult(this.current.result) : null,
         currentParameters: this.current ? { ...this.current.currentParameters } : null,
         initialParameters: this.current ? { ...this.current.initialParameters } : null,
         code: failed ? this.error.code : null,

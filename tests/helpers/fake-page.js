@@ -17,6 +17,8 @@ require('../../extension/src/session/wake');
 require('../../extension/src/telemetry/latency');
 require('../../extension/src/preset/load');
 require('../../extension/src/preset/place-in-frame');
+require('../../extension/src/lesson/reading');
+require('../../extension/src/lesson/ask');
 
 const ELEMENT_IDS = [
   'demo-video', 'video-stage', 'target-time', 'play-toggle', 'jump-target',
@@ -25,7 +27,8 @@ const ELEMENT_IDS = [
   'parameter-k', 'parameter-k-value', 'source-label', 'source-note',
   'state-label', 'time-label', 'asset-empty', 'runtime-note',
   'waiting-bar', 'waiting-progress', 'fullscreen-button',
-  'wake-reason', 'reset-reason'
+  'wake-reason', 'reset-reason', 'local-video',
+  'lesson-status', 'lesson-cancel', 'lesson-next', 'lesson-endpoint', 'lesson-note'
 ];
 
 // 忠实一点的 style 替身：main.js 会同时用 style.left = ... 和 style.setProperty。
@@ -74,6 +77,7 @@ function element(tagName) {
     },
     setAttribute(name, value) { attributes.set(name, String(value)); },
     getAttribute(name) { return attributes.has(name) ? attributes.get(name) : null; },
+    removeAttribute(name) { attributes.delete(name); },
     addEventListener(type, handler) {
       const list = listeners.get(type) || [];
       list.push(handler);
@@ -117,6 +121,27 @@ function element(tagName) {
     hasPointerCapture() { return false; },
     releasePointerCapture() {}
   };
+  if (String(tagName).toLowerCase() === 'video') {
+    node.duration = 0;
+    node.src = '';
+    node.seeking = false;
+    // holdSeeks 为 true 时定位停在 seeking，直到测试调用 harness.finishSeek()。
+    node.holdSeeks = false;
+    let time = 0;
+    Object.defineProperty(node, 'currentTime', {
+      configurable: true,
+      enumerable: true,
+      get() { return time; },
+      set(value) {
+        const next = Number(value);
+        const changed = next !== time;
+        time = next;
+        if (!changed) return;
+        if (node.holdSeeks) node.seeking = true;
+        else node.dispatch('seeked');
+      }
+    });
+  }
   Object.defineProperty(node, 'innerHTML', {
     configurable: true,
     get() { return node.markup || ''; },
@@ -236,7 +261,7 @@ function flush() { return new Promise((resolve) => setImmediate(resolve)); }
 async function createHarness(options = {}) {
   const elements = {};
   for (const id of ELEMENT_IDS) {
-    const tag = id === 'demo-video' ? 'video' : (id === 'parameter-h' ? 'input' : 'div');
+    const tag = id === 'demo-video' ? 'video' : (id === 'parameter-h' || id === 'local-video' || id === 'lesson-endpoint' || id === 'lesson-note' ? 'input' : 'div');
     elements[id] = element(tag);
   }
   applyMarkupState(elements);
@@ -250,6 +275,7 @@ async function createHarness(options = {}) {
       const match = /^#(.+)$/.exec(selector);
       return match ? elements[match[1]] || null : null;
     },
+    createElement(tag) { return element(tag); },
     createElementNS(namespace, tag) { return element(tag); },
     addEventListener(type, handler) {
       const list = documentListeners.get(type) || [];
@@ -313,6 +339,11 @@ async function createHarness(options = {}) {
       video.paused = true;
       video.currentTime = 6;
       video.dispatch('loadedmetadata');
+    },
+    /** 放行 holdSeeks 挂住的那次定位。 */
+    finishSeek() {
+      video.seeking = false;
+      video.dispatch('seeked');
     },
     restore() {
       globalThis.window = previous.window;

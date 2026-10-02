@@ -29,8 +29,11 @@
   }
 
   const PRESET_UNAVAILABLE = '当前帧没有可用的准备结果，无法进入交互。';
+  const WATCHDOG_UNAVAILABLE = '无法安排保底等待，未进入交互。';
   const EXTERNAL_UNAVAILABLE = '外部结果不可用，未进入交互。';
   const MOCK_DISABLED = '本地预制未启用，无法进入交互。';
+  /** 看门狗、替身迟到和预制门禁共用的延迟。配置不是这个值时，不另起一个定时器。 */
+  const REQUIRED_FALLBACK_MS = 1500;
 
   /**
    * @param {object} options
@@ -114,34 +117,46 @@
     }
 
     /**
-     * 把预制区域从它自己的源像素，按比例放进当前视频帧。不改已装入的预制对象。
+     * place-in-frame.js 比本文件后加载，调用时再取。
+     * @returns {{ placeRegionInFrame: Function } | null}
+     */
+    function frameFitApi() {
+      const live = BreakGlass.frameFit;
+      if (live && typeof live.placeRegionInFrame === 'function') return live;
+      if (typeof require === 'function') {
+        try {
+          const api = require('../preset/place-in-frame');
+          if (api && typeof api.placeRegionInFrame === 'function') return api;
+        } catch (error) {
+          return null;
+        }
+      }
+      return null;
+    }
+
+    /**
+     * 把预制区域从它自己的源像素放进当前视频帧。放不下时返回 null，不改已装入的预制对象。
      * @param {object} source
      * @param {{ width: number, height: number }} frameSize
-     * @returns {object}
+     * @returns {{ frameSize: { width: number, height: number }, definition: object } | null}
      */
-    function fitDefinition(source, frameSize) {
-      const definition = source.definition;
-      const authored = source.frameSize;
-      const region = definition && definition.region;
-      if (!definition || !region || !authored || !(authored.width > 0) || !(authored.height > 0)) {
-        return definition;
-      }
-      const sx = frameSize.width / authored.width;
-      const sy = frameSize.height / authored.height;
-      const x = region.x * sx;
-      const y = region.y * sy;
-      let width = region.width * sx;
-      let height = region.height * sy;
-      if (x + width > frameSize.width) width = frameSize.width - x;
-      if (y + height > frameSize.height) height = frameSize.height - y;
+    function placePreset(source, frameSize) {
+      const definition = source && source.definition;
+      const fit = frameFitApi();
+      if (!definition || !fit) return null;
+      const placed = fit.placeRegionInFrame(source.frameSize, definition.region, frameSize);
+      if (!placed) return null;
       return {
-        equationId: definition.equationId,
-        parameters: definition.parameters,
-        dragParameter: definition.dragParameter,
-        domain: definition.domain,
-        range: definition.range,
-        yAxis: definition.yAxis,
-        region: { x, y, width, height }
+        frameSize: placed.frameSize,
+        definition: {
+          equationId: definition.equationId,
+          parameters: definition.parameters,
+          dragParameter: definition.dragParameter,
+          domain: definition.domain,
+          range: definition.range,
+          yAxis: definition.yAxis,
+          region: placed.region
+        }
       };
     }
 
@@ -154,19 +169,16 @@
      * @returns {object}
      */
     function bindPreset(source, requestId, fallback, frameSize) {
-      const size = frameSize && frameSize.width > 0 && frameSize.height > 0
-        ? { width: frameSize.width, height: frameSize.height }
-        : (source.frameSize
-          ? { width: source.frameSize.width, height: source.frameSize.height }
-          : source.frameSize);
+      const placed = placePreset(source, frameSize);
+      if (!placed) return null;
       return {
         requestId,
         videoId: source.videoId,
         time: source.time,
-        frameSize: size,
+        frameSize: placed.frameSize,
         source: 'preset',
         fallback,
-        definition: fitDefinition(source, size)
+        definition: placed.definition
       };
     }
 
@@ -190,19 +202,16 @@
      * @returns {object}
      */
     function bindVision(source, requestId, frameSize) {
-      const size = frameSize && frameSize.width > 0 && frameSize.height > 0
-        ? { width: frameSize.width, height: frameSize.height }
-        : (source.frameSize
-          ? { width: source.frameSize.width, height: source.frameSize.height }
-          : source.frameSize);
+      const placed = placePreset(source, frameSize);
+      if (!placed) return null;
       const candidate = {
         requestId,
         videoId: source.videoId,
         time: source.time,
-        frameSize: size,
+        frameSize: placed.frameSize,
         source: 'vision',
         fallback: null,
-        definition: fitDefinition(source, size)
+        definition: placed.definition
       };
       if (source.evidence !== undefined) candidate.evidence = source.evidence;
       if (source.confidence !== undefined) candidate.confidence = source.confidence;
@@ -223,13 +232,22 @@
     }
 
     /**
+     * 配置里的回退延迟必须就是 1500。其它数值不换算成另一个看门狗。
+     * @param {object} live
+     * @returns {number | null}
+     */
+    function fallbackDelayMs(live) {
+      return live.fallbackAfterMs === REQUIRED_FALLBACK_MS ? REQUIRED_FALLBACK_MS : null;
+    }
+
+    /**
      * @param {object} live
      * @returns {boolean}
      */
     function presetReady(live) {
       return live.enableLocalMock === true &&
         live.prewarmed === true &&
-        live.fallbackAfterMs === 1500 &&
+        fallbackDelayMs(live) === REQUIRED_FALLBACK_MS &&
         Boolean(preset) &&
         typeof preset === 'object';
     }
@@ -271,14 +289,18 @@
         return false;
       }
       const candidate = bindPreset(preset, ctx.requestId, fallback, ctx.frameSize);
+      if (!candidate) {
+        deny(ctx, token, 'preset_unavailable', PRESET_UNAVAILABLE);
+        return false;
+      }
       const check = checkCandidate(candidate, ctx);
       if (!check.ok) {
-        deny(ctx, token, check.code || 'preset_unavailable', PRESET_UNAVAILABLE);
+        deny(ctx, token, 'preset_unavailable', PRESET_UNAVAILABLE);
         return false;
       }
       const resolved = session.resolve(candidate);
       if (!resolved.ok) {
-        deny(ctx, token, resolved.code || 'preset_unavailable', resolved.message || PRESET_UNAVAILABLE);
+        deny(ctx, token, 'preset_unavailable', PRESET_UNAVAILABLE);
         return false;
       }
       if (fallback === 'timeout') disarm();
@@ -298,6 +320,10 @@
         deny(ctx, token, 'external_unavailable', EXTERNAL_UNAVAILABLE);
         return;
       }
+      timerId = time.schedule(REQUIRED_FALLBACK_MS, () => {
+        timerId = null;
+        deny(ctx, token, 'external_unavailable', EXTERNAL_UNAVAILABLE);
+      });
       Promise.resolve()
         .then(() => loader.loadVisionFixture())
         .then((loaded) => {
@@ -315,6 +341,10 @@
             return;
           }
           const candidate = bindVision(authored.value, ctx.requestId, ctx.frameSize);
+          if (!candidate) {
+            deny(ctx, token, 'external_unavailable', EXTERNAL_UNAVAILABLE);
+            return;
+          }
           const check = checkCandidate(candidate, ctx, { allowVision: true });
           if (!check.ok) {
             deny(ctx, token, 'external_unavailable', EXTERNAL_UNAVAILABLE);
@@ -356,14 +386,17 @@
     function onExternal(payload, ctx, token) {
       if (!stillWaiting(ctx.requestId, token)) return;
       const candidate = payload && payload.candidate;
-      const check = checkCandidate(candidate, ctx);
-      if (!check.ok || candidate.source !== 'preset') {
-        deny(ctx, token, (check && check.code) || 'external_unavailable', EXTERNAL_UNAVAILABLE);
+      const check = candidate ? checkCandidate(candidate, ctx) : { ok: false, code: 'invalid_shape' };
+      if (!check.ok || !candidate || candidate.source !== 'preset') {
+        const live = readConfig();
+        // hang / late 的 1.5 秒预制保底还在看门狗上。坏候选只丢弃，不把这次等待收成失败。
+        if (live.externalAttempt === 'hang' || live.externalAttempt === 'late') return;
+        deny(ctx, token, 'external_unavailable', EXTERNAL_UNAVAILABLE);
         return;
       }
       const resolved = session.resolve(candidate);
       if (!resolved.ok) {
-        deny(ctx, token, resolved.code || 'external_unavailable', EXTERNAL_UNAVAILABLE);
+        deny(ctx, token, 'external_unavailable', EXTERNAL_UNAVAILABLE);
         return;
       }
       disarm();
@@ -374,12 +407,13 @@
      * @param {object} ctx
      * @param {number} token
      * @param {object} live
+     * @param {number} delayMs 与看门狗相同的 1500
      */
-    function listen(ctx, token, live) {
+    function listen(ctx, token, live, delayMs) {
       const created = attempt || (attemptApi && attemptApi.createAttempt({
         mode: live.externalAttempt,
         clock: time,
-        lateAfterMs: 1500,
+        lateAfterMs: delayMs,
         preset
       }));
       if (!created || typeof created.start !== 'function') {
@@ -433,8 +467,7 @@
       if (live.externalAttempt === 'off' && live.visionAdapter === 'fixture') {
         // 识别样例不人为等待：本地读完即结算，失败即 external_unavailable。
         acceptVision(ctx, token);
-        if (session.getState().status === 'waiting') publish();
-        return { ok: true, requestId: ctx.requestId };
+        return startedResult(ctx);
       }
       if (live.externalAttempt === 'off') {
         acceptPreset(ctx, token, null);
@@ -446,13 +479,46 @@
           message: state.message || undefined
         };
       }
-      timerId = time.schedule(live.fallbackAfterMs, () => {
+      const delay = fallbackDelayMs(live);
+      if (delay == null) {
+        deny(ctx, token, 'preset_unavailable', PRESET_UNAVAILABLE);
+        const failed = session.getState();
+        return {
+          ok: false,
+          requestId: ctx.requestId,
+          code: failed.code || 'preset_unavailable',
+          message: failed.message || PRESET_UNAVAILABLE
+        };
+      }
+      if (!clock || typeof clock.schedule !== 'function' || typeof clock.clear !== 'function') {
+        deny(ctx, token, 'preset_unavailable', WATCHDOG_UNAVAILABLE);
+        return startedResult(ctx);
+      }
+      timerId = time.schedule(delay, () => {
         timerId = null;
         onTimeout(ctx, token);
       });
-      listen(ctx, token, live);
-      if (session.getState().status === 'waiting') publish();
-      return { ok: true, requestId: ctx.requestId };
+      listen(ctx, token, live, delay);
+      return startedResult(ctx);
+    }
+
+    /**
+     * 还在等待时算已开始。同步失败（没有装载器、替身立刻抛错）不能报成成功。
+     * @param {object} ctx
+     * @returns {{ ok: boolean, code?: string, message?: string, requestId?: string }}
+     */
+    function startedResult(ctx) {
+      const state = session.getState();
+      if (state.status === 'waiting') {
+        publish();
+        return { ok: true, requestId: ctx.requestId };
+      }
+      return {
+        ok: state.status === 'interactive',
+        requestId: ctx.requestId,
+        code: state.code || undefined,
+        message: state.message || undefined
+      };
     }
 
     function cancel() {

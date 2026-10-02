@@ -23,7 +23,9 @@
   }
 
   /**
-   * 用冻结上下文盖住预制结果的定位字段。没有预制时返回 null。
+   * 只盖上这次请求的 requestId。videoId、time、frameSize 和 region 保持预制原样，
+   * 避免用冻结上下文把对不上的结果洗成当前帧。
+   * 没有预制时返回 null。
    * @param {object | null | undefined} source
    * @param {object} ctx
    * @returns {object | null}
@@ -32,9 +34,6 @@
     if (!source || typeof source !== 'object') return null;
     const candidate = copyValue(source);
     candidate.requestId = ctx.requestId;
-    candidate.videoId = ctx.videoId;
-    candidate.time = ctx.time;
-    candidate.frameSize = { width: ctx.frameSize.width, height: ctx.frameSize.height };
     candidate.source = 'preset';
     candidate.fallback = null;
     return candidate;
@@ -105,7 +104,10 @@
             handles.delete(id);
             if (stopped) return;
             const candidate = bindPreset(preset, ctx);
-            if (!candidate) return;
+            if (!candidate) {
+              resolve({ ctx, candidate: null });
+              return;
+            }
             resolve({ ctx, candidate });
           });
           handles.add(id);

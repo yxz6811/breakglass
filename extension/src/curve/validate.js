@@ -108,9 +108,10 @@
     }
 
     const region = definition.region;
+    // 0.1 + 0.2 会略大于 0.3。贴边只放行这种舍入，真正越界仍然拒绝。
     if (!region || !positiveFinite(region.width) || !positiveFinite(region.height) ||
         !finite(region.x) || !finite(region.y) || region.x < 0 || region.y < 0 ||
-        region.x + region.width > frameSize.width || region.y + region.height > frameSize.height) {
+        region.x + region.width > frameSize.width + 1e-9 || region.y + region.height > frameSize.height + 1e-9) {
       return fail('invalid_region', 'region 必须完全位于 frameSize 内。');
     }
 

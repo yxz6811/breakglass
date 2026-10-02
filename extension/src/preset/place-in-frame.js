@@ -46,8 +46,15 @@
       width: region.width * scaleX,
       height: region.height * scaleY
     };
-    if (placed.x < 0 || placed.y < 0) return null;
-    if (placed.x + placed.width > frameWidth || placed.y + placed.height > frameHeight) return null;
+    // 二进制误差会让刚好铺满的区域超出一两个 ulp。真正越界仍然拒绝。
+    const slack = 1e-6;
+    if (placed.x < -slack || placed.y < -slack) return null;
+    if (placed.x + placed.width > frameWidth + slack || placed.y + placed.height > frameHeight + slack) return null;
+    if (placed.x < 0) placed.x = 0;
+    if (placed.y < 0) placed.y = 0;
+    if (placed.x + placed.width > frameWidth) placed.width = frameWidth - placed.x;
+    if (placed.y + placed.height > frameHeight) placed.height = frameHeight - placed.y;
+    if (!(placed.width > 0) || !(placed.height > 0)) return null;
     return {
       frameSize: { width: frameWidth, height: frameHeight },
       region: placed
