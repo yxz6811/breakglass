@@ -3,9 +3,9 @@
 
   const {
     geometry,
+    alignment,
     preset,
     session: sessionApi,
-    evaluate,
     attempt: attemptApi,
     wake: wakeApi,
     latency: latencyApi
@@ -38,6 +38,9 @@
   let localClock = null;
   let overlay = null;
   let dragging = false;
+  let resizeObserver = null;
+  let dprQuery = null;
+  let dprHandler = null;
 
   function createClock() {
     const read = window.performance && typeof window.performance.now === 'function'
@@ -93,15 +96,81 @@
     retryButton.disabled = true;
   }
 
+  // 坐标换算统一走 geometry/alignment.js，页面不再另写一套映射。
   function pagePointForMath(definition, parameters, mathX, rect) {
-    const y = evaluate.evaluateWithParameters(definition, parameters, mathX);
-    const xRatio = (mathX - definition.domain.min) / (definition.domain.max - definition.domain.min);
-    const yRatio = definition.yAxis === 'up'
-      ? (definition.range.max - y) / (definition.range.max - definition.range.min)
-      : (y - definition.range.min) / (definition.range.max - definition.range.min);
-    const sourceX = definition.region.x + xRatio * definition.region.width;
-    const sourceY = definition.region.y + yRatio * definition.region.height;
-    return [sourceX * rect.scale, sourceY * rect.scale];
+    const point = alignment.mathPointToPage(definition, parameters, mathX, rect.scale);
+    return [point.x, point.y];
+  }
+
+  function parsePathPoints(data) {
+    const points = [];
+    const pattern = /[ML]\s+(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)/g;
+    let match = pattern.exec(data);
+    while (match) {
+      points.push({ x: Number(match[1]), y: Number(match[2]) });
+      match = pattern.exec(data);
+    }
+    return points;
+  }
+
+  // 只读测量输出：比较期望页面点与刚写入 DOM 的 path 采样点，供手工验收核对。
+  function publishAlignment(definition, parameters, rect, pathData) {
+    const drawn = parsePathPoints(pathData);
+    const report = alignment.sampleAlignment({
+      definition,
+      parameters,
+      scale: rect.scale,
+      contentRect: rect.contentRect,
+      samples: 9,
+      readActual: (mathX) => {
+        if (drawn.length === 0) return null;
+        const ratio = (mathX - definition.domain.min) / (definition.domain.max - definition.domain.min);
+        const index = Math.max(0, Math.min(drawn.length - 1, Math.round(ratio * (drawn.length - 1))));
+        return drawn[index];
+      }
+    });
+    window.__breakglassAlignment = {
+      contentRect: { ...rect.contentRect },
+      scale: rect.scale,
+      samples: report.points.length,
+      maxRatio: report.maxRatio,
+      tolerance: report.tolerance,
+      withinTolerance: report.withinTolerance,
+      at: localClock ? localClock.now() : Date.now()
+    };
+    return window.__breakglassAlignment;
+  }
+
+  // 窗口、全屏、设备像素比和视频元素尺寸变化后都要重算坐标。
+  function watchDevicePixelRatio() {
+    if (!window.matchMedia) return;
+    if (dprQuery && dprHandler && typeof dprQuery.removeEventListener === 'function') {
+      dprQuery.removeEventListener('change', dprHandler);
+    }
+    const dpr = window.devicePixelRatio || 1;
+    dprQuery = window.matchMedia('(resolution: ' + dpr + 'dppx)');
+    dprHandler = () => { watchDevicePixelRatio(); drawCurve(); };
+    if (dprQuery && typeof dprQuery.addEventListener === 'function') {
+      dprQuery.addEventListener('change', dprHandler);
+    }
+  }
+
+  function watchVideoSize() {
+    if (typeof window.ResizeObserver !== 'function' || !video) return;
+    resizeObserver = new window.ResizeObserver(() => drawCurve());
+    resizeObserver.observe(video);
+  }
+
+  function releaseWatch() {
+    if (resizeObserver) {
+      resizeObserver.disconnect();
+      resizeObserver = null;
+    }
+    if (dprQuery && dprHandler && typeof dprQuery.removeEventListener === 'function') {
+      dprQuery.removeEventListener('change', dprHandler);
+    }
+    dprQuery = null;
+    dprHandler = null;
   }
 
   function drawCurve() {
@@ -135,7 +204,9 @@
       const [px, py] = pagePointForMath(definition, parameters, x, rect);
       path.push(`${index === 0 ? 'M' : 'L'} ${px.toFixed(2)} ${py.toFixed(2)}`);
     }
-    overlay.querySelector('path').setAttribute('d', path.join(' '));
+    const pathData = path.join(' ');
+    overlay.querySelector('path').setAttribute('d', pathData);
+    publishAlignment(definition, parameters, rect, pathData);
 
     const dragParameter = definition.dragParameter;
     const dragValue = parameters[dragParameter];
@@ -327,6 +398,8 @@
         summary: () => latencies.summary(),
         snapshot: () => latencies.snapshot()
       };
+      watchDevicePixelRatio();
+      watchVideoSize();
       runtimeNote.textContent = `配置：${config.externalAttempt} · 本地预制已预热 · 回退 ${config.fallbackAfterMs}ms`;
       setStatus('正式视频素材尚未提供，加载视频后可验证交互。');
       setSource(null);
@@ -351,8 +424,12 @@
     setStatus('视频无法加载，未挂载交互层。');
   });
   window.addEventListener('resize', drawCurve);
+  document.addEventListener('fullscreenchange', drawCurve);
+  window.addEventListener('orientationchange', drawCurve);
   window.addEventListener('pagehide', () => {
     if (wakeController) wakeController.dispose();
+    releaseWatch();
+    window.__breakglassAlignment = null;
   });
   document.addEventListener('keydown', (event) => {
     if (event.altKey && event.key.toLowerCase() === 'b') {

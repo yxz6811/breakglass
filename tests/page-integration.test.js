@@ -31,6 +31,7 @@ test('演示页按依赖顺序加载本地脚本', () => {
     '../src/curve/validate.js',
     '../src/curve/evaluate.js',
     '../src/geometry/content-rect.js',
+    '../src/geometry/alignment.js',
     '../src/session/session.js',
     '../src/attempt/simulator.js',
     '../src/session/wake.js',
@@ -99,4 +100,23 @@ test('替身模块只被演示页与测试引用，不进入生产主路径以�
   assert.match(main, /fallbackAfterMs: config\.fallbackAfterMs/);
   assert.match(main, /fallback === 'timeout'/);
   assert.match(main, /不代表实时识别成功/);
+});
+test('覆盖层绝对定位并接入多画幅重算与测量', () => {
+  const main = readText('src/page/main.js');
+  assert.equal(main.includes("overlay.style.position = 'absolute'"), true);
+  assert.match(main, /viewBox/);
+  assert.match(main, /contentRect.left - stageRect.left/);
+  assert.match(main, /__breakglassAlignment/);
+  assert.equal(main.includes("addEventListener('fullscreenchange'"), true);
+  assert.equal(main.includes("addEventListener('orientationchange'"), true);
+  assert.match(main, /ResizeObserver/);
+  assert.match(main, /matchMedia/);
+  assert.match(main, /alignment.mathPointToPage/);
+});
+
+test('入口不可用时不会注入未验证页面', () => {
+  const manifest = readJson('manifest.json');
+  assert.equal('content_scripts' in manifest, false);
+  assert.deepEqual(manifest.host_permissions, []);
+  assert.equal('web_accessible_resources' in manifest, false);
 });
