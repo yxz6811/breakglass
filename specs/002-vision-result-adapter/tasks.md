@@ -8,7 +8,7 @@
 
 **Organization**: 故事 1 是默认可演示的识别样例成功路径。故事 2 拒绝坏候选。故事 3 把识别耗时与预制回退分开。上传、感知代理和 Pyodide 不编号。
 
-**进度**: 未开始。提交配置保持 `visionAdapter: off`。修改 `extension/src/session/wake.js` 之前必须先完成 T002。两人同时开发时的写权限和样例装入方式以 [`ownership.md`](./ownership.md) 为准。
+**进度**: T002–T008、T010 已完成。`visionAdapter: fixture` 且 `externalAttempt: off` 时，打包样例进入 `interactive`，`evidence` 会抄进 `getState().result`。提交配置仍是 `off`。页面来源文案仍是 T009、T011。两人同时开发时的写权限以 [`ownership.md`](./ownership.md) 为准。
 
 ## Format: `[ID] [P?] [Story] Description`
 
@@ -37,11 +37,11 @@
 
 **⚠️ CRITICAL**: 用户故事必须等本阶段完成。T002 未完成时，不得放行 `source: "vision"`
 
-- [ ] T002 [P] 将 `.specify/memory/constitution.md` 从 1.3.0 修订为 1.4.0（MINOR：不新增来源枚举，只为已有 `vision` 打开一条开关路径）。更新日期与文末变更记录。在「交接接口」中把配置读取说明改为同时读取 `visionAdapter`。把「`interactive` 时 `result.source` 为 `preset`」改为：`visionAdapter` 缺省或为 `off` 时，`interactive` 的 `result.source` 仍只能是 `preset`，`result.fallback` 为 `null` 或 `"timeout"`；仅当 `visionAdapter` 为 `fixture` 且 `externalAttempt` 为 `off` 时，允许 `source` 为 `vision`、`fallback` 为 `null`、`evidence` 为 `packaged-sample`。其他 `visionAdapter` 值视为 `off`。不得改 `createWake` 的方法名、参数顺序或状态名，不得新增错误码。修订后把 `specs/002-vision-result-adapter/plan.md` 的对应门禁从「有条件通过」改为「通过」，并注明版本 1.4.0。不修改 `docs/BreakGlass-constitution.md`（该文件没有写死交互来源只能是 preset）
-- [ ] T003 [P] 先写会失败的 `tests/vision-validate.test.js`。覆盖：未传 `allowVision: true` 时 `source: "vision"` 拒绝；`allowVision: true` 且 `evidence` 为 `packaged-sample`、`fallback` 为 `null`、`confidence` 缺省时通过；`evidence` 缺失或其他值拒绝；`confidence` 缺省时通过且返回值不含编造的百分比；`confidence` 存在时必须是有限数且 `0 ≤ confidence ≤ 1`，`confidence < 0.5` 拒绝，`confidence >= 0.5` 通过；`source: "preset"` 携带 `evidence` 拒绝；缺字段、非有限数值、越界 region、未知 `equationId`、错误 `videoId` 仍拒绝。`time` 单位为秒，默认容差 ±0.2 秒。参数满足 `min ≤ initial ≤ max` 且 `step > 0`。region 宽高为正且完全落在 frameSize 内。夹具不含密钥、上传地址或模型名
-- [ ] T004 实现 `extension/src/curve/validate.js`，使 T003 通过。只在 `source === "vision"` 且 `context.allowVision === true` 时接受 vision，并强制 `evidence === "packaged-sample"`、`fallback === null` 与上述 confidence 规则。预制路径仍不要求 `evidence` 或 `confidence`。成功时 `value` 保留原字段，不补写 `confidence`
-- [ ] T005 [P] 先写会失败的 `tests/vision-config.test.js`。断言 `extension/assets/config.json` 的 `visionAdapter` 为 `off`、`externalAttempt` 为 `off`、`fallbackAfterMs` 为 1500。断言该文件不含密钥、上传地址或模型名。断言 `extension/src/preset/load.js` 把 `visionAdapter` 随配置返回；缺省或其他值按 `off` 处理，不得当成 `fixture`
-- [ ] T006 更新 `extension/assets/config.json` 与 `extension/src/preset/load.js`，使 T005 通过。新增字段只有 `"visionAdapter": "off"`。读取时缺省或其他值视为 `off`。不在此任务加载识别样例，不新增远程地址
+- [x] T002 [P] 将 `.specify/memory/constitution.md` 从 1.3.0 修订为 1.4.0（MINOR：不新增来源枚举，只为已有 `vision` 打开一条开关路径）。更新日期与文末变更记录。在「交接接口」中把配置读取说明改为同时读取 `visionAdapter`。把「`interactive` 时 `result.source` 为 `preset`」改为：`visionAdapter` 缺省或为 `off` 时，`interactive` 的 `result.source` 仍只能是 `preset`，`result.fallback` 为 `null` 或 `"timeout"`；仅当 `visionAdapter` 为 `fixture` 且 `externalAttempt` 为 `off` 时，允许 `source` 为 `vision`、`fallback` 为 `null`、`evidence` 为 `packaged-sample`。其他 `visionAdapter` 值视为 `off`。不得改 `createWake` 的方法名、参数顺序或状态名，不得新增错误码。修订后把 `specs/002-vision-result-adapter/plan.md` 的对应门禁从「有条件通过」改为「通过」，并注明版本 1.4.0。不修改 `docs/BreakGlass-constitution.md`（该文件没有写死交互来源只能是 preset）
+- [x] T003 [P] 先写会失败的 `tests/vision-validate.test.js`。覆盖：未传 `allowVision: true` 时 `source: "vision"` 拒绝；`allowVision: true` 且 `evidence` 为 `packaged-sample`、`fallback` 为 `null`、`confidence` 缺省时通过；`evidence` 缺失或其他值拒绝；`confidence` 缺省时通过且返回值不含编造的百分比；`confidence` 存在时必须是有限数且 `0 ≤ confidence ≤ 1`，`confidence < 0.5` 拒绝，`confidence >= 0.5` 通过；`source: "preset"` 携带 `evidence` 拒绝；缺字段、非有限数值、越界 region、未知 `equationId`、错误 `videoId` 仍拒绝。`time` 单位为秒，默认容差 ±0.2 秒。参数满足 `min ≤ initial ≤ max` 且 `step > 0`。region 宽高为正且完全落在 frameSize 内。夹具不含密钥、上传地址或模型名
+- [x] T004 实现 `extension/src/curve/validate.js`，使 T003 通过。只在 `source === "vision"` 且 `context.allowVision === true` 时接受 vision，并强制 `evidence === "packaged-sample"`、`fallback === null` 与上述 confidence 规则。预制路径仍不要求 `evidence` 或 `confidence`。成功时 `value` 保留原字段，不补写 `confidence`
+- [x] T005 [P] 先写会失败的 `tests/vision-config.test.js`。断言 `extension/assets/config.json` 的 `visionAdapter` 为 `off`、`externalAttempt` 为 `off`、`fallbackAfterMs` 为 1500。断言该文件不含密钥、上传地址或模型名。断言 `extension/src/preset/load.js` 把 `visionAdapter` 随配置返回；缺省或其他值按 `off` 处理，不得当成 `fixture`
+- [x] T006 更新 `extension/assets/config.json` 与 `extension/src/preset/load.js`，使 T005 通过。新增字段只有 `"visionAdapter": "off"`。读取时缺省或其他值视为 `off`。不在此任务加载识别样例，不新增远程地址
 
 **Checkpoint**: 校验器能放行标明打包样例的 vision，并拒绝缺证据、低置信度和预制夹带 evidence。提交配置仍是关闭。唤醒成功路径尚未改动。
 
@@ -55,13 +55,13 @@
 
 ### Tests for User Story 1
 
-- [ ] T007 [P] [US1] 先写会失败的 `tests/vision-wake.test.js`。注入假时钟，不使用真实 `setTimeout`。覆盖：`visionAdapter` 为 `off` 时立即进入预制交互，`source` 为 `preset`，`fallback` 为 `null`，不出现 vision；`visionAdapter` 为 `fixture`、`externalAttempt` 为 `off`、样例匹配当前 `requestId`、`videoId`、`time` ±0.2 秒和 `frameSize` 时进入 `interactive`，`source` 为 `vision`，`fallback` 为 `null`，`evidence` 为 `packaged-sample`；参数仍满足 `min ≤ initial ≤ max` 且 `step > 0`。调用形状保持 `createWake({ session, config, preset, clock, onChange, attempt })`，页面状态只有 `status/requestId/result/currentParameters/initialParameters/code/message`
-- [ ] T008 [P] [US1] 编写 `extension/assets/vision/fixture-parabola.json` 与 `extension/assets/vision/README.md`。JSON 的 `source` 为 `vision`，`fallback` 为 `null`，`evidence` 为 `packaged-sample`，`videoId` 含 `fixture`，`equationId` 为 `fixture.parabola`。参数满足 `min ≤ initial ≤ max` 且 `step > 0`，region 宽高为正且完全落在 frameSize 内。不写 `confidence`，JSON 内不写注释。README 写明这不是正式网课素材，也不代表外部识别已接通。文件不含密钥、上传地址或模型名
+- [x] T007 [P] [US1] 先写会失败的 `tests/vision-wake.test.js`。注入假时钟，不使用真实 `setTimeout`。覆盖：`visionAdapter` 为 `off` 时立即进入预制交互，`source` 为 `preset`，`fallback` 为 `null`，不出现 vision；`visionAdapter` 为 `fixture`、`externalAttempt` 为 `off`、样例匹配当前 `requestId`、`videoId`、`time` ±0.2 秒和 `frameSize` 时进入 `interactive`，`source` 为 `vision`，`fallback` 为 `null`，`evidence` 为 `packaged-sample`；参数仍满足 `min ≤ initial ≤ max` 且 `step > 0`。调用形状保持 `createWake({ session, config, preset, clock, onChange, attempt })`，页面状态只有 `status/requestId/result/currentParameters/initialParameters/code/message`
+- [x] T008 [P] [US1] 编写 `extension/assets/vision/fixture-parabola.json` 与 `extension/assets/vision/README.md`。JSON 的 `source` 为 `vision`，`fallback` 为 `null`，`evidence` 为 `packaged-sample`，`videoId` 含 `fixture`，`equationId` 为 `fixture.parabola`。参数满足 `min ≤ initial ≤ max` 且 `step > 0`，region 宽高为正且完全落在 frameSize 内。不写 `confidence`，JSON 内不写注释。README 写明这不是正式网课素材，也不代表外部识别已接通。文件不含密钥、上传地址或模型名
 - [ ] T009 [P] [US1] 先写会失败的 `tests/page-vision.test.js`。用 Node 读取 `extension/demo/index.html` 与 `extension/src/page/main.js`，断言存在 `#source-label`，且脚本在 `evidence === "packaged-sample"` 时能呈现「识别结果」和「随演示打包的识别样例，尚未接通外部识别。」。断言这两个文件不出现 `fetch` 的远程地址、`XMLHttpRequest`、`WebSocket`、密钥或模型名。默认 `visionAdapter: off` 的来源分支仍包含「预先准备的示例」
 
 ### Implementation for User Story 1
 
-- [ ] T010 [US1] 在 T002、T004、T007、T008 之后修改 `extension/src/session/wake.js`、`extension/src/preset/load.js` 和 `extension/src/session/session.js`。`load.js` 新增 `loadVisionFixture`，读取 `extension/assets/vision/fixture-parabola.json`。`wake.js` 在 `visionAdapter` 为 `fixture` 且 `externalAttempt` 为 `off` 时自己调用它，再用 `validateCurveResult(..., { allowVision: true })` 检查；通过则进入 `interactive`。`createWake` 不新增参数，`preset` 仍是预先准备的结果。`session.js` 的 `copyResult` 必须把 `evidence` 抄进 `getState().result`。`visionAdapter` 为 `off`、缺省或其他值时保持现有预制路径。保留单会话、拖动钳制、重置、退出，以及播放或离开目标时间时结束会话。不把样例等待 1500ms，不发起网络请求
+- [x] T010 [US1] 在 T002、T004、T007、T008 之后修改 `extension/src/session/wake.js`、`extension/src/preset/load.js` 和 `extension/src/session/session.js`。`load.js` 新增 `loadVisionFixture`，读取 `extension/assets/vision/fixture-parabola.json`。`wake.js` 在 `visionAdapter` 为 `fixture` 且 `externalAttempt` 为 `off` 时自己调用它，再用 `validateCurveResult(..., { allowVision: true })` 检查；通过则进入 `interactive`。`createWake` 不新增参数，`preset` 仍是预先准备的结果。`session.js` 的 `copyResult` 必须把 `evidence` 抄进 `getState().result`。`visionAdapter` 为 `off`、缺省或其他值时保持现有预制路径。保留单会话、拖动钳制、重置、退出，以及播放或离开目标时间时结束会话。不把样例等待 1500ms，不发起网络请求
 - [ ] T011 [US1] 在 T009 与 T010 之后修改 `extension/src/page/main.js` 与 `extension/demo/index.html`。`#source-label` 在 `source === "vision"` 且 `evidence === "packaged-sample"` 时显示「识别结果」；说明区显示「随演示打包的识别样例，尚未接通外部识别。」。无论 `confidence` 缺省还是大于等于 0.5，都不显示百分比。预制与超时文案保持「预先准备的示例」「预先准备的示例 · 超时回退」「因等待超过 1.5 秒，改用预先准备的示例。」。不把空格设为破壁键
 
 **Checkpoint**: 关闭开关时与 001 的预制主路径一致。打开开关且样例合法时，离线可见识别样例曲线。坏候选尚未在本阶段验收。

@@ -21,6 +21,31 @@
     return { ok: false, code, message };
   }
 
+  /**
+   * 识别样例必须标明打包证据，且不得把置信度写成百分比。
+   * 预制结果不要求这两项；一旦带上 evidence 就拒绝。
+   * @param {object} result
+   * @returns {{ ok: false, code: string, message: string } | null}
+   */
+  function checkVisionFields(result) {
+    if (result.source === 'preset') {
+      if (result.evidence !== undefined) return fail('invalid_evidence', '预制结果不能携带 evidence。');
+      return null;
+    }
+    if (result.evidence !== 'packaged-sample') {
+      return fail('invalid_evidence', '识别样例必须标明 packaged-sample。');
+    }
+    if (result.fallback !== null) return fail('invalid_fallback', '识别样例的 fallback 必须是 null。');
+    if (!Object.prototype.hasOwnProperty.call(result, 'confidence') || result.confidence === undefined) {
+      return null;
+    }
+    const confidence = result.confidence;
+    if (!finite(confidence) || confidence < 0.5 || confidence > 1) {
+      return fail('invalid_confidence', 'confidence 必须是 0.5 到 1 的有限数。');
+    }
+    return null;
+  }
+
   function validateCurveResult(result, context = {}) {
     if (!result || typeof result !== 'object') return fail('invalid_shape', '结果必须是对象。');
 
@@ -36,6 +61,8 @@
       return fail('invalid_source', '当前功能只接受预先准备的 preset 结果。');
     }
     if (!ALLOWED_FALLBACKS.has(result.fallback)) return fail('invalid_fallback', 'fallback 值不受支持。');
+    const visionFields = checkVisionFields(result);
+    if (visionFields) return visionFields;
 
     const frameSize = result.frameSize;
     if (!frameSize || !positiveFinite(frameSize.width) || !positiveFinite(frameSize.height)) {
@@ -93,8 +120,12 @@
     if (context.videoId !== undefined && result.videoId !== context.videoId) {
       return fail('video_mismatch', '结果不属于当前视频。');
     }
-    if (context.targetTime !== undefined && Math.abs(result.time - context.targetTime) > (context.timeTolerance ?? DEFAULT_TIME_TOLERANCE)) {
-      return fail('time_mismatch', '结果不属于当前目标时间。');
+    if (context.targetTime !== undefined) {
+      const tolerance = Number.isFinite(context.timeTolerance) ? context.timeTolerance : DEFAULT_TIME_TOLERANCE;
+      // 0.2 在二进制里不能精确表示，边界值要留出可忽略的误差。
+      if (Math.abs(result.time - context.targetTime) > tolerance + 1e-9) {
+        return fail('time_mismatch', '结果不属于当前目标时间。');
+      }
     }
     if (context.frameSize && (frameSize.width !== context.frameSize.width || frameSize.height !== context.frameSize.height)) {
       return fail('frame_mismatch', '结果尺寸不属于当前视频。');

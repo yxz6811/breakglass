@@ -26,8 +26,8 @@
     }
 
     canWake({ paused, currentTime }) {
-      return Boolean(paused && Number.isFinite(currentTime) &&
-        Math.abs(currentTime - this.targetTime) <= this.timeTolerance);
+      return Boolean(paused && Number.isFinite(currentTime) && Number.isFinite(this.targetTime) &&
+        Math.abs(currentTime - this.targetTime) <= this.timeTolerance + 1e-9);
     }
 
     beginWait({ paused, currentTime }) {
@@ -54,7 +54,9 @@
         targetTime: this.targetTime,
         timeTolerance: this.timeTolerance,
         frameSize: this.frameSize,
-        requestId: expectedRequestId
+        requestId: expectedRequestId,
+        // 只有标明打包样例的 vision 才打开识别校验。缺证据的 vision 仍按来源拒绝。
+        allowVision: result.source === 'vision' && result.evidence === 'packaged-sample'
       });
       if (!check.ok) {
         return { ok: false, code: check.code || 'request_mismatch', message: check.message || '结果不属于当前请求。' };
@@ -149,7 +151,8 @@
      * @returns {ReturnType<SessionController['getState']>}
      */
     onPlaybackChange({ paused, currentTime } = {}) {
-      if (!paused || !Number.isFinite(currentTime) || Math.abs(currentTime - this.targetTime) > this.timeTolerance) this.exit();
+      if (!paused || !Number.isFinite(currentTime) || !Number.isFinite(this.targetTime) ||
+        Math.abs(currentTime - this.targetTime) > this.timeTolerance + 1e-9) this.exit();
       return this.getState();
     }
 
@@ -176,6 +179,7 @@
 
 /**
  * 收下调用方结果的副本。之后改原对象的 min / max 不能放宽这次会话。
+ * evidence 与 confidence 原样保留，缺了 evidence 页面就分不出识别样例。
  * @param {object} result
  * @returns {object}
  */
@@ -184,7 +188,7 @@ function copyResult(result) {
   for (const [name, item] of Object.entries(result.definition.parameters)) {
     parameters[name] = { initial: item.initial, min: item.min, max: item.max, step: item.step };
   }
-  return {
+  const copied = {
     requestId: result.requestId,
     videoId: result.videoId,
     time: result.time,
@@ -206,4 +210,7 @@ function copyResult(result) {
       }
     }
   };
+  if (Object.prototype.hasOwnProperty.call(result, 'evidence')) copied.evidence = result.evidence;
+  if (Object.prototype.hasOwnProperty.call(result, 'confidence')) copied.confidence = result.confidence;
+  return copied;
 }

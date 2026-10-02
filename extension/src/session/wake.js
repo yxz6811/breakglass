@@ -17,7 +17,7 @@
   /**
    * @param {object} options
    * @param {object} options.session 现有 SessionController
-   * @param {object} options.config enableLocalMock、fallbackAfterMs、prewarmed、externalAttempt
+   * @param {object} options.config enableLocalMock、fallbackAfterMs、prewarmed、externalAttempt、visionAdapter
    * @param {object | null} options.preset 已装入的预制结果；没有匹配预制时为 null
    * @param {{ now: () => number, schedule: (delayMs: number, handler: Function) => unknown, clear: (timerId: unknown) => void }} options.clock
    * @param {(state: object) => void} [options.onChange]
@@ -36,7 +36,7 @@
 
     /**
      * 每个判定点都重新读配置，不沿用上一次唤醒时的开关。
-     * @returns {{ enableLocalMock: unknown, fallbackAfterMs: unknown, prewarmed: unknown, externalAttempt: unknown }}
+     * @returns {{ enableLocalMock: unknown, fallbackAfterMs: unknown, prewarmed: unknown, externalAttempt: unknown, visionAdapter: 'off' | 'fixture' }}
      */
     function readConfig() {
       const source = config || {};
@@ -44,8 +44,27 @@
         enableLocalMock: source.enableLocalMock,
         fallbackAfterMs: source.fallbackAfterMs,
         prewarmed: source.prewarmed,
-        externalAttempt: source.externalAttempt
+        externalAttempt: source.externalAttempt,
+        visionAdapter: source.visionAdapter === 'fixture' ? 'fixture' : 'off'
       };
+    }
+
+    /**
+     * 调用时再找样例读取器。load.js 在页面里后于本文件执行，不能在工厂创建时抓取。
+     * @returns {{ loadVisionFixture: Function } | null}
+     */
+    function visionLoader() {
+      if (BreakGlass.preset && typeof BreakGlass.preset.loadVisionFixture === 'function') {
+        return BreakGlass.preset;
+      }
+      if (typeof require === 'function') {
+        try {
+          return require('../preset/load');
+        } catch (error) {
+          return null;
+        }
+      }
+      return null;
     }
 
     /**
@@ -151,6 +170,33 @@
     }
 
     /**
+     * 把打包样例装订到本次请求。视频、时间和画幅仍用样例原值，方便校验器核对是否属于这一帧。
+     * @param {object | null | undefined} source
+     * @param {string} requestId
+     * @returns {object | null}
+     */
+    function bindVision(source, requestId) {
+      if (!source || typeof source !== 'object') return null;
+      const frame = source.frameSize;
+      const candidate = {
+        requestId,
+        videoId: source.videoId,
+        time: source.time,
+        frameSize: frame && typeof frame === 'object'
+          ? { width: frame.width, height: frame.height }
+          : frame,
+        source: source.source,
+        fallback: source.fallback,
+        evidence: source.evidence,
+        definition: source.definition
+      };
+      if (Object.prototype.hasOwnProperty.call(source, 'confidence')) {
+        candidate.confidence = source.confidence;
+      }
+      return candidate;
+    }
+
+    /**
      * @param {object} candidate
      * @param {object} ctx
      * @returns {{ ok: boolean, code?: string, message?: string }}
@@ -160,6 +206,26 @@
         return { ok: false, code: 'validator_unavailable', message: '结果校验器不可用。' };
       }
       return validate.validateCurveResult(candidate, expected(ctx));
+    }
+
+    /**
+     * 识别样例必须显式允许 vision。预制校验不走这里。
+     * @param {object} candidate
+     * @param {object} ctx
+     * @returns {{ ok: boolean, code?: string, message?: string }}
+     */
+    function checkVision(candidate, ctx) {
+      if (!validate || typeof validate.validateCurveResult !== 'function') {
+        return { ok: false, code: 'validator_unavailable', message: '结果校验器不可用。' };
+      }
+      return validate.validateCurveResult(candidate, {
+        videoId: ctx.videoId,
+        targetTime: session.targetTime,
+        timeTolerance: session.timeTolerance,
+        frameSize: ctx.frameSize,
+        requestId: ctx.requestId,
+        allowVision: true
+      });
     }
 
     /**
@@ -224,6 +290,57 @@
       if (fallback === 'timeout') disarm();
       publish();
       return true;
+    }
+
+    /**
+     * 样例校验失败时不改画预制。异步读取只发生在页面里，Node 直接拿到文件对象。
+     * @param {object | null | undefined} raw
+     * @param {object} ctx
+     * @param {number} token
+     */
+    function settleVision(raw, ctx, token) {
+      if (!stillWaiting(ctx.requestId, token)) return;
+      const candidate = bindVision(raw, ctx.requestId);
+      const check = candidate ? checkVision(candidate, ctx) : { ok: false };
+      if (!check.ok) {
+        deny(ctx, token, 'external_unavailable', EXTERNAL_UNAVAILABLE);
+        return;
+      }
+      const resolved = session.resolve(candidate);
+      if (!resolved.ok) {
+        deny(ctx, token, 'external_unavailable', EXTERNAL_UNAVAILABLE);
+        return;
+      }
+      publish();
+    }
+
+    /**
+     * @param {object} ctx
+     * @param {number} token
+     * @returns {Promise<void> | null}
+     */
+    function acceptVision(ctx, token) {
+      const loader = visionLoader();
+      if (!loader || typeof loader.loadVisionFixture !== 'function') {
+        deny(ctx, token, 'external_unavailable', EXTERNAL_UNAVAILABLE);
+        return null;
+      }
+      let loaded;
+      try {
+        loaded = loader.loadVisionFixture();
+      } catch (error) {
+        deny(ctx, token, 'external_unavailable', EXTERNAL_UNAVAILABLE);
+        return null;
+      }
+      if (loaded && typeof loaded.then === 'function') {
+        return Promise.resolve(loaded).then((raw) => {
+          settleVision(raw, ctx, token);
+        }, () => {
+          deny(ctx, token, 'external_unavailable', EXTERNAL_UNAVAILABLE);
+        });
+      }
+      settleVision(loaded, ctx, token);
+      return null;
     }
 
     /**
@@ -324,6 +441,19 @@
       }
       const token = generation;
       const live = readConfig();
+      if (live.externalAttempt === 'off' && live.visionAdapter === 'fixture') {
+        const pending = acceptVision(ctx, token);
+        if (pending && typeof pending.then === 'function') {
+          return { ok: true, requestId: ctx.requestId };
+        }
+        const state = session.getState();
+        return {
+          ok: state.status === 'interactive',
+          requestId: ctx.requestId,
+          code: state.code || undefined,
+          message: state.message || undefined
+        };
+      }
       if (live.externalAttempt === 'off') {
         acceptPreset(ctx, token, null);
         const state = session.getState();

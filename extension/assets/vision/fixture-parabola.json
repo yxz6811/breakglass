@@ -1,0 +1,22 @@
+{
+  "requestId": "fixture-vision-sample",
+  "videoId": "fixture-parabola",
+  "time": 6,
+  "frameSize": { "width": 1920, "height": 1080 },
+  "source": "vision",
+  "fallback": null,
+  "evidence": "packaged-sample",
+  "definition": {
+    "equationId": "fixture.parabola",
+    "parameters": {
+      "a": { "initial": 0.8, "min": 0.4, "max": 1.2, "step": 0.1 },
+      "h": { "initial": 0, "min": -2, "max": 2, "step": 0.1 },
+      "k": { "initial": 0, "min": -2, "max": 2, "step": 0.1 }
+    },
+    "dragParameter": "h",
+    "domain": { "min": -4, "max": 4 },
+    "range": { "min": -4, "max": 4 },
+    "yAxis": "up",
+    "region": { "x": 480, "y": 220, "width": 960, "height": 620 }
+  }
+}

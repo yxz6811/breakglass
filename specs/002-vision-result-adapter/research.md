@@ -49,7 +49,7 @@
 
 ## 8. 交互来源句子必须先修订
 
-- **Decision**: 实现唤醒行为之前，先修订 `.specify/memory/constitution.md`（1.3.0 → 1.4.0）。只放宽这一处：`visionAdapter` 缺省或 `off` 时，`interactive` 的 `result.source` 仍只能是 `preset`，`fallback` 仍为 `null` 或 `"timeout"`。`visionAdapter` 为 `fixture` 且 `externalAttempt` 为 `off` 时，允许 `source` 为 `vision`、`fallback` 为 `null`、`evidence` 为 `packaged-sample`。`createWake` 的配置读取列表加入 `visionAdapter`。工厂名、方法名、参数顺序和状态名不变。`docs/BreakGlass-constitution.md` 没有写死「交互来源只能是 preset」的句子，本决策不要求升它的版本。
+- **Decision**: 实现唤醒行为之前，先修订 `.specify/memory/constitution.md`（1.3.0 → 1.4.0）。2026-10-02 已写入 1.4.0，代码尚未改 `wake.js`。只放宽这一处：`visionAdapter` 缺省或 `off` 时，`interactive` 的 `result.source` 仍只能是 `preset`，`fallback` 仍为 `null` 或 `"timeout"`。`visionAdapter` 为 `fixture` 且 `externalAttempt` 为 `off` 时，允许 `source` 为 `vision`、`fallback` 为 `null`、`evidence` 为 `packaged-sample`。`createWake` 的配置读取列表加入 `visionAdapter`。工厂名、方法名、参数顺序和状态名不变。`docs/BreakGlass-constitution.md` 没有写死「交互来源只能是 preset」的句子，本决策不要求升它的版本。
 - **Rationale**: 交接接口现在写明交互态来源是 `preset`。不修订就让 `vision` 进入交互，属于另写一套状态。修订文本先冻结在本文件，避免实现时临时改口径。
 - **Alternatives considered**: 把该句子解释成「P0 才适用」而不改文件。分析命令把这种解释视为稀释治理约束。
 

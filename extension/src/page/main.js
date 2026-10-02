@@ -66,6 +66,8 @@
   let localClock = null;
   let overlay = null;
   let dragging = false;
+  /** @type {{ name: string, value: number, mathX: number } | null} */
+  let dragOrigin = null;
   let resizeObserver = null;
   let dprQuery = null;
   let dprHandler = null;
@@ -191,6 +193,44 @@
     setWaitingBar(false);
   }
 
+  /**
+   * 当前视频的内容矩形。不支持的 object-fit 只跳过这一帧，不把异常抛进事件处理。
+   * @returns {ReturnType<typeof geometry.getContentRect> | null}
+   */
+  function readContentRect() {
+    const videoWidth = video.videoWidth;
+    const videoHeight = video.videoHeight;
+    if (!(videoWidth > 0 && videoHeight > 0)) return null;
+    const style = getComputedStyle(video);
+    try {
+      return geometry.getContentRect({
+        elementRect: video.getBoundingClientRect(),
+        videoWidth,
+        videoHeight,
+        objectFit: style.objectFit || 'contain',
+        objectPosition: style.objectPosition || '50% 50%'
+      });
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * 把指针位置换回数学横坐标。内容矩形无效时返回 null。
+   * @param {{ clientX?: number }} event
+   * @param {object} definition
+   * @returns {number | null}
+   */
+  function mathXFromPointer(event, definition) {
+    const rect = readContentRect();
+    const region = definition && definition.region;
+    if (!rect || !region || !(region.width > 0) || !Number.isFinite(event.clientX)) return null;
+    const sourceX = (event.clientX - rect.contentRect.left) / rect.scale;
+    const mathX = definition.domain.min +
+      ((sourceX - region.x) / region.width) * (definition.domain.max - definition.domain.min);
+    return Number.isFinite(mathX) ? mathX : null;
+  }
+
   // 坐标换算统一走 geometry/alignment.js，页面不再另写一套映射。
   function pagePointForMath(definition, parameters, mathX, rect) {
     const point = alignment.mathPointToPage(definition, parameters, mathX, rect.scale);
@@ -273,16 +313,7 @@
     if (!state || state.status !== 'interactive' || !state.result || !overlay) return;
     const result = state.result;
     const definition = result.definition;
-    const videoWidth = video.videoWidth;
-    const videoHeight = video.videoHeight;
-    if (!(videoWidth > 0 && videoHeight > 0)) return;
-    const rect = geometry.getContentRect({
-      elementRect: video.getBoundingClientRect(),
-      videoWidth,
-      videoHeight,
-      objectFit: getComputedStyle(video).objectFit || 'contain',
-      objectPosition: getComputedStyle(video).objectPosition || '50% 50%'
-    });
+    const rect = readContentRect();
     if (!rect) return;
 
     const stageRect = stage.getBoundingClientRect();
@@ -324,6 +355,7 @@
     if (overlay) overlay.remove();
     overlay = null;
     dragging = false;
+    dragOrigin = null;
     if (pauseVideo && video && !video.paused) video.pause();
     resetButton.disabled = true;
     exitButton.disabled = true;
@@ -350,35 +382,38 @@
         removeOverlay();
         return;
       }
+      const state = sessionState();
+      if (!state || !state.result) return;
+      const definition = state.result.definition;
+      const mathX = mathXFromPointer(event, definition);
+      const name = definition.dragParameter;
+      if (mathX === null || !Number.isFinite(state.currentParameters[name])) return;
       dragging = true;
-      overlay.setPointerCapture(event.pointerId);
+      dragOrigin = { name, value: state.currentParameters[name], mathX };
+      if (overlay.setPointerCapture) overlay.setPointerCapture(event.pointerId);
     });
     overlay.addEventListener('pointermove', (event) => {
+      if (!dragging || !dragOrigin) return;
       const state = sessionState();
-      if (!dragging || !state || !state.result) return;
-      const result = state.result;
-      const definition = result.definition;
-      const videoWidth = video.videoWidth;
-      const videoHeight = video.videoHeight;
-      if (!(videoWidth > 0 && videoHeight > 0)) return;
-      const rect = geometry.getContentRect({
-        elementRect: video.getBoundingClientRect(),
-        videoWidth,
-        videoHeight,
-        objectFit: getComputedStyle(video).objectFit || 'contain',
-        objectPosition: getComputedStyle(video).objectPosition || '50% 50%'
-      });
-      if (!rect) return;
-      const sourceX = (event.clientX - rect.contentRect.left) / rect.scale;
-      const mathX = definition.domain.min +
-        ((sourceX - definition.region.x) / definition.region.width) * (definition.domain.max - definition.domain.min);
-      controller.updateParameter(definition.dragParameter, mathX);
+      if (!state || !state.result) return;
+      const mathX = mathXFromPointer(event, state.result.definition);
+      if (mathX === null) return;
+      controller.updateParameter(dragOrigin.name, dragOrigin.value + (mathX - dragOrigin.mathX));
       drawCurve();
     });
-    overlay.addEventListener('pointerup', (event) => {
+    /**
+     * 松手或指针被系统取消时结束拖动，避免下一次移动继续改参数。
+     * @param {PointerEvent} event
+     */
+    function endDrag(event) {
       dragging = false;
-      if (overlay.hasPointerCapture(event.pointerId)) overlay.releasePointerCapture(event.pointerId);
-    });
+      dragOrigin = null;
+      if (overlay && event && overlay.hasPointerCapture && overlay.hasPointerCapture(event.pointerId)) {
+        overlay.releasePointerCapture(event.pointerId);
+      }
+    }
+    overlay.addEventListener('pointerup', endDrag);
+    overlay.addEventListener('pointercancel', endDrag);
     drawCurve();
   }
 
@@ -386,7 +421,7 @@
     if (wakeHandle && controller) {
       syncSessionTarget();
       const before = controller.getState();
-      const wasActive = before.status === 'waiting' || before.status === 'interactive';
+      const wasActive = before.status === 'waiting' || before.status === 'interactive' || before.status === 'recoverable-error';
       const playbackState = wakeHandle.onPlaybackChange({
         paused: video.paused,
         currentTime: video.currentTime
@@ -395,7 +430,12 @@
         if (overlay) removeOverlay({ pauseVideo: false });
         else {
           hideWaitingControls();
+          resetButton.disabled = true;
+          exitButton.disabled = true;
+          setSlidersEnabled(false);
+          setPrimaryAction('wake');
           setSource(null);
+          setStatus(atTarget() ? '已暂停在目标时间，可以再次破壁。' : '请暂停在目标时间。');
         }
       }
     }
@@ -445,6 +485,7 @@
     if (state.status === 'waiting') {
       cancelButton.hidden = false;
       cancelButton.disabled = false;
+      exitButton.disabled = false;
       retryButton.hidden = true;
       retryButton.disabled = true;
       resetButton.disabled = true;
@@ -461,6 +502,7 @@
       hideWaitingControls();
       retryButton.hidden = false;
       retryButton.disabled = false;
+      exitButton.disabled = false;
       resetButton.disabled = true;
       setSlidersEnabled(false);
       wakeButton.disabled = true;
@@ -597,6 +639,12 @@
   document.addEventListener('fullscreenchange', drawCurve);
   window.addEventListener('orientationchange', drawCurve);
   window.addEventListener('pagehide', () => {
+    dragging = false;
+    dragOrigin = null;
+    if (overlay) {
+      overlay.remove();
+      overlay = null;
+    }
     if (wakeHandle) wakeHandle.dispose();
     releaseWatch();
     window.__breakglassAlignment = null;
@@ -607,8 +655,9 @@
       wake();
     }
     if (event.key === 'Escape') {
-      if (overlay) removeOverlay();
-      else if (sessionState() && sessionState().status === 'waiting') cancelWaiting();
+      const status = sessionState() && sessionState().status;
+      if (overlay || status === 'recoverable-error') removeOverlay();
+      else if (status === 'waiting') cancelWaiting();
     }
   });
   stage.addEventListener('click', (event) => {

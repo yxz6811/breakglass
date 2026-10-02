@@ -32,13 +32,39 @@
   }
 
   /**
+   * 只有精确的 fixture 打开识别样例。缺省和其他值都保持关闭。
+   * @param {object} config
+   * @returns {object}
+   */
+  function normalizeVisionAdapter(config) {
+    config.visionAdapter = config.visionAdapter === 'fixture' ? 'fixture' : 'off';
+    return config;
+  }
+
+  /**
+   * 读取扩展包内的识别样例。Node 直接读文件，页面再走包内相对路径。
+   * 不请求远程识别服务。
+   * @param {string} [fixturePath]
+   * @returns {object | Promise<object>}
+   */
+  function loadVisionFixture(fixturePath = '../assets/vision/fixture-parabola.json') {
+    if (typeof require === 'function') {
+      const fs = require('fs');
+      const nodePath = require('path');
+      const file = nodePath.join(__dirname, '../../assets/vision/fixture-parabola.json');
+      return JSON.parse(fs.readFileSync(file, 'utf8'));
+    }
+    return loadJson(fixturePath);
+  }
+
+  /**
    * @param {{ configPath?: string, presetBasePath?: string }} [options]
    * @returns {Promise<{ ok: boolean, code?: string, message?: string, config?: object, result?: object }>}
    */
   async function loadPreset({ configPath = '../assets/config.json', presetBasePath = '../assets/presets/' } = {}) {
     let config;
     try {
-      config = await loadJson(configPath);
+      config = normalizeVisionAdapter(await loadJson(configPath));
     } catch (error) {
       return { ok: false, code: 'preset_unreadable', message: error.message || '无法读取预制配置。' };
     }
@@ -60,5 +86,5 @@
     return { ok: true, config, result: check.value };
   }
 
-  return { loadJson, loadPreset };
+  return { loadJson, loadPreset, loadVisionFixture };
 });
