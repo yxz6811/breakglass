@@ -10,6 +10,10 @@
 
 **Organization**: 故事 1 保持原任务。故事 2 按两人分工开工。故事 3 已编号为 T031–T039，本轮不派发实现。真实识别、单帧上传、感知代理和 Pyodide 仍不编号。
 
+**故事 2 实现进展（2026-10-02，p2 分支）**: T021–T029 已实现并通过自动化检查：`node --test` 68 项通过（含 `tests/backend-edges.test.js`），`node --check` 通过。新增 `extension/src/attempt/simulator.js`、`extension/src/session/wake.js`、`extension/src/telemetry/latency.js`、`tests/wake-timeout.test.js`、`tests/external-simulator.test.js`、`tests/page-integration.test.js`、`tests/page-p2.test.js`、`tests/helpers/fake-clock.js`；改造 `extension/src/session/session.js`、`extension/src/page/main.js`、`extension/demo/index.html`、`extension/demo/demo.css`。T019、T020 的文档口径与 T030 的 Chrome 手工验收仍未完成。
+
+**故事 3 实现进展（2026-10-02，p2 分支）**: T031–T037、T039 已实现并通过自动化检查：node --test 88 项通过（新增 tests/alignment.test.js、tests/page-p3.test.js、tests/helpers/fake-page.js；扩展 tests/content-rect.test.js、tests/page-integration.test.js）。新增 extension/src/geometry/alignment.js；改造 extension/src/geometry/content-rect.js（长度单位、单关键字补齐另一轴、数字型、非有限尺寸防御）与 extension/src/page/main.js（全屏/方向/DPR/ResizeObserver 重算和 window.__breakglassAlignment 只读测量）与 extension/demo/index.html。T038 的四画幅手工验收仍待执行。
+
 ## Format: `[ID] [P?] [Story] Description`
 
 - **[P]**: 可与同阶段其他 `[P]` 任务并行（不同文件、不依赖未完成任务）
@@ -98,18 +102,18 @@
 
 ### Tests for User Story 2
 
-- [ ] T021 [P] [US2] 在 T020 的决定下，先写会失败的 `tests/wake-timeout.test.js`（注入假时钟，不用真实 `setTimeout` 等待）。覆盖：`off` 立即进入交互且 `source` 为 `preset`、`fallback` 为 null；`hang` 在 1500ms 前保持等待且不绘制；到达 `fallbackAfterMs`（必须是 1500）后无需再次点击即进入交互，`source` 为 `preset`、`fallback` 为 `timeout`；回退前 `requestId`、`videoId`、`time` ±0.2 秒、`frameSize` 任一不符就不产出可绘制结果；迟到结果不改变已回退曲线；`prewarmed: false`、预制缺失或帧不匹配时为可恢复错误且无曲线；`invalid` 即使有匹配预制也不得进入成功绘制；取消后该 `requestId` 作废且定时器被清理，之后的结果不能打开交互；连续 5 次退出再唤醒和换帧再唤醒只留下当前视频与当前时间匹配的结果；播放或离开目标时间会结束会话并清理定时器；同一时刻只有一个会话；`requestId` 单调递增；`source: "vision"` 不得进入交互。参数仍满足 min ≤ initial ≤ max 且 step > 0，region 宽高为正且完全落在 frameSize 内。至少 18 项，夹具不含密钥
-- [ ] T022 [P] [US2] 在 T020 的决定下，先写会失败的 `tests/external-simulator.test.js`。`off` 立即给出预制；`hang` 在取消或超时前不返回结果；`invalid` 在 1500ms 内返回非法候选；`late` 在 1500ms 之后才返回候选；同一输入结果确定；取消、退出后不得残留定时器。读取 `extension/src/attempt/simulator.js` 的源码，断言不出现 `fetch`、`XMLHttpRequest`、`WebSocket`、远程地址、密钥或模型名
+- [x] T021 [P] [US2] 在 T020 的决定下，先写会失败的 `tests/wake-timeout.test.js`（注入假时钟，不用真实 `setTimeout` 等待）。覆盖：`off` 立即进入交互且 `source` 为 `preset`、`fallback` 为 null；`hang` 在 1500ms 前保持等待且不绘制；到达 `fallbackAfterMs`（必须是 1500）后无需再次点击即进入交互，`source` 为 `preset`、`fallback` 为 `timeout`；回退前 `requestId`、`videoId`、`time` ±0.2 秒、`frameSize` 任一不符就不产出可绘制结果；迟到结果不改变已回退曲线；`prewarmed: false`、预制缺失或帧不匹配时为可恢复错误且无曲线；`invalid` 即使有匹配预制也不得进入成功绘制；取消后该 `requestId` 作废且定时器被清理，之后的结果不能打开交互；连续 5 次退出再唤醒和换帧再唤醒只留下当前视频与当前时间匹配的结果；播放或离开目标时间会结束会话并清理定时器；同一时刻只有一个会话；`requestId` 单调递增；`source: "vision"` 不得进入交互。参数仍满足 min ≤ initial ≤ max 且 step > 0，region 宽高为正且完全落在 frameSize 内。至少 18 项，夹具不含密钥
+- [x] T022 [P] [US2] 在 T020 的决定下，先写会失败的 `tests/external-simulator.test.js`。`off` 立即给出预制；`hang` 在取消或超时前不返回结果；`invalid` 在 1500ms 内返回非法候选；`late` 在 1500ms 之后才返回候选；同一输入结果确定；取消、退出后不得残留定时器。读取 `extension/src/attempt/simulator.js` 的源码，断言不出现 `fetch`、`XMLHttpRequest`、`WebSocket`、远程地址、密钥或模型名
 
 ### Implementation for User Story 2
 
-- [ ] T023 [P] [US2] 实现 `extension/src/attempt/simulator.js`，使 T022 通过。`externalAttempt` 只实现 `off`、`hang`、`invalid`、`late` 四种确定性替身：不联网、不读密钥、定时器可清理。不得把非 `off` 做成真实识别请求、响应解析或内置地址
-- [ ] T024 [US2] 实现 `extension/src/session/wake.js`，使 T021 通过。每次唤醒重新读取 `enableLocalMock`、`fallbackAfterMs`（必须是 1500）、`prewarmed` 和 `externalAttempt`。冻结 `requestId`、`videoId`、`time`（秒）和 `frameSize`；调度看门狗；回退前调用 `extension/src/curve/validate.js` 复核，任一不符就不产出结果。取消作废当前 `requestId` 并清理定时器。迟到结果只丢弃，不改会话状态。超时回退写 `source: "preset"`、`fallback: "timeout"`。回退路径同步完成，不得等待网络或重新读取文件。`enableLocalMock` 不为 true 时，不得把超时写成预制成功
-- [ ] T025 [US2] 改造 `extension/src/session/session.js`：去掉 `beginWait` 与 `resolve` 里对非 `off` 一律返回 `external_attempt_disabled` 的临时拒绝，改为可进入 `waiting`。`externalAttempt: "off"` 仍立即接受匹配预制并进入 `interactive`。保留单会话、`requestId` 守卫、拖动钳制（停在参数 min 与 max 内）、重置、退出，以及播放或离开目标时间时结束会话。同步修改 `tests/session.test.js` 中「非 off 即被阻断」的断言：非 `off` 可以等待，但不得进入识别成功，校验失败时不得进入 `interactive`。`off` 主路径的既有断言保持通过
-- [ ] T026 [P] [US2] 在 `extension/demo/index.html` 与 `extension/demo/demo.css` 增加等待态「取消」、失败态「重试」和「退出」。状态区保持 `role="status"` 并加上 `aria-live="polite"`；进入等待时把焦点移到取消按钮；焦点样式可见。文案使用 T020 冻结的两句来源说明。不把空格设为破壁键，不在页面里另写一套超时判断
-- [ ] T027 [US2] 在 `extension/src/page/main.js` 接上 `extension/src/session/wake.js` 的 `createWake`。只在视频暂停、时间落在目标 ±0.2 秒、且当前无覆盖层时调用 `start`。页面只消费 `onChange` 的状态：显示等待、取消、失败、重试和退出；超时后持续显示「预先准备的示例 · 超时回退」和「因等待超过 1.5 秒，改用预先准备的示例。」。在判定超时和首个可见 SVG 帧调用 `extension/src/telemetry/latency.js` 的 `mark`。退出、取消、换帧、播放、离开目标时间或页面卸载时调用 `dispose` 并清理覆盖层；播放或离开目标时间时先移除覆盖层。`extension/assets/config.json` 保持 `externalAttempt` 为 `off`
-- [ ] T028 [US2] 只新增 `extension/src/telemetry/latency.js`，不改 `extension/src/page/main.js`。提供 `mark` 与 `summary`（P50、P95、缓存状态）。记录只留在内存，只含状态、毫秒数和缓存状态。不落盘、不上传、不写 `chrome.storage` 或 `indexedDB`。计时不含打开扩展、视频首帧、网络等待和 P1 初始化
-- [ ] T029 [US2] 补齐 `tests/page-integration.test.js`，并用 `node --test` 确认全部通过。该测试用 Node 读取 `extension/demo/index.html` 与 `extension/src/page/main.js`，断言存在取消、重试、退出和 `aria-live`，来源文案包含「预先准备的示例」与超时原因，且页面脚本不出现 `fetch`、`XMLHttpRequest`、`WebSocket` 或远程地址。保持 `tests/preset-contract.test.js` 对 `fallbackAfterMs` 为 1500、`externalAttempt` 为 `off` 的断言。若 `tests/backend-edges.test.js` 因等待语义失败，改成「非 off 可以等待，但失败不得变成成功」。不要新增 `scripts/verify.mjs`、jsdom 或打包器；交互行为仍由 `tests/wake-timeout.test.js` 覆盖
+- [x] T023 [P] [US2] 实现 `extension/src/attempt/simulator.js`，使 T022 通过。`externalAttempt` 只实现 `off`、`hang`、`invalid`、`late` 四种确定性替身：不联网、不读密钥、定时器可清理。不得把非 `off` 做成真实识别请求、响应解析或内置地址
+- [x] T024 [US2] 实现 `extension/src/session/wake.js`，使 T021 通过。每次唤醒重新读取 `enableLocalMock`、`fallbackAfterMs`（必须是 1500）、`prewarmed` 和 `externalAttempt`。冻结 `requestId`、`videoId`、`time`（秒）和 `frameSize`；调度看门狗；回退前调用 `extension/src/curve/validate.js` 复核，任一不符就不产出结果。取消作废当前 `requestId` 并清理定时器。迟到结果只丢弃，不改会话状态。超时回退写 `source: "preset"`、`fallback: "timeout"`。回退路径同步完成，不得等待网络或重新读取文件。`enableLocalMock` 不为 true 时，不得把超时写成预制成功
+- [x] T025 [US2] 改造 `extension/src/session/session.js`：去掉 `beginWait` 与 `resolve` 里对非 `off` 一律返回 `external_attempt_disabled` 的临时拒绝，改为可进入 `waiting`。`externalAttempt: "off"` 仍立即接受匹配预制并进入 `interactive`。保留单会话、`requestId` 守卫、拖动钳制（停在参数 min 与 max 内）、重置、退出，以及播放或离开目标时间时结束会话。同步修改 `tests/session.test.js` 中「非 off 即被阻断」的断言：非 `off` 可以等待，但不得进入识别成功，校验失败时不得进入 `interactive`。`off` 主路径的既有断言保持通过
+- [x] T026 [P] [US2] 在 `extension/demo/index.html` 与 `extension/demo/demo.css` 增加等待态「取消」、失败态「重试」和「退出」。状态区保持 `role="status"` 并加上 `aria-live="polite"`；进入等待时把焦点移到取消按钮；焦点样式可见。文案使用 T020 冻结的两句来源说明。不把空格设为破壁键，不在页面里另写一套超时判断
+- [x] T027 [US2] 在 `extension/src/page/main.js` 接上 `extension/src/session/wake.js` 的 `createWake`。只在视频暂停、时间落在目标 ±0.2 秒、且当前无覆盖层时调用 `start`。页面只消费 `onChange` 的状态：显示等待、取消、失败、重试和退出；超时后持续显示「预先准备的示例 · 超时回退」和「因等待超过 1.5 秒，改用预先准备的示例。」。在判定超时和首个可见 SVG 帧调用 `extension/src/telemetry/latency.js` 的 `mark`。退出、取消、换帧、播放、离开目标时间或页面卸载时调用 `dispose` 并清理覆盖层；播放或离开目标时间时先移除覆盖层。`extension/assets/config.json` 保持 `externalAttempt` 为 `off`
+- [x] T028 [US2] 只新增 `extension/src/telemetry/latency.js`，不改 `extension/src/page/main.js`。提供 `mark` 与 `summary`（P50、P95、缓存状态）。记录只留在内存，只含状态、毫秒数和缓存状态。不落盘、不上传、不写 `chrome.storage` 或 `indexedDB`。计时不含打开扩展、视频首帧、网络等待和 P1 初始化
+- [x] T029 [US2] 补齐 `tests/page-integration.test.js`，并用 `node --test` 确认全部通过。该测试用 Node 读取 `extension/demo/index.html` 与 `extension/src/page/main.js`，断言存在取消、重试、退出和 `aria-live`，来源文案包含「预先准备的示例」与超时原因，且页面脚本不出现 `fetch`、`XMLHttpRequest`、`WebSocket` 或远程地址。保持 `tests/preset-contract.test.js` 对 `fallbackAfterMs` 为 1500、`externalAttempt` 为 `off` 的断言。若 `tests/backend-edges.test.js` 因等待语义失败，改成「非 off 可以等待，但失败不得变成成功」。不要新增 `scripts/verify.mjs`、jsdom 或打包器；交互行为仍由 `tests/wake-timeout.test.js` 覆盖
 - [ ] T030 [US2] 按 `specs/001-insitu-parabola/quickstart.md` 第 2 节做手工验收，并把结果写入 `docs/BreakGlass-frontend-validation.md`。分别演练 `hang`、`invalid`、无匹配预制、取消，以及连续 5 次退出再唤醒或换帧再唤醒。记录 P50、P95、浏览器版本、机器、热缓存、事件起点和终点。演练后把 `extension/assets/config.json` 的 `externalAttempt` 改回 `off`。未实际运行的项目不要写成已通过。不执行 quickstart.md 第 3 节
 
 **Checkpoint**: `externalAttempt: off` 的故事 1 主路径与今天一致。`hang` 在 1.5 秒后自动显示匹配预制和超时原因；`invalid`、无匹配预制和取消都可恢复，且从不显示为识别成功。没有网络请求。
@@ -126,21 +130,21 @@
 
 ### Tests for User Story 3
 
-- [ ] T031 [P] [US3] 先写会失败的 `tests/alignment.test.js`：四画幅往返一致性、偏差比例、2% 边界（恰好通过 / 略超拒绝）、采样点有限性
+- [x] T031 [P] [US3] 先写会失败的 `tests/alignment.test.js`：四画幅往返一致性、偏差比例、2% 边界（恰好通过 / 略超拒绝）、采样点有限性
 
 ### Implementation for User Story 3
 
-- [ ] T032 [US3] 完善 `extension/src/geometry/content-rect.js`：`object-position` 长度单位、单关键字补齐另一轴、数字型解析；非有限 `videoWidth`/`videoHeight` 防御
-- [ ] T033 [US3] 实现 `extension/src/geometry/alignment.js`：`sourcePointToPage`、`pagePointToSource`、`deviationRatio`、`withinTolerance`、`sampleAlignment`（API 见 `plan-story-3.md` §3.2）
-- [ ] T034 [US3] 覆盖层定位收口：`position: absolute` 或等价的 CSS 规则，使 SVG 与 `contentRect` 绑定（**2% 对齐的前置**）
-- [ ] T035 [US3] 补齐重算触发：`fullscreenchange`、DPR 变化、`ResizeObserver(video)`、`loadedmetadata`、`orientationchange`，并在退出时清理监听
+- [x] T032 [US3] 完善 `extension/src/geometry/content-rect.js`：`object-position` 长度单位、单关键字补齐另一轴、数字型解析；非有限 `videoWidth`/`videoHeight` 防御
+- [x] T033 [US3] 实现 `extension/src/geometry/alignment.js`：`sourcePointToPage`、`pagePointToSource`、`deviationRatio`、`withinTolerance`、`sampleAlignment`（API 见 `plan-story-3.md` §3.2）
+- [x] T034 [US3] 覆盖层定位收口：`position: absolute` 或等价的 CSS 规则，使 SVG 与 `contentRect` 绑定（**2% 对齐的前置**）
+- [x] T035 [US3] 补齐重算触发：`fullscreenchange`、DPR 变化、`ResizeObserver(video)`、`loadedmetadata`、`orientationchange`，并在退出时清理监听
 
 ### Verification for User Story 3
 
-- [ ] T036 [P] [US3] 四画幅夹具与 2% 测量输出（演示页只读 `window.__breakglassAlignment`，不联网、不落盘）
-- [ ] T037 [US3] 更新 `tests/extension-surface.test.js`、`tests/page-integration.test.js`、`tests/geometry.test.js` 覆盖定位、监听与几何完善项
+- [x] T036 [P] [US3] 四画幅夹具与 2% 测量输出（演示页只读 `window.__breakglassAlignment`，不联网、不落盘）
+- [x] T037 [US3] 更新 `tests/extension-surface.test.js`、`tests/page-integration.test.js`、`tests/geometry.test.js` 覆盖定位、监听与几何完善项
 - [ ] T038 [US3] 按 quickstart 第 3 节手工验收并记录四画幅 + 窗口变化 + 全屏/DPR 的最大偏差比例（模板见 `plan-story-3.md` §7）
-- [ ] T039 [US3] FR-018 边界核对：不在未验证页面注入，入口不可用时有明确说明；`extension/manifest.json` 无主机权限与内容脚本
+- [x] T039 [US3] FR-018 边界核对：不在未验证页面注入，入口不可用时有明确说明；`extension/manifest.json` 无主机权限与内容脚本
 
 **Checkpoint**: 覆盖层在四种画幅下贴合内容区域；窗口/全屏/DPR 变化后自动重算；2% 记录可复现，且未把夹具证据写成正式视频验收。
 
