@@ -2,7 +2,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const { SessionController } = require('../extension/src/session/session');
 
-function result(requestId) {
+function result(requestId, overrides = {}) {
   return {
     requestId,
     videoId: 'fixture-parabola',
@@ -13,14 +13,17 @@ function result(requestId) {
     definition: {
       equationId: 'fixture.parabola',
       parameters: {
-        h: { initial: 0, min: -2, max: 2, step: 0.1 }
+        a: { initial: 1, min: 0.4, max: 1.2, step: 0.1 },
+        h: { initial: 0, min: -2, max: 2, step: 0.1 },
+        k: { initial: 0, min: -2, max: 2, step: 0.1 }
       },
       dragParameter: 'h',
       domain: { min: -4, max: 4 },
       range: { min: -4, max: 4 },
       yAxis: 'up',
       region: { x: 100, y: 80, width: 640, height: 360 }
-    }
+    },
+    ...overrides
   };
 }
 
@@ -71,17 +74,56 @@ test('old request results cannot replace a newer wait', () => {
   assert.equal(session.resolve(result(second.requestId)).ok, true);
 });
 
-test('non-off external attempts never enter interactive or report success', () => {
+test('non-off external attempts can wait but a failed check never becomes interactive', () => {
   for (const externalAttempt of ['hang', 'invalid', 'late']) {
     const session = controller({ externalAttempt });
-    const denied = session.beginWait({ paused: true, currentTime: 12.5 });
-    assert.equal(denied.ok, false);
-    assert.equal(denied.code, 'external_attempt_disabled');
-    assert.equal(session.getState().status, 'paused-ready');
-    assert.equal(session.resolve(result('request-never-created')).ok, false);
+    const pending = session.beginWait({ paused: true, currentTime: 12.5 });
+    assert.equal(pending.ok, true);
+    assert.equal(session.getState().status, 'waiting');
+    assert.equal(session.getState().result, null);
+
+    assert.equal(session.resolve(result(pending.requestId, { source: 'vision' })).ok, false);
     assert.notEqual(session.getState().status, 'interactive');
     assert.equal(session.getState().result, null);
+    assert.equal(/识别成功/.test(JSON.stringify(session.getState())), false);
+
+    const broken = result(pending.requestId);
+    delete broken.definition;
+    assert.equal(session.resolve(broken).ok, false);
+    assert.notEqual(session.getState().status, 'interactive');
+    assert.equal(session.getState().result, null);
+
+    const accepted = session.resolve(result(pending.requestId));
+    assert.equal(accepted.ok, true);
+    assert.equal(session.getState().status, 'interactive');
+    assert.equal(session.getState().result.source, 'preset');
+    assert.equal(/识别成功/.test(JSON.stringify(session.getState())), false);
+
+    const retry = controller({ externalAttempt });
+    const waiting = retry.beginWait({ paused: true, currentTime: 12.5 });
+    assert.equal(retry.resolve(result(waiting.requestId, { source: 'vision' })).ok, false);
+    const failed = retry.fail('external_unavailable', '外部结果不可用，未进入交互。');
+    assert.equal(failed.status, 'recoverable-error');
+    assert.equal(failed.result, null);
+    assert.equal(failed.code, 'external_unavailable');
+    assert.equal(failed.message, '外部结果不可用，未进入交互。');
+    assert.equal(retry.beginWait({ paused: true, currentTime: 12.5 }).ok, true);
   }
+});
+
+test('fail() clears the pending state and keeps the reason for retry', () => {
+  const session = controller();
+  const pending = session.beginWait({ paused: true, currentTime: 12.5 });
+  const state = session.fail('preset_unavailable', '当前帧没有可用的准备结果，无法进入交互。');
+  assert.equal(state.status, 'recoverable-error');
+  assert.equal(state.requestId, null);
+  assert.equal(state.result, null);
+  assert.equal(state.code, 'preset_unavailable');
+  assert.equal(state.message, '当前帧没有可用的准备结果，无法进入交互。');
+  assert.equal(session.resolve(result(pending.requestId)).ok, false);
+  assert.equal(session.cancel().status, 'paused-ready');
+  assert.equal(session.getState().code, null);
+  assert.equal(session.getState().message, null);
 });
 
 test('only one session may be active at a time', () => {
