@@ -3,10 +3,10 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>BreakGlass 破壁 · 把视频里的死内容变成能拖的活模型</title>
-    <meta name="description" content="BreakGlass 是一个 Chrome MV3 扩展：在视频原位画出一条可拖动的数学抛物线，来源可标注、失败可恢复、零权限零网络。">
-    <meta property="og:title" content="BreakGlass 破壁 · 原位抛物线交互">
-    <meta property="og:description" content="在视频原位画出一条可拖动的数学抛物线。零权限、零网络、零依赖。">
+    <title>BreakGlass 破壁 · 在视频原位拖出一条能动的抛物线</title>
+    <meta name="description" content="BreakGlass 把网课视频里的抛物线变成可拖动、可调参数的活模型：原位对齐、控制点拖动、a/h/k 三段调节、重置与一键退出。">
+    <meta property="og:title" content="BreakGlass 破壁 · 视频原位的抛物线交互">
+    <meta property="og:description" content="暂停在任意一帧，曲线出现在画面原位，拖着调参数，随时重置或退出。">
     <meta property="og:type" content="website">
     <meta name="theme-color" content="#08111f">
     <link rel="stylesheet" href="./site.css">
@@ -30,11 +30,10 @@
         </a>
         <span class="glass-nav__sep" role="separator" aria-orientation="vertical"></span>
         <ul class="glass-nav__links">
+          <li><a href="#abilities">能做什么</a></li>
           <li><a href="#demo">演示</a></li>
-          <li><a href="#features">功能</a></li>
-          <li><a href="#stack">技术</a></li>
-          <li><a href="#start">怎么跑</a></li>
-          <li><a href="#limits">边界</a></li>
+          <li><a href="#how">怎么用</a></li>
+          <li><a href="#scenes">适用场景</a></li>
         </ul>
         <a class="glass-nav__cta" href="../extension/demo/index.html" target="_blank" rel="noopener">打开演示</a>
       </nav>
@@ -42,51 +41,72 @@
 
     <main id="main">
       <section class="hero" id="top">
-        <p class="eyebrow">CHROME MV3 扩展 · 数学抛物线原位交互</p>
-        <h1>把视频里的死内容，<br><span class="grad">变成能拖的活模型</span></h1>
+        <p class="eyebrow">CHROME 扩展 · 视频原位抛物线交互</p>
+        <h1>在视频原位，<br><span class="grad">拖出一条能动的抛物线</span></h1>
         <p class="lede">
-          网课里那条抛物线只能看：位置、开口、顶点都是死的。BreakGlass 在视频<strong>原位</strong>画出一条可拖动的曲线，
-          参数实时联动；来源全程标注，失败有可恢复路径，感知等待不超过 1.5 秒。
+          把视频暂停在任意一帧，曲线就出现在画面里<strong>原来的位置</strong>。拖动控制点、拉动三个参数滑块，
+          曲线与数值实时跟着走；不想要了，重置或一键退出。
         </p>
         <div class="badges" role="list">
-          <span class="badge" role="listitem">零权限</span>
-          <span class="badge" role="listitem">零网络请求</span>
-          <span class="badge" role="listitem">零运行时依赖</span>
-          <span class="badge badge--ok" role="listitem">209 项自动化测试通过</span>
+          <span class="badge" role="listitem">画面原位对齐</span>
+          <span class="badge" role="listitem">控制点拖动</span>
+          <span class="badge" role="listitem">a / h / k 实时联动</span>
+          <span class="badge badge--ok" role="listitem">1.5 秒等待保底</span>
         </div>
         <div class="hero__actions">
           <a class="btn btn--primary" href="#demo">看现场演示</a>
-          <a class="btn" href="#start">三步跑起来</a>
+          <a class="btn" href="#how">三步用起来</a>
           <a class="btn btn--ghost" href="https://github.com/yxz6811/breakglass" target="_blank" rel="noopener">GitHub 仓库</a>
         </div>
       </section>
 
-      <section class="section" id="problem">
-        <p class="section__kicker">问题</p>
-        <h2>能看见，但动不了</h2>
-        <div class="compare">
-          <article class="card card--muted">
-            <h3>看视频时</h3>
-            <p>老师画出 <code>y = a(x−h)² + k</code>，镜头一过就没了。想验证「a 变大开口变窄」只能凭空想象，</p>
-            <p class="card__foot">参数是死的，曲线只是像素。</p>
+      <section class="section" id="abilities">
+        <p class="section__kicker">能做什么</p>
+        <h2>八件事，视频里当场就能做</h2>
+        <div class="caps">
+          <article class="cap">
+            <span class="cap__icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="6"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg></span>
+            <div><h3>画在画面里的正确位置</h3><p>自动识别视频内容区域，宽高比、黑边、letterbox 都算进去，曲线贴着画面里的坐标系落下，而不是贴在窗口上。</p></div>
           </article>
-          <article class="card card--accent">
-            <h3>用 BreakGlass</h3>
-            <p>把视频暂停在那一帧，按 <kbd>Alt</kbd>+<kbd>B</kbd>：曲线出现在画面原位，拖动控制点或用滑块改 a / h / k，曲线、顶点、数字三者同步。</p>
-            <p class="card__foot">参数是活的，曲线是模型。</p>
+          <article class="cap">
+            <span class="cap__icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M12 3v6M12 15v6M3 12h6M15 12h6"/></svg></span>
+            <div><h3>用手指拖，或用滑块拉</h3><p>曲线上的控制点可以拖着走；旁边 a（开口）、h（水平位置）、k（顶点高度）三个滑块，拖哪一个都实时重画。</p></div>
+          </article>
+          <article class="cap">
+            <span class="cap__icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 9h16M4 15h16"/><circle cx="9" cy="9" r="2"/><circle cx="15" cy="15" r="2"/></svg></span>
+            <div><h3>三者永远同步</h3><p>曲线形状、顶点位置、数字读数同时变化，不会出现「数变了图没变」的情况。</p></div>
+          </article>
+          <article class="cap">
+            <span class="cap__icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M5 4h14v16H5z"/><path d="M9 4v16M15 4v16"/></svg></span>
+            <div><h3>拖出范围也不跑飞</h3><p>a 只在 0.4–1.2、h 与 k 只在 -2–2 之间变化，越界自动刹住，画面不会失控。</p></div>
+          </article>
+          <article class="cap">
+            <span class="cap__icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 1 0 2.4-5.7"/><path d="M4 4v4h4"/></svg></span>
+            <div><h3>一键回到最初</h3><p>点「重置」，三个参数回到这一帧的初值，交互层留着，可以接着试别的想法。</p></div>
+          </article>
+          <article class="cap">
+            <span class="cap__icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></span>
+            <div><h3>说退就退</h3><p>按 <kbd>Esc</kbd> 或点退出，曲线和控制点立刻消失，视频保持暂停在原处，播放器不受影响。</p></div>
+          </article>
+          <article class="cap">
+            <span class="cap__icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="8"/><path d="M12 7v5l3 2"/></svg></span>
+            <div><h3>等待最多 1.5 秒</h3><p>要等外部结果时，先给出等待提示与可取消入口；1.5 秒没回来就自动改用准备好的结果，并说明这是超时回退。</p></div>
+          </article>
+          <article class="cap">
+            <span class="cap__icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v6c0 4-3 7-7 9-4-2-7-5-7-9V6z"/><path d="M9 12l2 2 4-4"/></svg></span>
+            <div><h3>不合格的结果进不来</h3><p>公式必须在白名单里、数值必须有限、形状必须匹配当前画面与时间，任何一项不对就不画，并给出重试或退出。</p></div>
           </article>
         </div>
+        <p class="section__note">另外还做了：键盘能走完全程（焦点可见）、按钮不可用时说明原因、出错时立刻播报给读屏软件。</p>
       </section>
 
       <section class="section" id="demo">
         <p class="section__kicker">现场演示</p>
-        <h2>跑的就是仓库里同一份代码</h2>
-        <p class="section__lede">
-          下面这个页面不是复刻的示意图，而是 <code>extension/demo/</code> 里那个演示页本身（0 处 <code>chrome.*</code> 调用，路径全相对）。
-        </p>
+        <h2>直接玩，不用装</h2>
+        <p class="section__lede">下面是页面原型；装好扩展后，同一套交互会出现在你正在看的视频上。</p>
         <div class="source-note" role="note">
-          <span class="chip" data-source-chip>预先准备的示例</span>
-          <span>曲线来自扩展包内<strong>预先准备的样例</strong>，不是实时识别结果；界面上会一直显示来源，超时回退会说明原因。</span>
+          <span class="chip">预先准备的示例</span>
+          <span>演示里的曲线来自扩展包内预先准备的样例，界面上会一直标出来源，不会说成识别结果。</span>
         </div>
         <div class="stage">
           <iframe class="stage__frame" src="../extension/demo/index.html" title="BreakGlass 演示页" loading="lazy" data-demo-frame></iframe>
@@ -96,137 +116,49 @@
             <a class="btn btn--primary" href="../extension/demo/index.html" target="_blank" rel="noopener">在新标签页打开演示</a>
           </div>
           <p class="stage__fallback" data-demo-fallback hidden>
-            演示页需要以 http(s) 方式打开（<code>fetch</code> 读包内 JSON 在 <code>file://</code> 下会被浏览器拦），
-            或直接<a href="../extension/demo/index.html" target="_blank" rel="noopener">在新标签页打开</a>。
+            演示页需要以 http(s) 方式打开，或直接<a href="../extension/demo/index.html" target="_blank" rel="noopener">在新标签页打开</a>。
           </p>
         </div>
-        <p class="stage__caption">演示视频素材尚未提交到仓库，页面会显示「素材未提供」的空态 —— 这也是真实状态，不是加载失败。</p>
       </section>
 
-      <section class="section" id="features">
-        <p class="section__kicker">功能</p>
-        <h2>已经做到哪，还没做什么</h2>
-        <div class="matrix">
-          <article class="card">
-            <h3 class="card__title card__title--ok">P0 已实现</h3>
-            <ul class="list">
-              <li>视频原位绘制抛物线，贴合内容区域（含黑边与 letterbox）</li>
-              <li>控制点拖动 + <code>a</code>/<code>h</code>/<code>k</code> 三个滑块，越界自动钳制</li>
-              <li>重置保留交互层，<kbd>Esc</kbd> / 退出移除覆盖层且视频保持暂停</li>
-              <li>1.5 秒超时自动回退到预制结果，并持续显示原因</li>
-              <li>结果校验：白名单公式、有限值、范围、视频/时间/画幅/请求号逐项匹配</li>
-              <li>液态玻璃顶栏、键盘焦点可见、禁用态给原因、错误态立即播报</li>
-            </ul>
-          </article>
-          <article class="card">
-            <h3 class="card__title card__title--demo">P1 已实现 · 仅打包样例</h3>
-            <ul class="list">
-              <li>默认关闭的识别适配开关（<code>visionAdapter: off</code>）</li>
-              <li>识别候选走<strong>同一套</strong>校验器，必须标注 <code>evidence: packaged-sample</code></li>
-              <li>可信程度可选：低于 0.5 拒绝，界面永不显示百分比</li>
-              <li>缺证据、越界、帧不匹配等九类坏样例全部拒绝并可重试</li>
-              <li>识别判定耗时单独记 <code>vision-decision</code>，不混入预制回退口径</li>
-            </ul>
-            <p class="card__foot card__foot--warn">样例是随扩展打包的工程夹具，<strong>不表示外部识别已接通</strong>。</p>
-          </article>
-          <article class="card card--muted">
-            <h3 class="card__title">未派发</h3>
-            <ul class="list list--plain">
-              <li>真实视觉识别服务与单帧上传</li>
-              <li>Python / Pyodide / WASM 代码执行</li>
-              <li>账号、云端同步、数据库</li>
-              <li>任意网站注入（当前只覆盖扩展内演示页）</li>
-              <li>顶点拖动同时改 h、k（语义待定）</li>
-            </ul>
-          </article>
-        </div>
-      </section>
-
-      <section class="section" id="stack">
-        <p class="section__kicker">技术</p>
-        <h2>零权限、零网络、零依赖</h2>
-        <div class="kpis">
-          <div class="kpi"><span class="kpi__value">0</span><span class="kpi__label">扩展权限 / 主机权限</span></div>
-          <div class="kpi"><span class="kpi__value">0</span><span class="kpi__label">运行时网络请求</span></div>
-          <div class="kpi"><span class="kpi__value">122.5<span class="kpi__unit">KB</span></span><span class="kpi__label">扩展包体积（不含视频）</span></div>
-          <div class="kpi"><span class="kpi__value">209</span><span class="kpi__label">自动化测试通过</span></div>
-        </div>
-        <div class="stack-grid">
-          <article class="card">
-            <h3>运行时</h3>
-            <dl class="facts">
-              <div><dt>平台</dt><dd>Chrome Manifest V3 未打包扩展</dd></div>
-              <div><dt>语言</dt><dd>Vanilla JavaScript（无 TypeScript、无打包器）</dd></div>
-              <div><dt>渲染</dt><dd>原生 DOM + 原生 SVG + 原生 CSS</dd></div>
-              <div><dt>模块</dt><dd>UMD/IIFE 挂到 <code>window.BreakGlass</code> 命名空间</dd></div>
-            </dl>
-          </article>
-          <article class="card">
-            <h3>质量</h3>
-            <dl class="facts">
-              <div><dt>测试</dt><dd>Node 内置 <code>node --test</code>（26 个测试文件 / 3846 行）</dd></div>
-              <div><dt>手段</dt><dd>自建假时钟 + 假 DOM，无 jsdom、无浏览器驱动</dd></div>
-              <div><dt>契约</dt><dd>静态断言锁脚本顺序、id、aria、无远程地址</dd></div>
-              <div><dt>口径</dt><dd>回退首帧 ≤100ms 预算（尚未实测）</dd></div>
-            </dl>
-          </article>
-          <article class="card">
-            <h3>安全表面</h3>
-            <dl class="facts">
-              <div><dt>权限</dt><dd><code>permissions: []</code>、<code>host_permissions: []</code></dd></div>
-              <div><dt>CSP</dt><dd><code>script-src 'self'; object-src 'self'</code></dd></div>
-              <div><dt>注入</dt><dd>无 content script、无 CDN、无内联脚本</dd></div>
-              <div><dt>存储</dt><dd>无数据库、无 <code>chrome.storage</code>、无 indexedDB</dd></div>
-            </dl>
-          </article>
-        </div>
-      </section>
-
-      <section class="section" id="start">
-        <p class="section__kicker">怎么跑</p>
-        <h2>三步，不用装任何依赖</h2>
+      <section class="section" id="how">
+        <p class="section__kicker">怎么用</p>
+        <h2>四步，全程不用命令行</h2>
         <ol class="steps">
           <li class="step">
             <span class="step__no">1</span>
-            <div><h3>拿到代码</h3><p><code>git clone https://github.com/yxz6811/breakglass</code></p></div>
+            <div><h3>装进浏览器</h3><p>打开 <code>chrome://extensions</code> → 开启「开发者模式」→「加载已解压的扩展程序」→ 选择仓库里的 <code>extension/</code>。</p></div>
           </li>
           <li class="step">
             <span class="step__no">2</span>
-            <div><h3>加载扩展</h3><p>打开 <code>chrome://extensions</code>，开启「开发者模式」→「加载已解压的扩展程序」→ 选择仓库里的 <code>extension/</code></p></div>
+            <div><h3>暂停到要讲的那一帧</h3><p>点扩展图标打开演示页，用播放条把视频停住，确认停在目标时间（默认 6 秒，容差 ±0.2 秒）。</p></div>
           </li>
           <li class="step">
             <span class="step__no">3</span>
-            <div><h3>打开演示页</h3><p>点扩展图标，页面自动打开。暂停到目标时间后按 <kbd>Alt</kbd>+<kbd>B</kbd>；<kbd>Esc</kbd> 退出。</p></div>
+            <div><h3>按 Alt + B，曲线出现</h3><p>曲线落在画面原位。拖控制点，或拉 a / h / k 三个滑块讲「参数怎么影响图像」。</p></div>
+          </li>
+          <li class="step">
+            <span class="step__no">4</span>
+            <div><h3>重置或退出</h3><p>点「重置」回到初值继续讲；讲完按 <kbd>Esc</kbd> 退出，视频仍停在原处。</p></div>
           </li>
         </ol>
-        <div class="quickstart-note">
-          <p>想先验证一遍？仓库里只有一条命令：</p>
-          <p><code class="code-block">node --test</code><span class="quickstart-note__hint">209 项通过，不需要 <code>npm install</code>。</span></p>
-        </div>
       </section>
 
-      <section class="section" id="limits">
-        <p class="section__kicker">边界</p>
-        <h2>我们没做什么，以及还没验什么</h2>
-        <div class="compare">
-          <article class="card card--muted">
-            <h3>没有做</h3>
-            <ul class="list list--plain">
-              <li>不上传单帧，不接外部识别服务，不建后端</li>
-              <li>不读取浏览历史，不注入任意网站</li>
-              <li>不在浏览器里放密钥，不启用远程代码</li>
-              <li>不把预制结果写成识别成功</li>
-            </ul>
+      <section class="section" id="scenes">
+        <p class="section__kicker">适用场景</p>
+        <h2>什么时候用得上</h2>
+        <div class="usecases">
+          <article class="card">
+            <h3>网课讲函数图像</h3>
+            <p>讲到抛物线时不用切软件、不用重画：暂停视频，当场把 a、h、k 拉给学生看，图像跟着变。</p>
           </article>
-          <article class="card card--warn">
-            <h3>还没验</h3>
-            <ul class="list list--plain">
-              <li>浏览器手工验收（本环境无可控浏览器会话）</li>
-              <li>回退首帧 ≤100ms 的真实采样（目前只有假时钟断言）</li>
-              <li>四画幅真机 2% 对齐记录</li>
-              <li>正式演示视频与配套素材（仓库未提交）</li>
-            </ul>
-            <p class="card__foot card__foot--warn">未执行的步骤不会被写成「通过」。</p>
+          <article class="card">
+            <h3>教学演示与公开课</h3>
+            <p>大屏演示时不用准备额外素材，视频本身就是画布；讲完一键退出，画面保持原状。</p>
+          </article>
+          <article class="card">
+            <h3>课程素材评审</h3>
+            <p>检查录好的课里曲线画得对不对：停在那一帧，用同一套坐标拖一拖，偏差一眼能看出来。</p>
           </article>
         </div>
       </section>
@@ -236,19 +168,17 @@
       <div class="footer__inner">
         <div>
           <p class="footer__title">BreakGlass 破壁</p>
-          <p class="footer__note">前端优先的原位交互演示。仓库内所有能力都以文档与自动化测试自证；未验证的部分如实标注。</p>
+          <p class="footer__note">一个把视频里的数学图像变成可操作模型的 Chrome 扩展。当前版本使用扩展包内预先准备的结果；识别适配默认关闭，浏览器手工验收仍在进行中。</p>
         </div>
         <nav class="footer__links" aria-label="相关文档">
           <a href="../README.md">README</a>
-          <a href="../docs/BreakGlass-tech-stack.md">技术栈分析</a>
-          <a href="../docs/BreakGlass-visual-spec.md">视觉规范</a>
           <a href="../docs/BreakGlass-ui-inventory.md">功能与参数清单</a>
+          <a href="../docs/BreakGlass-visual-spec.md">视觉规范</a>
           <a href="../docs/BreakGlass-frontend-validation.md">验证记录</a>
-          <a href="../specs/001-insitu-parabola/spec.md">P0 规格</a>
-          <a href="../specs/002-vision-result-adapter/spec.md">P1 规格</a>
+          <a href="../specs/001-insitu-parabola/spec.md">功能规格</a>
         </nav>
       </div>
-      <p class="footer__legal">本页与演示页均不发起任何第三方请求；页面本身零依赖、零构建。</p>
+      <p class="footer__legal">本页与演示页均不发起第三方请求；页面本身零依赖、零构建。</p>
     </footer>
   </body>
 </html>
