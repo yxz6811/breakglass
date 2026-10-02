@@ -7,7 +7,7 @@
 
 | 命令 | 结果 |
 | --- | --- |
-| `node --test` | **137 项通过，0 失败，0 待办**（把 PR #30 合入当前 `main` 后重跑） |
+| `node --test` | **182 项通过，0 失败，0 待办**（当前 `main`；本轮识别适配切片见 §4） |
 | `node --check`（extension 与 tests 全部 JavaScript） | 通过 |
 | `scripts/verify.mjs`（本地工作区工具，未进入本仓库） | 语法检查 + 全量测试通过 |
 
