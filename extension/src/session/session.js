@@ -45,7 +45,13 @@
       return { ok: true, requestId };
     }
 
-    resolve(result) {
+    /**
+     * 规则侧方法（页面不得调用）。第二次校验仍然走同一个校验器；
+     * `allowVision` 只由识别路径显式传入，页面契约与状态字段都不变。
+     * @param {object} result
+     * @param {{ allowVision?: boolean }} [options]
+     */
+    resolve(result, options = {}) {
       if (!this.pending) return { ok: false, code: 'no_pending', message: '当前没有等待中的请求。' };
       if (!validate) return { ok: false, code: 'validator_unavailable', message: '结果校验器不可用。' };
       const expectedRequestId = this.pending.requestId;
@@ -54,7 +60,8 @@
         targetTime: this.targetTime,
         timeTolerance: this.timeTolerance,
         frameSize: this.frameSize,
-        requestId: expectedRequestId
+        requestId: expectedRequestId,
+        ...(options.allowVision === true ? { allowVision: true } : {})
       });
       if (!check.ok) {
         return { ok: false, code: check.code || 'request_mismatch', message: check.message || '结果不属于当前请求。' };
@@ -184,7 +191,7 @@ function copyResult(result) {
   for (const [name, item] of Object.entries(result.definition.parameters)) {
     parameters[name] = { initial: item.initial, min: item.min, max: item.max, step: item.step };
   }
-  return {
+  const copy = {
     requestId: result.requestId,
     videoId: result.videoId,
     time: result.time,
@@ -206,4 +213,8 @@ function copyResult(result) {
       }
     }
   };
+  // 识别样例必须把溯源标记带到页面；缺了它页面只能显示「来源不可用」。
+  if (result.source === 'vision') copy.evidence = result.evidence;
+  if (result.confidence !== undefined) copy.confidence = result.confidence;
+  return copy;
 }

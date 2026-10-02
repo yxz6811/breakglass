@@ -46,7 +46,7 @@
 | P1 单独开关 | 通过 | `visionAdapter` 默认 `off` |
 | 零侵入与已验证页面 | 通过 | 仍只覆盖扩展内演示页视频 |
 | 不另建唤醒工厂或第二套状态名 | 通过 | 仍是 `createWake`；状态仍是 `paused-ready`、`waiting`、`interactive`、`recoverable-error` |
-| 交互态来源目前只允许 `preset` | 有条件通过 | 见下方 Complexity Tracking。修订 1.4.0 的句子之前，不得改 `extension/src/session/wake.js` 的成功路径 |
+| 交互态来源在开关打开时允许 `vision` | 通过 | `.specify/memory/constitution.md` 已修订为 **1.4.0**（T002 完成）：`visionAdapter` 为 `fixture` 且 `externalAttempt` 为 `off` 时允许 `source: vision` + `fallback: null` + `evidence: packaged-sample`；默认 `off` 时仍只允许 `preset` |
 
 无未解决的 NEEDS CLARIFICATION。[research.md](./research.md) 已写明修订句子。
 
