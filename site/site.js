@@ -228,11 +228,16 @@
         var el = dissolveTargets[i];
         var rect = el.getBoundingClientRect();
         if (rect.bottom < -viewport * 0.2 || rect.top > viewport * 1.2) continue;
-        var entering = Math.min(1, Math.max(0, (viewport - rect.top) / (viewport * 0.66)));
-        var leaving = Math.min(1, Math.max(0, rect.bottom / (viewport * 0.34)));
+        // 只在视口的两条窄边带里发生融合：
+        // 底部 12% 是「聚拢区」（刚滚进来，从背景字符聚合成文字），
+        // 顶部 18% 是「散开区」（滚过去的，散回背景字符），
+        // 中间是正常阅读区 —— 这里必须完全是清晰文字。
+        var entering = Math.min(1, Math.max(0, (viewport * 0.98 - rect.top) / (viewport * 0.12)));
+        var leaving = Math.min(1, Math.max(0, rect.bottom / (viewport * 0.18)));
         var progress = Math.min(entering, leaving);
         progress = progress * progress * (3 - 2 * progress);
         el.style.setProperty('--p', progress.toFixed(3));
+        el.dataset.pTarget = progress.toFixed(3);
       }
     }
     // 停止滚动后，把仍在视口里的文字聚拢为完全可读，避免停在半路时边缘文字一直偏淡。
@@ -242,7 +247,10 @@
       var viewport = window.innerHeight || 1;
       for (var i = 0; i < dissolveTargets.length; i += 1) {
         var rect = dissolveTargets[i].getBoundingClientRect();
-        if (rect.top < viewport && rect.bottom > 0) dissolveTargets[i].style.setProperty('--p', '1');
+        if (rect.top < viewport && rect.bottom > 0) {
+          dissolveTargets[i].style.setProperty('--p', '1');
+          dissolveTargets[i].dataset.pTarget = '1';
+        }
       }
     }
     function onScrollDissolve() {

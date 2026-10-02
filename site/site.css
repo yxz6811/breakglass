@@ -290,7 +290,8 @@ a { color: var(--accent); }
   initial-value: 1;
 }
 /* 每个字两层：真实字在上，背景字符在下。--p 由滚动位置驱动（1=成形，0=散成字符）。 */
-.dis { --p: 1; transition: --p 460ms var(--ease-out); }
+/* 过渡要短：太长会在快速滚动时让阅读区的字「追不上」而短暂发淡。 */
+.dis { --p: 1; transition: --p 280ms var(--ease-out); }
 .dis .ch {
   position: relative;
   display: inline-block;
