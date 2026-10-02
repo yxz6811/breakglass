@@ -11,11 +11,12 @@
   }
 
   class SessionController {
-    constructor({ videoId, targetTime, frameSize, timeTolerance = 0.2 } = {}) {
+    constructor({ videoId, targetTime, frameSize, timeTolerance = 0.2, externalAttempt = 'off' } = {}) {
       this.videoId = videoId;
       this.targetTime = targetTime;
       this.frameSize = frameSize;
       this.timeTolerance = timeTolerance;
+      this.externalAttempt = externalAttempt;
       this.status = 'paused-ready';
       this.pending = null;
       this.current = null;
@@ -40,6 +41,12 @@
 
     resolve(result) {
       if (!this.pending) return { ok: false, code: 'no_pending', message: '当前没有等待中的请求。' };
+      if (this.externalAttempt !== 'off') {
+        this.pending = null;
+        this.current = null;
+        this.status = 'paused-ready';
+        return { ok: false, code: 'external_attempt_blocked', message: '当前配置不能进入交互。' };
+      }
       if (!validate) return { ok: false, code: 'validator_unavailable', message: '结果校验器不可用。' };
       const expectedRequestId = this.pending.requestId;
       const check = validate.validateCurveResult(result, {
@@ -93,8 +100,15 @@
       return this.getState();
     }
 
+    /**
+     * 播放或离开目标时间时，由会话自己结束。仍暂停在容差内则保持当前会话。
+     * @param {{ paused: boolean, currentTime: number }} playback
+     * @returns {ReturnType<SessionController['getState']>}
+     */
     onPlaybackChange({ paused, currentTime }) {
-      if (!paused || Math.abs(currentTime - this.targetTime) > this.timeTolerance) this.exit();
+      const leftTarget = !Number.isFinite(currentTime) ||
+        Math.abs(currentTime - this.targetTime) > this.timeTolerance;
+      if (!paused || leftTarget) this.exit();
       return this.getState();
     }
 

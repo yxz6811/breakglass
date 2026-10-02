@@ -24,11 +24,12 @@ function result(requestId) {
   };
 }
 
-function controller() {
+function controller(externalAttempt = 'off') {
   return new SessionController({
     videoId: 'fixture-parabola',
     targetTime: 12.5,
-    frameSize: { width: 1920, height: 1080 }
+    frameSize: { width: 1920, height: 1080 },
+    externalAttempt
   });
 }
 
@@ -61,5 +62,45 @@ test('exit clears the active session and returns to paused-ready', () => {
   const pending = session.beginWait({ paused: true, currentTime: 12.5 });
   session.resolve(result(pending.requestId));
   assert.equal(session.exit().status, 'paused-ready');
+  assert.equal(session.getState().result, null);
+});
+
+test('non-off externalAttempt cannot enter interactive', () => {
+  for (const externalAttempt of ['hang', 'invalid', 'late']) {
+    const session = controller(externalAttempt);
+    const pending = session.beginWait({ paused: true, currentTime: 12.5 });
+    const resolved = session.resolve(result(pending.requestId));
+    assert.equal(resolved.ok, false);
+    assert.equal(resolved.code, 'external_attempt_blocked');
+    assert.equal(session.getState().status, 'paused-ready');
+    assert.equal(session.getState().result, null);
+    assert.equal(JSON.stringify(resolved).includes('识别成功'), false);
+  }
+});
+
+test('a second wake replaces the existing session', () => {
+  const session = controller();
+  const first = session.beginWait({ paused: true, currentTime: 12.5 });
+  assert.equal(session.resolve(result(first.requestId)).ok, true);
+  const second = session.beginWait({ paused: true, currentTime: 12.5 });
+  assert.equal(session.getState().status, 'waiting');
+  assert.equal(session.getState().result, null);
+  assert.equal(session.resolve(result(first.requestId)).ok, false);
+  assert.equal(session.resolve(result(second.requestId)).ok, true);
+  assert.equal(session.getState().status, 'interactive');
+  assert.equal(session.getState().requestId, second.requestId);
+});
+
+test('playback or leaving the target time ends the session', () => {
+  const session = controller();
+  const pending = session.beginWait({ paused: true, currentTime: 12.5 });
+  session.resolve(result(pending.requestId));
+  assert.equal(session.onPlaybackChange({ paused: true, currentTime: 12.7 }).status, 'interactive');
+  assert.equal(session.onPlaybackChange({ paused: false, currentTime: 12.5 }).status, 'paused-ready');
+  assert.equal(session.getState().result, null);
+
+  const again = session.beginWait({ paused: true, currentTime: 12.5 });
+  session.resolve(result(again.requestId));
+  assert.equal(session.onPlaybackChange({ paused: true, currentTime: 10 }).status, 'paused-ready');
   assert.equal(session.getState().result, null);
 });

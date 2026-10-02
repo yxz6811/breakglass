@@ -4,7 +4,7 @@
 
 **Prerequisites**: plan.md, spec.md, research.md, data-model.md, contracts/, quickstart.md
 
-**进度（2026-10-02）**: 对照已合入的扩展脚手架更新。T001–T010、T013、T014、T016、T018 已完成。T011、T012、T015 有代码但未满足原文。T017 未做。这些缺口收完前不要开始故事 2。
+**进度（2026-10-02）**: T001–T014、T016、T018 已完成。T015 仍缺来源文案、单层覆盖和视频源尺寸。T017 未做。这些缺口收完前不要开始故事 2。
 
 **Tests**: 包含宪法要求的纯函数夹具。只覆盖 MVP 主路径，不写超时和四画幅测试。
 
@@ -58,17 +58,17 @@
 
 ### Tests for User Story 1
 
-- [ ] T011 [P] [US1] 补齐 `tests/session.test.js`。已通过：时间落在目标 ±0.2 秒才可唤醒；拖动钳制；重置后仍在交互；退出后会话消失；旧 `requestId` 不能写入。仍缺：`externalAttempt` 不是 `off` 时不得进入交互；同一时刻只有一个会话；播放或离开目标时间时结束会话
+- [x] T011 [P] [US1] 补齐 `tests/session.test.js`。已通过：时间落在目标 ±0.2 秒才可唤醒；拖动钳制；重置后仍在交互；退出后会话消失；旧 `requestId` 不能写入；`externalAttempt` 不是 `off` 时不得进入交互；同一时刻只有一个会话；播放或离开目标时间时结束会话
 
 ### Implementation for User Story 1
 
-- [ ] T012 [US1] 收紧 `extension/src/session/session.js`，使补齐后的 T011 通过。`off` 主路径已经能进入交互、钳制、重置和退出。仍缺：其他 `externalAttempt` 不得进入交互，也不得标成识别成功；播放或离开目标时间必须由会话自己结束
+- [x] T012 [US1] 收紧 `extension/src/session/session.js`，使 T011 通过。只有 `externalAttempt: off` 能进入交互。其他取值停在暂停就绪，不进入交互，也不标成识别成功。播放或离开目标时间由 `onPlaybackChange` 结束会话
 - [x] T013 [P] [US1] 编写 `extension/assets/presets/` 中的夹具 JSON：`source` 为 `preset`，`fallback` 为 null，`time` 为秒，`videoId` 含 `fixture`。参数满足 min ≤ initial ≤ max 且 step > 0，region 落在 frameSize 内。文案标明这不是正式网课素材
 - [x] T014 [P] [US1] 编写 `extension/demo/index.html` 与 `extension/demo/demo.css`：一个 `object-fit: contain`、`object-position: 50% 50%` 的 video；播放、暂停、定位、破壁、重置、退出和来源区域。不把空格设为破壁键
 - [ ] T015 [US1] 收紧 `extension/src/page/main.js`。已有：暂停且时间匹配时，按钮和 Alt+B 能唤醒；SVG 按求值器绘制；拖动、数字和曲线同步；重置保留覆盖层；Esc 和退出按钮会移除覆盖层，视频保持暂停；窗口变化时会重算。仍缺：来源从出现到退出都是「预先准备的示例」；已有覆盖层时 Alt+B 不得再挂一层；点击覆盖层外部（含视频画面中覆盖层以外的区域）也会退出；绘制使用当前视频的 `videoWidth` 与 `videoHeight`，不用夹具尺寸代替
 - [x] T016 [US1] 在 `extension/assets/video/README.md` 写明正式视频文件尚未提供。`extension/src/page/main.js` 在视频缺失或打不开时只显示说明，不挂覆盖层，不用夹具曲线冒充已经对齐的真实画面
 
-**Checkpoint**: 夹具主路径已经能离线跑通，但 T011、T012、T015 和 T017 完成前，故事 1 不算验收通过。不要继续实现故事 2
+**Checkpoint**: 夹具主路径已经能离线跑通。T015 和 T017 完成前，故事 1 不算验收通过。不要继续实现故事 2
 
 ---
 
@@ -128,7 +128,7 @@
 - T006、T007、T009 完成后再做 T010
 - T012、T013、T014 完成后再做 T015
 - T016 与 T015 同一文件的收尾放在 T015 之后
-- T011 的缺项先补测试，再收紧 T012
+- T011 与 T012 已完成
 - T015 的缺项放在 T012 之后
 - T017 放在 T015 之后
 
@@ -161,7 +161,7 @@
 ### MVP First (User Story 1 Only)
 
 1. Phase 1 与 Phase 2 已完成
-2. 补完 T011、T012、T015 里写明的缺项
+2. T011 与 T012 已完成。补完 T015 里写明的缺项
 3. **停下来验收** quickstart.md 第 1 节（T017）
 4. 故事 2、故事 3 等下一轮再拆任务
 

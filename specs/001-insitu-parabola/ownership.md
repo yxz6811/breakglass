@@ -4,7 +4,7 @@
 
 P0 不新建服务、数据库或 FastAPI。这里的「后端」指结果契约、校验规则、预制数据和请求是否能进入交互；代码仍写在 `extension/`、`tests/` 和 `specs/001-insitu-parabola/contracts/`。感知代理要等宪法里的上传决定和仓库边界修订之后才能开工，下面不派这项。
 
-编号任务 18 项：前端 10 项，后端 8 项。未完成的 4 项里，前端的 T015 是页面收口，工作量大于后端剩下的会话规则。
+编号任务 18 项：前端 10 项，后端 8 项。后端编号任务已经完成。还剩前端的 T015 和 T017。
 
 ## 前端
 
@@ -35,19 +35,19 @@ P0 不新建服务、数据库或 FastAPI。这里的「后端」指结果契约
 | T006 | 已完成 | `extension/src/curve/validate.js`。`time` 用秒，默认容差 ±0.2 秒 |
 | T008 | 已完成 | `extension/src/curve/evaluate.js`。只注册夹具 `fixture.parabola`，不把某条代数式写成正式公式 |
 | T009 | 已完成 | `extension/assets/config.json`：`enableLocalMock`、`fallbackAfterMs: 1500`、`externalAttempt: "off"`。不得写密钥或上传地址 |
-| T011 | 未完成 | 补 `tests/session.test.js`：`externalAttempt` 不是 `off` 时不得进入交互；同一时刻只有一个会话；播放或离开目标时间时结束会话 |
-| T012 | 未完成 | 收紧 `extension/src/session/session.js`，使 T011 通过。非 `off` 不得画曲线，也不得标成识别成功 |
+| T011 | 已完成 | `tests/session.test.js`：非 `off` 不得进入交互；第二次唤醒替换旧会话；播放或离开目标时间后结果被清掉 |
+| T012 | 已完成 | `extension/src/session/session.js`：只有 `off` 进入交互；播放或离开目标时间由会话自己结束 |
 | T013 | 已完成 | `extension/assets/presets/` 里的夹具 JSON |
 | T018 | 已完成 | 对照 `contracts/extension-surface.md` 核对 manifest：无主机权限、无内容脚本、无远程脚本 |
 
-当前先写 T011，再写 T012。
+T011 和 T012 已完成。前端可以按会话状态收 T015。
 
 ## 交接顺序
 
-1. 后端先补 T011、T012。
-2. 前端再收 T015。页面只调用会话给出的状态，不自己另判一套「能不能画」。
+1. 后端已完成 T011、T012。
+2. 前端再收 T015。页面只调用会话给出的状态，不自己另判一套「能不能画」。播放或离开目标时间时调用 `onPlaybackChange`。
 3. 前端做 T017，并把手工记录写回任务说明。
-4. 故事 1 这四项没收完之前，双方都不开始故事 2。
+4. T015 和 T017 完成前，双方都不开始故事 2。
 
 ## 还没编号的后续
 
