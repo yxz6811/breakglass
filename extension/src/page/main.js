@@ -12,6 +12,9 @@
   const lessonApi = window.BreakGlass.lesson || null;
   const askApi = window.BreakGlass.lessonAsk || null;
   const figuresApi = window.BreakGlass.figures || null;
+  const tutorNumbers = window.BreakGlass.tutorNumbers;
+  const tutorApi = window.BreakGlass.tutor || null;
+  const tutorFigures = window.BreakGlass.tutorFigures || null;
   const $ = (selector) => document.querySelector(selector);
   const video = $('#demo-video');
   const stage = $('#video-stage');
@@ -65,6 +68,23 @@
   const stageBannerTitle = $('#stage-banner-title');
   const stageBannerDetail = $('#stage-banner-detail');
   const wakeTip = wakeButton ? wakeButton.querySelector('.lg-tip') : null;
+  const tutorForm = $('#tutor-form');
+  const tutorInput = $('#tutor-input');
+  const tutorSend = $('#tutor-send');
+  const tutorLog = $('#tutor-log');
+  const tutorHint = $('#tutor-hint');
+  const tutorExamples = $('#tutor-examples');
+  let tutorExampleButtons = tutorExamples && typeof tutorExamples.querySelectorAll === 'function'
+    ? Array.from(tutorExamples.querySelectorAll('[data-tutor-example]')) : [];
+  /** 提问记录最多保留的条数，问与答各算一条。 */
+  const TUTOR_LOG_LIMIT = 20;
+  /**
+   * 记录属于哪一次破壁、哪一种图形。变了就清空，免得旧图形的数字留在旁边。
+   * @type {string}
+   */
+  let tutorEpoch = '';
+  /** 示例按钮现在是哪种图形的问法。页面初始写的是抛物线。 */
+  let tutorExamplesKind = 'parabola';
 
   /**
    * 相对演示页的扩展包视频。仓库落盘路径只写在 extension/assets/video/README.md。
@@ -237,6 +257,171 @@
     sliderRows.forEach((row) => { if (row.input) row.input.disabled = !enabled || figureKind !== 'parabola'; });
     figureRows.forEach((row) => { if (row.input) row.input.disabled = !enabled || figureKind === 'parabola' || !row.name; });
     if (figureSelect) figureSelect.disabled = !enabled || !figuresApi;
+    setTutorEnabled(enabled);
+  }
+
+  /**
+   * 提问区与滑块同时可用、同时禁用。禁用时提示先破壁。
+   * @param {boolean} enabled
+   */
+  function setTutorEnabled(enabled) {
+    const usable = Boolean(enabled && tutorApi);
+    if (tutorInput) tutorInput.disabled = !usable;
+    if (tutorSend) tutorSend.disabled = !usable;
+    tutorExampleButtons.forEach((button) => { button.disabled = !usable; });
+    if (tutorHint) {
+      tutorHint.textContent = usable
+        ? '用平常的话问：改一个系数，或问某个 x 上的 y。回答里的数就是画面上的数。'
+        : '先破壁，再问这条曲线。';
+    }
+  }
+
+  /**
+   * 往提问记录里追加一条。只写 textContent，用户原话不当作标记解析。
+   * @param {'user' | 'tutor' | 'note'} role
+   * @param {string} text
+   */
+  function appendTutorEntry(role, text) {
+    if (!tutorLog || typeof document.createElement !== 'function') return;
+    const entry = document.createElement('p');
+    entry.className = 'tutor__entry tutor__entry--' + role;
+    if (role === 'note') {
+      entry.textContent = text;
+    } else {
+      const who = document.createElement('span');
+      who.className = 'tutor__who';
+      who.textContent = role === 'user' ? '你：' : '答：';
+      const body = document.createElement('span');
+      body.textContent = text;
+      entry.appendChild(who);
+      entry.appendChild(body);
+    }
+    tutorLog.appendChild(entry);
+    // 超出上限时从最早一条删起；删到问题时连同紧跟的回答一起删，不留没有问题的回答。
+    while (tutorLog.children.length > TUTOR_LOG_LIMIT) {
+      tutorLog.children[0].remove();
+      while (tutorLog.children.length && /tutor__entry--tutor/.test(tutorLog.children[0].className)) tutorLog.children[0].remove();
+    }
+    tutorLog.hidden = false;
+    tutorLog.scrollTop = tutorLog.scrollHeight;
+  }
+
+  function clearTutorLog() {
+    if (!tutorLog) return;
+    while (tutorLog.children.length) tutorLog.children[0].remove();
+    tutorLog.hidden = true;
+  }
+
+  /**
+   * 示例换成这种图形的问法。只在图形种类变了时重建；按钮只写 textContent。
+   * @param {string} kind
+   */
+  function renderTutorExamples(kind) {
+    if (kind === tutorExamplesKind || !tutorExamples || !tutorFigures || typeof document.createElement !== 'function') return;
+    const entry = tutorFigures.get(kind);
+    if (!entry) return;
+    tutorExampleButtons.forEach((button) => button.remove());
+    tutorExampleButtons = entry.examples.map((text) => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.dataset.tutorExample = text;
+      button.textContent = text;
+      tutorExamples.appendChild(button);
+      return button;
+    });
+    tutorExamplesKind = kind;
+  }
+
+  /**
+   * 提问区跟着画面上的图形走：换了一次破壁或换了图形，就清空记录、换示例。
+   * @param {object | null} figure activeFigure() 的结果
+   */
+  function syncTutorFigure(figure) {
+    const state = figure ? sessionState() : null;
+    const epoch = figure ? String(state && state.requestId || '') + '|' + figure.kind : '';
+    if (epoch === tutorEpoch) return;
+    tutorEpoch = epoch;
+    clearTutorLog();
+    renderTutorExamples(figure ? figure.kind : 'parabola');
+  }
+
+  /**
+   * 两份系数逐项相同。
+   * @param {Record<string, number>} left
+   * @param {Record<string, number>} right
+   * @returns {boolean}
+   */
+  function sameParameters(left, right) {
+    const names = Object.keys(left);
+    return names.length === Object.keys(right).length && names.every((name) => right[name] === left[name]);
+  }
+
+  /**
+   * 写回提问得到的系数，与滑块走同一个 updateFigureParameters，一次写完。
+   * 画面已不是送出时那一次破壁、那一种图形，或写入失败、写完的数与解答不一致时，
+   * 退回送出时的系数，返回失败原因。
+   * @param {ReturnType<typeof tutorApi.snapshotFrom>} snapshot
+   * @param {ReturnType<typeof tutorApi.ask>} answer
+   * @returns {{ ok: true } | { ok: false, code: string }}
+   */
+  function applyTutorAnswer(snapshot, answer) {
+    const state = sessionState();
+    const current = figureSnapshot();
+    const before = {};
+    Object.keys(snapshot.parameters).forEach((name) => { before[name] = snapshot.parameters[name].value; });
+    const sameKeys = Object.keys(answer.parameters).sort().join(',') === Object.keys(before).sort().join(',');
+    if (!overlay || !state || state.status !== 'interactive' || state.requestId !== snapshot.requestId
+      || !current || current.kind !== snapshot.kind || !sameParameters(before, current.parameters) || !sameKeys) {
+      return { ok: false, code: 'stale' };
+    }
+    const updates = {};
+    answer.adjustments.forEach((item) => { if (item.adopted !== item.before) updates[item.name] = item.adopted; });
+    const outcome = updateFigureParameters(updates);
+    if (outcome && outcome.ok && outcome.figure && sameParameters(answer.parameters, outcome.figure.parameters)) {
+      dragging = false;
+      dragOrigin = null;
+      return { ok: true };
+    }
+    const written = figureSnapshot();
+    if (written && written.kind === snapshot.kind && !sameParameters(before, written.parameters)) updateFigureParameters(before);
+    return { ok: false, code: outcome && !outcome.ok && outcome.code ? outcome.code : 'mismatch' };
+  }
+
+  /**
+   * 写回失败时的回答。这时图像保持送出前的样子。
+   * @param {string} code
+   * @returns {string}
+   */
+  function tutorFailureReply(code) {
+    if (code === 'mapping_unavailable') return '画面的显示区域现在对不上，这次没有改图。恢复显示区域后再问一次。';
+    return '画面刚刚变了，这次没有改成功，图像保持原样。可以再问一次。';
+  }
+
+  /**
+   * 送出提问区的一句话：用画面上当前图形的快照求解，必要时写回系数并重画，再记下问与答。
+   */
+  function submitTutor() {
+    if (!tutorApi || !tutorInput || tutorInput.disabled) return;
+    const text = String(tutorInput.value || '').trim();
+    const state = sessionState();
+    const snapshot = tutorApi.snapshotFrom(figureSnapshot(), {
+      requestId: state ? state.requestId : null,
+      interactive: Boolean(state && state.status === 'interactive' && overlay)
+    });
+    const answer = tutorApi.ask(snapshot, text);
+    if (!text) {
+      tutorInput.value = '';
+      appendTutorEntry('tutor', answer.reply);
+      return;
+    }
+    let reply = answer.reply;
+    if (answer.kind === 'applied' && answer.changed) {
+      const applied = applyTutorAnswer(snapshot, answer);
+      if (!applied.ok) reply = tutorFailureReply(applied.code);
+    }
+    appendTutorEntry('user', text);
+    appendTutorEntry('tutor', reply);
+    tutorInput.value = '';
   }
 
   function activeFigure() {
@@ -287,15 +472,18 @@
       row.output.textContent = formatParameter(figure.parameters[row.name], item);
       row.input.setAttribute('aria-valuetext', row.output.textContent + '（范围 ' + item.min + ' 到 ' + item.max + '）');
     });
+    syncTutorFigure(figure);
     setSlidersEnabled(Boolean(figure));
   }
 
+  /**
+   * 滑块标签的写法。提问区的回答用同一个函数，滑块上的数与回答里的数逐字相同。
+   * @param {number} value
+   * @param {{ step: number } | undefined} item
+   * @returns {string}
+   */
   function formatParameter(value, item) {
-    const precision = item && item.step > 0 ? Math.min(12, Math.max(1, -Math.floor(Math.log10(item.step)))) : 1;
-    const rounded = Number(value.toFixed(precision));
-    const tolerance = Math.max(Number.EPSILON * Math.max(Math.abs(value), Math.abs(rounded)) * 32, item ? item.step * 1e-9 : 0);
-    return (rounded !== 0 || value === 0) && Math.abs(rounded - value) <= tolerance
-      ? value.toFixed(precision) : String(Number(value.toPrecision(12)));
+    return tutorNumbers.formatParameter(value, item);
   }
 
   function clearFigure() {
@@ -1028,11 +1216,8 @@
         row.input.step = String(item.step);
       }
       row.input.value = String(value);
-      const precision = item && item.step > 0 ? Math.min(12, Math.max(1, -Math.floor(Math.log10(item.step)))) : 1;
-      const rounded = Number(value.toFixed(precision));
-      const tolerance = Math.max(Number.EPSILON * Math.max(Math.abs(value), Math.abs(rounded)) * 32, item ? item.step * 1e-9 : 0);
-      const displayValue = (rounded !== 0 || value === 0) && Math.abs(rounded - value) <= tolerance
-        ? value.toFixed(precision) : String(Number(value.toPrecision(12)));
+      // 提问区的回答用同一个格式化，滑块上的数与回答里的数逐字相同。
+      const displayValue = tutorNumbers.formatParameter(value, item);
       row.output.textContent = displayValue;
       if (item && row.input.setAttribute) {
         row.input.setAttribute('aria-valuetext', displayValue + '（范围 ' + item.min + ' 到 ' + item.max + '）');
@@ -1295,7 +1480,7 @@
       setSource(result);
       setStatus(timedOut
         ? '已改用预先准备的示例。拖画面上的点，或拖右边的滑块。'
-        : '拖画面上的点，或拖右边的滑块。按 Esc 退出。');
+        : '拖画面上的点，或拖右边的滑块，也可以在下面提问。按 Esc 退出。');
       syncControls();
       return;
     }
@@ -2049,6 +2234,11 @@
     }
   });
   document.addEventListener('keydown', (event) => {
+    // 在提问框里按 Esc 只清空草稿，不拆掉正在提问的曲线。
+    if (event.key === 'Escape' && tutorInput && event.target === tutorInput) {
+      tutorInput.value = '';
+      return;
+    }
     if (event.altKey && event.key.toLowerCase() === 'b') {
       event.preventDefault();
       wake();
@@ -2094,13 +2284,36 @@
   cancelButton.addEventListener('click', cancelWaiting);
   retryButton.addEventListener('click', wake);
   resetButton.addEventListener('click', () => {
-    if (figuresApi) { resetFigureParameters(); return; }
+    if (figuresApi) {
+      const outcome = resetFigureParameters();
+      if (outcome.ok && outcome.figure && tutorLog && tutorLog.children.length) {
+        appendTutorEntry('note', '已恢复' + outcome.figure.label + '的初始系数。');
+      }
+      return;
+    }
     dragging = false;
     dragOrigin = null;
     if (controller) controller.reset();
     if (drawCurve()) setStatus('已恢复本次结果的初始参数。');
   });
   exitButton.addEventListener('click', removeOverlay);
+  if (tutorForm) {
+    tutorForm.addEventListener('submit', (event) => {
+      event.preventDefault();
+      submitTutor();
+    });
+  }
+  // 示例只填进输入框，不替用户送出；用户可以先改数再问。
+  if (tutorExamples) {
+    tutorExamples.addEventListener('click', (event) => {
+      const target = event.target;
+      const button = target && typeof target.closest === 'function' ? target.closest('[data-tutor-example]') : target;
+      const text = button && button.dataset ? button.dataset.tutorExample : '';
+      if (!text || !tutorInput || tutorInput.disabled) return;
+      tutorInput.value = text;
+      if (typeof tutorInput.focus === 'function') tutorInput.focus();
+    });
+  }
   // 滑块按参数逐个调节（会话层 setParameter）；控制点拖动仍走 updateParameter。
   sliderRows.forEach((row) => {
     if (!row.input) return;

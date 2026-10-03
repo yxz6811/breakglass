@@ -43,6 +43,10 @@ test('演示页按依赖顺序加载本地脚本', () => {
     '../src/preset/place-in-frame.js',
     '../src/lesson/reading.js',
     '../src/lesson/ask.js',
+    '../src/tutor/numbers.js',
+    '../src/tutor/figures.js',
+    '../src/tutor/parse.js',
+    '../src/tutor/ask.js',
     '../src/page/main.js'
   ]);
   for (const src of sources) {
@@ -179,5 +183,36 @@ test('顶栏脚本在扩展包内且不引远程资源', () => {
     assert.equal(fs.existsSync(path.join(extensionDir, rel)), true, '缺少 ' + rel);
     const source = readText(rel);
     assert.doesNotMatch(source, /https?:\/\//, rel + ' 不得引远程资源');
+  }
+});
+
+test('提问区在控制栏里，有标签、记录区和默认禁用的送出', () => {
+  const html = readText('demo/index.html');
+  const panel = /<aside class="control-panel"[\s\S]*?<\/aside>/.exec(html);
+  assert.ok(panel, '缺少控制栏');
+  assert.match(panel[0], /<section class="tutor" aria-labelledby="tutor-title">/);
+  assert.match(panel[0], /<label class="sr-only" for="tutor-input">[^<]+<\/label>/);
+  assert.match(panel[0], /id="tutor-log"[^>]*role="log"[^>]*aria-live="polite"/);
+  assert.match(panel[0], /<input id="tutor-input"[^>]*maxlength="120"[^>]*disabled/);
+  assert.match(panel[0], /<button type="submit" id="tutor-send" disabled>/);
+  for (const tag of panel[0].match(/<button type="button" data-tutor-example="[^"]+"[^>]*>/g) || []) {
+    assert.match(tag, /disabled/, '示例按钮在破壁前不可用：' + tag);
+  }
+  assert.equal((panel[0].match(/data-tutor-example=/g) || []).length >= 2, true, '至少给出两个示例');
+});
+
+test('回答里的系数叫法与滑块标签逐字相同', () => {
+  const html = readText('demo/index.html');
+  const parabola = require('../extension/src/tutor/figures').get('parabola');
+  for (const [name, label] of Object.entries(parabola.names)) {
+    assert.match(html, new RegExp('<label for="parameter-' + name + '">' + label + '</label>'), name);
+  }
+});
+
+test('提问模块不发请求，也不碰 DOM', () => {
+  for (const rel of ['src/tutor/numbers.js', 'src/tutor/figures.js', 'src/tutor/parse.js', 'src/tutor/ask.js']) {
+    const source = readText(rel);
+    assert.doesNotMatch(source, /\bfetch\s*\(|XMLHttpRequest|WebSocket|sendBeacon|https?:\/\//, rel + ' 不得发请求');
+    assert.doesNotMatch(source, /\bdocument\.|\bwindow\.|innerHTML|localStorage|sessionStorage/, rel + ' 只做纯函数');
   }
 });
