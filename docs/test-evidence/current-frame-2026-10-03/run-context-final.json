@@ -1,0 +1,15 @@
+{
+  "testCount": "# tests 673",
+  "commands": [
+    "node --test --test-reporter=tap",
+    "node scripts/check.mjs"
+  ],
+  "node": "v24.21.0",
+  "passCount": "# pass 673",
+  "failCount": "# fail 0",
+  "testExit": 0,
+  "staticExit": 0,
+  "head": "4069d2a4d71da9cd1854fd9b8e201c1225beedf9",
+  "startedUtc": "2026-10-03T13:50:12.9818703Z",
+  "finishedUtc": "2026-10-03T13:50:19.1541400Z"
+}

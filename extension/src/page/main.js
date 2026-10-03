@@ -11,6 +11,7 @@
   } = window.BreakGlass;
   const lessonApi = window.BreakGlass.lesson || null;
   const askApi = window.BreakGlass.lessonAsk || null;
+  const currentFrameApi = window.BreakGlass.currentFrame || null;
   const figuresApi = window.BreakGlass.figures || null;
   const tutorNumbers = window.BreakGlass.tutorNumbers;
   const tutorApi = window.BreakGlass.tutor || null;
@@ -157,6 +158,7 @@
   let lessonLook = null;
   /** 阅读点破壁的起点。只在点已经存好并落定时置位。 */
   let lessonWakeStartedAt = null;
+  let currentFrameWakeStartedAt = null;
   let wakeStartedAt = null;
   let presentationSerial = 0;
   let presentationFrame = null;
@@ -167,6 +169,17 @@
   /** 地址栏连续输入时，等停手再决定要不要开始看。 */
   let endpointWait = null;
   let wakeMounts = 0;
+  window.__breakglassWakeMounts = wakeMounts;
+  // 独立的按需单帧请求，不进入 P0 的 1500ms 示范回退。
+  // 产品约束：docs/BreakGlass-constitution.md 第 IX 条。
+  let frameRead = null;
+  let frameReadSerial = 0;
+  let frameMediaEpoch = 0;
+  let frameReadFailure = null;
+  let usingCurrentFrame = false;
+  let currentFrameSource = '';
+  let localVideoSerial = 0;
+  let localVideoIdentity = '';
 
   function createClock() {
     const read = window.performance && typeof window.performance.now === 'function'
@@ -185,6 +198,7 @@
    */
   async function choosePackagedVideo() {
     if (bootFailure || !video) return;
+    invalidateFrameRead();
     resetLesson();
     if (overlay) removeOverlay({ pauseVideo: false });
     if (localVideoUrl) {
@@ -233,12 +247,14 @@
       setStatus('请选择一个视频文件。');
       return;
     }
+    invalidateFrameRead();
     resetLesson();
     mediaPending = true;
     videoBroken = false;
     if (overlay) removeOverlay({ pauseVideo: false });
     if (localVideoUrl) URL.revokeObjectURL(localVideoUrl);
     localVideoUrl = URL.createObjectURL(file);
+    localVideoIdentity = 'current-video-' + (++localVideoSerial);
     if (video.removeAttribute) video.removeAttribute('data-video-id');
     video.src = localVideoUrl;
     if (assetEmpty) assetEmpty.hidden = true;
@@ -598,6 +614,8 @@
    */
   function syncSessionTarget() {
     if (!controller) return;
+    // 定位输入是下一次跳转的目的地，不改写已识别缓存对应的帧。
+    if (usingCurrentFrame && presetResult) { controller.targetTime = presetResult.time; return; }
     const nextTarget = targetTime();
     if (!Number.isFinite(nextTarget)) return;
     controller.targetTime = nextTarget;
@@ -726,6 +744,13 @@
     if (videoBroken) return '视频无法加载，未挂载交互层。';
     if (mediaPending) return '正在读取所选视频。';
     if (!hasFrameSize()) return pickStatus();
+    if (frameRead) return '正在识别第 ' + formatSecond(frameRead.time) + ' 秒的当前帧，可取消。';
+    if (frameReadFailure) return frameReadFailure.message;
+    if (lesson && lesson.seeking) return lessonWakeStatus();
+    if (localVideoUrl && !(atTarget() && videoMatches())) {
+      if (canReadCurrentFrame()) return '暂停帧已就绪。点破壁识别这一帧的抛物线。';
+      return '请暂停视频，等画面加载完成后再破壁识别。';
+    }
     if (lessonBlocksWake()) return lessonWakeStatus();
     const mismatch = materialMessage();
     if (mismatch) return mismatch;
@@ -749,15 +774,17 @@
   function markGuide() {
     const state = sessionState();
     const busy = Boolean(state && (state.status === 'waiting' || state.status === 'recoverable-error'));
-    const canSeek = hasFrameSize() && !videoBroken && !overlay && !busy && videoMatches() && !lessonBlocksWake();
+    const canSeek = hasFrameSize() && !videoBroken && !overlay && !busy &&
+      (localVideoUrl || (videoMatches() && !lessonBlocksWake()));
+    if (jumpTarget) jumpTarget.disabled = !hasFrameSize() || videoBroken;
     if (jumpTarget && jumpTarget.classList) jumpTarget.classList.toggle('is-next', canSeek && !atTarget());
     if (wakeButton && wakeButton.classList) {
       wakeButton.classList.toggle('is-next', Boolean(canSeek && atTarget() && !wakeButton.disabled));
     }
     const field = $('#target-time-field');
     const readout = $('#target-time-readout');
-    if (field) field.hidden = !curveShown;
-    if (readout) readout.hidden = curveShown;
+    if (field) field.hidden = !(curveShown || localVideoUrl);
+    if (readout) readout.hidden = Boolean(curveShown || localVideoUrl);
     const jumpTip = jumpTarget && jumpTarget.querySelector ? jumpTarget.querySelector('.lg-tip') : null;
     const authored = authoredTime();
     const dest = seekDestination();
@@ -797,6 +824,14 @@
       mode = 'idle';
       title = '正在读取片子';
       detail = '还没开始看，也还没破壁。';
+    } else if (frameRead) {
+      mode = 'looking';
+      title = '正在识别当前帧';
+      detail = '只提交第 ' + formatSecond(frameRead.time) + ' 秒这一帧，最多等待 30 秒。可取消或退出。';
+    } else if (frameReadFailure) {
+      mode = 'idle';
+      title = '当前帧还未识别';
+      detail = frameReadFailure.message;
     } else if (waiting) {
       mode = 'waking';
       title = '正在破壁';
@@ -811,18 +846,24 @@
     } else if (open) {
       mode = 'open';
       title = '破壁已打开';
-      detail = usingLessonCurve
+      detail = usingCurrentFrame
+        ? '这是当前暂停帧识别出的抛物线。拖动控制点或滑块，也可以提问。'
+        : usingLessonCurve
         ? '这是这次阅读找到的曲线。拖画面上的点，或拖右边的滑块。'
         : '曲线已经盖在画面上。拖画面上的点，或拖右边的滑块。';
     } else if (lesson && lesson.seeking) {
       mode = 'seeking';
       title = '正在停到这一帧';
       detail = '停稳之后才能破壁。';
+    } else if (localVideoUrl && canReadCurrentFrame() && (!lessonEndpoint || !String(lessonEndpoint.value || '').trim())) {
+      mode = 'need-address';
+      title = '填入本机阅读地址';
+      detail = '配置本地 reader 后，暂停并点破壁识别当前帧。视频文件保留在浏览器里。';
     } else if (lesson && lesson.phase === 'reading' && !usingLessonCurve) {
       mode = 'looking';
       title = 'AI 正在看这段画面';
       if (lessonLook && lessonLook.phase === 'waiting') {
-        detail = '画面已经交出去，正在等结果。破壁还没开始。';
+        detail = '画面已经交出去，正在等结果。破壁还没开始。也可暂停后点破壁，改为只识别当前帧。';
       } else if (lessonLook && lessonLook.phase === 'frame' && Number.isFinite(lessonLook.time)) {
         detail = '正在看第 ' + formatSecond(lessonLook.time) + ' 秒（' + lessonLook.index + '/' + lessonLook.total + '）。破壁还没开始。';
       } else if (lesson.points.length > 0) {
@@ -834,6 +875,7 @@
       mode = 'ready';
       title = '可以破壁';
       detail = '点顶栏的破壁，或按 Alt+B。曲线还没出现。';
+      if (localVideoUrl && !(atTarget() && videoMatches())) detail = '点破壁或按 Alt+B，只识别当前暂停帧的抛物线。';
       if (lesson && lesson.phase === 'reading') detail += '画面还在继续看。';
     } else if (awaitingEndpoint) {
       mode = 'need-address';
@@ -914,6 +956,7 @@
 
   function sourceText(result) {
     if (!result) return '等待素材';
+    if (usingCurrentFrame) return '当前帧识别';
     if (isPackagedVision(result)) return '识别结果';
     if (isLessonResult(result)) return '这次阅读';
     if (result.fallback === 'timeout') return '预先准备的示例 · 超时回退';
@@ -943,6 +986,10 @@
     // 识别样例的说明必须写明尚未接通外部识别；也不显示可信程度百分比。
     if (vision) {
       sourceNote.textContent = '随演示打包的识别样例，尚未接通外部识别。';
+      return;
+    }
+    if (result && usingCurrentFrame) {
+      sourceNote.textContent = '由本地 reader 读取你主动提交的当前帧；视频、时刻和源尺寸已校验。';
       return;
     }
     if (isLessonResult(result)) {
@@ -1323,13 +1370,14 @@
   }
 
   /** 双 rAF 提供一次绘制机会；它不是像素呈现的硬件时间戳，隐藏页不计样本。 */
-  function recordPresentation(timedOut, decidedAt, startedAt, lessonStartedAt) {
+  function recordPresentation(timedOut, decidedAt, startedAt, lessonStartedAt, frameStartedAt) {
     cancelPresentation();
     if (!latencies || !overlay) return;
     const mounted = overlay;
     const domAt = localClock.now();
     if (timedOut) latencies.record('fallback-dom-ready', domAt - decidedAt, 'hot');
-    if (lessonStartedAt !== null) latencies.record('lesson-wake-dom-ready', domAt - lessonStartedAt, 'hot');
+    if (frameStartedAt !== null) latencies.record('current-frame-cache-dom-ready', domAt - frameStartedAt, 'hot');
+    else if (lessonStartedAt !== null) latencies.record('lesson-wake-dom-ready', domAt - lessonStartedAt, 'hot');
     else if (startedAt !== null) latencies.record('preset-wake-dom-ready', domAt - startedAt, 'hot');
     if (typeof window.requestAnimationFrame !== 'function') return;
     const serial = presentationSerial;
@@ -1342,7 +1390,8 @@
         if (!current()) return;
         const now = localClock.now();
         if (timedOut) latencies.record('fallback-frame-ready', now - decidedAt, 'hot');
-        if (lessonStartedAt !== null) latencies.record('lesson-wake-frame-ready', now - lessonStartedAt, 'hot');
+        if (frameStartedAt !== null) latencies.record('current-frame-cache-frame-ready', now - frameStartedAt, 'hot');
+        else if (lessonStartedAt !== null) latencies.record('lesson-wake-frame-ready', now - lessonStartedAt, 'hot');
         else if (startedAt !== null) latencies.record('preset-wake-frame-ready', now - startedAt, 'hot');
         stage.dataset.presentationMetrics = JSON.stringify({ endpoint: 'two-animation-frames', pixelPresentationVerified: false, summary: latencies.summary() });
       });
@@ -1350,6 +1399,7 @@
   }
 
   function syncControls() {
+    if (frameRead && !frameReadStillCurrent(frameRead)) invalidateFrameRead();
     if (wakeHandle && controller) {
       syncSessionTarget();
       const before = controller.getState();
@@ -1366,8 +1416,9 @@
       }
     }
     const waiting = Boolean(sessionState() && sessionState().status === 'waiting');
-    const ready = atTarget() && Boolean(presetResult) && videoMatches();
-    wakeButton.disabled = waiting || !ready || Boolean(overlay) || lessonBlocksWake();
+    const ready = cachedCurveReady();
+    wakeButton.disabled = waiting || Boolean(frameRead) || Boolean(overlay) ||
+      !(ready || (canReadCurrentFrame() && !(lesson && lesson.seeking)));
     const playLabel = video.paused ? '播放' : '暂停';
     playToggle.setAttribute('aria-label', playLabel + '视频');
     if (playTip) playTip.textContent = playLabel;
@@ -1377,6 +1428,7 @@
     if (!videoBroken && idle && !overlay && (materialMessage() || !atTarget())) {
       setStatus(idleStatus());
     }
+    syncFrameReadControls();
     syncDisabledReasons();
   }
 
@@ -1398,10 +1450,13 @@
       let reason = '';
       if (wakeButton.disabled) {
         const state = sessionState();
-        if (state && state.status === 'waiting') reason = '正在等待外部结果，可以先取消或退出。';
+        if (frameRead) reason = '正在识别当前帧，可以先取消或退出。';
+        else if (state && state.status === 'waiting') reason = '正在等待外部结果，可以先取消或退出。';
         else if (overlay) reason = '交互层已经出现，不需要再次破壁。';
-        else if (lessonBlocksWake()) reason = lessonWakeStatus();
+        else if (lesson && lesson.seeking) reason = lessonWakeStatus();
         else if (!video.paused) reason = '请先暂停视频。';
+        else if (localVideoUrl && !canReadCurrentFrame()) reason = '当前画面尚未解码、正在定位或时间无效，请等暂停帧就绪。';
+        else if (lessonBlocksWake()) reason = lessonWakeStatus();
         else if (!hasFrameSize()) reason = pickStatus();
         else if (materialMessage()) reason = materialMessage();
         else if (!atTarget()) reason = seekStatus();
@@ -1445,8 +1500,11 @@
       setStatus(idleStatus());
     }
     lessonWakeStartedAt = null;
+    currentFrameWakeStartedAt = null;
     wakeStartedAt = null;
-    wakeButton.disabled = !(atTarget() && Boolean(presetResult)) || lessonBlocksWake();
+    wakeButton.disabled = Boolean(frameRead) || !(cachedCurveReady() ||
+      (canReadCurrentFrame() && !(lesson && lesson.seeking)));
+    syncFrameReadControls();
     markGuide();
   }
 
@@ -1463,7 +1521,8 @@
       const decidedAt = localClock.now();
       if (!createOverlay()) return;
       curveShown = true;
-      recordPresentation(timedOut, decidedAt, wakeStartedAt, lessonWakeStartedAt);
+      recordPresentation(timedOut, decidedAt, wakeStartedAt, lessonWakeStartedAt, currentFrameWakeStartedAt);
+      currentFrameWakeStartedAt = null;
       wakeStartedAt = null;
       lessonWakeStartedAt = null;
       // 识别路径单独结算；预制路径（含超时回退）不写这组。
@@ -1522,6 +1581,11 @@
   }
 
   function wake() {
+    if (frameRead || overlay) return;
+    if (localVideoUrl && !cachedCurveReady()) {
+      readCurrentFrame();
+      return;
+    }
     if (lessonBlocksWake()) {
       setStatus(lessonWakeStatus());
       return;
@@ -1533,6 +1597,15 @@
     const state = sessionState();
     if (overlay || (state && (state.status === 'interactive' || state.status === 'waiting'))) return;
     const frameSize = { width: video.videoWidth, height: video.videoHeight };
+    if (usingCurrentFrame) {
+      currentFrameWakeStartedAt = localClock.now();
+      const started = wakeHandle.startCached({ paused: true, currentTime: video.currentTime, frameSize });
+      if (!started.ok) {
+        currentFrameWakeStartedAt = null;
+        setStatus(started.message || '缓存结果不可用，请重新识别。', 'error');
+      }
+      return;
+    }
     // 只有识别路径需要判定耗时；起点取自页面自己的时钟。阅读点改走自己的那一组。
     const visionPath = !usingLessonCurve && Boolean(config) && config.visionAdapter === 'fixture' && config.externalAttempt === 'off';
     visionStartedAt = visionPath && localClock ? localClock.now() : null;
@@ -1547,6 +1620,12 @@
   }
 
   function cancelWaiting() {
+    if (frameRead) {
+      invalidateFrameRead();
+      syncControls();
+      setStatus('已取消当前帧识别，迟到结果不会打开交互层。');
+      return;
+    }
     if (!wakeHandle || !sessionState() || sessionState().status !== 'waiting') return;
     pendingIdle = {
       note: '已取消等待，迟到结果不会再打开交互层。',
@@ -1561,10 +1640,12 @@
    * @param {object} result 已通过校验的准备结果
    * @param {boolean} fromLesson 是否是这次阅读的点
    */
-  function mountWake(result, fromLesson) {
+  function mountWake(result, fromLesson, fromCurrentFrame = false) {
     if (wakeHandle) wakeHandle.dispose();
     presetResult = result;
     usingLessonCurve = Boolean(fromLesson);
+    usingCurrentFrame = Boolean(fromCurrentFrame);
+    if (!usingCurrentFrame) currentFrameSource = '';
     targetInput.value = String(fromLesson ? result.time : PACKAGED_DEMO_TARGET_SECONDS);
     const live = fromLesson ? { ...config, externalAttempt: 'off', visionAdapter: 'off' } : config;
     controller = new sessionApi.SessionController({
@@ -1578,11 +1659,143 @@
       session: controller,
       config: live,
       preset: result,
+      cachedReading: usingCurrentFrame,
       clock: localClock,
       onChange: (state) => applyState(state)
     });
     wakeMounts += 1;
     window.__breakglassWakeMounts = wakeMounts;
+  }
+
+  function canReadCurrentFrame() {
+    return Boolean(localVideoUrl && config && currentFrameApi && !bootFailure && !videoBroken && !mediaPending &&
+      video.paused && !video.seeking && video.readyState >= 2 &&
+      Number.isSafeInteger(video.videoWidth) && video.videoWidth > 0 &&
+      Number.isSafeInteger(video.videoHeight) && video.videoHeight > 0 &&
+      Number.isFinite(video.duration) && video.duration > 0 && Number.isFinite(video.currentTime) &&
+      video.currentTime >= 0 && video.currentTime <= video.duration);
+  }
+
+  function cachedCurveReady() {
+    if (!atTarget() || !presetResult || !videoMatches() || lessonBlocksWake()) return false;
+    if (!usingCurrentFrame) return true;
+    return canReadCurrentFrame() && currentFrameSource === video.src &&
+      presetResult.time === video.currentTime && presetResult.frameSize.width === video.videoWidth &&
+      presetResult.frameSize.height === video.videoHeight;
+  }
+
+  function frameReadStillCurrent(owner) {
+    return frameRead === owner && owner.epoch === frameMediaEpoch && owner.videoId === localVideoIdentity &&
+      owner.src === video.src && canReadCurrentFrame() && owner.time === video.currentTime &&
+      owner.duration === video.duration && owner.frameSize.width === video.videoWidth &&
+      owner.frameSize.height === video.videoHeight;
+  }
+
+  function invalidateFrameRead() {
+    frameMediaEpoch += 1;
+    const owner = frameRead;
+    frameRead = null;
+    frameReadFailure = null;
+    if (owner && owner.handle) owner.handle.cancel();
+    if (owner) hideWaitingControls();
+  }
+
+  function syncFrameReadControls() {
+    if (stage && stage.setAttribute) stage.setAttribute('aria-busy', String(Boolean(frameRead)));
+    if (overlay) return;
+    if (frameRead) {
+      cancelButton.hidden = false;
+      cancelButton.disabled = false;
+      retryButton.hidden = true;
+      retryButton.disabled = true;
+      exitButton.disabled = false;
+      resetButton.disabled = true;
+      setSlidersEnabled(false);
+      setWaitingBar(false);
+      setSource(null, '本地 reader 正在处理你提交的这一帧，最多等待 30 秒。');
+      setStatus(idleStatus());
+    } else if (frameReadFailure) {
+      hideWaitingControls();
+      retryButton.hidden = false;
+      retryButton.disabled = !canReadCurrentFrame();
+      exitButton.disabled = false;
+      setPrimaryAction('retry');
+      setSource(null, frameReadFailure.message);
+      setStatus(frameReadFailure.message, 'error');
+    } else if (sessionState() && sessionState().status === 'paused-ready') {
+      hideWaitingControls();
+      exitButton.disabled = true;
+      setPrimaryAction('wake');
+    }
+  }
+
+  function failFrameRead(failure) {
+    frameReadFailure = failure;
+    syncControls();
+    if (retryButton.focus) retryButton.focus();
+  }
+
+  function readCurrentFrame() {
+    if (!canReadCurrentFrame() || (lesson && lesson.seeking)) {
+      setStatus(wakeBlockedStatus());
+      return;
+    }
+    let url;
+    try { url = currentFrameApi.buildUrl(lessonEndpoint ? lessonEndpoint.value : ''); }
+    catch {
+      failFrameRead({ message: '请填入本机 reader 阅读地址（根地址或 /read），再点破壁识别当前帧。' });
+      if (lessonEndpoint && lessonEndpoint.focus) lessonEndpoint.focus();
+      return;
+    }
+    if (endpointWait != null) {
+      window.clearTimeout(endpointWait);
+      endpointWait = null;
+    }
+    // 主动读取当前帧后，旧预读不能再自动定位到它找到的第一处。
+    stopLessonWork();
+    if (lesson) {
+      lesson.phase = 'ready';
+      lesson.cancelled = true;
+      renderLesson('改为按需识别当前帧；已存的阅读点仍保留。');
+    }
+    const owner = {
+      src: video.src, videoId: localVideoIdentity, epoch: frameMediaEpoch,
+      readingId: 'current-read-' + (++frameReadSerial), time: video.currentTime,
+      duration: video.duration, frameSize: { width: video.videoWidth, height: video.videoHeight }, handle: null
+    };
+    let body;
+    try {
+      body = currentFrameApi.requestBody({
+        readingId: owner.readingId, videoId: owner.videoId, duration: owner.duration,
+        frameSize: owner.frameSize, courseText: lessonNote ? lessonNote.value : '',
+        frames: [{ time: owner.time, image: snapshotFrame(video, document.createElement('canvas')) }]
+      });
+    } catch (error) {
+      failFrameRead({ message: error.message || '当前帧无法读取，请等画面加载完成后重试。' });
+      return;
+    }
+    frameReadFailure = null;
+    frameRead = owner;
+    awaitingEndpoint = false;
+    syncControls();
+    owner.handle = currentFrameApi.startRead({
+      url, body, clock: localClock, fetchImpl: (address, init) => fetch(address, init),
+      onSuccess(point) {
+        if (!frameReadStillCurrent(owner)) return;
+        frameRead = null;
+        mountWake(point.curve, true, true);
+        currentFrameSource = owner.src;
+        if (video.setAttribute) video.setAttribute('data-video-id', point.curve.videoId);
+        renderLesson();
+        if (lessonStatus) lessonStatus.textContent = '第 ' + formatSecond(point.time) + ' 秒：' + point.lessonLine;
+        wake();
+      },
+      onFailure(failure) {
+        if (!frameReadStillCurrent(owner)) return;
+        frameRead = null;
+        failFrameRead(failure);
+      }
+    });
   }
 
   /**
@@ -1634,7 +1847,7 @@
       parts.push('读完了，共 ' + count + ' 处。');
     }
     if (note) parts.push(note);
-    const later = lesson.shown ? lessonApi.nextPoint(lesson.points, lesson.shown.time) : null;
+    const later = lesson.shown ? lessonApi.nextPoint(lesson.points, lessonNavigationTime()) : null;
     const none = lesson.phase === 'ready' && !later;
     if (none && lesson.shown) parts.push('没有下一处。');
     if (lessonNext) lessonNext.disabled = !lesson.shown || lesson.seeking || none;
@@ -1674,6 +1887,15 @@
     lessonFallbackReason = '';
     awaitingEndpoint = false;
     if (lessonStatus) lessonStatus.textContent = '';
+    if (usingCurrentFrame && !packagedPreset) {
+      usingCurrentFrame = false;
+      usingLessonCurve = false;
+      currentFrameSource = '';
+      presetResult = null;
+      controller = null;
+      if (wakeHandle) wakeHandle.dispose();
+      wakeHandle = null;
+    }
     if (usingLessonCurve && packagedPreset) {
       if (overlay) removeOverlay({ pauseVideo: false });
       mountWake(packagedPreset, false);
@@ -1957,6 +2179,7 @@
     if (!video.paused || Math.abs(video.currentTime - point.time) > 0.2 + 1e-9) return;
     lesson.seeking = false;
     mountWake(point.curve, true);
+    if (video.setAttribute) video.setAttribute('data-video-id', point.curve.videoId);
     if (lesson.pendingJump) {
       lesson.pendingJump.after = video.currentTime;
       lesson.jumps.push(lesson.pendingJump);
@@ -1973,7 +2196,7 @@
    */
   function lessonGoNext() {
     if (!lesson || !lesson.shown || lesson.seeking || (lessonNext && lessonNext.disabled)) return;
-    const later = lessonApi.nextPoint(lesson.points, lesson.shown.time);
+    const later = lessonApi.nextPoint(lesson.points, lessonNavigationTime());
     if (later) {
       seekLessonPoint(later, { before: video.currentTime, after: null, wakeDisabled: false });
       return;
@@ -1983,6 +2206,10 @@
       return;
     }
     renderLesson();
+  }
+
+  function lessonNavigationTime() {
+    return usingCurrentFrame && presetResult ? presetResult.time : lesson.shown.time;
   }
 
   /**
@@ -2111,12 +2338,14 @@
   async function boot() {
     try {
       const loaded = await preset.loadPreset();
-      if (!loaded.ok) throw new Error(loaded.message);
+      const currentFrameOnly = !loaded.ok && loaded.code === 'preset_disabled' &&
+        loaded.config && loaded.config.enableLocalMock === false;
+      if (!loaded.ok && !currentFrameOnly) throw new Error(loaded.message);
       config = loaded.config;
-      packagedPreset = loaded.result;
+      packagedPreset = loaded.result || null;
       localClock = createClock();
       latencies = latencyApi.createLatencyLog({ clock: localClock });
-      mountWake(packagedPreset, false);
+      if (packagedPreset) mountWake(packagedPreset, false);
       window.__breakglassLatency = {
         summary: () => latencies.summary(),
         snapshot: () => latencies.snapshot(),
@@ -2124,7 +2353,9 @@
       };
       watchDevicePixelRatio();
       watchVideoSize();
-      runtimeNote.textContent = `配置：${config.externalAttempt} · 本地预制已预热 · 回退 ${config.fallbackAfterMs}ms`;
+      runtimeNote.textContent = currentFrameOnly
+        ? '本地预制已关闭；自有视频仍可请求本机 reader 识别当前帧。'
+        : `配置：${config.externalAttempt} · 本地预制已预热 · 回退 ${config.fallbackAfterMs}ms`;
       setSource(null);
       if (!localVideoUrl && !String(video.src || '')) setStatus(pickStatus());
       restoreEndpoint();
@@ -2142,6 +2373,12 @@
   }
 
   video.addEventListener('resize', syncControls);
+  video.addEventListener('seeking', () => {
+    invalidateFrameRead();
+    if (overlay) removeOverlay({ pauseVideo: false });
+    syncControls();
+  });
+  video.addEventListener('loadeddata', syncControls);
   video.addEventListener('loadedmetadata', () => {
     mediaPending = false;
     videoBroken = false;
@@ -2153,13 +2390,15 @@
   // 只有阅读点的定位在等这一下。其它跳转照旧由 timeupdate / pause 同步。
   video.addEventListener('seeked', () => {
     if (lesson && lesson.seeking) settleLessonSeek();
+    syncControls();
   });
   video.addEventListener('timeupdate', syncControls);
-  video.addEventListener('play', syncControls);
+  video.addEventListener('play', () => { invalidateFrameRead(); syncControls(); });
   video.addEventListener('pause', syncControls);
   video.addEventListener('ended', syncControls);
   video.addEventListener('error', () => {
     if (bootFailure) return;
+    invalidateFrameRead();
     if (lessonFallbackReason && isPreparedSource(video.src) && lessonStatus) {
       lessonStatus.textContent = lessonFallbackReason + '预先准备的片子没有加载出来。';
     }
@@ -2183,6 +2422,8 @@
   }
   if (lessonEndpoint) {
     lessonEndpoint.addEventListener('input', () => {
+      invalidateFrameRead();
+      syncControls();
       rememberEndpoint();
       if (endpointWait != null) window.clearTimeout(endpointWait);
       endpointWait = window.setTimeout(() => {
@@ -2191,6 +2432,8 @@
       }, 300);
     });
     lessonEndpoint.addEventListener('change', () => {
+      invalidateFrameRead();
+      syncControls();
       rememberEndpoint();
       if (endpointWait != null) {
         window.clearTimeout(endpointWait);
@@ -2210,6 +2453,7 @@
   });
   window.addEventListener('orientationchange', drawCurve);
   window.addEventListener('pagehide', () => {
+    invalidateFrameRead();
     if (endpointWait != null) {
       window.clearTimeout(endpointWait);
       endpointWait = null;
@@ -2239,12 +2483,17 @@
       tutorInput.value = '';
       return;
     }
-    if (event.altKey && event.key.toLowerCase() === 'b') {
+    const target = event.target;
+    const editing = target && (target.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName));
+    if (event.altKey && !event.ctrlKey && !event.metaKey && !event.shiftKey && !event.repeat &&
+        !editing && String(event.key).toLowerCase() === 'b') {
       event.preventDefault();
       wake();
     }
     if (event.key === 'Escape') {
       if (document.fullscreenElement) return;
+      if (frameRead) { cancelWaiting(); return; }
+      if (frameReadFailure) { invalidateFrameRead(); syncControls(); return; }
       const status = sessionState() && sessionState().status;
       if (overlay || status === 'recoverable-error') removeOverlay();
       else if (status === 'waiting') cancelWaiting();
@@ -2257,7 +2506,12 @@
     removeOverlay();
   });
   playToggle.addEventListener('click', () => {
-    if (video.paused) video.play().catch(() => setStatus('视频当前无法播放。'));
+    if (video.paused) {
+      invalidateFrameRead();
+      if (overlay) removeOverlay({ pauseVideo: false });
+      syncControls();
+      video.play().catch(() => setStatus('视频当前无法播放。'));
+    }
     else video.pause();
   });
   jumpTarget.addEventListener('click', () => {
@@ -2266,10 +2520,12 @@
       return;
     }
     const next = targetTime();
-    if (!Number.isFinite(next) || next < 0) {
+    if (!Number.isFinite(next) || next < 0 || (Number.isFinite(video.duration) && next > video.duration)) {
       setStatus('请输入有效的目标时间。');
       return;
     }
+    invalidateFrameRead();
+    if (overlay) removeOverlay({ pauseVideo: false });
     video.currentTime = next;
     video.pause();
     syncControls();
@@ -2296,7 +2552,11 @@
     if (controller) controller.reset();
     if (drawCurve()) setStatus('已恢复本次结果的初始参数。');
   });
-  exitButton.addEventListener('click', removeOverlay);
+  exitButton.addEventListener('click', () => {
+    invalidateFrameRead();
+    removeOverlay();
+    syncControls();
+  });
   if (tutorForm) {
     tutorForm.addEventListener('submit', (event) => {
       event.preventDefault();

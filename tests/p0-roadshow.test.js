@@ -117,20 +117,20 @@ test('改目标时间或定位后，画面时间和曲线绑定保持一致', as
     const { elements, video } = harness;
     elements['wake-button'].dispatch('click');
     assert.ok(harness.overlay());
-    elements['target-time'].value = '30';
+    elements['target-time'].value = '7';
     elements['target-time'].dispatch('input');
-    assert.equal(harness.overlay(), null, '视频还停在 6 秒时，目标改成 30 应撤下曲线');
+    assert.equal(harness.overlay(), null, '视频还停在 6 秒时，目标改成 7 应撤下曲线');
     assert.equal(elements['wake-button'].disabled, true);
 
     elements['target-time'].value = '6';
     elements['target-time'].dispatch('input');
     assert.equal(elements['wake-button'].disabled, false);
     elements['wake-button'].dispatch('click');
-    elements['target-time'].value = '30';
+    elements['target-time'].value = '7';
     elements['jump-target'].dispatch('click');
-    assert.equal(video.currentTime, 30);
+    assert.equal(video.currentTime, 7);
     assert.equal(video.paused, true);
-    assert.equal(harness.overlay(), null, '6 秒的准备结果不能留在 30 秒的画面上');
+    assert.equal(harness.overlay(), null, '6 秒的准备结果不能留在 7 秒的画面上');
     assert.equal(elements['wake-button'].disabled, true);
     assert.match(elements['state-label'].textContent, /6/);
   } finally {

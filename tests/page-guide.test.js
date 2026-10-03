@@ -21,15 +21,15 @@ test('目标时间改离准备结果后，定位文案和跳转是同一个秒�
     harness.ready();
     elements['wake-button'].dispatch('click');
     elements['exit-button'].dispatch('click');
-    elements['target-time'].value = '30';
+    elements['target-time'].value = '7';
     elements['target-time'].dispatch('input');
     assert.equal(elements['wake-button'].disabled, true);
-    assert.equal(elements['jump-target'].getAttribute('aria-label'), '定位到第 30 秒');
-    assert.match(elements['state-label'].textContent, /30/);
+    assert.equal(elements['jump-target'].getAttribute('aria-label'), '定位到第 7 秒');
+    assert.match(elements['state-label'].textContent, /7/);
     assert.match(elements['state-label'].textContent, /6/);
     assert.equal(elements['state-label'].textContent.includes('点定位，停在第 6 秒'), false);
     elements['jump-target'].dispatch('click');
-    assert.equal(video.currentTime, 30);
+    assert.equal(video.currentTime, 7);
     assert.equal(harness.overlay(), null);
     assert.equal(elements['wake-button'].disabled, true);
   } finally {

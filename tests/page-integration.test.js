@@ -62,6 +62,7 @@ test('演示页按依赖顺序加载本地脚本', () => {
     '../src/preset/place-in-frame.js',
     '../src/lesson/reading.js',
     '../src/lesson/ask.js',
+    '../src/curve/current-frame.js',
     '../src/tutor/numbers.js',
     '../src/tutor/figures.js',
     '../src/tutor/parse.js',

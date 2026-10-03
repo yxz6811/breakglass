@@ -128,10 +128,9 @@ test('别人的片子：隐藏采样后发一次请求，舞台时间不动，�
     assert.deepEqual(seeks, [], '采样不能拖动舞台上的片子');
     assert.equal(video.currentTime, 6);
     assert.equal(win.__breakglassWakeMounts, mountsBefore);
-    assert.equal(elements['wake-button'].disabled, true, '还没有点时不能把示例曲线画到别人的片子上');
-    harness.document.dispatch('keydown', { key: 'b', altKey: true });
+    assert.equal(elements['wake-button'].disabled, false, '有效暂停帧可主动识别，不能沿用包内曲线');
     assert.equal(harness.overlay(), null);
-    assert.equal(elements['state-label'].textContent, '正在读，第一处读好后会停在那一帧。');
+    assert.match(elements['state-label'].textContent, /暂停帧|识别/);
     assert.equal(status(harness).includes('这次没有课程文本。'), true);
     assert.equal(elements['lesson-cancel'].hidden, false);
   } finally {
@@ -212,7 +211,7 @@ test('尺寸对不上的点直接丢掉：时间、覆盖层和唤醒都不动',
     assert.equal(early.reason, '抛物线没有通过检查');
     assert.equal(video.currentTime, 1);
     assert.equal(win.__breakglassWakeMounts, mountsBefore);
-    assert.equal(elements['wake-button'].disabled, true);
+    assert.equal(elements['wake-button'].disabled, false, '坏阅读点不会妨碍重新识别有效暂停帧');
     assert.equal(status(harness).includes('丢掉一处：抛物线没有通过检查。'), true);
 
     win.__breakglassLesson.offer(lessonPoint(binding.videoId, 5.25, 'p5'));
@@ -328,7 +327,7 @@ test('空白地址：不发请求，用户选的片子留在画面上', async ()
     assert.deepEqual(win.__breakglassLesson.points(), []);
     assert.equal(status(harness), '还没开始看。填上阅读地址后，这支片子会被看。');
     assert.equal(elements['stage-banner'].dataset.mode, 'need-address');
-    assert.equal(elements['stage-banner-title'].textContent, '还没开始看');
+    assert.equal(elements['stage-banner-title'].textContent, '填入本机阅读地址');
     assert.equal(elements['lesson-endpoint'].classList.contains('is-needed'), true);
     elements['wake-button'].dispatch('click');
     assert.equal(harness.overlay(), null);

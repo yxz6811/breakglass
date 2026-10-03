@@ -12,8 +12,8 @@ const { createFakeClock, flush } = require('./helpers/fake-clock.js');
 
 const FRAME = { width: 1920, height: 1080 };
 const TARGET_TIME = 12.5;
-const WAKE_METHODS = ['start', 'cancel', 'exit', 'onPlaybackChange', 'dispose'];
-const WAKE_OPTIONS = ['session', 'config', 'preset', 'clock', 'onChange', 'attempt'];
+const WAKE_METHODS = ['start', 'startCached', 'cancel', 'exit', 'onPlaybackChange', 'dispose'];
+const WAKE_OPTIONS = ['session', 'config', 'preset', 'clock', 'onChange', 'attempt', 'cachedReading'];
 const STATE_KEYS = ['status', 'requestId', 'result', 'currentParameters', 'initialParameters', 'code', 'message'];
 
 function preset(overrides = {}) {
