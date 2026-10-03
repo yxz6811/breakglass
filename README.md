@@ -1,6 +1,6 @@
 # BreakGlass（破壁）
 
-BreakGlass 是一个 Chrome MV3 扩展原型：把已验证演示视频中的数学抛物线变成可调节的原位 SVG 交互层。
+BreakGlass 是一个 Chrome MV3 扩展原型：把已验证演示视频中的数学抛物线变成可调节的原位 SVG 交互层，并提供独立的当前帧直角三角形学习工作台。
 
 当前交付基线是一个离线可演示的数学抛物线 P0 vertical slice。用户在扩展内演示页播放、暂停并定位视频，在目标时间唤醒预先准备的曲线，拖动参数、重置或退出。预制结果始终标明来源，不伪装成实时识别。
 
@@ -12,6 +12,7 @@ BreakGlass 是一个 Chrome MV3 扩展原型：把已验证演示视频中的数
 - 9 秒演示片已在仓库里。预制区域按这支片子第 6 秒的画面写。这一帧的手工读数见验证记录，不能当成 2% 对齐已经通过，也不能代替四画幅验收。
 - 开播前阅读在片子可播放且已填写阅读地址时自动开始。验收片子不得使用 `breakglass-demo-9s.mp4`；失败、断网、地址留空或 5 分钟内一处都没通过时，画面保留用户选中的片子并丢弃无效结果。示例片只在点击「选择预设」时加载。已有独立阅读服务源码在 `breakglass-reader/`，不进入扩展包，也不部署为云端后台；未配置服务和模型时，页面不会从画面里找出抛物线。
 - 交付状态：故事 1（MVP）、故事 2（等待/超时回退/失败/取消）、故事 3（多画幅 2% 对齐）、识别适配切片（`visionAdapter` 默认关闭）和开播前阅读的页面接线已有自动化测试。独立 reader 已有源码和替身测试；四画幅的 2% 记录、真实模型阅读及真实像素呈现耗时仍待完成，见 [前端验证记录](docs/BreakGlass-frontend-validation.md)。开播前阅读的 SC-003、SC-004、SC-005 未通过。
+- 005：直角三角形工作台、确定性计算、当前帧校对、受限问答、恢复和理解题已有实现。预设／手工输入与真实识别分别标注；真实模型及样本验收仍待完成，见 [几何验证记录](docs/BreakGlass-geometry-validation.md)。
 
 ## 技术路线
 
@@ -58,7 +59,17 @@ node --test
 
 `check.mjs` 检查语法、HTML 本地资源和静态模块引用；`node --test` 包含页面状态与 reader 模型替身测试。双 rAF 的 `*-frame-ready` 计时与 `*-dom-ready` 分开保存；前者是绘制机会估计，不能替代实际像素呈现、四画幅对齐或真实阅读验收。详见 [本轮优化与验证](docs/BreakGlass-optimization-2026-10-03.md)。
 
-没有视频时页面提示选择视频或选择预设，不会挂上曲线。本轮网页方式的浏览器验证见验收记录，Chrome 扩展内的完整验收仍待完成；识别任意视频仍不在当前范围。
+没有视频时抛物线页面提示选择视频或选择预设，不会挂上曲线。本轮网页方式的浏览器验证见验收记录，Chrome 扩展内的完整验收仍待完成；识别任意视频仍不在当前范围。
+
+## 直角三角形工作台
+
+打开 `http://127.0.0.1:8765/demo/geometry.html`，也可从抛物线演示页点击入口。点击“使用 3–4–5 预设”或“手工填写条件”，校对并确认后即可修改 AB 或 AC、恢复原题、回答理解题。一次只改一条直角边；BC 始终由 `Math.hypot` 计算。
+
+提问默认使用明确标注的本地受限指令，例如“把 AB 改成 6，AC 不变，BC 是多少？”、“现在 BC 是多少”、“解释变化”、“恢复原题”。本地模式不调用 AI；复杂或不支持的要求会拒绝，保留有效场景。
+
+使用模型时先按 [reader 配置](breakglass-reader/README.md) 启动服务，填写 `http://127.0.0.1:8787`。选择本地几何视频、暂停并点击“识别当前暂停帧”才向 `/geometry/read` 发送这一张 JPEG；候选须校对确认。“本地 reader 模型”问答调用 `/geometry/ask`，只发送已确认场景和问题。未配置模型返回明确错误，不自动改成预设。识别 30s／问答 10s 为待真实测试冻结的开发默认。
+
+画板按题目条件重建，原帧像素只用于定位。修改后的图不代表与视频仍一比一重合；返回按钮回到同一视频的原暂停时间继续播放。完整验收与未通过项目见 [005 验收步骤](specs/005-insitu-right-triangle/quickstart.md) 和 [验证记录](docs/BreakGlass-geometry-validation.md)。
 
 ## 项目展示网站
 
@@ -84,8 +95,15 @@ node --test
 - [任务清单](specs/001-insitu-parabola/tasks.md)
 - [快速验收](specs/001-insitu-parabola/quickstart.md)
 - [开播前阅读](specs/003-preplay-lesson-points/spec.md)
+- [更多图形与旁边提问（004 规格）](specs/004-figures-and-tutor/spec.md)
 - [四种图形与提问接口交接（故事 1）](specs/004-figures-and-tutor/geometry-handoff.md)
+- [当前帧直角三角形学习闭环（005）](specs/005-insitu-right-triangle/spec.md)
+- [005 实施计划](specs/005-insitu-right-triangle/plan.md)
+- [005 任务清单](specs/005-insitu-right-triangle/tasks.md)
+- [005 场景与动作契约](specs/005-insitu-right-triangle/contracts/scene-actions.md)
+- [005 验收步骤](specs/005-insitu-right-triangle/quickstart.md)
 - [视觉规范](docs/BreakGlass-visual-spec.md)
+- [工作台视觉对齐与验证（2026-10-03）](docs/BreakGlass-ui-alignment-2026-10-03.md)
 - [UI 设计建议](docs/BreakGlass-ui-design-guide.md)
 - [UI 现状清单](docs/BreakGlass-ui-inventory.md)
 - [UI 待实现清单](docs/BreakGlass-ui-todo.md)

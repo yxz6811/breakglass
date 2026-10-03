@@ -11,6 +11,20 @@ const { createHarness, flush } = require('./helpers/fake-page.js');
 
 const extensionDir = path.join(__dirname, '..', 'extension');
 const readText = (rel) => fs.readFileSync(path.join(extensionDir, rel), 'utf8');
+function pageStyles(rel) {
+  return [...readText(rel).matchAll(/<link\b[^>]*>/gi)]
+    .filter((match) => /\brel\s*=\s*["']stylesheet["']/i.test(match[0]))
+    .map((match) => {
+      const href = /\bhref\s*=\s*["']([^"']+)["']/i.exec(match[0]);
+      assert.ok(href, '样式链接缺少 href：' + rel);
+      assert.doesNotMatch(href[1], /^(?:[a-z][a-z\d+.-]*:|\/\/)/i, '样式必须来自扩展包：' + rel);
+      const file = path.resolve(extensionDir, path.dirname(rel), href[1].split(/[?#]/)[0]);
+      const relative = path.relative(extensionDir, file);
+      assert.equal(relative === '..' || relative.startsWith('..' + path.sep) || path.isAbsolute(relative), false,
+        '样式不能越出扩展包：' + href[1]);
+      return fs.readFileSync(file, 'utf8');
+    }).join('\n');
+}
 const preset = require('../extension/assets/presets/demo-parabola.json');
 const config = require('../extension/assets/config.json');
 
@@ -151,7 +165,7 @@ test('17 识别适配（需先改 config）来源为「识别结果」且不显�
   }
 });
 
-test('18 全程无远程请求，扩展权限仍为空', async () => {
+test('18 P0 全程仅包内请求，005 本机 reader 例外不扩大权限', async () => {
   const manifest = require('../extension/manifest.json');
   assert.deepEqual(manifest.permissions, []);
   assert.deepEqual(manifest.host_permissions, []);
@@ -181,8 +195,21 @@ test('18 全程无远程请求，扩展权限仍为空', async () => {
     };
     walk(extensionDir);
     for (const file of files) {
-      const text = fs.readFileSync(file, 'utf8').replace(/http:\/\/www\.w3\.org\/2000\/svg/g, '');
+      let text = fs.readFileSync(file, 'utf8').replace(/http:\/\/www\.w3\.org\/2000\/svg/g, '');
+      const relative = path.relative(extensionDir, file).split(path.sep).join('/');
+      // 005 显式上传只授权本机 reader；精确排除两处文本示例，不允许资源 src/href 或其他文件出现 URL。
+      if (relative === 'demo/geometry.html') {
+        text = text.replaceAll('placeholder="http://127.0.0.1:8787"', 'placeholder="本机地址示例"');
+      } else if (relative === 'src/geometry-scene/request.js') {
+        text = text.replaceAll('例如 http://127.0.0.1:8787。', '例如本机地址。');
+      }
       assert.doesNotMatch(text, /https?:\/\//, '不得出现远程地址：' + file);
+    }
+    const { buildUrl } = require('../extension/src/geometry-scene/request.js');
+    assert.equal(buildUrl('http://127.0.0.1:8787', 'ask'), 'http://127.0.0.1:8787/geometry/ask');
+    for (const url of ['https://example.com', 'http://user:secret@localhost:8787',
+      'http://localhost.example.com:8787', 'http://127.0.0.1:8787@elsewhere.example']) {
+      assert.throws(() => buildUrl(url, 'ask'), '005 不允许远程、凭据或伪装本机地址：' + url);
     }
   } finally {
     global.fetch = original;
@@ -191,9 +218,9 @@ test('18 全程无远程请求，扩展权限仍为空', async () => {
 });
 
 test('19 键盘焦点可见，禁用按钮说明原因', async () => {
-  const css = readText('demo/demo.css');
+  const css = pageStyles('demo/index.html');
   const html = readText('demo/index.html');
-  assert.match(css, /:focus-visible[^{]*\{[^}]*outline:\s*2px solid var\(--accent\)/);
+  assert.match(css, /:focus-visible[^{]*\{[^}]*outline\s*:\s*2px\s+solid\s+var\(\s*--accent\s*\)/);
   assert.match(html, /id="wake-button"[^>]*aria-describedby="wake-reason"/);
   assert.match(html, /class="sr-only" id="wake-reason"/);
   const harness = await createHarness();

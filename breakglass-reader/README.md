@@ -85,3 +85,26 @@ npm test
 回归测试覆盖严格数值类型、小系数保留、主动取消、上传期间断开，以及不配合取消的迟到模型响应。这些测试不代表真实模型识别或四种画幅的 2% 对齐验收已经通过；产品边界仍遵守 [`docs/BreakGlass-constitution.md`](../docs/BreakGlass-constitution.md)。
 
 JPEG 取消测试使用受控子进程替身。真实 RGB 解码及像素定位用例需要本机 `ffmpeg`；没有该依赖时只能验证锚点路径，不能宣称像素定位用例通过。
+
+## 005 当前帧直角三角形（独立接口）
+
+已增加 `POST /geometry/read` 与 `POST /geometry/ask`，使用同一进程、来源白名单和模型环境配置；既有 `/read` 的请求、抛物线响应与 10 MiB 上限保持不变。契约见 [005 scene-actions](../specs/005-insitu-right-triangle/contracts/scene-actions.md)。这些接口已经过本地替身模型和 HTTP 管线测试，**尚未使用真实模型验证当前几何帧**；不能称为任意视频识别。
+
+| 接口 | 接收 | 返回与边界 |
+| --- | --- | --- |
+| `/geometry/read` | `schemaVersion: 1.0.0`、`requestId`、`videoId`、`frameTime` 秒、源 `frameSize`、单张 JPEG `image` | 一个 A 为直角、AB/AC 明确数值和同单位的候选。模型坐标须为 JPEG 像素，服务映射回源像素并通过浏览器同一套 SceneResult 校验；BC 不接受上游权威值，不从截图比例猜边长 |
+| `/geometry/ask` | `schemaVersion`、独立 `actionRequestId`、完整已确认 `scene`（`sceneRevision >= 1`）、1～2000 码点 `text` | `set_length` / `explain_change` / `restore_original` 白名单与固定场景 context；每批至多改一条直角边。单位冲突、双边修改、改斜边、未知动作或派生溢出拒绝，模型解释文本和答案数字不返回为计算依据 |
+
+`/geometry/read` 的输入 JPEG 宽度不得超过 640；画幅须与源尺寸一致，允许 JPEG 高度取整 1 像素。请求严格拒绝未知字段，尤其是浏览器送入的模型、prompt、Schema、密钥和伪造来源。结构合法只产生“待校对”候选，用户确认后才能提问。手动场景可以不声明截图顶点，但身份、两条边、单位和修订号仍需合法。
+
+两条几何接口各自最多 **4 MiB**（包含 JSON/base64），超过上限回 413 且不调用模型；与 `/read` 的 10 MiB 区分。默认识别截止 30000ms、问答截止 10000ms，可用 `READER_GEOMETRY_READ_BUDGET_MS` / `READER_GEOMETRY_ASK_BUDGET_MS` 设置 1000～120000 的十进制整数，无效值回默认。这是开发预算，待真实素材测试冻结，不代表实测识别延迟。模型响应另外限制为 64 KiB。
+
+每次识别/提问最多一次上游调用，不自动重试。客户端断开、预算截止使上游信号中止；不配合取消的迟到回复也不会重新产出成功结果。未配置模型回 503、模型传输或结构错误回 502、预算耗尽回 504；不支持帧/不清楚条件分别回 `unsupported` / `needs_review`，问答歧义回 `needs_clarification`，不伪装为已执行。几何日志只记操作类别、状态代码和耗时，不记录 JPEG、问题全文或密钥。
+
+同样在本目录执行以下现有 Node 测试命令即可只核对几何与旧路由回归，不需要安装依赖或 ffmpeg：
+
+```bash
+node --test tests/geometry-read.test.mjs tests/geometry-ask.test.mjs tests/server.test.mjs
+```
+
+当前测试使用本机 HTTP 服务和不联网的模型替身，覆盖坐标映射、严格字段/数值、4 MiB、取消/迟到、独立截止、来源/PNA、未配置模型和 `/read` 回归。真实候选正确率、10～15 份素材、浏览器校对及学习闭环按 [005 quickstart](../specs/005-insitu-right-triangle/quickstart.md) 另记；本服务不保存原题快照或判定用户已理解。

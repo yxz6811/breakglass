@@ -8,6 +8,25 @@ const extensionDir = path.join(__dirname, '..', 'extension');
 
 function readText(rel) { return fs.readFileSync(path.join(extensionDir, rel), 'utf8'); }
 function readJson(rel) { return JSON.parse(readText(rel)); }
+function pageStyles(rel) {
+  const links = [...readText(rel).matchAll(/<link\b[^>]*>/gi)]
+    .filter((match) => /\brel\s*=\s*["']stylesheet["']/i.test(match[0]));
+  const hrefs = links.map((match) => {
+    const href = /\bhref\s*=\s*["']([^"']+)["']/i.exec(match[0]);
+    assert.ok(href, '样式链接缺少 href：' + rel);
+    assert.doesNotMatch(href[1], /^(?:[a-z][a-z\d+.-]*:|\/\/)/i, '样式必须来自扩展包：' + rel);
+    return href[1];
+  });
+  const css = hrefs.map((href) => {
+    const file = path.resolve(extensionDir, path.dirname(rel), href.split(/[?#]/)[0]);
+    const relative = path.relative(extensionDir, file);
+    assert.equal(relative === '..' || relative.startsWith('..' + path.sep) || path.isAbsolute(relative), false,
+      '样式不能越出扩展包：' + href);
+    assert.equal(fs.existsSync(file), true, '缺少页面实际加载的样式：' + href);
+    return fs.readFileSync(file, 'utf8');
+  }).join('\n');
+  return { hrefs, css };
+}
 function listFiles(dir, filter) {
   const found = [];
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
@@ -89,17 +108,28 @@ test('manifest 仍然没有主机权限、内容脚本与远程脚本', () => {
   assert.equal(manifest.content_security_policy.extension_pages, "script-src 'self'; object-src 'self'");
 });
 
-test('扩展源码不发请求、不含密钥或远程地址', () => {
+test('扩展不含远程地址或动态代码，005 仅保留本机 reader 文本示例', () => {
   const files = listFiles(path.join(extensionDir, 'src'), (file) => file.endsWith('.js'));
   assert.equal(files.length >= 9, true);
   for (const file of files) {
     const text = fs.readFileSync(file, 'utf8');
-    const withoutSvgNamespace = text.replace(/http:\/\/www\.w3\.org\/2000\/svg/g, '');
+    let withoutSvgNamespace = text.replace(/http:\/\/www\.w3\.org\/2000\/svg/g, '');
+    // 005 契约授权显式的本地 reader；仅排除这个文件的错误提示示例，实际 URL/网络代码仍被检查。
+    const relative = path.relative(extensionDir, file).split(path.sep).join('/');
+    if (relative === 'src/geometry-scene/request.js') {
+      withoutSvgNamespace = withoutSvgNamespace.replaceAll('例如 http://127.0.0.1:8787。', '例如本机地址。');
+    }
     assert.doesNotMatch(withoutSvgNamespace, /https?:\/\//, '远程地址：' + file);
     assert.doesNotMatch(text, /\bXMLHttpRequest\b|WebSocket|EventSource|importScripts|\beval\s*\(|new\s+Function/, '动态或网络代码：' + file);
   }
   const attemptSource = readText('src/attempt/simulator.js');
   assert.doesNotMatch(attemptSource, /api[_-]?key|secret|token|authorization|model/i);
+  const { buildUrl } = require('../extension/src/geometry-scene/request.js');
+  assert.equal(buildUrl('http://127.0.0.1:8787', 'read'), 'http://127.0.0.1:8787/geometry/read');
+  for (const url of ['https://example.com', 'http://user:secret@127.0.0.1:8787',
+    'http://localhost.example.com:8787', 'http://127.0.0.1.example.com:8787']) {
+    assert.throws(() => buildUrl(url, 'read'), '005 不得把远程或带凭据的地址当成本机：' + url);
+  }
 });
 
 test('页面只调用 createWake，不维护第二套唤醒或替身', () => {
@@ -167,15 +197,20 @@ test('三个参数滑块的范围与预制一致', () => {
 });
 
 test('样式表包含玻璃令牌、焦点可见与降级规则', () => {
-  const css = readText('demo/demo.css');
+  for (const [page, own] of [['demo/index.html', './demo.css'], ['demo/geometry.html', './geometry.css']]) {
+    const styles = pageStyles(page);
+    const shared = styles.hrefs.indexOf('../src/ui/theme.css');
+    assert.ok(shared >= 0 && shared < styles.hrefs.indexOf(own), '公共主题须在页面样式之前加载：' + page);
+    assert.match(styles.css, /:focus-visible[^{]*\{[^}]*outline\s*:\s*2px\s+solid\s+var\(\s*--accent\s*\)/);
+    assert.match(styles.css, /@media\s*\(\s*prefers-reduced-motion\s*:\s*reduce\s*\)/);
+    assert.match(styles.css, /\[\s*hidden\s*\]\s*\{\s*display\s*:\s*none\s*!important\s*;?\s*\}/);
+  }
+  const { css } = pageStyles('demo/index.html');
   assert.match(css, /--glass-tint-top/);
   assert.match(css, /--motion-enter/);
-  assert.match(css, /:focus-visible[^{]*\{[^}]*outline:\s*2px solid var\(--accent\)/);
   assert.match(css, /\.lg-dock\s*\{/);
   assert.match(css, /\.lg-item\s*\{/);
   assert.match(css, /\.waiting-bar__fill\s*\{/);
-  assert.match(css, /@media \(prefers-reduced-motion: reduce\)/);
-  assert.match(css, /\[hidden\] \{ display: none !important; \}/);
 });
 
 test('顶栏脚本在扩展包内且不引远程资源', () => {

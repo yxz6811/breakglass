@@ -2,13 +2,14 @@
 
 | 项 | 值 |
 | --- | --- |
-| 版本 | 2.5.0 |
+| 版本 | 2.6.0 |
 | 日期 | 2026-10-03 |
-| 基线 | `codex/optimize-breakglass`；已合入 `main@632969a` 的视频选择与阅读定位改动 |
+| 基线 | 001/003 曲线工作台与 005 当前帧几何工作台；2026-10-03 统一浅色冰面，共享视觉源 `extension/src/ui/theme.css` |
 | 用途 | 按钮 UI、交互动画、参数调节控件的设计输入 |
 | 配套 | 令牌与动效数值见 [`BreakGlass-visual-spec.md`](./BreakGlass-visual-spec.md)；逐交互设计理由见 [`BreakGlass-ui-design-guide.md`](./BreakGlass-ui-design-guide.md)；待实现项见 [`BreakGlass-ui-todo.md`](./BreakGlass-ui-todo.md) |
-| 产品约束 | [`BreakGlass-constitution.md`](./BreakGlass-constitution.md)；开播前阅读的独立切片以 [Constitution 1.8.0 原则 VII](../.specify/memory/constitution.md) 为准 |
-| 标注 | 未标注＝已实现（001 主路径 + 002 识别适配）。002 的自动检查与未执行项见 §5.6 |
+| 产品约束 | [产品 Constitution 1.7.1](./BreakGlass-constitution.md)、[Spec Constitution 1.9.1 原则 VII/VIII](../.specify/memory/constitution.md)；两个工作台的视觉基线见 Visual Spec 1.5.0 |
+| 标注 | §1–6、§8–11 保留曲线工作台及历史切片记录；005 视觉与来源见 §7.1，实施/真实模型验收以其任务和验证记录为准。本轮主题同步不代表浏览器验收通过；历史未通过项保留 |
+| 本轮范围 | `extension/demo/index.html` 和 `extension/demo/geometry.html`；`site/` 介绍站与根目录样稿不改 |
 
 ## 1. 页面结构（UI 容器）
 
@@ -21,7 +22,7 @@
 | 视频舞台 | `#video-stage`（`.video-stage`） | `position: relative; overflow: hidden; min-height: 540px`（窄屏 420px），覆盖层的定位父级 |
 | 抛物线覆盖层 | `.curve-overlay`（动态 SVG） | `position: absolute; z-index: 2`，`viewBox = 0 0 contentRect.width contentRect.height` |
 | 传输条 | `.transport` | 目标时间输入 + 当前时间 + **等待条 `#waiting-bar`** + 开播前阅读一行 |
-| 控制面板 | `.control-panel` | 状态文案、**三个参数行**、来源说明 |
+| 控制面板 | `.control-panel` | 状态文案、**三个参数行**、来源说明及“问一问”本地提问侧栏 |
 | 底栏 | `.app-footer` | `Alt+B 破壁 · Esc 退出 · 空格保留给播放器` + `#runtime-note` |
 
 ## 2. 按钮与控件清单（主表）
@@ -42,7 +43,7 @@
 | 12 | 目标时间 | `#target-time` | number | `value=6`、`min=0`、`step=0.1` | 始终可编辑 | 破壁门禁与定位依据 | 不在目标时间时破壁禁用 | ↑ / ↓ 原生 |
 | 13 | 控制点 | 覆盖层可见 `<circle r=10>`、透明 `<circle r=18>`，以及 `stroke-width=24` 的透明命中路径 | SVG | 随覆盖层出现 | 仅 `interactive` | `pointerdown/move/up` 拖动。覆盖层 `pointer-events: all`，点在层内不退出 | 写入 `dragParameter`（当前 `h`），钳制在范围内；`cursor: grab / grabbing` | 可聚焦 |
 | 14 | 等待条 | `#waiting-bar` + `#waiting-progress` | div + span | **隐藏** | 仅 `waiting` | 无交互（提示 + 进度） | 1.5s 线性进度条，`--wait-ms` = `fallbackAfterMs` | — |
-| 15 | 来源芯片 | `#source-label` | span | `等待素材` | 始终 | 无交互（状态） | 见第 3 节；超时回退加虚线、非 preset 加警示色 | — |
+| 15 | 来源芯片 | `#source-label` | span | `等待素材` | 始终 | 无交互（状态） | 见第 3 节；超时回退加虚线；未知来源加警示色，识别样例用 accent 并说明样例身份 | — |
 | 16 | 视频原生控件 | `<video controls>` | video | 始终 | 始终 | 浏览器自带播放条 | 空格保留给播放器（不作为破壁键）。点控制条不退出已出现的曲线 | — |
 | 17 | 阅读状态 | `#lesson-status` | `p`，`role="status"` | 空 | 片子可播放且不是 9 秒片 | 无交互 | 正在读、读完了、还在读、没有下一处、已取消、暂无可用结果 | — |
 | 18 | 阅读地址 | `#lesson-endpoint` | `url` 输入 | 空，占位「填上才开始看这支片子」。这次浏览里填过的值会补回输入框 | 始终可填 | 只用于当次请求和这次浏览的会话存储，不写入仓库 | 留空则不发请求，画面留在用户选的片子上，并写明还没开始看。之后填上地址会开始看 | — |
@@ -52,6 +53,10 @@
 | 22 | 显示工具栏 | `.dock-reveal` | button | 悬停设备常驻可见 | 始终 | 展开顶栏并将焦点移到第一个可用按键 | `aria-expanded="true"`；离开且焦点不在栏内时收起 | Enter / 空格原生 |
 | 23 | 选择预设 | `#preset-video`、`#toolbar-preset-video` | button | 可见 | 始终 | 明确加载包内 9 秒片，清空前一支视频的阅读点 | 来源保持「预先准备的示例」 | Enter / 空格原生 |
 | 24 | 舞台状态提示 | `#stage-banner` | 状态区 | 无视频时隐藏 | 视频已加载 | 显示还没开始看、正在看、正在定位、可以破壁和破壁已打开 | 明确区分阅读与覆盖层 | — |
+| 25 | 本地问句 | `#tutor-input` | text输入 | 禁用 | 先破壁，当前图形可交互且tutor可用 | 最长120字，提交时读取当前图形快照 | 浅色表面、44px最小高度；发送后清空问句 | 框内Esc仅清草稿 |
+| 26 | 发送问句 | `#tutor-send`、`#tutor-form` | button / form | 禁用 | 与问句输入同时启用 | 浏览器内确定性求解，不发模型请求 | 回复追加到记录；不支持时保留图形 | Enter提交 |
+| 27 | 问句示例 | `#tutor-examples`、`[data-tutor-example]` | button组 | 禁用 | 与问句输入同时启用 | 填入问句并聚焦输入，不自动发送 | 胶囊按钮、可换行；图形变化时更换示例 | Enter / 空格原生 |
+| 28 | 提问记录 | `#tutor-log` | div | 隐藏 | 有问答条目后显示 | `role=log`、`aria-live=polite`、`tabindex=0` | 最大高220px、纵向滚动、最多20条；问与答各一条，用“你：/答：”区分 | 可聚焦滚动 |
 
 ## 3. 状态机与界面反馈（交互动画状态表）
 
@@ -197,7 +202,7 @@
 | **顶栏放大** | 余弦钟形权重 `w(d) = 0.5(1+cos(π·min(1,|d|/R)))`；`R=132px`、`maxScale=1.55`、`lift=10px`、刚度 `20/s`、收敛阈值 `0.0015`；只写 `transform` |
 | 覆盖层指针事件 | `pointerdown` / `pointermove` / `pointerup`，`setPointerCapture`，拖动中每次 move 重绘 |
 | 曲线绘制 | 81 个采样点（1 `M` + 80 `L`），坐标 2 位小数 |
-| 曲线样式 | `stroke: #71ddff`、`stroke-width: 3`、`stroke-linecap: round`、`fill: none` |
+| 曲线样式 | 深屏 `stroke: var(--screen-accent)`（`#71ddff`）、`stroke-width: 3`、`stroke-linecap: round`、`fill: none` |
 | 曲线入场 | 先绘制最终几何（首帧 ≤ 100ms），再加 `is-entering` 200ms 光晕 |
 | 控制点样式 | `<circle r=10 fill=#08111f stroke=#ffffff stroke-width=3 tabindex=0>` |
 | 等待时长 | 1500ms 看门狗 + 同步线性进度条 |
@@ -206,30 +211,58 @@
 | 失效清理 | 播放 / 离开目标时间 → 覆盖层与定时器一起清理；`pagehide` 释放监听并卸下顶栏 |
 | 拖拽/滑块钳制 | 写入前钳制在 `min`–`max` |
 
-## 7. 视觉令牌（`demo.css`；完整定义见 [BreakGlass-visual-spec.md](./BreakGlass-visual-spec.md) §2）
+## 7. 共享视觉令牌（`extension/src/ui/theme.css`；完整定义见 [BreakGlass-visual-spec.md](./BreakGlass-visual-spec.md) 1.5.0 §2）
+
+两个工作台先加载共享主题，再加载各自的 `demo.css` / `geometry.css`。共享文件维护基础视觉；页面文件保留布局、工具栏与场景图形差异。下面记录本轮确认的统一基线，测试与浏览器验收另记，不把历史自动检查作为本轮通过证据。
 
 | 令牌 / 样式 | 值 |
 | --- | --- |
-| `--panel` | `rgba(14, 29, 49, 0.92)` |
-| `--line` | `rgba(157, 190, 226, 0.22)` |
-| `--muted` / `--accent` / `--accent-strong` | `#9fb4cc` / `#71ddff` / `#1bb6e8` |
-| `--warn` | `#ffd08a` |
-| 玻璃 | `--glass-tint-top/mid/low`、`--glass-edge`、`--glass-edge-soft`、`--glass-shadow`、`--glass-blur-bar: 18px`、`--glass-blur-item: 6px` |
+| 页面 / 冰面 | `#F7FAFC` / `#EEF4F8` / `#C8DCE6` |
+| `--panel` | `linear-gradient(150deg, rgba(255,255,255,.94), rgba(200,220,230,.82))`；冰面阴影和内高光 |
+| `--line` | `rgba(90,116,138,.3)` |
+| `--ink` / `--muted` / `--accent` | `#14232F` / `#4E6474` / `#0B6F91` |
+| 主按钮 | 深青蓝渐变 `#0B6F91 → #1755BD`，白字 |
+| `--warn` | `#8A5A00`；配文字原因 |
+| 深屏 | 底色 `#0E1720`；`--screen-ink #eef5ff` / `--screen-muted #9fb4cc` / `--screen-accent #71ddff` |
+| 玻璃 | 浅色 `--glass-tint-top/mid/low`、白色 `--glass-edge/edge-soft`、冰面 `--glass-shadow`；blur 18px/6px 保留 |
+| 字体 / 标题 | 共享 Inter/system sans；正文16px，控件14px；H1 `clamp(32px,4vw,58px)` / 1.12，H2 24px；数值 tabular-nums |
 | 动效 | `--motion-fast 80ms`、`--motion-base 120ms`、`--motion-state 160ms`、`--motion-enter 200ms`、`--ease-out cubic-bezier(.2,.8,.2,1)` |
-| 圆角 | 按钮 9px、提示 10px、读数 14px、舞台 13px、面板 20px、胶囊 999px |
-| 焦点 | `:focus-visible` → `outline: 2px solid var(--accent); outline-offset: 2px`（按键 3px） |
-| 禁用态 | `opacity: .45` + `cursor: not-allowed`（按键 `.4`） |
-| 布局断点 | `max-width: 1050px` 单列；顶栏按键 48px → 44px |
+| 圆角 | 按钮/表单9px、卡片14px、舞台13px、面板20px、来源胶囊999px |
+| 控件尺寸 | 普通按钮、input（含 URL）、select、textarea 最小高44px；dock桌面48px、1050px及以下44px |
+| 焦点 | 所有按钮、链接、表单及可聚焦控件共享2px描边、offset3px；深屏控制点用深屏强调描边 |
+| 禁用态 | `opacity: .45` + `cursor: not-allowed` + 原因；既有业务禁用条件不变 |
+| 布局 | 桌面左右32px/移动16px；各页任务布局及响应式结构保留，dock按键桌面48px/窄屏44px |
 | 状态区 | `#state-label` 最小高度 48px |
+
+### 7.1 005 当前帧几何工作台
+
+| 区域或状态 | 视觉与边界 |
+| --- | --- |
+| 主题与布局 | 外围 `.panel`、按钮、表单、标题和 `.source-chip` 复用共享冰面；原帧和数学画板使用深屏；原帧/画板及学习区布局保持独立，不套用曲线面板310px宽 |
+| 识别候选 | 保留“真实识别候选 · 待校对”，`sceneRevision: 0` 不能实验或问答；结构通过不是题意正确 |
+| 预设 / 手工 | 分别保留“预设演示”“手工条件”与待校对/已确认状态；这两条路径未调用模型，不写识别成功 |
+| 用户校正 / 修改 | `source: manual`、`originSource` 保留首次来源、`editedByUser: true`；显示原始来源及“已校对 / 已修改” |
+| 确认 / 恢复 | “已确认”表示用户核对，不表示模型验收；恢复首次确认快照，不能恢复未经核对的模型候选 |
+| 失败 / 等待 | 明确说明原因并保留视频、校对、重试或退出；不支持、超时、模型未配置、迟到结果不能显示成功，不静默改成预设；不继承001/003的1.5秒保底 |
+| 验证状态 | [005 tasks](../specs/005-insitu-right-triangle/tasks.md) 与 [几何验证记录](./BreakGlass-geometry-validation.md) 是实施/验收依据；真实模型未配置项保留，主题同步不自动通过浏览器验收 |
+
+### 7.2 曲线工作台本地提问侧栏
+
+沿用主分支 `426c41a`（PR #54）的业务实现，本轮只使 `.tutor__log` 和 `.tutor__form input` 服从共享冰面主题；解析、计算、写入逻辑保持上游行为。侧栏位于控制面板内，记录区与输入使用浅色表面及深色文字，不套用视频深屏配色。业务契约见 [004 一次提问](../specs/004-figures-and-tutor/contracts/tutor-turn.md)。
+
+先破壁后可问；示例只填写，不自动发出；输入框Esc只清草稿。记录限高220px、最多20条（问/答各一条），纯文本呈现并保留“你：”“答：”及可聚焦log语义。新破壁会话或图形切换清空记录、更换示例。求解来自当前图形快照，不发送模型请求，不作为005真实模型验收证据。
 
 ## 8. 文案总表
 
 | 位置 | 状态 | 文案 |
 | --- | --- | --- |
+| `#tutor-hint` | 未破壁 / 不可用 | `先破壁，再问这条曲线。` |
+| `#tutor-hint` | 可提问 | `用平常的话问：改一个系数，或问某个 x 上的 y。回答里的数就是画面上的数。` |
+| `.tutor__who` | 用户 / 回复 | `你：` / `答：` |
 | `#source-label` | 无结果 | `等待素材` |
 | `#source-label` | preset | `预先准备的示例` |
 | `#source-label` | 超时回退 | `预先准备的示例 · 超时回退` |
-| `#source-label` | 非 preset | `来源不可用` |
+| `#source-label` | 未知来源（非 preset、非已校验 vision） | `来源不可用` |
 | `#source-label` | 识别样例（`source: vision` + `evidence: packaged-sample`） | `识别结果` |
 | `#source-label` | 开播前阅读的点 | `这次阅读` |
 | `#source-note` | 无结果 | `数据来源将在交互出现后显示。` |
@@ -298,17 +331,18 @@
 | 项 | 状态 |
 | --- | --- |
 | 识别结果适配（002） | 已实现（T001–T018）；**T017 手工验收未执行** |
-| `【P1】` 真实识别请求、单帧上传、感知代理、Pyodide | 不派发 |
+| 早期002范围之外的真实识别请求、单帧上传、感知代理、Pyodide | 原002记录为“不派发”；当前003/005已有独立本地reader与接口例外，真实模型效果仍须单独验收；Pyodide不由本轮视觉工作派发 |
 | 顶点拖动同时改 `h` 与 `k` | 待决策（analysis §8.2） |
 | 性能读数展示、空素材与视频错误的区分、目标时间对齐提示 | 待实现（见 [`BreakGlass-ui-todo.md`](./BreakGlass-ui-todo.md)） |
 | 四画幅真机验收（T030/T038） | 未执行；仓库已附带 9 秒示例视频，附带素材不代表对齐验收已通过 |
-| 开播前阅读的页面接线（003） | 已实现：有地址时自动开始、还在读、没有下一处、这次阅读、失败保留用户视频、显式选择预设。阅读服务源码位于 `breakglass-reader/`，按 Constitution 1.8.0 的独立例外不打进扩展包、不部署为云端后台；模型调用需服务配置，真实识别仍待联调 |
+| 开播前阅读的页面接线（003） | 已实现：有地址时自动开始、还在读、没有下一处、这次阅读、失败保留用户视频、显式选择预设。阅读服务源码位于 `breakglass-reader/`，按 Spec Constitution 1.9.1 原则VII的独立例外不打进扩展包、不部署为云端后台；模型调用需服务配置，真实识别仍待联调 |
 | 003 的 SC-003、SC-004、SC-005 | **未通过**。没有设备上至少 20 次破壁样本，`measured` 仍是 `false`，`maxRatio` 仍是 `null` |
 
 ## 12. 变更记录
 
 | 版本 | 日期 | 变更 |
 | --- | --- | --- |
+| 2.6.0 | 2026-10-03 | 同步 Visual Spec 1.5.0：index/geometry共享 `theme.css` 浅色冰面、深屏令牌、控件/面板/焦点规格；补005候选与来源规则，纠正旧暗色数值及“非preset即警示”的摘要。同轮沿用主分支426c41a本地提问，补控件、记录区和操作说明；dock统一桌面48px/窄屏44px。介绍站和根样稿不在范围；保留历史检查、未验收及真实模型未配置事实 |
 | 2.5.0 | 2026-10-03 | 合入 `main@632969a`：显式选择预设、阅读失败保留用户视频、舞台状态提示和阅读地址记忆；保留工具栏入口并同步 Constitution 1.8.0 与参数精度说明 |
 | 2.4.0 | 2026-10-03 | 增加常驻工具栏入口、无悬停设备与窄屏可达性说明；同步阅读服务已在仓库及既有例外边界；区分 DOM 准备与双 rAF 绘制机会，明确真实像素呈现和四画幅对齐仍需独立验收 |
 | 2.3.0 | 2026-10-03 | 补上开播前阅读一行：自动开始、还在读、没有下一处、这次阅读、退回预先准备的片子。写明 SC-003 至 SC-005 未通过，阅读服务不在本仓库。点原生控制条不退出曲线；配置失败不再挂上包内片子；页面隐藏时卸下顶栏 |

@@ -10,6 +10,20 @@ const { createHarness, flush } = require('./helpers/fake-page.js');
 
 const extensionDir = path.join(__dirname, '..', 'extension');
 function readText(rel) { return fs.readFileSync(path.join(extensionDir, rel), 'utf8'); }
+function pageStyles(rel) {
+  return [...readText(rel).matchAll(/<link\b[^>]*>/gi)]
+    .filter((match) => /\brel\s*=\s*["']stylesheet["']/i.test(match[0]))
+    .map((match) => {
+      const href = /\bhref\s*=\s*["']([^"']+)["']/i.exec(match[0]);
+      assert.ok(href, '样式链接缺少 href：' + rel);
+      assert.doesNotMatch(href[1], /^(?:[a-z][a-z\d+.-]*:|\/\/)/i, '样式必须来自扩展包：' + rel);
+      const file = path.resolve(extensionDir, path.dirname(rel), href[1].split(/[?#]/)[0]);
+      const relative = path.relative(extensionDir, file);
+      assert.equal(relative === '..' || relative.startsWith('..' + path.sep) || path.isAbsolute(relative), false,
+        '样式不能越出扩展包：' + href[1]);
+      return fs.readFileSync(file, 'utf8');
+    }).join('\n');
+}
 
 async function interactive(config) {
   const harness = await createHarness(config ? { config } : undefined);
@@ -25,7 +39,7 @@ test('禁用原因节点已接线，并有 sr-only 样式', () => {
   assert.match(html, /id="reset-button"[^>]*aria-describedby="reset-reason"/);
   assert.match(html, /class="sr-only" id="wake-reason"/);
   assert.match(html, /class="sr-only" id="reset-reason"/);
-  assert.match(readText('demo/demo.css'), /\.sr-only\s*\{/);
+  assert.match(pageStyles('demo/index.html'), /\.sr-only\s*\{/);
 });
 
 test('错误态切到 assertive，等待与交互态保持 polite', async () => {
