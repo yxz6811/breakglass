@@ -115,7 +115,7 @@ test('相隔不到 1 秒的两帧只留较早的一处', async () => {
   assert.ok(payload.dropped.some((item) => item.reason === '和上一个点靠得太近'));
 });
 
-test('模型说没有抛物线时回空点，由页面退回 9 秒片', async () => {
+test('模型说没有抛物线时回空点，由页面保留用户视频并提示没有结果', async () => {
   const model = fakeModel(() => ({ hasParabola: false }));
   const { status, payload } = await read(lessonRequest(), model);
   assert.equal(status, 200);
@@ -163,6 +163,41 @@ test('源尺寸为 null 时不猜尺寸，也不去问模型', async () => {
   assert.equal(status, 200);
   assert.deepEqual(payload.points, []);
   assert.equal(model.calls.length, 0);
+});
+
+test('模型数值只接受 JSON number，不把布尔值、null 或数字字符串转成方程', async () => {
+  for (const name of ['a', 'h', 'k']) {
+    for (const value of [true, false, null, '1', '0.0001']) {
+      const answer = parabolaAnswer({ equation: { a: 1, h: 0, k: 1, [name]: value } });
+      const { status, payload } = await read(lessonRequest(), fakeModel(() => answer));
+      assert.equal(status, 200);
+      assert.deepEqual(payload.points, [], `${name}=${JSON.stringify(value)}`);
+      assert.deepEqual(payload.dropped, [{ reason: 'equation_invalid' }]);
+    }
+  }
+});
+
+test('曲线横坐标两端不接受数字字符串、布尔值或 null', async () => {
+  for (const name of ['curveXMin', 'curveXMax']) {
+    for (const value of ['-2.5', '2.5', true, null]) {
+      // 这条方程不在夹具画面上，强制验证锚点保底路径使用的模型端点。
+      const { payload } = await read(lessonRequest(), fakeModel(() => parabolaAnswer({ equation: { a: 1, h: 8, k: 40 }, [name]: value })));
+      assert.deepEqual(payload.points, []);
+      assert.deepEqual(payload.dropped, [{ reason: 'curve_extent' }]);
+    }
+  }
+});
+
+test('小系数从模型到页面曲线完整保留，不被舍入成直线', async () => {
+  const params = { a: 0.0001, h: 0.00012345, k: 1 };
+  const { payload } = await read(lessonRequest(), fakeModel(() => parabolaAnswer({ equation: params, lessonLine: '' })));
+  assert.equal(payload.points.length, 1);
+  assert.deepEqual(payload.dropped, []);
+  const point = payload.points[0];
+  for (const name of ['a', 'h', 'k']) assert.equal(point.curve.definition.parameters[name].initial, params[name]);
+  assert.ok(Math.abs(point.curve.definition.parameters.a.step - 0.00001) < 1e-18);
+  assert.match(point.lessonLine, /0\.0001\(/);
+  assert.equal(pageRules.validateLessonReading(payload, SOURCE_SIZE).points.length, 1);
 });
 
 test('截帧比例和源尺寸对不上时丢掉这一帧', async () => {
@@ -235,6 +270,42 @@ test('请求形状不对时回 400', async () => {
     assert.equal(status, 400);
   }
   assert.equal(checkRequest(lessonRequest({ frameSize: { width: 0, height: 10 } })).request.frameSize, null);
+});
+
+test('主动取消传播到模型，且不会领取下一帧', { timeout: 2000 }, async () => {
+  const cancelled = new AbortController();
+  const calls = [];
+  let entered;
+  const started = new Promise((resolve) => { entered = resolve; });
+  const result = readLesson(lessonRequest({ frames: [
+    { time: 2, image: FRAME_DATA_URL },
+    { time: 6.451, image: FRAME_DATA_URL }
+  ] }), {
+    settings: settings({ concurrency: 1 }), pageRules, signal: cancelled.signal,
+    fetchImpl: (url, init) => {
+      calls.push(init);
+      entered();
+      return new Promise((resolve, reject) => {
+        init.signal.addEventListener('abort', () => reject(init.signal.reason), { once: true });
+      });
+    }
+  });
+  const rejected = assert.rejects(result, { name: 'AbortError' });
+  await started;
+  cancelled.abort(new DOMException('页面取消', 'AbortError'));
+  await rejected;
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].signal.aborted, true);
+});
+
+test('已经取消的请求不发模型请求', async () => {
+  const cancelled = new AbortController();
+  cancelled.abort();
+  const model = fakeModel(() => parabolaAnswer());
+  await assert.rejects(readLesson(lessonRequest(), {
+    settings: settings(), pageRules, fetchImpl: model.fetchImpl, signal: cancelled.signal
+  }), { name: 'AbortError' });
+  assert.equal(model.calls.length, 0);
 });
 
 test('回答外面包了代码块或多了几句话也能取出 JSON', () => {

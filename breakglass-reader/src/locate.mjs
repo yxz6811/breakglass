@@ -91,6 +91,8 @@ export function locateCurve(rgb, image, params) {
   const { width, height } = image;
   if (!rgb || rgb.length !== width * height * 3) return null;
   if (!Number.isFinite(params.a) || Math.abs(params.a) < 1e-6) return null;
+  if (!Number.isFinite(params.h) || !Number.isFinite(params.k)
+      || params.h - 2.6 + 0.2 === params.h - 2.6) return null;
   const ink = inkMask(rgb, width, height);
   const candidates = [];
   for (let sx = 10; sx <= 48; sx += 4) {

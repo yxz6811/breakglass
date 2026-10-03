@@ -61,7 +61,7 @@ async function openForeign(harness, options = {}) {
     }
     return base(url, init);
   };
-  harness.win.__breakglassLessonFrames = (times) => times.map((time) => ({ time, image: 'data:image/jpeg;base64,AA==' }));
+  harness.win.__breakglassLessonFrames = options.frames || ((times) => times.map((time) => ({ time, image: 'data:image/jpeg;base64,AA==' })));
   const { elements, video } = harness;
   elements['lesson-endpoint'].value = endpoint;
   elements['lesson-note'].value = options.note || '';
@@ -147,10 +147,10 @@ test('第一处通过就暂停并定位，停稳后才用这一处的曲线重�
     const binding = win.__breakglassLesson.binding();
     const mountsBefore = win.__breakglassWakeMounts;
     video.holdSeeks = true;
-    const offered = win.__breakglassLesson.offer(lessonPoint(binding.videoId, 4, 'p4'));
+    const offered = win.__breakglassLesson.offer(lessonPoint(binding.videoId, 3.75, 'p4'));
     assert.equal(offered.ok, true);
     assert.equal(video.paused, true);
-    assert.equal(video.currentTime, 4);
+    assert.equal(video.currentTime, 3.75);
     assert.equal(win.__breakglassWakeMounts, mountsBefore, '定位没停稳之前不换曲线');
     assert.equal(elements['wake-button'].disabled, true);
     assert.equal(elements['lesson-next'].disabled, true);
@@ -177,7 +177,7 @@ test('阅读点的系数超出页面初始滑块范围时，滑块按这一处�
     const { elements, win } = harness;
     await openForeign(harness);
     const binding = win.__breakglassLesson.binding();
-    const point = lessonPoint(binding.videoId, 4, 'p4');
+    const point = lessonPoint(binding.videoId, 3.75, 'p4');
     point.curve.definition.parameters = {
       a: { initial: -1, min: -1.5, max: -0.5, step: 0.1 },
       h: { initial: 3, min: 1, max: 5, step: 0.1 },
@@ -207,7 +207,7 @@ test('尺寸对不上的点直接丢掉：时间、覆盖层和唤醒都不动',
     const binding = win.__breakglassLesson.binding();
     const mountsBefore = win.__breakglassWakeMounts;
     const small = { frameSize: { width: 1280, height: 720 } };
-    const early = win.__breakglassLesson.offer(lessonPoint(binding.videoId, 4, 'small-1', small));
+    const early = win.__breakglassLesson.offer(lessonPoint(binding.videoId, 3.75, 'small-1', small));
     assert.equal(early.ok, false);
     assert.equal(early.reason, '抛物线没有通过检查');
     assert.equal(video.currentTime, 1);
@@ -215,15 +215,15 @@ test('尺寸对不上的点直接丢掉：时间、覆盖层和唤醒都不动',
     assert.equal(elements['wake-button'].disabled, true);
     assert.equal(status(harness).includes('丢掉一处：抛物线没有通过检查。'), true);
 
-    win.__breakglassLesson.offer(lessonPoint(binding.videoId, 5, 'p5'));
+    win.__breakglassLesson.offer(lessonPoint(binding.videoId, 5.25, 'p5'));
     elements['wake-button'].dispatch('click');
     const shown = harness.overlay();
     assert.ok(shown);
     const mountsShown = win.__breakglassWakeMounts;
-    const late = win.__breakglassLesson.offer(lessonPoint(binding.videoId, 9, 'small-2', small));
+    const late = win.__breakglassLesson.offer(lessonPoint(binding.videoId, 9.75, 'small-2', small));
     assert.equal(late.ok, false);
     assert.equal(harness.overlay(), shown);
-    assert.equal(video.currentTime, 5);
+    assert.equal(video.currentTime, 5.25);
     assert.equal(win.__breakglassWakeMounts, mountsShown);
     const foreign = win.__breakglassLesson.offer(lessonPoint('fixture-parabola', 10, 'other'));
     assert.equal(foreign.reason, '不是这一段视频');
@@ -241,7 +241,7 @@ test('下一个：还在读就留在原地，有更晚的点就先卸下曲线�
     await openForeign(harness);
     const lesson = win.__breakglassLesson;
     const binding = lesson.binding();
-    lesson.offer(lessonPoint(binding.videoId, 4, 'p4'));
+    lesson.offer(lessonPoint(binding.videoId, 3.75, 'p4'));
     elements['wake-button'].dispatch('click');
     const first = harness.overlay();
     assert.ok(first);
@@ -250,26 +250,26 @@ test('下一个：还在读就留在原地，有更晚的点就先卸下曲线�
     assert.equal(elements['lesson-next'].disabled, false);
     elements['lesson-next'].dispatch('click');
     assert.equal(status(harness).includes('下一处还在读。'), true);
-    assert.equal(video.currentTime, 4);
+    assert.equal(video.currentTime, 3.75);
     assert.equal(harness.overlay(), first, '还在读时不重算，也不换曲线');
     assert.equal(win.__breakglassWakeMounts, mountsAtFirst);
 
-    lesson.offer(lessonPoint(binding.videoId, 8, 'p8'));
-    lesson.offer(lessonPoint(binding.videoId, 2, 'p2'));
-    assert.equal(video.currentTime, 4, '后到的点只入库');
+    lesson.offer(lessonPoint(binding.videoId, 8.25, 'p8'));
+    lesson.offer(lessonPoint(binding.videoId, 2.25, 'p2'));
+    assert.equal(video.currentTime, 3.75, '后到的点只入库');
     assert.equal(harness.overlay(), first);
     assert.equal(win.__breakglassWakeMounts, mountsAtFirst);
-    assert.deepEqual(lesson.points().map((item) => item.time), [2, 4, 8]);
+    assert.deepEqual(lesson.points().map((item) => item.time), [2.25, 3.75, 8.25]);
 
     video.holdSeeks = true;
     elements['lesson-next'].dispatch('click');
     assert.equal(harness.overlay(), null, '先卸下当前曲线');
-    assert.equal(video.currentTime, 8);
+    assert.equal(video.currentTime, 8.25);
     assert.equal(elements['wake-button'].disabled, true);
     assert.equal(elements['lesson-next'].disabled, true);
     harness.finishSeek();
     assert.equal(win.__breakglassWakeMounts, mountsAtFirst + 1);
-    assert.deepEqual(lesson.jumps(), [{ before: 4, after: 8, wakeDisabled: true }]);
+    assert.deepEqual(lesson.jumps(), [{ before: 3.75, after: 8.25, wakeDisabled: true }]);
     assert.equal(elements['wake-button'].disabled, false);
 
     lesson.finish();
@@ -277,7 +277,7 @@ test('下一个：还在读就留在原地，有更晚的点就先卸下曲线�
     assert.equal(elements['lesson-next'].disabled, true);
     assert.equal(status(harness).includes('没有下一处。'), true);
     elements['lesson-next'].dispatch('click');
-    assert.equal(video.currentTime, 8);
+    assert.equal(video.currentTime, 8.25);
     assert.equal(lesson.jumps().length, 1);
   } finally {
     harness.restore();
@@ -298,14 +298,15 @@ test('回包里先到的点先停；更早的后到点只入库，读完后没�
             readingId: sent.readingId,
             videoId: sent.videoId,
             origin: 'external',
-            points: [lessonPoint(sent.videoId, 6, 'p6'), lessonPoint(sent.videoId, 3, 'p3')]
+            duration: sent.duration,
+            points: [lessonPoint(sent.videoId, 6.75, 'p6'), lessonPoint(sent.videoId, 2.25, 'p3')]
           })
         });
       }
     });
     await flush();
     const lesson = win.__breakglassLesson;
-    assert.equal(video.currentTime, 6);
+    assert.equal(video.currentTime, 6.75);
     assert.deepEqual(lesson.points().map((item) => item.id), ['p3', 'p6']);
     assert.equal(lesson.binding().phase, 'ready');
     assert.equal(elements['lesson-next'].disabled, true);
@@ -453,7 +454,7 @@ test('取消阅读：停下请求，已存的点留着，5 分钟后也不退回
     const { elements, video, win } = harness;
     const { calls } = await openForeign(harness);
     const lesson = win.__breakglassLesson;
-    lesson.offer(lessonPoint(lesson.binding().videoId, 4, 'p4'));
+    lesson.offer(lessonPoint(lesson.binding().videoId, 3.75, 'p4'));
     elements['lesson-cancel'].dispatch('click');
     assert.equal(calls[0].init.signal.aborted, true);
     assert.equal(lesson.binding().phase, 'ready');
@@ -476,7 +477,7 @@ test('已经存了点之后请求失败，只结束阅读，不退回', async ()
     let fail = null;
     await openForeign(harness, { respond: () => new Promise((resolve, reject) => { fail = reject; }) });
     const lesson = win.__breakglassLesson;
-    lesson.offer(lessonPoint(lesson.binding().videoId, 4, 'p4'));
+    lesson.offer(lessonPoint(lesson.binding().videoId, 3.75, 'p4'));
     fail(new TypeError('offline'));
     await flush();
     await flush();
@@ -507,19 +508,23 @@ test('两组计时分开记，不混进回退、等待或识别；自比对齐�
     await openForeign(harness);
     const lesson = win.__breakglassLesson;
     harness.advance(250);
-    lesson.offer(lessonPoint(lesson.binding().videoId, 4, 'p4'));
+    lesson.offer(lessonPoint(lesson.binding().videoId, 3.75, 'p4'));
     for (let round = 0; round < 20; round += 1) {
       elements['wake-button'].dispatch('click');
       assert.ok(harness.overlay());
+      harness.frame();
+      harness.frame();
       harness.document.dispatch('keydown', { key: 'Escape' });
     }
     elements['wake-button'].dispatch('click');
+    harness.frame();
+    harness.frame();
     const summary = win.__breakglassLatency.summary();
     assert.equal(summary['lesson-first-point'].count, 1);
     assert.equal(summary['lesson-first-point'].max, 250);
     assert.equal(summary['lesson-first-point'].cache, 'hot');
-    assert.equal(summary['lesson-wake-visible'].count, 21);
-    assert.equal(summary['lesson-wake-visible'].cache, 'hot');
+    assert.equal(summary['lesson-wake-frame-ready'].count, 21);
+    assert.equal(summary['lesson-wake-frame-ready'].cache, 'hot');
     assert.equal(summary['fallback-visible'], undefined);
     assert.equal(summary['network-wait'], undefined);
     assert.equal(summary['vision-decision'], undefined);
@@ -534,6 +539,63 @@ test('两组计时分开记，不混进回退、等待或识别；自比对齐�
   } finally {
     harness.restore();
   }
+});
+
+test('未发送的帧时间被拒绝，只有请求中的点可以定位和破壁', async () => {
+  const harness = await createHarness();
+  try {
+    const { calls } = await openForeign(harness, { time: 1 });
+    const sent = JSON.parse(calls[0].init.body);
+    const lesson = harness.win.__breakglassLesson;
+    assert.equal(sent.frames.some((frame) => frame.time === 4), false);
+    assert.deepEqual(lesson.offer(lessonPoint(sent.videoId, 4, 'unsampled')), { ok: false, reason: '时间无效' });
+    assert.equal(harness.video.currentTime, 1);
+    assert.equal(harness.overlay(), null);
+    assert.deepEqual(lesson.points(), []);
+    const time = sent.frames[2].time;
+    assert.equal(lesson.offer(lessonPoint(sent.videoId, time, 'sampled')).ok, true);
+    assert.equal(harness.video.currentTime, time);
+    harness.elements['wake-button'].dispatch('click');
+    assert.ok(harness.overlay());
+  } finally { harness.restore(); }
+});
+
+test('换片后旧阅读结果不能定位到新视频', async () => {
+  const harness = await createHarness();
+  try {
+    const first = await openForeign(harness);
+    const old = JSON.parse(first.calls[0].init.body);
+    await openForeign(harness, { time: 1 });
+    const lesson = harness.win.__breakglassLesson;
+    assert.notEqual(lesson.binding().videoId, old.videoId);
+    assert.equal(lesson.offer(lessonPoint(old.videoId, old.frames[0].time, 'old')).ok, false);
+    assert.equal(harness.video.currentTime, 1);
+    assert.deepEqual(lesson.points(), []);
+  } finally { harness.restore(); }
+});
+
+test('部分截图失败时按实际发送的两张帧绑定，拒绝计划中未发送的时间', async () => {
+  const h = await createHarness();
+  try {
+    const { calls } = await openForeign(h, { frames: (times) => times.slice(0, 2).map((time) => ({ time, image: 'data:image/jpeg;base64,AA==' })) });
+    const sent = JSON.parse(calls[0].init.body);
+    assert.equal(sent.frames.length, 2);
+    assert.equal(h.win.__breakglassLesson.offer(lessonPoint(sent.videoId, 3.75, 'not-sent')).ok, false);
+    assert.equal(h.win.__breakglassLesson.offer(lessonPoint(sent.videoId, 2.25, 'sent')).ok, true);
+  } finally { h.restore(); }
+});
+
+test('小系数初值完整显示，不被滑块步长的格式化舍入成零', async () => {
+  const harness = await createHarness();
+  try {
+    const { calls } = await openForeign(harness);
+    const sent = JSON.parse(calls[0].init.body);
+    const point = lessonPoint(sent.videoId, sent.frames[0].time, 'tiny');
+    point.curve.definition.parameters.a = { initial: 0.00012345, min: 0.00006, max: 0.00019, step: 0.00001 };
+    assert.equal(harness.win.__breakglassLesson.offer(point).ok, true);
+    harness.elements['wake-button'].dispatch('click');
+    assert.equal(harness.elements['parameter-a-value'].textContent, '0.00012345');
+  } finally { harness.restore(); }
 });
 
 test('画面上分开写明正在看、可以破壁和破壁已打开', async () => {
@@ -558,7 +620,7 @@ test('画面上分开写明正在看、可以破壁和破壁已打开', async ()
     assert.match(elements['stage-banner-detail'].textContent, /破壁还没开始/);
     const binding = harness.win.__breakglassLesson.binding();
     harness.video.holdSeeks = true;
-    harness.win.__breakglassLesson.offer(lessonPoint(binding.videoId, 4, 'banner'));
+    harness.win.__breakglassLesson.offer(lessonPoint(binding.videoId, 3.75, 'banner'));
     assert.equal(elements['stage-banner'].dataset.mode, 'seeking');
     assert.equal(elements['stage-banner-title'].textContent, '正在停到这一帧');
     harness.finishSeek();
@@ -569,4 +631,48 @@ test('画面上分开写明正在看、可以破壁和破壁已打开', async ()
   } finally {
     harness.restore();
   }
+});
+
+test('离开页面取消尚未落定的隐藏采样，迟到截图不能再发阅读请求', async () => {
+  const harness = await createHarness();
+  let completeFrames;
+  try {
+    const frames = new Promise((resolve) => { completeFrames = resolve; });
+    const { calls } = await openForeign(harness, { frames: () => frames });
+    assert.equal(calls.length, 0);
+    const binding = harness.win.__breakglassLesson.binding();
+    assert.equal(binding.phase, 'reading');
+    harness.win.dispatch('pagehide');
+    completeFrames([{ time: 0.75, image: 'data:image/jpeg;base64,AA==' }]);
+    await flush();
+    await flush();
+    assert.equal(calls.length, 0);
+    assert.equal(harness.win.__breakglassLesson.binding().phase, 'ready');
+    harness.advance(300000);
+    assert.equal(calls.length, 0);
+  } finally { harness.restore(); }
+});
+
+test('离开页面清掉阅读地址输入的延迟，不启动已卸载的阅读', async () => {
+  const harness = await createHarness();
+  try {
+    await openForeign(harness, { endpoint: '' });
+    const calls = [];
+    const base = globalThis.fetch;
+    globalThis.fetch = (url, init) => {
+      if (String(url) === ENDPOINT) {
+        calls.push({ url: String(url), init });
+        return new Promise(() => {});
+      }
+      return base(url, init);
+    };
+    harness.elements['lesson-endpoint'].value = ENDPOINT;
+    harness.elements['lesson-endpoint'].dispatch('input');
+    harness.win.dispatch('pagehide');
+    harness.advance(300);
+    await flush();
+    await flush();
+    assert.equal(calls.length, 0);
+    assert.equal(harness.win.__breakglassLesson.binding(), null);
+  } finally { harness.restore(); }
 });

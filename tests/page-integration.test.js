@@ -103,8 +103,10 @@ test('页面只调用 createWake，不维护第二套唤醒或替身', () => {
   assert.match(main, /wakeApi\.createWake\(/);
   assert.match(main, /onChange:/);
   assert.match(main, /canWake\(/);
-  assert.match(main, /mark\('timeout-decided'\)/);
-  assert.match(main, /mark\('svg-visible'\)/);
+  assert.match(main, /const decidedAt = localClock.now\(\)/);
+  assert.match(main, /record\('fallback-dom-ready'/);
+  assert.match(main, /record\('fallback-frame-ready'/);
+  assert.match(main, /requestAnimationFrame/);
   assert.match(main, /fallback === 'timeout'/);
   assert.match(main, /不代表实时识别成功/);
   assert.doesNotMatch(main, /createWakeController|onOutcome|resolvePreset|isWaiting|decisionAt|attemptApi|beginWait|session\.fail|\.current\b/);

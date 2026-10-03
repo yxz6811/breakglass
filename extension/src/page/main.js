@@ -121,6 +121,9 @@
   let lessonLook = null;
   /** 阅读点破壁的起点。只在点已经存好并落定时置位。 */
   let lessonWakeStartedAt = null;
+  let wakeStartedAt = null;
+  let presentationSerial = 0;
+  let presentationFrame = null;
   /** 刚退回 9 秒片时的原因。那支片子加载失败时要改口，不能说已经回去了。 */
   let lessonFallbackReason = '';
   /** 用户片子已在画面上，但阅读地址还空着。 */
@@ -701,12 +704,36 @@
   }
 
   function drawCurve() {
+    try {
+      return drawCurveUnsafe();
+    } catch {
+      cancelPresentation();
+      dragging = false;
+      dragOrigin = null;
+      if (overlay) overlay.remove();
+      overlay = null;
+      window.__breakglassAlignment = null;
+      if (controller) {
+        controller.fail('render_failed', '曲线无法绘制，请重试或退出。');
+        applyState(controller.getState());
+      }
+      return false;
+    }
+  }
+
+  function drawCurveUnsafe() {
     const state = sessionState();
     if (!state || state.status !== 'interactive' || !state.result || !overlay) return;
     const result = state.result;
     const definition = result.definition;
     const rect = readContentRect();
-    if (!rect) return;
+    if (!rect) {
+      const box = video.getBoundingClientRect();
+      const previousPath = overlay.querySelector('path').getAttribute('d');
+      // 已绘制结果遇到暂不支持的 object-fit，沿用原有的跳帧约定；零区域或空 SVG 则不能假装成功。
+      if (previousPath && box.width > 0 && box.height > 0 && video.videoWidth > 0 && video.videoHeight > 0) return true;
+      throw new Error('视频显示区域暂不可用。');
+    }
 
     const rectKey = [
       rect.contentRect.left, rect.contentRect.top,
@@ -729,7 +756,7 @@
     const samples = [];
     const span = definition.domain.max - definition.domain.min;
     for (let index = 0; index <= 80; index += 1) {
-      samples.push(definition.domain.min + span * index / 80);
+      samples.push(definition.domain.min + span * (index / 80));
     }
     const vertex = Number(parameters.h);
     if (Number.isFinite(vertex) && vertex > definition.domain.min && vertex < definition.domain.max &&
@@ -767,14 +794,21 @@
         row.input.step = String(item.step);
       }
       row.input.value = String(value);
-      row.output.textContent = value.toFixed(1);
+      const precision = item && item.step > 0 ? Math.min(12, Math.max(1, -Math.floor(Math.log10(item.step)))) : 1;
+      const rounded = Number(value.toFixed(precision));
+      const tolerance = Math.max(Number.EPSILON * Math.max(Math.abs(value), Math.abs(rounded)) * 32, item ? item.step * 1e-9 : 0);
+      const displayValue = (rounded !== 0 || value === 0) && Math.abs(rounded - value) <= tolerance
+        ? value.toFixed(precision) : String(Number(value.toPrecision(12)));
+      row.output.textContent = displayValue;
       if (item && row.input.setAttribute) {
-        row.input.setAttribute('aria-valuetext', value.toFixed(1) + '（范围 ' + item.min + ' 到 ' + item.max + '）');
+        row.input.setAttribute('aria-valuetext', displayValue + '（范围 ' + item.min + ' 到 ' + item.max + '）');
       }
     });
+    return true;
   }
 
   function removeOverlay({ pauseVideo = true } = {}) {
+    cancelPresentation();
     pendingIdle = null;
     dragging = false;
     dragOrigin = null;
@@ -788,7 +822,7 @@
   }
 
   function createOverlay() {
-    if (overlay) return;
+    if (overlay) return drawCurve();
     overlay = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
     overlay.classList.add('curve-overlay');
     overlay.style.position = 'absolute';
@@ -840,7 +874,42 @@
     overlay.addEventListener('pointerup', endDrag);
     overlay.addEventListener('pointercancel', endDrag);
     overlay.addEventListener('lostpointercapture', endDrag);
-    drawCurve();
+    return drawCurve();
+  }
+
+  function cancelPresentation() {
+    presentationSerial += 1;
+    if (presentationFrame !== null && typeof window.cancelAnimationFrame === 'function') {
+      window.cancelAnimationFrame(presentationFrame);
+    }
+    presentationFrame = null;
+  }
+
+  /** 双 rAF 提供一次绘制机会；它不是像素呈现的硬件时间戳，隐藏页不计样本。 */
+  function recordPresentation(timedOut, decidedAt, startedAt, lessonStartedAt) {
+    cancelPresentation();
+    if (!latencies || !overlay) return;
+    const mounted = overlay;
+    const domAt = localClock.now();
+    if (timedOut) latencies.record('fallback-dom-ready', domAt - decidedAt, 'hot');
+    if (lessonStartedAt !== null) latencies.record('lesson-wake-dom-ready', domAt - lessonStartedAt, 'hot');
+    else if (startedAt !== null) latencies.record('preset-wake-dom-ready', domAt - startedAt, 'hot');
+    if (typeof window.requestAnimationFrame !== 'function') return;
+    const serial = presentationSerial;
+    const current = () => serial === presentationSerial && overlay === mounted &&
+      document.visibilityState !== 'hidden' && sessionState().status === 'interactive';
+    presentationFrame = window.requestAnimationFrame(() => {
+      if (!current()) { presentationFrame = null; return; }
+      presentationFrame = window.requestAnimationFrame(() => {
+        presentationFrame = null;
+        if (!current()) return;
+        const now = localClock.now();
+        if (timedOut) latencies.record('fallback-frame-ready', now - decidedAt, 'hot');
+        if (lessonStartedAt !== null) latencies.record('lesson-wake-frame-ready', now - lessonStartedAt, 'hot');
+        else if (startedAt !== null) latencies.record('preset-wake-frame-ready', now - startedAt, 'hot');
+        stage.dataset.presentationMetrics = JSON.stringify({ endpoint: 'two-animation-frames', pixelPresentationVerified: false, summary: latencies.summary() });
+      });
+    });
   }
 
   function syncControls() {
@@ -937,6 +1006,7 @@
       setStatus(idleStatus());
     }
     lessonWakeStartedAt = null;
+    wakeStartedAt = null;
     wakeButton.disabled = !(atTarget() && Boolean(presetResult)) || lessonBlocksWake();
     markGuide();
   }
@@ -944,25 +1014,21 @@
   function renderState(state) {
     // 取消、退出、播放或离开目标时间：判定没有结算，不记账。
     if (state.status === 'paused-ready') {
+      cancelPresentation();
       paintPausedReady();
       return;
     }
     if (state.status === 'interactive') {
-      curveShown = true;
       const result = state.result;
       const timedOut = result && result.fallback === 'timeout';
-      if (timedOut && latencies) latencies.mark('timeout-decided');
-      createOverlay();
-      if (timedOut && latencies) {
-        const visibleAt = latencies.mark('svg-visible');
-        const decidedAt = latencies.measure('timeout-decided', 'svg-visible');
-        if (Number.isFinite(visibleAt) && Number.isFinite(decidedAt)) {
-          latencies.record('fallback-visible', decidedAt);
-        }
-      }
+      const decidedAt = localClock.now();
+      if (!createOverlay()) return;
+      curveShown = true;
+      recordPresentation(timedOut, decidedAt, wakeStartedAt, lessonWakeStartedAt);
+      wakeStartedAt = null;
+      lessonWakeStartedAt = null;
       // 识别路径单独结算；预制路径（含超时回退）不写这组。
       if (!timedOut && isPackagedVision(result)) recordVisionDecision();
-      recordLessonWakeVisible();
       hideWaitingControls();
       resetButton.disabled = false;
       exitButton.disabled = false;
@@ -998,6 +1064,7 @@
       return;
     }
     if (state.status === 'recoverable-error') {
+      cancelPresentation();
       recordVisionDecision();
       hideWaitingControls();
       retryButton.hidden = false;
@@ -1031,6 +1098,7 @@
     const visionPath = !usingLessonCurve && Boolean(config) && config.visionAdapter === 'fixture' && config.externalAttempt === 'off';
     visionStartedAt = visionPath && localClock ? localClock.now() : null;
     lessonWakeStartedAt = usingLessonCurve && localClock ? localClock.now() : null;
+    wakeStartedAt = !usingLessonCurve && localClock ? localClock.now() : null;
     const started = wakeHandle.start({
       paused: true,
       currentTime: video.currentTime,
@@ -1231,6 +1299,8 @@
       readingId: 'reading-' + lessonSerial,
       videoId: 'local-binding-' + lessonSerial,
       duration,
+      sampleTimes: [],
+      frameSize: { width: video.videoWidth, height: video.videoHeight },
       phase: 'reading',
       cancelled: false,
       courseNote: course.message,
@@ -1267,16 +1337,18 @@
         return;
       }
       noteLessonLook({ phase: 'waiting', index: frames.length, total: frames.length, time: Number.NaN });
-      lessonAskHandle = askApi.startLessonAsk({
-        url,
-        body: askApi.requestBody({
+      const body = askApi.requestBody({
           readingId: owner.readingId,
           videoId: owner.videoId,
           duration: owner.duration,
-          frameSize: { width: video.videoWidth, height: video.videoHeight },
+          frameSize: owner.frameSize,
           courseText: lessonNote ? lessonNote.value : '',
           frames
-        }),
+        });
+      owner.sampleTimes = body.frames.map((frame) => frame.time);
+      lessonAskHandle = askApi.startLessonAsk({
+        url,
+        body,
         fetchImpl: (address, init) => fetch(address, init),
         clock: localClock,
         onSuccess: (payload) => {
@@ -1394,7 +1466,7 @@
       origin: 'external',
       duration: lesson.duration,
       points: lesson.points.concat([point])
-    }, { width: video.videoWidth, height: video.videoHeight });
+    }, { width: video.videoWidth, height: video.videoHeight }, lesson);
     const kept = new Set(verdict.points.map((item) => item.id));
     const storedStay = lesson.points.every((item) => kept.has(item.id));
     const accepted = Boolean(point) && verdict.points.indexOf(point) >= 0 && storedStay;
@@ -1487,7 +1559,7 @@
   }
 
   /**
-   * 请求失败。已有存点就只结束阅读；一处都没有才退回。
+   * 请求失败。已有存点就只结束阅读；一处都没有时保留用户视频并给出说明。
    * @param {object} owner 发起请求时的那次阅读
    * @param {string} code
    */
@@ -1555,23 +1627,13 @@
   }
 
   /**
-   * 阅读点破壁到覆盖层出现，只在点已经存好并落定时记。
-   */
-  function recordLessonWakeVisible() {
-    if (lessonWakeStartedAt === null || !latencies || !overlay || !usingLessonCurve) return;
-    const elapsed = localClock.now() - lessonWakeStartedAt;
-    lessonWakeStartedAt = null;
-    if (Number.isFinite(elapsed) && elapsed >= 0) latencies.record('lesson-wake-visible', elapsed, 'hot');
-  }
-
-  /**
    * 验收只看记下来的数。破壁出现至少 20 次且 P95 ≤ 100，
    * 并且对齐真的测过、偏差不超过 2%，才算过。
    * @returns {{ passed: boolean, wakeVisible: { count: number, p95: number | null }, firstPoint: { count: number, max: number | null }, measured: boolean, maxRatio: number | null, jumps: number }}
    */
   function lessonAcceptance() {
     const summary = latencies ? latencies.summary() : {};
-    const wakeSummary = summary['lesson-wake-visible'];
+    const wakeSummary = summary['lesson-wake-frame-ready'];
     const firstSummary = summary['lesson-first-point'];
     const reading = window.__breakglassAlignment;
     const measured = Boolean(reading) && reading.measured === true;
@@ -1579,7 +1641,10 @@
     const count = wakeSummary ? wakeSummary.count : 0;
     const p95 = wakeSummary ? wakeSummary.p95 : null;
     return {
-      passed: count >= 20 && p95 !== null && p95 <= 100 && measured && maxRatio !== null && maxRatio <= 0.02,
+      passed: false,
+      estimatedThresholdMet: count >= 20 && p95 !== null && p95 <= 100 && measured && maxRatio !== null && maxRatio <= 0.02,
+      pixelPresentationVerified: false,
+      measurement: 'two-animation-frames; pixel presentation requires browser evidence',
       wakeVisible: { count, p95 },
       firstPoint: { count: firstSummary ? firstSummary.count : 0, max: firstSummary ? firstSummary.max : null },
       measured,
@@ -1615,7 +1680,8 @@
       mountWake(packagedPreset, false);
       window.__breakglassLatency = {
         summary: () => latencies.summary(),
-        snapshot: () => latencies.snapshot()
+        snapshot: () => latencies.snapshot(),
+        measurement: () => ({ dom: 'SVG path ready in JavaScript', frame: 'second requestAnimationFrame; one rendering opportunity', pixelPresentationVerified: false })
       };
       watchDevicePixelRatio();
       watchVideoSize();
@@ -1700,9 +1766,21 @@
   if (presetAgain) presetAgain.addEventListener('click', () => { choosePackagedVideo(); });
   window.addEventListener('resize', drawCurve);
   document.addEventListener('fullscreenchange', drawCurve);
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') cancelPresentation();
+  });
   window.addEventListener('orientationchange', drawCurve);
   window.addEventListener('pagehide', () => {
+    if (endpointWait != null) {
+      window.clearTimeout(endpointWait);
+      endpointWait = null;
+    }
     stopLessonWork();
+    // 隐藏采样的 Promise 可能稍后才落定；结束本轮，不能在页面离开后再发阅读请求。
+    if (lesson) {
+      lesson.phase = 'ready';
+      lesson.cancelled = true;
+    }
     removeOverlay({ pauseVideo: false });
     if (localVideoUrl) {
       URL.revokeObjectURL(localVideoUrl);
@@ -1765,8 +1843,7 @@
     dragging = false;
     dragOrigin = null;
     if (controller) controller.reset();
-    drawCurve();
-    setStatus('已恢复本次结果的初始参数。');
+    if (drawCurve()) setStatus('已恢复本次结果的初始参数。');
   });
   exitButton.addEventListener('click', removeOverlay);
   // 滑块按参数逐个调节（会话层 setParameter）；控制点拖动仍走 updateParameter。

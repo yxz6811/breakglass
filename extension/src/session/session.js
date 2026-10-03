@@ -101,7 +101,7 @@
       if (name !== definition.dragParameter || !definition.parameters[name]) {
         return { ok: false, code: 'parameter_not_draggable' };
       }
-      if (typeof value !== 'number' || Number.isNaN(value)) {
+      if (!Number.isFinite(value)) {
         return { ok: false, code: 'invalid_parameter_value', message: '参数必须是有限数值。' };
       }
       const item = definition.parameters[name];
@@ -120,7 +120,7 @@
       if (!Object.prototype.hasOwnProperty.call(definition.parameters, name)) {
         return { ok: false, code: 'unknown_parameter', message: '未知参数 ' + name + '。' };
       }
-      if (typeof value !== 'number' || Number.isNaN(value)) {
+      if (!Number.isFinite(value)) {
         return { ok: false, code: 'invalid_parameter_value', message: '参数必须是有限数值。' };
       }
       const item = definition.parameters[name];

@@ -4,7 +4,7 @@
 **Consumers**: 演示页通过当次填写的地址发一次 `POST`。  
 **Non-consumers**: 破壁点击、1.5 秒预制回退、识别样例。服务不进入扩展包，模型密钥和阅读地址不进入仓库。
 
-页面请求与退回仍以 [lesson-reading.md](./lesson-reading.md) 为准。点内曲线以 [001 CurveResult](../../001-insitu-parabola/contracts/curve-result.md) 为准。
+页面请求与失败处理仍以 [lesson-reading.md](./lesson-reading.md) 和 Constitution 1.8.0 为准。点内曲线以 [001 CurveResult](../../001-insitu-parabola/contracts/curve-result.md) 为准。
 
 ## 请求
 
@@ -71,7 +71,7 @@
 }
 ```
 
-顶层 `readingId`、`videoId` 必须与请求一致，`origin` 必须是 `external`。任一不符，页面把整份作废并退回 9 秒片。
+顶层 `readingId`、`videoId`、`duration` 必须与请求一致，`origin` 必须是 `external`。任一不符，页面把整份作废并保留用户选中的视频，不自动换成 9 秒片。
 
 每个点：
 
@@ -92,7 +92,7 @@
 
 ## 时限与失败
 
-5 分钟是页面的截止，不是把破壁等待从 1500ms 加长。服务应在这一次 `POST` 里返回。超时、断网、非 2xx 都由页面退回，服务不必再推一版补救结果。
+5 分钟是页面的截止，不是把破壁等待从 1500ms 加长。服务应在这一次 `POST` 里返回。超时、断网、非 2xx 都由页面显示失败并保留所选视频，服务不必再推一版补救结果。
 
 ## 部署约束
 

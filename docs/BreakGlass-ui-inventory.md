@@ -2,18 +2,20 @@
 
 | 项 | 值 |
 | --- | --- |
-| 版本 | 2.3.0 |
+| 版本 | 2.5.0 |
 | 日期 | 2026-10-03 |
-| 基线 | `前端计划02@4239d35`（`main@0c1cafb` + 识别结果适配 002） |
+| 基线 | `codex/optimize-breakglass`；已合入 `main@632969a` 的视频选择与阅读定位改动 |
 | 用途 | 按钮 UI、交互动画、参数调节控件的设计输入 |
 | 配套 | 令牌与动效数值见 [`BreakGlass-visual-spec.md`](./BreakGlass-visual-spec.md)；逐交互设计理由见 [`BreakGlass-ui-design-guide.md`](./BreakGlass-ui-design-guide.md)；待实现项见 [`BreakGlass-ui-todo.md`](./BreakGlass-ui-todo.md) |
+| 产品约束 | [`BreakGlass-constitution.md`](./BreakGlass-constitution.md)；开播前阅读的独立切片以 [Constitution 1.8.0 原则 VII](../.specify/memory/constitution.md) 为准 |
 | 标注 | 未标注＝已实现（001 主路径 + 002 识别适配）。002 的自动检查与未执行项见 §5.6 |
 
 ## 1. 页面结构（UI 容器）
 
 | 区域 | 选择器 / class | 现状 |
 | --- | --- | --- |
-| **液态玻璃顶栏** | `.lg-dock[data-liquid-glass]` | 默认收到视口外。指针进入浏览器顶端 10px，或焦点在栏内时滑出；离开后收起 |
+| **液态玻璃顶栏** | `#demo-toolbar.lg-dock[data-liquid-glass]` | 支持悬停时默认收到视口外，可点击常驻「显示工具栏」、移到顶端 10px 或用键盘焦点打开；焦点在栏内时保持展开。无悬停设备放在正常文档流内并保持可见；窄屏控件可换行 |
+| 工具栏入口 | `.dock-reveal[data-dock-reveal="demo-toolbar"]` | 常驻按钮，`aria-controls` 指向顶栏，`aria-expanded` 跟随展开状态；无悬停设备因顶栏始终可见而隐藏入口 |
 | 顶栏按键 | `.lg-item`（8 个圆形玻璃按键） | 48px 圆形，`transform-origin: center bottom`，指针滑过逐个放大 |
 | 工作台 | `.workspace` | 两栏网格：视频列 + 310px 控制面板；`<1050px` 变单列 |
 | 视频舞台 | `#video-stage`（`.video-stage`） | `position: relative; overflow: hidden; min-height: 540px`（窄屏 420px），覆盖层的定位父级 |
@@ -34,7 +36,7 @@
 | 6 | 重置 | `#reset-button`（`.lg-item`） | button | 可见，**禁用** | 仅 `interactive` | `controller.reset()` + 重绘 | 三个滑块回到初值；`已恢复本次结果的初始参数。` | — |
 | 7 | 全屏 | `#fullscreen-button`（`.lg-item`） | button | 可见可用 | 始终 | 对整页 `document.documentElement` 请求/退出全屏 | 全屏变化后重算覆盖层坐标。全屏期间 Esc 只退出全屏 | — |
 | 8 | 退出 | `#exit-button`（`.lg-item`） | button | 可见，**禁用** | `interactive`、`waiting`、`recoverable-error` | 移除覆盖层 / 取消等待 / 结束会话 | 控件复位，主操作回到破壁 | `Esc`（有覆盖层时） |
-| 9 | 开口宽窄 `a` | `#parameter-a` + `#parameter-a-value` | range + output | 禁用，值 `0.8`，输出 `—` | 仅 `interactive` | `input` → `session.setParameter('a', …)` + 重绘 | 数值 1 位小数，与曲线同步 | ← / → 原生 |
+| 9 | 开口宽窄 `a` | `#parameter-a` + `#parameter-a-value` | range + output | 禁用，值 `0.8`，输出 `—` | 仅 `interactive` | `input` → `session.setParameter('a', …)` + 重绘 | 按步长保留精度，与曲线同步 | ← / → 原生 |
 | 10 | 水平位置 `h` | `#parameter-h` + `#parameter-h-value` | range + output | 禁用，值 `0`，输出 `—` | 仅 `interactive` | 同上（`setParameter('h', …)`） | 同上；也是**控制点拖动**写入的参数 | ← / → 原生 |
 | 11 | 顶点高度 `k` | `#parameter-k` + `#parameter-k-value` | range + output | 禁用，值 `0`，输出 `—` | 仅 `interactive` | 同上（`setParameter('k', …)`） | 同上 | ← / → 原生 |
 | 12 | 目标时间 | `#target-time` | number | `value=6`、`min=0`、`step=0.1` | 始终可编辑 | 破壁门禁与定位依据 | 不在目标时间时破壁禁用 | ↑ / ↓ 原生 |
@@ -42,11 +44,14 @@
 | 14 | 等待条 | `#waiting-bar` + `#waiting-progress` | div + span | **隐藏** | 仅 `waiting` | 无交互（提示 + 进度） | 1.5s 线性进度条，`--wait-ms` = `fallbackAfterMs` | — |
 | 15 | 来源芯片 | `#source-label` | span | `等待素材` | 始终 | 无交互（状态） | 见第 3 节；超时回退加虚线、非 preset 加警示色 | — |
 | 16 | 视频原生控件 | `<video controls>` | video | 始终 | 始终 | 浏览器自带播放条 | 空格保留给播放器（不作为破壁键）。点控制条不退出已出现的曲线 | — |
-| 17 | 阅读状态 | `#lesson-status` | `p`，`role="status"` | 空 | 片子可播放且不是 9 秒片 | 无交互 | 正在读、读完了、还在读、没有下一处、已取消、已退回 | — |
+| 17 | 阅读状态 | `#lesson-status` | `p`，`role="status"` | 空 | 片子可播放且不是 9 秒片 | 无交互 | 正在读、读完了、还在读、没有下一处、已取消、暂无可用结果 | — |
 | 18 | 阅读地址 | `#lesson-endpoint` | `url` 输入 | 空，占位「填上才开始看这支片子」。这次浏览里填过的值会补回输入框 | 始终可填 | 只用于当次请求和这次浏览的会话存储，不写入仓库 | 留空则不发请求，画面留在用户选的片子上，并写明还没开始看。之后填上地址会开始看 | — |
 | 19 | 课程说明 | `#lesson-note` | textarea | 空 | 始终可填 | 随请求送出 | 空着会写「这次没有课程文本。」超过 8000 字不送正文 | — |
 | 20 | 下一个 | `#lesson-next` | button | **禁用**，文案「下一个」 | 已停在一处，且有更晚的已存点 | 先卸下曲线，再定位到更晚的点 | 还在读时留在原地；读完且没有更晚处时禁用 | — |
 | 21 | 取消阅读 | `#lesson-cancel` | button | **隐藏** | 仅正在读 | 停掉采样和请求 | 「已取消阅读。」已存的点留下，不退回 | — |
+| 22 | 显示工具栏 | `.dock-reveal` | button | 悬停设备常驻可见 | 始终 | 展开顶栏并将焦点移到第一个可用按键 | `aria-expanded="true"`；离开且焦点不在栏内时收起 | Enter / 空格原生 |
+| 23 | 选择预设 | `#preset-video`、`#toolbar-preset-video` | button | 可见 | 始终 | 明确加载包内 9 秒片，清空前一支视频的阅读点 | 来源保持「预先准备的示例」 | Enter / 空格原生 |
+| 24 | 舞台状态提示 | `#stage-banner` | 状态区 | 无视频时隐藏 | 视频已加载 | 显示还没开始看、正在看、正在定位、可以破壁和破壁已打开 | 明确区分阅读与覆盖层 | — |
 
 ## 3. 状态机与界面反馈（交互动画状态表）
 
@@ -270,8 +275,9 @@
 | 全局对象 | 内容 |
 | --- | --- |
 | `window.__breakglassAlignment` | `{ contentRect, scale, samples, maxRatio, tolerance, withinTolerance, measured, at }`。页面读数 `measured` 为 `false`，`maxRatio` 与 `withinTolerance` 为 `null`，不是相对画面的 2% 结论。`pagehide` 或退出后为 `null` |
-| `window.__breakglassLatency.summary()` | 各计时名（`fallback-visible`、`vision-decision`、`lesson-first-point`、`lesson-wake-visible`）的 `count / p50 / p95 / max`。阅读的两条不写入前两个名字 |
-| `window.__breakglassLesson` | `binding`、`points`、`dropped`、`jumps`、`acceptance`。`acceptance().passed` 在破壁样本不足 20 次或对齐未实测时为 `false` |
+| `window.__breakglassLatency.summary()` | `*-dom-ready` 表示 SVG 路径在 JavaScript 中准备完成；`*-frame-ready` 表示第二次 `requestAnimationFrame`，期间有一次绘制机会。分别记录 `fallback`、`lesson-wake`、`preset-wake`，另有 `vision-decision`、`lesson-first-point`；返回 `count / p50 / p95 / max`，不能将 DOM 准备时间记作首个可见像素时间 |
+| `window.__breakglassLatency.measurement()` | 区分 DOM 准备与双 rAF 的绘制机会；`pixelPresentationVerified: false`。双 rAF 不保证 GPU 已提交或显示器已呈现，真实像素验收仍需浏览器与设备证据 |
+| `window.__breakglassLesson` | `binding`、`points`、`dropped`、`jumps`、`acceptance`。`acceptance()` 使用 `lesson-wake-frame-ready` 样本，并注明像素呈现需要浏览器证据；样本不足 20 次或对齐未实测时 `passed: false`。该字段不能单独证明真实像素呈现验收已通过 |
 | `window.__breakglassWakeMounts` | `createWake` 的次数。尺寸不符的点不得让它增加 |
 | `window.__breakglassLatency.snapshot()` | 原始毫秒数组 |
 | `window.BreakGlassUI.magnify` / `LiquidGlassDock` | 顶栏放大内核与控制器（`extension/src/ui/`） |
@@ -295,14 +301,16 @@
 | `【P1】` 真实识别请求、单帧上传、感知代理、Pyodide | 不派发 |
 | 顶点拖动同时改 `h` 与 `k` | 待决策（analysis §8.2） |
 | 性能读数展示、空素材与视频错误的区分、目标时间对齐提示 | 待实现（见 [`BreakGlass-ui-todo.md`](./BreakGlass-ui-todo.md)） |
-| 正式演示视频与四画幅真机验收（T030/T038） | 未执行 |
-| 开播前阅读的页面接线（003） | 已实现：自动开始、还在读、没有下一处、这次阅读、退回预先准备的片子。阅读服务不在本仓库，没有它就不会从画面里找出抛物线 |
+| 四画幅真机验收（T030/T038） | 未执行；仓库已附带 9 秒示例视频，附带素材不代表对齐验收已通过 |
+| 开播前阅读的页面接线（003） | 已实现：有地址时自动开始、还在读、没有下一处、这次阅读、失败保留用户视频、显式选择预设。阅读服务源码位于 `breakglass-reader/`，按 Constitution 1.8.0 的独立例外不打进扩展包、不部署为云端后台；模型调用需服务配置，真实识别仍待联调 |
 | 003 的 SC-003、SC-004、SC-005 | **未通过**。没有设备上至少 20 次破壁样本，`measured` 仍是 `false`，`maxRatio` 仍是 `null` |
 
 ## 12. 变更记录
 
 | 版本 | 日期 | 变更 |
 | --- | --- | --- |
+| 2.5.0 | 2026-10-03 | 合入 `main@632969a`：显式选择预设、阅读失败保留用户视频、舞台状态提示和阅读地址记忆；保留工具栏入口并同步 Constitution 1.8.0 与参数精度说明 |
+| 2.4.0 | 2026-10-03 | 增加常驻工具栏入口、无悬停设备与窄屏可达性说明；同步阅读服务已在仓库及既有例外边界；区分 DOM 准备与双 rAF 绘制机会，明确真实像素呈现和四画幅对齐仍需独立验收 |
 | 2.3.0 | 2026-10-03 | 补上开播前阅读一行：自动开始、还在读、没有下一处、这次阅读、退回预先准备的片子。写明 SC-003 至 SC-005 未通过，阅读服务不在本仓库。点原生控制条不退出曲线；配置失败不再挂上包内片子；页面隐藏时卸下顶栏 |
 | 2.2.0 | 2026-10-02 | 可访问性补齐：错误态 `aria-live` 切 `assertive`；破壁/重置的禁用原因走 `aria-describedby` + `sr-only` 节点；三个滑块补 `aria-valuetext`（取值 + 范围）；控制点加透明 `r=18` 热区与 `grab/grabbing` 光标；顺带修掉「等待与可恢复错误时退出按钮仍禁用」的真实缺陷（替身此前未模拟 HTML 初始 `disabled`，属假通过） |
 | 2.1.0 | 2026-10-02 | 对齐 `前端计划02@4239d35`：识别结果适配（002）已实现——`visionAdapter` 开关落地并保持 `off`、来源芯片新增「识别结果」为 accent 态、说明区新增「尚未接通外部识别」、识别路径单独记 `vision-decision`、覆盖层 aria-label 改为中性表述；§5 由「规划」改为「已实现」并补实现记录、实现状态与未执行项 |

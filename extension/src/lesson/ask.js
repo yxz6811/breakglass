@@ -94,6 +94,7 @@
     if (!request || !payload) return null;
     if (payload.readingId !== request.readingId) return null;
     if (payload.videoId !== request.videoId) return null;
+    if (payload.duration !== request.duration) return null;
     if (payload.origin !== 'external') return null;
     return payload;
   }
