@@ -71,6 +71,10 @@ node --test
 
 画板按题目条件重建，原帧像素只用于定位。修改后的图不代表与视频仍一比一重合；返回按钮回到同一视频的原暂停时间继续播放。完整验收与未通过项目见 [005 验收步骤](specs/005-insitu-right-triangle/quickstart.md) 和 [验证记录](docs/BreakGlass-geometry-validation.md)。
 
+本次增补为几何工作台补齐12组通用能力：工具栏/快捷键/全屏、定位与阶段提示、识别和问答重试取消、独立reader地址会话记忆、单边滑块、示例草稿与有限记录、视频/新帧门禁及焦点反馈。实施和本次结果见 [功能对齐矩阵与验证记录](docs/BreakGlass-geometry-parity-2026-10-03.md)，当前结果待填。Alt+B只在本机暂停保存帧，识别仍需点击；地址记忆和示例不自动上传。005原任务的19/25及真实模型、完整扩展/像素验收保持独立，不能把新增控件或旧测试报告当作本次通过。
+
+几何工作台另增三段自制教学示例：3–4–5、5–12–13、8–15–17，题面与对应预设均使用cm，经检查均为12秒、1280×720、H.264无声MP4。外部开放许可视频检索本次连接失败，因此采用自制素材，未声称找到了外部视频。“加载示例”定位第4秒并保持暂停，不自动播放、捕获或识别；仅在当前对应示例已暂停且第2秒至第8秒之前的题面上，才可显式“载入对应示例条件”，随后仍需校对确认，来源为预设。选择自己的文件后恢复通用3–4–5的单位长度预设，真实reader识别仍须单独点击。文件与来源见 [视频素材说明](extension/assets/video/README.md)，本次操作步骤见 [005 quickstart §9](specs/005-insitu-right-triangle/quickstart.md#9-2026-10-03-自制几何示例视频增补)。
+
 ## 文档入口
 
 - [项目约定](AGENTS.md)
@@ -90,6 +94,7 @@ node --test
 - [005 任务清单](specs/005-insitu-right-triangle/tasks.md)
 - [005 场景与动作契约](specs/005-insitu-right-triangle/contracts/scene-actions.md)
 - [005 验收步骤](specs/005-insitu-right-triangle/quickstart.md)
+- [几何工作台功能对齐矩阵与验证（2026-10-03）](docs/BreakGlass-geometry-parity-2026-10-03.md)
 - [视觉规范](docs/BreakGlass-visual-spec.md)
 - [工作台视觉对齐与验证（2026-10-03）](docs/BreakGlass-ui-alignment-2026-10-03.md)
 - [全仓库测试报告（2026-10-03）](docs/BreakGlass-test-report-2026-10-03.md)

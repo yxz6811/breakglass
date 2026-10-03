@@ -2,56 +2,9 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
-const scene = Object.assign({}, require('../extension/src/geometry-scene/validate'), require('../extension/src/geometry-scene/solve'), require('../extension/src/geometry-scene/actions'));
-const session = require('../extension/src/geometry-session/session');
-const view = require('../extension/src/geometry-scene/view');
-const { createGeometryPage } = require('../extension/src/page/geometry');
 const html = fs.readFileSync(path.join(__dirname, '../extension/demo/geometry.html'), 'utf8');
 
-// A focused event/DOM harness in the same style as helpers/fake-page.js.
-// Core/session/view/page are real; only browser media and HTTP boundaries are replaced.
-function element(tag = 'div') {
-  const events = new Map(), attributes = new Map();
-  const value = { tagName: tag.toUpperCase(), children: [], style: {}, value: '', textContent: '', disabled: false, hidden: false, checked: false, className: '',
-    addEventListener(type, handler) { if (!events.has(type)) events.set(type, []); events.get(type).push(handler); },
-    removeEventListener(type, handler) { events.set(type, (events.get(type) || []).filter((item) => item !== handler)); },
-    dispatch(type, data = {}) { for (const handler of (events.get(type) || []).slice()) handler({ target: value, preventDefault() {}, ...data }); },
-    setAttribute(name, data) { attributes.set(name, String(data)); }, getAttribute(name) { return attributes.get(name); }, removeAttribute(name) { attributes.delete(name); },
-    appendChild(child) { value.children.push(child); return child; }, removeChild(child) { value.children.splice(value.children.indexOf(child), 1); },
-    focus() { value.focused = true; }, getBoundingClientRect() { return value.rect || { left: 0, top: 0, width: 420, height: 300 }; },
-    setPointerCapture() {}, releasePointerCapture() {}
-  };
-  Object.defineProperty(value, 'firstChild', { get: () => value.children[0] || null });
-  value.classList = { toggle(name, on) { const classes = new Set(value.className.split(' ').filter(Boolean)); if (on) classes.add(name); else classes.delete(name); value.className = [...classes].join(' '); } };
-  return value;
-}
-function harness() {
-  const elements = {};
-  for (const match of html.matchAll(/<([\w-]+)[^>]*\bid="([^"]+)"[^>]*>/g)) {
-    const node = element(match[1]); elements[match[2]] = node;
-    node.hidden = /\bhidden(?:\s|>)/.test(match[0]); node.disabled = /\bdisabled(?:\s|>)/.test(match[0]);
-    node.value = /\bvalue="([^"]*)"/.exec(match[0])?.[1] || '';
-  }
-  elements['ask-mode'].value = 'local'; elements['candidate-unit'].value = 'unit';
-  const document = Object.assign(element('document'), { getElementById: (name) => elements[name], createElementNS: (_, tag) => { const item = element(tag); item.focus = () => { item.focused = true; document.activeElement = item; }; return item; } });
-  document.createElement = (tag) => element(tag);
-  for (const item of Object.values(elements)) item.focus = () => { item.focused = true; document.activeElement = item; };
-  const window = Object.assign(element('window'), { URL: { createObjectURL: () => 'blob:local-test', revokeObjectURL() {} } });
-  const video = elements['geometry-video']; video.paused = true; video.seeking = false; video.currentTime = 6; video.videoWidth = 640; video.videoHeight = 360;
-  video.pause = () => { video.paused = true; }; video.play = () => { video.paused = false; video.dispatch('play'); return Promise.resolve(); }; video.load = () => {};
-  const requests = [];
-  const BG = { geometryScene: scene, geometrySession: session, geometryView: view,
-    geometryFrame: {
-      captureFrame({ requestId, videoId }) { const context = { requestId, videoId, frameTime: video.currentTime, frameSize: { width: video.videoWidth, height: video.videoHeight }, sceneRevision: 0 }; return { ok: true, context, preview: 'data:image/jpeg;base64,cHJldmlldw==', body: { schemaVersion: '1.0.0', ...context, image: 'fixture' } }; },
-      isFrameCurrent(_, context, videoId) { return video.paused && !video.seeking && context.videoId === videoId && Math.abs(video.currentTime - context.frameTime) <= 0.2; }
-    },
-    geometryRequest: { requestGeometry(options) { const request = { ...options, canceled: false, cancel() { request.canceled = true; } }; requests.push(request); return request; } }
-  };
-  const page = createGeometryPage({ document, window, BreakGlass: BG });
-  function confirmPreset() { elements['preset-button'].dispatch('click'); elements['right-angle-check'].checked = true; elements['review-form'].dispatch('submit'); }
-  function loadVideo() { elements['local-video'].files = [{ name: 'geometry.mp4' }]; elements['local-video'].dispatch('change'); video.dispatch('loadedmetadata'); }
-  return { elements, video, page, requests, document, confirmPreset, loadVideo };
-}
+const { createGeometryHarness: harness, actionContext, flush } = require('./helpers/fake-geometry-page');
 
 test('page confirms explicit preset, computes single-side changes and restores original', () => {
   const h = harness();
@@ -112,7 +65,7 @@ test('quiz supports wrong, retry, correct and skip; returning video does not req
     h.elements['quiz-answer'].value = 'all'; h.elements['quiz-check'].dispatch('click'); assert.match(h.elements['quiz-feedback'].textContent, /不正确/);
     h.elements['quiz-retry'].dispatch('click'); h.elements['quiz-answer'].value = 'fixed'; h.elements['quiz-check'].dispatch('click'); assert.match(h.elements['quiz-feedback'].textContent, /本次回答正确/);
     h.elements['quiz-skip'].dispatch('click'); assert.match(h.elements['quiz-feedback'].textContent, /未验证/);
-    h.video.currentTime = 9; h.elements['return-video'].dispatch('click'); await Promise.resolve();
+    h.video.currentTime = 9; h.elements['return-video'].dispatch('click'); await flush();
     assert.equal(h.video.currentTime, 6); assert.equal(h.video.paused, false); assert.equal(h.page.session.getState().phase, 'empty');
     assert.equal(h.elements['triangle-board'].getAttribute('aria-label'), '确认条件后显示直角三角形');
     assert.equal(h.elements['triangle-board'].children.length, 0);
@@ -133,7 +86,7 @@ test('canceled or stale model actions cannot replace a manually modified scene',
     h.confirmPreset(); h.elements['reader-url'].value = 'http://127.0.0.1:8787'; h.elements['ask-mode'].value = 'model'; h.elements['question'].value = '把 AB 改成 8'; h.elements['ask-form'].dispatch('submit');
     const request = h.requests[0]; assert.equal(h.elements['ask-cancel'].hidden, false);
     h.elements['experiment-ab'].value = '6'; h.elements['ab-form'].dispatch('submit');
-    request.onSuccess({ status: 'actions', context: request.body.scene, actions: [{ type: 'set_length', side: 'AB', value: 8, unit: 'unit' }] });
+    request.onSuccess({ status: 'actions', context: actionContext(request), actions: [{ type: 'set_length', side: 'AB', value: 8, unit: 'unit' }] });
     assert.equal(request.canceled, true); assert.equal(h.page.session.getState().scene.lengths.AB, 6);
     assert.equal(h.elements['bc-value'].textContent, '7.211');
   } finally { h.page.dispose(); }
@@ -163,7 +116,7 @@ test('editing an input cancels pending model actions before submitting a change'
   try {
     h.confirmPreset(); h.elements['reader-url'].value = 'http://127.0.0.1:8787'; h.elements['ask-mode'].value = 'model'; h.elements['question'].value = '把 AB 改成 8'; h.elements['ask-form'].dispatch('submit');
     const request = h.requests[0]; h.elements['experiment-ab'].value = '6'; h.elements['experiment-ab'].dispatch('input');
-    request.onSuccess({ status: 'actions', context: request.body.scene, actions: [{ type: 'set_length', side: 'AB', value: 8, unit: 'unit' }] });
+    request.onSuccess({ status: 'actions', context: actionContext(request), actions: [{ type: 'set_length', side: 'AB', value: 8, unit: 'unit' }] });
     assert.equal(request.canceled, true); assert.equal(h.page.session.getState().scene.lengths.AB, 3); assert.equal(h.elements['experiment-ab'].value, '6');
     assert.match(h.elements['ask-feedback'].textContent, /条件尚未改变/);
   } finally { h.page.dispose(); }
@@ -195,11 +148,11 @@ test('dragging uses uniform SVG scale including centered letterboxing', () => {
 
 test('HTML keeps local script order, visible labels and standalone narrow-screen layout', () => {
   const order = [...html.matchAll(/<script defer src="([^"]+)"/g)].map((match) => match[1]);
-  assert.deepEqual(order.map((item) => path.basename(item)), ['validate.js', 'solve.js', 'actions.js', 'session.js', 'frame.js', 'request.js', 'view.js', 'geometry.js']);
+  assert.deepEqual(order.map((item) => path.basename(item)), ['validate.js', 'solve.js', 'actions.js', 'session.js', 'frame.js', 'request.js', 'magnify.js', 'liquid-glass.js', 'view.js', 'geometry.js']);
   assert.equal(/<script[^>]*>(?!\s*<\/script>)/.test(html), false);
   assert.match(html, /for="candidate-b-y"/);
   const stylesheets = [...html.matchAll(/<link rel="stylesheet" href="([^"]+)"/g)].map((match) => match[1]);
-  assert.deepEqual(stylesheets, ['../src/ui/theme.css', './geometry.css']);
+  assert.deepEqual(stylesheets, ['../src/ui/theme.css', '../src/ui/dock.css', './geometry.css']);
   assert.match(html, /class="workspace-nav" aria-label="工作台切换"/);
   assert.match(html, /href="\.\/geometry\.html" aria-current="page"/);
   const css = fs.readFileSync(path.join(__dirname, '../extension/demo/geometry.css'), 'utf8');
@@ -234,7 +187,9 @@ test('long vertex labels use compact symbols plus a complete wrapping mapping', 
     const svg = h.elements['triangle-board'];
     const labels = svg.children.filter((child) => child.getAttribute('class') === 'triangle-label');
     const label = labels.find((child) => child.getAttribute('aria-label') === `B：${longLabel}`);
-    assert.equal(label.textContent, 'B'); assert.equal(label.children[0].textContent, `B：${longLabel}`);
+    // SVG textContent also includes <title>; the visible text node remains compact.
+    assert.equal(label.childNodes[0].nodeType, 3);
+    assert.equal(label.childNodes[0].textContent, 'B'); assert.equal(label.children[0].textContent, `B：${longLabel}`);
     assert.equal(h.elements['label-map'].hidden, false);
     assert.ok(h.elements['label-map'].children.some((child) => child.textContent === longLabel));
     const AB = svg.children.find((child) => child.getAttribute('class') === 'triangle-side-label' && child.textContent.startsWith('AB '));

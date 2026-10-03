@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>BreakGlass · 当前帧几何工作台</title>
   <link rel="stylesheet" href="../src/ui/theme.css">
+  <link rel="stylesheet" href="../src/ui/dock.css">
   <link rel="stylesheet" href="./geometry.css">
   <script defer src="../src/geometry-scene/validate.js"></script>
   <script defer src="../src/geometry-scene/solve.js"></script>
@@ -12,11 +13,57 @@
   <script defer src="../src/geometry-session/session.js"></script>
   <script defer src="../src/geometry-scene/frame.js"></script>
   <script defer src="../src/geometry-scene/request.js"></script>
+  <script defer src="../src/ui/magnify.js"></script>
+  <script defer src="../src/ui/liquid-glass.js"></script>
   <script defer src="../src/geometry-scene/view.js"></script>
   <script defer src="../src/page/geometry.js"></script>
 </head>
 <body>
-  <main class="geometry-shell">
+  <main id="geometry-shell" class="geometry-shell">
+    <svg width="0" height="0" aria-hidden="true" focusable="false" class="dock-filter">
+      <filter id="lg-refract" x="-20%" y="-20%" width="140%" height="140%" color-interpolation-filters="sRGB">
+        <feTurbulence type="fractalNoise" baseFrequency="0.008 0.02" numOctaves="2" seed="7" result="noise"/>
+        <feGaussianBlur in="noise" stdDeviation="2" result="soft"/>
+        <feDisplacementMap in="SourceGraphic" in2="soft" scale="18" xChannelSelector="R" yChannelSelector="G"/>
+      </filter>
+    </svg>
+    <button class="dock-reveal" type="button" data-dock-reveal="geometry-toolbar" aria-controls="geometry-toolbar" aria-expanded="false">显示工具栏</button>
+    <div id="geometry-toolbar" class="lg-dock" data-liquid-glass>
+      <div class="lg-glass" aria-hidden="true"></div>
+      <div class="lg-refract" aria-hidden="true"></div>
+      <nav class="lg-items" aria-label="几何实验控制">
+        <button id="geometry-play" class="lg-item" type="button" disabled aria-label="播放视频" aria-describedby="geometry-play-reason">
+          <svg class="geometry-play-start" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 5.5v13l10-6.5-10-6.5Z"/></svg><svg class="geometry-play-pause" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M8 5v14M16 5v14"/></svg><span class="lg-tip"><span class="geometry-play-start">播放</span><span class="geometry-play-pause">暂停</span></span>
+        </button>
+        <button id="geometry-jump" class="lg-item" type="button" disabled aria-label="定位到目标时间" aria-describedby="geometry-jump-reason">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="6"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg><span class="lg-tip">定位到目标时间</span>
+        </button>
+        <button id="geometry-capture" class="lg-item" type="button" data-variant="primary" disabled aria-label="暂停并保存当前帧" aria-keyshortcuts="Alt+B" aria-describedby="geometry-action-reason">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 2 4.5 13.5H11l-1 8.5 8.5-11.5H12l1-8.5Z"/></svg><span class="lg-tip">保存帧 Alt+B</span>
+        </button>
+        <span class="lg-sep" role="separator" aria-orientation="vertical"></span>
+        <button id="geometry-cancel" class="lg-item" type="button" hidden disabled aria-label="取消当前识别或提问">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg><span class="lg-tip">取消当前请求</span>
+        </button>
+        <button id="geometry-retry" class="lg-item" type="button" hidden disabled aria-label="重试失败的识别">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.4-5.7"/><path d="M20 4v4h-4"/></svg><span class="lg-tip">重试识别</span>
+        </button>
+        <button id="geometry-restore" class="lg-item" type="button" disabled aria-label="恢复原题" aria-describedby="geometry-reset-reason">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12a8 8 0 1 0 2.4-5.7"/><path d="M4 4v4h4"/></svg><span class="lg-tip">恢复原题</span>
+        </button>
+        <button id="geometry-fullscreen" class="lg-item" type="button" aria-label="切换几何工作台全屏">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg><span class="lg-tip">全屏</span>
+        </button>
+        <button id="geometry-exit" class="lg-item" type="button" disabled aria-label="退出实验" aria-keyshortcuts="Escape">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg><span class="lg-tip">退出 Esc</span>
+        </button>
+        <span id="geometry-source" class="status-chip">尚无题目</span>
+      </nav>
+    </div>
+    <p id="geometry-action-reason" class="sr-only">请先选择视频，等待画面可以截取。</p>
+    <p id="geometry-reset-reason" class="sr-only">请先校对并确认题目条件。</p>
+    <p id="geometry-play-reason" class="sr-only">请先选择可以播放的视频。</p>
+    <p id="geometry-jump-reason" class="sr-only">请先选择已加载的视频，并填写目标时间。</p>
     <nav class="workspace-nav" aria-label="工作台切换">
       <a href="./index.html">曲线演示</a>
       <a href="./geometry.html" aria-current="page">几何实验</a>
@@ -29,16 +76,37 @@
     <section class="panel video-panel" aria-labelledby="video-heading">
       <div class="section-heading"><div><p class="eyebrow">01 · 选择与暂停</p><h2 id="video-heading">正在看的那道题</h2></div><span id="video-name" class="muted">尚未选择视频</span></div>
       <div class="video-layout">
-        <video id="geometry-video" controls playsinline preload="metadata" aria-label="本地几何讲解视频"></video>
+        <div class="geometry-video-column">
+          <div id="geometry-stage" class="geometry-stage">
+            <video id="geometry-video" controls playsinline preload="metadata" aria-label="本地几何讲解视频"></video>
+            <div id="geometry-banner" class="geometry-banner" role="status" aria-live="polite" data-mode="idle">
+              <span class="geometry-banner__mark" aria-hidden="true"></span>
+              <div><p id="geometry-banner-title" class="geometry-banner__title">选择视频，暂停到清晰题面</p><p id="geometry-banner-detail" class="geometry-banner__detail">也可使用预设或手工条件开始实验。</p></div>
+            </div>
+          </div>
+          <div class="geometry-transport" aria-label="视频定位">
+            <p id="geometry-time" class="geometry-time">当前时间：—</p>
+            <label class="field" for="geometry-target">目标时间（秒）<input id="geometry-target" type="number" min="0" step="0.1" value="0" inputmode="decimal" aria-describedby="geometry-seek-error geometry-jump-reason"></label>
+            <button id="geometry-seek" type="button" disabled aria-describedby="geometry-jump-reason">定位到此时间</button>
+            <p id="geometry-seek-error" class="field-error" role="alert"></p>
+          </div>
+        </div>
         <div class="video-tools">
+          <div class="geometry-video-library">
+            <label class="field" for="geometry-video-select">选择几何教学示例<select id="geometry-video-select" aria-describedby="geometry-video-summary"><option value="3-4-5">基础勾股 · 3–4–5</option><option value="5-12-13">长直角边 · 5–12–13</option><option value="8-15-17">迁移练习 · 8–15–17</option></select></label>
+            <button id="geometry-video-load" type="button">加载示例，定位题面</button>
+            <p id="geometry-video-summary" class="hint">自制无声教学示例；第 4 秒题面可供实验。载入条件需人工确认，不代表视觉识别。</p>
+          </div>
           <label class="field" for="local-video">选择本地录屏或固定机位视频<input id="local-video" type="file" accept="video/*"></label>
           <p class="hint">支持一张清晰的直角三角形题面。视频留在本机；点击识别时才发送当前一帧。</p>
-          <div class="button-row"><button id="capture-frame" type="button" disabled>暂停并保存当前帧</button><button id="recognize-frame" type="button" class="primary" disabled>识别当前暂停帧</button><button id="read-cancel" type="button" hidden>取消识别</button></div>
-          <label class="field" for="reader-url">本地 reader 地址<input id="reader-url" type="url" placeholder="http://127.0.0.1:8787" autocomplete="off" aria-describedby="reader-hint reader-error"></label>
+          <div class="button-row"><button id="capture-frame" type="button" disabled>暂停并保存当前帧</button><button id="recognize-frame" type="button" class="primary" disabled>识别当前暂停帧</button><button id="read-retry" type="button" hidden disabled>重试识别</button><button id="read-cancel" type="button" hidden>取消识别</button></div>
+          <p id="read-busy" class="read-busy" role="status" aria-live="polite" aria-busy="true" hidden>正在识别当前帧，返回候选后仍需核对条件。</p>
+          <label class="field" for="reader-url">本地 reader 地址<input id="reader-url" type="url" placeholder="http://127.0.0.1:8787" autocomplete="off" aria-describedby="reader-hint reader-memory-note reader-error"></label>
           <p id="reader-hint" class="hint">识别会将这一帧交给此服务及其配置的模型。这里填写服务地址，不填写模型密钥。</p>
+          <div class="reader-memory"><p id="reader-memory-note" class="hint">仅记住本机 reader 地址，不保存视频帧或问答内容。</p><button id="reader-forget" type="button" disabled>忘记地址</button></div>
           <p id="reader-error" class="field-error" role="alert"></p>
           <div class="button-row"><button id="preset-button" type="button">使用 3–4–5 预设</button><button id="manual-button" type="button">手工填写条件</button></div>
-          <p class="hint">预设与手工输入可独立完成实验，不代表模型已识别视频。</p>
+          <p id="geometry-preset-note" class="hint">预设与手工输入可独立完成实验，不代表模型已识别视频。</p>
         </div>
       </div>
       <p id="page-status" class="status" role="status" aria-live="polite">选择视频，或从明确标注的预设和手工条件开始。</p>
@@ -84,8 +152,18 @@
           <div class="answer-line"><span>斜边 BC</span><output id="bc-value"></output><span id="result-unit" class="muted"></span></div>
           <p id="constraint-note" class="constraint"></p>
           <div class="experiment-fields">
-            <form id="ab-form" novalidate><label class="field" for="experiment-ab">改变 AB，固定 AC<input id="experiment-ab" type="number" step="any" inputmode="decimal" aria-describedby="ab-error"></label><p id="ab-error" class="field-error" role="alert"></p><button id="apply-ab" type="submit">应用 AB</button></form>
-            <form id="ac-form" novalidate><label class="field" for="experiment-ac">改变 AC，固定 AB<input id="experiment-ac" type="number" step="any" inputmode="decimal" aria-describedby="ac-error"></label><p id="ac-error" class="field-error" role="alert"></p><button id="apply-ac" type="submit">应用 AC</button></form>
+            <form id="ab-form" novalidate>
+              <label class="field" for="experiment-ab">改变 AB，固定 AC<input id="experiment-ab" type="number" step="any" inputmode="decimal" aria-describedby="ab-error"></label>
+              <p id="ab-error" class="field-error" role="alert"></p>
+              <div class="geometry-range"><label for="experiment-ab-range">滑动调整 AB</label><output id="experiment-ab-range-value" for="experiment-ab-range">—</output><input id="experiment-ab-range" type="range" min="0.1" max="10" step="any" value="3" disabled aria-describedby="experiment-ab-range-hint"><p id="experiment-ab-range-hint" class="hint">只改变 AB；AC 和 A 处的直角保持不变。可用数值输入设置范围外的长度。</p></div>
+              <button id="apply-ab" type="submit">应用 AB</button>
+            </form>
+            <form id="ac-form" novalidate>
+              <label class="field" for="experiment-ac">改变 AC，固定 AB<input id="experiment-ac" type="number" step="any" inputmode="decimal" aria-describedby="ac-error"></label>
+              <p id="ac-error" class="field-error" role="alert"></p>
+              <div class="geometry-range"><label for="experiment-ac-range">滑动调整 AC</label><output id="experiment-ac-range-value" for="experiment-ac-range">—</output><input id="experiment-ac-range" type="range" min="0.1" max="10" step="any" value="4" disabled aria-describedby="experiment-ac-range-hint"><p id="experiment-ac-range-hint" class="hint">只改变 AC；AB 和 A 处的直角保持不变。可用数值输入设置范围外的长度。</p></div>
+              <button id="apply-ac" type="submit">应用 AC</button>
+            </form>
           </div>
           <p id="explanation" class="explanation" role="status" aria-live="polite"></p>
           <button id="restore-original" type="button">恢复原题</button>
@@ -96,11 +174,15 @@
     <div id="learning-workspace" class="learning-layout" hidden>
       <section class="panel" aria-labelledby="ask-heading">
         <div class="section-heading"><div><p class="eyebrow">04 · 向当前题目提问</p><h2 id="ask-heading">如果这条边变了呢？</h2></div></div>
+        <div id="ask-log" class="ask-log" role="log" aria-label="本次实验的问答记录" aria-live="polite" tabindex="0" hidden></div>
+        <div class="ask-history-actions"><button id="ask-log-clear" type="button" disabled>清空问答记录</button><p class="hint">记录只保留在本次页面会话中。</p></div>
         <form id="ask-form" novalidate>
           <label class="field" for="ask-mode">问题处理方式<select id="ask-mode"><option value="local">本地受限指令 · 不调用模型</option><option value="model">本地 reader 模型 · 提议动作</option></select></label>
+          <div class="ask-examples" aria-label="填写问题示例"><button id="ask-example-change" type="button">改一条边</button><button id="ask-example-query" type="button">查询 BC</button><button id="ask-example-explain" type="button">解释变化</button><button id="ask-example-restore" type="button">恢复原题</button></div>
+          <p class="hint">示例只填入输入框，提交问题后才执行。</p>
           <label class="field" for="question">你的问题<textarea id="question" rows="3" maxlength="2000" placeholder="把 AB 改成 6，AC 不变，BC 是多少？" aria-describedby="ask-hint ask-feedback"></textarea></label>
           <p id="ask-hint" class="hint">支持修改一条直角边、查询 BC、解释变化、恢复原题。答案由本地计算产生。</p>
-          <div class="button-row"><button id="ask-submit" type="submit" class="primary">提交问题</button><button id="ask-cancel" type="button" hidden>取消提问</button></div>
+          <div class="button-row"><button id="ask-submit" type="submit" class="primary">提交问题</button><button id="ask-retry" type="button" hidden disabled>重试刚才的问题</button><button id="ask-cancel" type="button" hidden>取消提问</button></div>
           <p id="ask-feedback" class="status" role="status" aria-live="polite"></p>
         </form>
       </section>
@@ -114,7 +196,7 @@
       </section>
     </div>
     <div class="return-bar"><p id="return-note" class="muted">随时可以退出，无需先答对理解题。</p><div class="button-row"><button id="exit-scene" type="button" disabled>退出实验</button><button id="return-video" type="button" class="primary" disabled>回到原暂停时间，继续视频</button></div></div>
-    <footer>005 独立几何场景 · 预设、手工与真实识别分别验收 · Esc 退出实验</footer>
+    <footer>005 独立几何场景 · 预设、手工与真实识别分别验收 · Alt+B 保存当前帧 · Esc 退出实验</footer>
   </main>
 </body>
 </html>
