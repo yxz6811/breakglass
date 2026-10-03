@@ -504,3 +504,15 @@ button:disabled, input:disabled { opacity: 0.42; }
 input[type='range'] { accent-color: var(--accent); }
 input[type='number'], input[type='text'] { color: var(--ink); background: rgba(255, 255, 255, 0.82); border: 1px solid var(--line); }
 ::selection { background: rgba(113, 221, 255, 0.45); color: #0B1A26; }
+
+/* 004 图形切换沿用现有冰面面板与强调色。 */
+.figure-picker { display: flex; align-items: center; gap: 12px; margin: 16px 0 10px; }
+.figure-picker label { font-size: 13px; flex: 0 0 auto; }
+.figure-picker select { flex: 1; min-width: 0; min-height: 44px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; color: var(--ink); background: rgba(255, 255, 255, 0.82); font: inherit; }
+.figure-picker select:hover:not(:disabled) { border-color: var(--accent); }
+.figure-picker select:disabled { opacity: .55; cursor: not-allowed; }
+.figure-picker select:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.figure-formula { overflow-wrap: anywhere; color: var(--accent); font-size: 14px; line-height: 1.6; font-variant-numeric: tabular-nums; }
+#figure-note { margin: 0 0 16px; }
+#parabola-parameters[hidden], #local-parameters[hidden], .parameter-row[hidden] { display: none; }
+.figure-coordinates { pointer-events: none; }
