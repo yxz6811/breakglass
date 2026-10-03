@@ -184,8 +184,9 @@ button:disabled, input:disabled, select:disabled { opacity: .45; cursor: default
   .brand-intro .wordmark-window { width: 100%; flex: initial; }
   .brand-intro .mission { max-width: 11ch; margin-inline: auto; font-size: clamp(32px,8vw,42px); line-height: 1.35; }
   .brand-intro .ambition { max-width: 22ch; font-size: 15px; margin-top: 20px; }
-  .brand-intro .hero-actions { margin-top: 28px; gap: 12px; }
-  .brand-intro .hero-actions .btn { padding-inline: 18px; font-size: 14px; }
+  .brand-intro .hero-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); width: min(100%, 340px); margin: 28px auto 0; gap: 12px; }
+  .brand-intro .hero-actions .btn { min-width: 0; padding-inline: 18px; font-size: 14px; }
+  .brand-intro .hero-actions .video-demo-link { grid-column: 1 / -1; }
   .brand-intro .motion-tools { margin-top: 18px; }
   .brand-intro .tweaks-panel { right: -10px; width: 286px; }
   .brand-intro .scope-note { max-width: 28ch; margin-inline: auto; font-size: 11px; }
