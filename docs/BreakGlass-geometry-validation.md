@@ -2,6 +2,8 @@
 
 记录日期：2026-10-03。对应 [005 规格](../specs/005-insitu-right-triangle/spec.md)、[任务清单](../specs/005-insitu-right-triangle/tasks.md)、[场景与动作契约](../specs/005-insitu-right-triangle/contracts/scene-actions.md) 与 [BreakGlass Constitution 1.7.1](./BreakGlass-constitution.md)。
 
+最新全仓库重跑见 [测试报告](BreakGlass-test-report-2026-10-03.md)：`6c8cfef` 上 556 项通过，静态检查通过。下文保留 005 实施阶段的测试和网页验收证据；本次重跑不改变真实模型及完整产品验收的未通过状态。
+
 当前实现提供独立直角三角形工作台、确定性计算和本地 reader 的单帧识别及受限问答接口。25 项任务中 19 项完成可独立验证的实现与检查；真实模型与完整产品验收仍缺证据，005 保持部分完成。自动化使用模型替身，本地指令解析不是 AI；这份记录不能证明任意视频识别或长期学习效果。
 
 ## 验证环境

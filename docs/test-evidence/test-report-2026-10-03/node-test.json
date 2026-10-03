@@ -1,0 +1,10 @@
+{
+  "command": "node --test --test-reporter=tap",
+  "startedAt": "2026-10-03T08:54:59.009Z",
+  "finishedAt": "2026-10-03T08:55:05.616Z",
+  "elapsedMs": 6607,
+  "exitCode": 0,
+  "signal": null,
+  "nodeVersion": "v24.21.0",
+  "log": "node-test.log"
+}

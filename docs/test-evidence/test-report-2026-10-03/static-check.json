@@ -1,0 +1,10 @@
+{
+  "command": "node scripts/check.mjs",
+  "startedAt": "2026-10-03T08:54:59.268Z",
+  "finishedAt": "2026-10-03T08:55:11.283Z",
+  "elapsedMs": 12015,
+  "exitCode": 0,
+  "signal": null,
+  "nodeVersion": "v24.21.0",
+  "log": "static-check.log"
+}
