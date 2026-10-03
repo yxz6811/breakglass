@@ -10,7 +10,8 @@ const {
   pagePointToSource,
   deviationRatio,
   withinTolerance,
-  sampleAlignment
+  sampleAlignment,
+  visibleCurvePolylines
 } = require('../extension/src/geometry/alignment');
 
 const definition = {
@@ -204,4 +205,44 @@ test('极大但有限的越界 y 仍贴在正确边缘，不因比例差值溢�
     extreme.region.y + extreme.region.height, 'up axis clips below-range y to the bottom edge');
   assert.equal(mathPointToSource({ ...extreme, yAxis: 'down' }, parameters, 0).y,
     extreme.region.y, 'down axis clips below-range y to the top edge');
+});
+
+const chart = {
+  ...definition,
+  domain: { min: -2.5, max: 2.5 },
+  range: { min: 0, max: 8 }
+};
+
+test('顶点落到窗口下方时，两臂在边界断开，不连成底边直线', () => {
+  const missed = visibleCurvePolylines(chart, { a: 1, h: 0, k: -8 }, 81);
+  assert.equal(missed.length, 0);
+  const arms = visibleCurvePolylines(chart, { a: 1, h: 0, k: -2 }, 81);
+  assert.equal(arms.length, 2);
+  const root = Math.sqrt(2);
+  assert.ok(arms[0].every((point) => point.x < -root + 1e-6 && point.y >= 0 && point.y <= 8));
+  assert.ok(arms[1].every((point) => point.x > root - 1e-6 && point.y >= 0 && point.y <= 8));
+  assert.ok(Math.abs(arms[0][arms[0].length - 1].y) < 1e-6);
+  assert.ok(Math.abs(arms[1][0].y) < 1e-6);
+  assert.ok(Math.abs(arms[0][arms[0].length - 1].x + root) < 1e-6);
+  assert.ok(Math.abs(arms[1][0].x - root) < 1e-6);
+});
+
+test('顶点左右移出后，只保留窗口内的弧，不沿顶边画到角上', () => {
+  const lines = visibleCurvePolylines(chart, { a: 1, h: 2, k: 1 }, 81);
+  assert.equal(lines.length, 1);
+  const line = lines[0];
+  const entry = 2 - Math.sqrt(7);
+  assert.ok(Math.abs(line[0].x - entry) < 1e-6);
+  assert.ok(Math.abs(line[0].y - 8) < 1e-6);
+  assert.ok(line.some((point) => Math.abs(point.x - 2) < 1e-9 && Math.abs(point.y - 1) < 1e-9));
+  assert.equal(line.filter((point) => Math.abs(point.y - 8) < 1e-6).length, 1);
+  assert.equal(line.at(-1).x, chart.domain.max);
+});
+
+test('整段都在窗口内时仍是从左到右的一条弧', () => {
+  const lines = visibleCurvePolylines(chart, { a: 1, h: 0, k: 1 }, 81);
+  assert.equal(lines.length, 1);
+  assert.equal(lines[0][0].x, chart.domain.min);
+  assert.equal(lines[0].at(-1).x, chart.domain.max);
+  assert.ok(lines[0].every((point) => point.y > 0 && point.y < 8));
 });

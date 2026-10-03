@@ -125,6 +125,108 @@
     };
   }
 
+  /**
+   * 抛物线与一条水平界 y = bound 的交点，只保留开区间 (x0, x1) 里的横坐标。
+   * @param {Record<string, number>} parameters
+   * @param {number} bound
+   * @param {number} x0
+   * @param {number} x1
+   * @returns {number[]}
+   */
+  function crossingsBetween(parameters, bound, x0, x1) {
+    const a = parameters.a;
+    const h = parameters.h;
+    const k = parameters.k;
+    if (!Number.isFinite(a) || a === 0) return [];
+    const ratio = (bound - k) / a;
+    if (!(ratio >= 0)) return [];
+    const root = Math.sqrt(ratio);
+    const low = Math.min(x0, x1);
+    const high = Math.max(x0, x1);
+    return [h - root, h + root]
+      .filter((x) => x > low + 1e-8 && x < high - 1e-8)
+      .sort((left, right) => left - right);
+  }
+
+  /**
+   * 窗口里实际能看见的弧。y 超出 range 的采样不贴到边上连线：
+   * 臂在边界处断开，窗口外整段落空。
+   * @param {object} definition
+   * @param {Record<string, number>} parameters
+   * @param {number} [samples]
+   * @returns {{ x: number, y: number }[][]}
+   */
+  function visibleCurvePolylines(definition, parameters, samples = 81) {
+    const xs = sampleXs(definition, samples, parameters);
+    const min = definition.range.min;
+    const max = definition.range.max;
+    const yAt = (x) => evaluate.evaluateWithParameters(definition, parameters, x);
+    const inside = (y) => y >= min && y <= max;
+    const polylines = [];
+    let current = null;
+
+    /**
+     * @param {number} x
+     * @param {number} y
+     */
+    function pushPoint(x, y) {
+      if (!current) {
+        current = [];
+        polylines.push(current);
+      }
+      const last = current[current.length - 1];
+      if (last && Math.abs(last.x - x) <= 1e-8 && Math.abs(last.y - y) <= 1e-8) return;
+      current.push({ x, y });
+    }
+
+    function endLine() {
+      current = null;
+    }
+
+    for (let index = 0; index < xs.length - 1; index += 1) {
+      const x0 = xs[index];
+      const x1 = xs[index + 1];
+      const y0 = yAt(x0);
+      const y1 = yAt(x1);
+      const in0 = inside(y0);
+      const in1 = inside(y1);
+      if (in0 && in1) {
+        pushPoint(x0, y0);
+        pushPoint(x1, y1);
+        continue;
+      }
+      if (in0 && !in1) {
+        pushPoint(x0, y0);
+        const bound = y1 > max ? max : min;
+        const [cross] = crossingsBetween(parameters, bound, x0, x1);
+        if (Number.isFinite(cross)) pushPoint(cross, bound);
+        endLine();
+        continue;
+      }
+      if (!in0 && in1) {
+        endLine();
+        const bound = y0 > max ? max : min;
+        const hits = crossingsBetween(parameters, bound, x0, x1);
+        const cross = hits[hits.length - 1];
+        if (Number.isFinite(cross)) pushPoint(cross, bound);
+        pushPoint(x1, y1);
+        continue;
+      }
+      const hits = [min, max].flatMap((bound) => (
+        (y0 - bound) * (y1 - bound) < 0
+          ? crossingsBetween(parameters, bound, x0, x1).map((x) => ({ x, y: bound }))
+          : []
+      )).sort((left, right) => left.x - right.x);
+      if (hits.length >= 2) {
+        endLine();
+        hits.forEach((point) => pushPoint(point.x, point.y));
+        endLine();
+      }
+    }
+
+    return polylines.filter((line) => line.length >= 2);
+  }
+
   return {
     DEFAULT_TOLERANCE,
     mathPointToSource,
@@ -133,6 +235,7 @@
     pagePointToSource,
     deviationRatio,
     withinTolerance,
-    sampleAlignment
+    sampleAlignment,
+    visibleCurvePolylines
   };
 });
