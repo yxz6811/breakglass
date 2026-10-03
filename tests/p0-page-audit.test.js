@@ -149,7 +149,7 @@ test('页面转入后台时卸下覆盖层', async () => {
 
 test('配置没加载成功时不挂包内片子，随后的视频错误也不改口', async () => {
   const harness = await createHarness({
-    config: { enableLocalMock: false },
+    config: { prewarmed: false },
     packagedVideoErrors: true
   });
   try {

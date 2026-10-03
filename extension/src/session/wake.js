@@ -1,5 +1,5 @@
 /**
- * 唤醒协调器。每次唤醒重新读配置，冻结请求上下文，并在 1500ms 看门狗到点时决定是否回退。
+ * 唤醒协调器。普通唤醒使用 1500ms 看门狗；已校验阅读缓存通过独立入口即时消费。
  */
 (function (root, factory) {
   const api = factory(root.BreakGlass || {});
@@ -43,9 +43,10 @@
    * @param {{ now: () => number, schedule: (delayMs: number, handler: Function) => unknown, clear: (timerId: unknown) => void }} options.clock
    * @param {(state: object) => void} [options.onChange]
    * @param {{ start: Function, abort: Function }} [options.attempt] 仅测试注入；页面不得传入
-   * @returns {{ start: Function, cancel: Function, exit: Function, onPlaybackChange: Function, dispose: Function }}
+   * @param {boolean} [options.cachedReading] 仅显式 true 可消费已校验的外部阅读缓存
+   * @returns {{ start: Function, startCached: Function, cancel: Function, exit: Function, onPlaybackChange: Function, dispose: Function }}
    */
-  function createWake({ session, config, preset, clock, onChange, attempt } = {}) {
+  function createWake({ session, config, preset, clock, onChange, attempt, cachedReading } = {}) {
     let generation = 0;
     let timerId = null;
     let activeAttempt = null;
@@ -436,6 +437,55 @@
     }
 
     /**
+     * 阅读适配器已经按当前帧校验的缓存仍由规则层复核、装订并提交。
+     * 缓存不得换画幅、换视频或洗掉来源；此入口不读取 Mock 配置，也不启动看门狗或替身。
+     * @param {{ paused?: boolean, currentTime?: number, frameSize?: { width: number, height: number } }} [input]
+     * @returns {{ ok: boolean, code?: string, message?: string, requestId?: string }}
+     */
+    function startCached(input = {}) {
+      if (cachedReading !== true) {
+        return { ok: false, code: 'external_unavailable', message: EXTERNAL_UNAVAILABLE };
+      }
+      const frame = input && input.frameSize;
+      if (!input || input.paused !== true || !Number.isFinite(input.currentTime) ||
+          !frame || !Number.isSafeInteger(frame.width) || frame.width <= 0 ||
+          !Number.isSafeInteger(frame.height) || frame.height <= 0) {
+        return { ok: false, code: 'not_ready', message: '请先暂停在目标时间。' };
+      }
+      const begun = session.beginWait({ paused: input.paused, currentTime: input.currentTime });
+      if (!begun.ok) {
+        publish();
+        return begun;
+      }
+      const ctx = {
+        requestId: begun.requestId,
+        videoId: session.videoId,
+        time: input.currentTime,
+        frameSize: { width: frame.width, height: frame.height }
+      };
+      const token = generation;
+      if (!preset || preset.source !== 'preset' || preset.fallback !== null ||
+          preset.time !== session.targetTime || !framesMatch(preset, ctx.frameSize) ||
+          !framesMatch({ frameSize: session.frameSize }, ctx.frameSize)) {
+        deny(ctx, token, 'external_unavailable', EXTERNAL_UNAVAILABLE);
+        return startedResult(ctx);
+      }
+      // 先校验缓存本身的身份，再换成本次会话编号；不能靠装订掩盖缺失编号或坏数据。
+      const authored = checkCandidate(preset, ctx, { requestId: preset.requestId });
+      if (!authored.ok) {
+        deny(ctx, token, 'external_unavailable', EXTERNAL_UNAVAILABLE);
+        return startedResult(ctx);
+      }
+      const resolved = session.resolve({ ...authored.value, requestId: ctx.requestId });
+      if (!resolved.ok) {
+        deny(ctx, token, 'external_unavailable', EXTERNAL_UNAVAILABLE);
+        return startedResult(ctx);
+      }
+      publish();
+      return startedResult(ctx);
+    }
+
+    /**
      * @param {{ paused?: boolean, currentTime?: number, frameSize?: { width: number, height: number } }} [input]
      * @returns {{ ok: boolean, code?: string, message?: string, requestId?: string }}
      */
@@ -558,7 +608,7 @@
       publish();
     }
 
-    return { start, cancel, exit, onPlaybackChange, dispose };
+    return { start, startCached, cancel, exit, onPlaybackChange, dispose };
   }
 
   return { createWake };

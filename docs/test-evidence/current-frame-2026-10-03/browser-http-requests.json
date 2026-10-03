@@ -1,0 +1,183 @@
+[
+  {
+    "atUtc": "2026-10-03T13:38:14.981Z",
+    "testSubstitute": true,
+    "readingId": "reading-3",
+    "videoId": "local-binding-3",
+    "duration": 9.383333,
+    "frameSize": {
+      "width": 3024,
+      "height": 1898
+    },
+    "frameCount": 8,
+    "courseCodePoints": 0,
+    "frames": [
+      {
+        "time": 0.5864583125,
+        "jpegBytes": 43208,
+        "jpegSize": {
+          "width": 640,
+          "height": 402
+        }
+      },
+      {
+        "time": 1.7593749375,
+        "jpegBytes": 41541,
+        "jpegSize": {
+          "width": 640,
+          "height": 402
+        }
+      },
+      {
+        "time": 2.9322915625,
+        "jpegBytes": 42786,
+        "jpegSize": {
+          "width": 640,
+          "height": 402
+        }
+      },
+      {
+        "time": 4.105208187500001,
+        "jpegBytes": 43469,
+        "jpegSize": {
+          "width": 640,
+          "height": 402
+        }
+      },
+      {
+        "time": 5.2781248125,
+        "jpegBytes": 43095,
+        "jpegSize": {
+          "width": 640,
+          "height": 402
+        }
+      },
+      {
+        "time": 6.451041437500001,
+        "jpegBytes": 43004,
+        "jpegSize": {
+          "width": 640,
+          "height": 402
+        }
+      },
+      {
+        "time": 7.6239580625,
+        "jpegBytes": 43975,
+        "jpegSize": {
+          "width": 640,
+          "height": 402
+        }
+      },
+      {
+        "time": 8.7968746875,
+        "jpegBytes": 44196,
+        "jpegSize": {
+          "width": 640,
+          "height": 402
+        }
+      }
+    ]
+  },
+  {
+    "atUtc": "2026-10-03T13:38:36.050Z",
+    "testSubstitute": true,
+    "readingId": "reading-1",
+    "videoId": "local-binding-1",
+    "duration": 9.383333,
+    "frameSize": {
+      "width": 3024,
+      "height": 1898
+    },
+    "frameCount": 8,
+    "courseCodePoints": 0,
+    "frames": [
+      {
+        "time": 0.5864583125,
+        "jpegBytes": 43208,
+        "jpegSize": {
+          "width": 640,
+          "height": 402
+        }
+      },
+      {
+        "time": 1.7593749375,
+        "jpegBytes": 41541,
+        "jpegSize": {
+          "width": 640,
+          "height": 402
+        }
+      },
+      {
+        "time": 2.9322915625,
+        "jpegBytes": 42786,
+        "jpegSize": {
+          "width": 640,
+          "height": 402
+        }
+      },
+      {
+        "time": 4.105208187500001,
+        "jpegBytes": 43469,
+        "jpegSize": {
+          "width": 640,
+          "height": 402
+        }
+      },
+      {
+        "time": 5.2781248125,
+        "jpegBytes": 43095,
+        "jpegSize": {
+          "width": 640,
+          "height": 402
+        }
+      },
+      {
+        "time": 6.451041437500001,
+        "jpegBytes": 43004,
+        "jpegSize": {
+          "width": 640,
+          "height": 402
+        }
+      },
+      {
+        "time": 7.6239580625,
+        "jpegBytes": 43975,
+        "jpegSize": {
+          "width": 640,
+          "height": 402
+        }
+      },
+      {
+        "time": 8.7968746875,
+        "jpegBytes": 44196,
+        "jpegSize": {
+          "width": 640,
+          "height": 402
+        }
+      }
+    ]
+  },
+  {
+    "atUtc": "2026-10-03T13:38:56.652Z",
+    "testSubstitute": true,
+    "readingId": "current-read-1",
+    "videoId": "current-video-1",
+    "duration": 9.383333,
+    "frameSize": {
+      "width": 3024,
+      "height": 1898
+    },
+    "frameCount": 1,
+    "courseCodePoints": 0,
+    "frames": [
+      {
+        "time": 0,
+        "jpegBytes": 41029,
+        "jpegSize": {
+          "width": 640,
+          "height": 402
+        }
+      }
+    ]
+  }
+]

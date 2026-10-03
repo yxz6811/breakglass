@@ -254,9 +254,13 @@ test('选择本地视频只换成浏览器内地址，并卸下已有曲线', as
     elements['wake-button'].dispatch('click');
     assert.equal(harness.overlay(), null, '新视频的尺寸还没到，不能用上一帧破壁');
     assert.equal(elements['state-label'].textContent, '正在读取所选视频。');
+    video.duration = 9;
     video.dispatch('loadedmetadata');
     assert.match(String(video.src), /^blob:/);
-    assert.equal(elements['wake-button'].disabled, true, '别人的片子不能沿用预设曲线破壁');
+    assert.equal(elements['wake-button'].disabled, false, '新入口允许识别暂停帧，但不能沿用预设曲线');
+    elements['wake-button'].dispatch('click');
+    assert.equal(harness.overlay(), null);
+    assert.match(elements['state-label'].textContent, /reader|阅读地址/);
   } finally {
     harness.restore();
   }
