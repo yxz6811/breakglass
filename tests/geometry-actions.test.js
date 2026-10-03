@@ -49,6 +49,11 @@ test('local command mode covers the four supported question types', () => {
   assert.deepEqual(parseLocalQuestion('恢复原题', current).actions, [{ type: 'restore_original' }]);
   current.unit = 'cm';
   assert.equal(parseLocalQuestion('把 AC 改成 8 厘米', current).actions[0].unit, 'cm');
+  assert.equal(parseLocalQuestion('把 AC 改成 8 CM', current).actions[0].unit, 'cm');
+  assert.equal(parseLocalQuestion('把 AB 从 3Cm 改为 6cm', current).actions[0].unit, 'cm');
+  current.unit = 'm';
+  assert.equal(parseLocalQuestion('把 AB 改为 6M', current).actions[0].unit, 'm');
+  assert.equal(parseLocalQuestion('把 AB 改为 6 米', current).actions[0].unit, 'm');
 });
 
 test('a matching prefix never hides a second side effect or code instruction', () => {

@@ -812,8 +812,8 @@
       mode = 'open';
       title = '破壁已打开';
       detail = usingLessonCurve
-        ? '这是这次阅读找到的曲线。拖画面上的点，或拖右边的滑块。'
-        : '曲线已经盖在画面上。拖画面上的点，或拖右边的滑块。';
+        ? '这是这次阅读找到的曲线。拖画面上的点，或拖下方的滑块。'
+        : '曲线已经盖在画面上。拖画面上的点，或拖下方的滑块。';
     } else if (lesson && lesson.seeking) {
       mode = 'seeking';
       title = '正在停到这一帧';
@@ -1479,8 +1479,8 @@
       }
       setSource(result);
       setStatus(timedOut
-        ? '已改用预先准备的示例。拖画面上的点，或拖右边的滑块。'
-        : '拖画面上的点，或拖右边的滑块，也可以在下面提问。按 Esc 退出。');
+        ? '已改用预先准备的示例。拖画面上的点，或拖下方的滑块。'
+        : '拖画面上的点，或拖下方的滑块，也可以在下面提问。按 Esc 退出。');
       syncControls();
       return;
     }
@@ -1721,9 +1721,10 @@
   /**
    * 片子有时长、且不是 9 秒片时开始阅读。空白地址不发请求，并在画面上说明。
    * 同一支片子、同一个地址已经在看时，不重新开始。
+   * 页面上没有阅读地址输入框时不进入阅读，也不提示去填写。
    */
   function maybeStartLesson() {
-    if (!lessonApi || !localClock || !packagedPreset || !video) return;
+    if (!lessonApi || !localClock || !packagedPreset || !video || !lessonEndpoint) return;
     const src = String(video.src || '');
     if (!src || isPreparedSource(src)) return;
     const duration = Number(video.duration);

@@ -129,82 +129,88 @@
             </div>
             <div class="lesson-row">
               <p id="lesson-status" role="status" aria-live="polite"></p>
-              <label>阅读地址
-                <input id="lesson-endpoint" type="url" inputmode="url" autocomplete="off" placeholder="填上才开始看这支片子">
-              </label>
               <button type="button" id="lesson-next" disabled aria-label="下一个">下一个</button>
               <button type="button" id="lesson-cancel" hidden aria-label="取消阅读">取消阅读</button>
             </div>
           </div>
+          <section class="figure-dock" aria-labelledby="figure-title">
+            <div class="figure-dock__head">
+              <h2 id="figure-title">抛物线参数</h2>
+              <div class="figure-picker">
+                <label for="figure-kind">当前图形</label>
+                <select id="figure-kind" disabled aria-describedby="figure-note">
+                  <option value="parabola">抛物线</option>
+                  <option value="line">直线</option>
+                  <option value="circle">圆</option>
+                  <option value="sine">正弦</option>
+                </select>
+              </div>
+            </div>
+            <p id="figure-note">破壁后可切换图形。新图形由本地公式绘制。</p>
+            <p id="figure-formula" class="figure-formula" hidden></p>
+            <div class="figure-dock__sliders">
+              <div id="parabola-parameters">
+                <div class="parameter-row">
+                  <label for="parameter-a">开口宽窄 a</label>
+                  <output id="parameter-a-value">—</output>
+                  <input id="parameter-a" type="range" min="0.4" max="1.2" step="0.1" value="1" disabled>
+                </div>
+                <div class="parameter-row">
+                  <label for="parameter-h">水平位置 h</label>
+                  <output id="parameter-h-value">—</output>
+                  <input id="parameter-h" type="range" min="-2" max="2" step="0.1" value="0" disabled>
+                </div>
+                <div class="parameter-row">
+                  <label for="parameter-k">顶点高度 k</label>
+                  <output id="parameter-k-value">—</output>
+                  <input id="parameter-k" type="range" min="-2" max="2" step="0.1" value="1" disabled>
+                </div>
+              </div>
+              <div id="local-parameters" hidden>
+                <div class="parameter-row" id="figure-row-1">
+                  <label id="figure-label-1" for="parameter-figure-1">系数 1</label>
+                  <output id="parameter-figure-1-value" for="parameter-figure-1">—</output>
+                  <input id="parameter-figure-1" type="range" disabled>
+                </div>
+                <div class="parameter-row" id="figure-row-2">
+                  <label id="figure-label-2" for="parameter-figure-2">系数 2</label>
+                  <output id="parameter-figure-2-value" for="parameter-figure-2">—</output>
+                  <input id="parameter-figure-2" type="range" disabled>
+                </div>
+                <div class="parameter-row" id="figure-row-3">
+                  <label id="figure-label-3" for="parameter-figure-3">系数 3</label>
+                  <output id="parameter-figure-3-value" for="parameter-figure-3">—</output>
+                  <input id="parameter-figure-3" type="range" disabled>
+                </div>
+              </div>
+            </div>
+            <p id="state-label" role="status" aria-live="polite">先选择一个视频。文件留在这台浏览器里。</p>
+            <!-- 禁用原因：视觉隐藏，只在对应按钮不可用时填字，供读屏说明为什么不能点。 -->
+            <p class="sr-only" id="wake-reason"></p>
+            <p class="sr-only" id="reset-reason"></p>
+            <p class="source-note" id="source-note">数据来源将在交互出现后显示。</p>
+          </section>
         </div>
 
-        <aside class="control-panel" aria-label="交互控制">
-          <p class="panel-kicker">INTERACTION</p>
-          <h2 id="figure-title">抛物线参数</h2>
-          <div class="figure-picker">
-            <label for="figure-kind">当前图形</label>
-            <select id="figure-kind" disabled aria-describedby="figure-note">
-              <option value="parabola">抛物线</option>
-              <option value="line">直线</option>
-              <option value="circle">圆</option>
-              <option value="sine">正弦</option>
-            </select>
-          </div>
-          <p id="figure-note" class="source-note">破壁后可切换图形。新图形由本地公式绘制。</p>
-          <p id="figure-formula" class="figure-formula" hidden></p>
-          <p id="state-label" role="status" aria-live="polite">先选择一个视频。文件留在这台浏览器里。</p>
-          <!-- 禁用原因：视觉隐藏，只在对应按钮不可用时填字，供读屏说明为什么不能点。 -->
-          <p class="sr-only" id="wake-reason"></p>
-          <p class="sr-only" id="reset-reason"></p>
-          <div id="parabola-parameters">
-          <div class="parameter-row">
-            <label for="parameter-a">开口宽窄 a</label>
-            <output id="parameter-a-value">—</output>
-            <input id="parameter-a" type="range" min="0.4" max="1.2" step="0.1" value="1" disabled>
-          </div>
-          <div class="parameter-row">
-            <label for="parameter-h">水平位置 h</label>
-            <output id="parameter-h-value">—</output>
-            <input id="parameter-h" type="range" min="-2" max="2" step="0.1" value="0" disabled>
-          </div>
-          <div class="parameter-row">
-            <label for="parameter-k">顶点高度 k</label>
-            <output id="parameter-k-value">—</output>
-            <input id="parameter-k" type="range" min="-2" max="2" step="0.1" value="1" disabled>
-          </div>
-          </div>
-          <div id="local-parameters" hidden>
-            <div class="parameter-row" id="figure-row-1">
-              <label id="figure-label-1" for="parameter-figure-1">系数 1</label>
-              <output id="parameter-figure-1-value" for="parameter-figure-1">—</output>
-              <input id="parameter-figure-1" type="range" disabled>
-            </div>
-            <div class="parameter-row" id="figure-row-2">
-              <label id="figure-label-2" for="parameter-figure-2">系数 2</label>
-              <output id="parameter-figure-2-value" for="parameter-figure-2">—</output>
-              <input id="parameter-figure-2" type="range" disabled>
-            </div>
-            <div class="parameter-row" id="figure-row-3">
-              <label id="figure-label-3" for="parameter-figure-3">系数 3</label>
-              <output id="parameter-figure-3-value" for="parameter-figure-3">—</output>
-              <input id="parameter-figure-3" type="range" disabled>
-            </div>
-          </div>
-          <p class="source-note" id="source-note">数据来源将在交互出现后显示。</p>
+        <aside class="control-panel" aria-label="提问">
           <section class="tutor" aria-labelledby="tutor-title">
-            <h3 class="tutor__title" id="tutor-title">问一问</h3>
-            <p class="tutor__hint" id="tutor-hint">先破壁，再问这条曲线。</p>
             <div class="tutor__log" id="tutor-log" role="log" aria-live="polite" aria-label="提问记录" tabindex="0" hidden></div>
-            <div class="tutor__examples" id="tutor-examples" role="group" aria-label="可以这样问">
-              <button type="button" data-tutor-example="把顶点高度改成 -1" disabled>把顶点高度改成 -1</button>
-              <button type="button" data-tutor-example="x 等于 1 时 y 是多少" disabled>x 等于 1 时 y 是多少</button>
-              <button type="button" data-tutor-example="如果开口是 0.5，x 等于 2 时 y 是多少" disabled>如果开口是 0.5，x 等于 2 时 y 是多少</button>
+            <div class="tutor__bar">
+              <div class="tutor__lead">
+                <h3 class="tutor__title" id="tutor-title">问一问</h3>
+                <p class="tutor__hint" id="tutor-hint">先破壁，再问这条曲线。</p>
+              </div>
+              <div class="tutor__examples" id="tutor-examples" role="group" aria-label="可以这样问">
+                <button type="button" data-tutor-example="把顶点高度改成 -1" disabled>把顶点高度改成 -1</button>
+                <button type="button" data-tutor-example="x 等于 1 时 y 是多少" disabled>x 等于 1 时 y 是多少</button>
+                <button type="button" data-tutor-example="如果开口是 0.5，x 等于 2 时 y 是多少" disabled>如果开口是 0.5，x 等于 2 时 y 是多少</button>
+              </div>
+              <form class="tutor__form" id="tutor-form" autocomplete="off">
+                <label class="sr-only" for="tutor-input">向提问区提问</label>
+                <input id="tutor-input" type="text" maxlength="120" placeholder="例：把顶点高度改成 -1" aria-describedby="tutor-hint" disabled>
+                <button type="submit" id="tutor-send" disabled>问</button>
+              </form>
             </div>
-            <form class="tutor__form" id="tutor-form" autocomplete="off">
-              <label class="sr-only" for="tutor-input">向提问区提问</label>
-              <input id="tutor-input" type="text" maxlength="120" placeholder="例：把顶点高度改成 -1" aria-describedby="tutor-hint" disabled>
-              <button type="submit" id="tutor-send" disabled>问</button>
-            </form>
           </section>
         </aside>
       </section>
