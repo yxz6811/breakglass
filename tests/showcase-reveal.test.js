@@ -7,19 +7,34 @@ const vm = require('node:vm');
 // Frontend presentation only, within docs/BreakGlass-constitution.md. Execute
 // the real controller: unseen elements enter once, visited content stays visible.
 const source = fs.readFileSync(path.join(__dirname, '../site/showcase-effects.js'), 'utf8');
+const compatSource = fs.readFileSync(path.join(__dirname, '../site/showcase-compat.js'), 'utf8');
 
-function createEffects({ reduced = false, intersectionObserver = true, bounds, extraBounds = [] } = {}) {
+function createEffects({ reduced = false, legacyMedia = false, intersectionObserver = true, bounds, extraBounds = [] } = {}) {
   class EventTarget {
     constructor() { this.listeners = new Map(); }
     addEventListener(type, callback, options = {}) {
       const listeners = this.listeners.get(type) || new Set();
       listeners.add(callback);
       this.listeners.set(type, listeners);
-      if (options.signal) options.signal.addEventListener('abort', () => listeners.delete(callback));
+    }
+    removeEventListener(type, callback) {
+      this.listeners.get(type)?.delete(callback);
     }
     send(type, options = {}) {
       for (const listener of [...(this.listeners.get(type) || [])]) listener({ type, ...options });
     }
+  }
+  class MediaQueryList extends EventTarget {
+    constructor(matches) {
+      super();
+      this.matches = matches;
+      if (legacyMedia) {
+        this.addEventListener = undefined;
+        this.removeEventListener = undefined;
+      }
+    }
+    addListener(callback) { EventTarget.prototype.addEventListener.call(this, 'change', callback); }
+    removeListener(callback) { EventTarget.prototype.removeEventListener.call(this, 'change', callback); }
   }
   class Element {
     constructor(rect = {}) {
@@ -36,10 +51,6 @@ function createEffects({ reduced = false, intersectionObserver = true, bounds, e
     getBoundingClientRect() { return { ...this.bounds }; }
     contains(target) { return target === this || this.children.has(target); }
   }
-  class AbortController {
-    constructor() { this.signal = new EventTarget(); }
-    abort() { this.signal.send('abort'); }
-  }
   const element = new Element(bounds);
   const elements = [element, ...extraBounds.map(rect => new Element(rect))];
   const control = {};
@@ -51,10 +62,8 @@ function createEffects({ reduced = false, intersectionObserver = true, bounds, e
   document.querySelectorAll = selector => selector === '.reveal' ? elements : [];
   document.querySelector = () => null;
   document.getElementById = () => null;
-  const motion = new EventTarget();
-  motion.matches = reduced;
-  const screen = new EventTarget();
-  screen.matches = false;
+  const motion = new MediaQueryList(reduced);
+  const screen = new MediaQueryList(false);
   const window = new EventTarget();
   window.innerHeight = 800;
   window.innerWidth = 1200;
@@ -74,10 +83,12 @@ function createEffects({ reduced = false, intersectionObserver = true, bounds, e
     disconnect() { this.targets.clear(); this.disconnected = true; }
   }
   if (intersectionObserver) window.IntersectionObserver = IntersectionObserver;
-  vm.runInNewContext(source, {
-    document, window, IntersectionObserver, AbortController,
+  const context = vm.createContext({
+    document, window, IntersectionObserver,
     requestAnimationFrame: () => 1, cancelAnimationFrame: () => {}
   });
+  vm.runInContext(compatSource, context);
+  vm.runInContext(source, context);
   function emit(target, intersecting, nextBounds = {}) {
     Object.assign(target.bounds, nextBounds);
     // The browser stops delivering new intersections after unobserve/disconnect.
@@ -88,7 +99,7 @@ function createEffects({ reduced = false, intersectionObserver = true, bounds, e
     }
   }
   return {
-    element, elements, control, document, motion, observers,
+    element, elements, control, document, window, motion, screen, observers,
     shown: (target = element) => target.classes.has('is-revealed'),
     trigger: (on, nextBounds, target = element) => emit(target, on, nextBounds),
     focus() { document.send('focusin', { target: control }); },
@@ -205,4 +216,37 @@ test('a bfcache departure preserves pending observations and once-only history',
   assert.equal(effects.element.reveals, 1);
   effects.trigger(true, { top: 100, bottom: 300 }, effects.elements[1]);
   assert.equal(effects.shown(effects.elements[1]), true);
+});
+
+test('legacy MediaQueryList boot preserves first-entry reveal and live reduced-motion readability', () => {
+  const effects = createEffects({ legacyMedia: true, extraBounds: [{ top: 1400, bottom: 1700 }] });
+  assert.equal(effects.motion.addEventListener, undefined);
+  assert.equal(effects.document.documentElement.classes.has('effects-ready'), true);
+  assert.equal(effects.motion.listeners.get('change').size, 1);
+  assert.equal(effects.shown(), false);
+  effects.trigger(true, { top: 100, bottom: 300 });
+  assert.equal(effects.shown(), true);
+  assert.equal(effects.shown(effects.elements[1]), false);
+  effects.reduced(true);
+  assert.ok(effects.elements.every(element => effects.shown(element)));
+  assert.equal(effects.observers[0].disconnected, true);
+  effects.reduced(false);
+  assert.ok(effects.elements.every(element => element.reveals === 1), 'visited reveals remain once-only');
+});
+
+test('legacy preference and lifecycle listeners are removed on final departure', () => {
+  const effects = createEffects({ legacyMedia: true });
+  assert.equal(effects.screen.listeners.get('change').size, 2);
+  effects.pagehide();
+  assert.equal(effects.motion.listeners.get('change').size, 0);
+  assert.equal(effects.screen.listeners.get('change').size, 0);
+  assert.equal(effects.document.listeners.get('focusin').size, 0);
+  assert.equal(effects.document.listeners.get('visibilitychange').size, 0);
+  for (const type of ['scroll', 'resize', 'pagehide', 'pageshow']) {
+    assert.equal(effects.window.listeners.get(type).size, 0);
+  }
+  assert.equal(effects.observers[0].disconnected, true);
+  effects.reduced(true);
+  effects.focus();
+  assert.equal(effects.shown(), false, 'disposed effects no longer react to preferences or focus');
 });

@@ -56,3 +56,18 @@ Logo 入场：初始独立图标位于视口中心，字标出现时形成居中
 - 390×844 本地浏览器：导航最终可见、侧栏按既有布局隐藏，无横向溢出。未切换 OS 减少动态设置；该偏好仍由脚本测试与样式检查覆盖。
 
 当前章节采用单次揭示；图表自动播放也保留手动接管与不自动重播的规则。
+
+## Safari 兼容与网页发布入口
+
+用户反馈苹果端全部动画未显示，随后说明入口是 GitHub 分支。2026-10-03 GitHub 公共仓库 API 返回 `has_pages:false`；分支源码页不是运行展示网站的地址，不能据此判定苹果设备动画故障。用户已明确授权发布 GitHub Pages。
+
+依据 [Constitution](../BreakGlass-constitution.md)，本轮只修改静态前端展示：
+
+- 新增轻量监听适配器，支持现代 `MediaQueryList.addEventListener` 与旧式 `addListener`，显式释放监听，不依赖浏览器对 `AbortSignal` 事件选项的支持。Logo、章节效果、演示区和侧栏均使用同一适配器。
+- 不支持独立 `translate` 时，导航弹性位移回退到 `transform`，结束后释放给既有鼠标邻近反馈。补充 `100vh` 与 `overflow:hidden` 作为新式布局属性的回退。
+- 保留系统减少动态偏好、单次正文揭示和手动曲线接管；未绕过用户设置或添加真实识别能力。
+- 构建生成同内容的 `展示网站`、`展示网站.html`、根 `index.html`，每份 149693 字节，三段样式、五段脚本和 SVG 内联。`.nojekyll` 用于直接发布静态文件。
+- `node --test tests/showcase-demo.test.js tests/showcase-reveal.test.js`：20/20 通过，新增仅有旧式媒体监听、缺少 AbortController 的实际控制器启动、实时偏好变化和释放测试。
+- `node scripts/check.mjs`：85 个 JS/MJS、178 处本地引用及内联脚本通过（新增根入口后的引用数以发布验证补充记录为准）。本地 in-app browser 重载后 Logo 时间推进至 683ms，导航处于 pending，五个脚本均已内联，开场正常启动。
+
+本轮没有苹果真机，兼容分支由隔离脚本测试覆盖；不能声称已完成 Safari 真机验收。历史 WebKit API 差异见 [MediaQueryList 修复](https://bugs.webkit.org/show_bug.cgi?id=203288)、[Safari 14.1 个别变换属性](https://webkit.org/blog/11648/new-webkit-features-in-safari-14-1/)。

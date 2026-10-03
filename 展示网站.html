@@ -1041,9 +1041,9 @@ button, select { color: inherit; }
 .reveal { opacity: 1; transform: none; transition: none; }
 
 /* One focal sequence, inside the page rather than over it. */
-.brand-intro { padding-top: 100px; padding-bottom: 62px; min-height: 100svh; }
+.brand-intro { padding-top: 100px; padding-bottom: 62px; min-height: 100vh; min-height: 100svh; }
 .brand-intro .page-inner { text-align: center; }
-.brand-stage { position: relative; isolation: isolate; width: min(780px,100%); height: 210px; margin: 0 auto 28px; display: grid; align-items: center; overflow: clip; }
+.brand-stage { position: relative; isolation: isolate; width: min(780px,100%); height: 210px; margin: 0 auto 28px; display: grid; align-items: center; overflow: hidden; overflow: clip; }
 .brand-intro .story { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; pointer-events: none; }
 .brand-intro .pane-outline { stroke: #8e9da5; stroke-width: 1; }
 .brand-intro .pane-fill { fill: #0d1419; fill-opacity: .76; }
@@ -1139,7 +1139,7 @@ button:disabled, input:disabled, select:disabled { opacity: .45; cursor: default
   .nav-brand span { font-size: 12px; }
   .nav-cta { font-size: 12px; padding-inline: 12px; }
   .page { min-height: auto; padding: 90px 22px 68px; }
-  .brand-intro { min-height: 100svh; padding-top: 108px; padding-bottom: 46px; }
+  .brand-intro { min-height: 100vh; min-height: 100svh; padding-top: 108px; padding-bottom: 46px; }
   .brand-stage { height: 214px; margin-bottom: 28px; }
   .brand-intro .brand-lockup { flex-direction: column; width: min(350px,100%); gap: 13px; }
   .brand-intro .brand-symbol { width: 120px; height: 120px; }
@@ -1235,6 +1235,17 @@ body { isolation: isolate; }
   64% { opacity: 1; translate: var(--chapter-over-x) var(--chapter-over-y); }
   84% { opacity: 1; translate: var(--chapter-rebound-x) var(--chapter-rebound-y); }
   100% { opacity: 1; translate: 0 0; }
+}
+/* Release transform after arrival so legacy Safari retains proximity feedback. */
+@supports not (translate: 0px) {
+  .chrome-revealed .line-sidebar .ls-item, .chrome-revealed .nav-links a { animation-name: nav-chapter-arrive-legacy; animation-fill-mode: backwards; }
+  .chrome-revealed .line-sidebar .ls-item:focus, .chrome-revealed .nav-links a:focus { opacity: 1 !important; transform: none !important; }
+}
+@keyframes nav-chapter-arrive-legacy {
+  0% { opacity: 0; transform: translate(var(--chapter-from-x), var(--chapter-from-y)); }
+  64% { opacity: 1; transform: translate(var(--chapter-over-x), var(--chapter-over-y)); }
+  84% { opacity: 1; transform: translate(var(--chapter-rebound-x), var(--chapter-rebound-y)); }
+  100% { opacity: 1; transform: translate(0, 0); }
 }
 @keyframes plot-scan {
   0% { transform: translateY(-45%); opacity: 0; }
@@ -2160,6 +2171,37 @@ plt.show()</pre>
 </noscript>
 
 
+<script data-showcase-source="showcase-compat.js">
+/* Showcase event ownership, within docs/BreakGlass-constitution.md.
+   Older WebKit exposes MediaQueryList.addListener and ignores listener signals. */
+(function () {
+  'use strict';
+  window.BreakGlassMotion = {
+    createListeners: function () {
+      var removers = [];
+      var disposed = false;
+      return {
+        listen: function (target, type, callback, options) {
+          if (disposed) return;
+          if (typeof target.addEventListener === 'function') {
+            target.addEventListener(type, callback, options);
+            removers.push(function () { target.removeEventListener(type, callback, options); });
+          } else if (type === 'change' && typeof target.addListener === 'function') {
+            target.addListener(callback);
+            removers.push(function () { target.removeListener(callback); });
+          }
+        },
+        abort: function () {
+          if (disposed) return;
+          disposed = true;
+          removers.forEach(function (remove) { remove(); });
+          removers = [];
+        }
+      };
+    }
+  };
+}());
+</script>
 <script data-showcase-source="showcase-base.js">
 /* Source: github.com/yxz6811/breakglass, yanghan2026-patch-1, e46bed00291c262effa7982dc3f67f2701f36191, root file 展示网站.
    Frontend constraints: docs/BreakGlass-constitution.md (1.6.0); P0 preset parabola only. This extraction preserves original showcase content and does not implement or validate its P1 claims. */
@@ -2576,6 +2618,7 @@ plt.show()</pre>
 
   var motionPreference = window.matchMedia('(prefers-reduced-motion: reduce)');
   var hoverPreference = window.matchMedia('(hover: none)');
+  var mediaEvents = window.BreakGlassMotion.createListeners();
   var reduced = motionPreference.matches;
   var noHover = hoverPreference.matches;
   var mouse = { x: -1e5, y: -1e5, on: false };
@@ -2708,7 +2751,7 @@ plt.show()</pre>
   });
   document.addEventListener('mouseleave', clearMouse);
   host.addEventListener('animationend', function (event) {
-    if (event.animationName === 'nav-chapter-arrive' && event.target.classList.contains('ls-item')) requestUpdate(true);
+    if (event.animationName.indexOf('nav-chapter-arrive') === 0 && event.target.classList.contains('ls-item')) requestUpdate(true);
   });
 
   function boot() { requestUpdate(true); }
@@ -2721,14 +2764,17 @@ plt.show()</pre>
     if (document.hidden) { mouse.on = false; stop(); }
     else requestUpdate(true);
   });
-  window.addEventListener('pagehide', function () { suspended = true; stop(); });
+  window.addEventListener('pagehide', function (event) {
+    suspended = true; stop();
+    if (!event.persisted) mediaEvents.abort();
+  });
   window.addEventListener('pageshow', function () { suspended = false; requestUpdate(true); });
-  motionPreference.addEventListener('change', function (event) {
+  mediaEvents.listen(motionPreference, 'change', function (event) {
     reduced = event.matches;
     mouse.on = false;
     requestUpdate(true);
   });
-  hoverPreference.addEventListener('change', function (event) {
+  mediaEvents.listen(hoverPreference, 'change', function (event) {
     noHover = event.matches;
     clearMouse();
   });
@@ -2799,7 +2845,7 @@ plt.show()</pre>
   var entranceComplete = false;
   var introCenter = { x: 0, y: 0, lockupY: 0 };
   var restoreReplayFocus = false;
-  var events = new AbortController();
+  var events = window.BreakGlassMotion.createListeners();
   var cuts = {
     logo: { duration: 2200, from: 4050 },
     story: { duration: 5600, from: 0 },
@@ -3054,36 +3100,36 @@ plt.show()</pre>
     if (reduced) { pause(); render(cut.duration); syncPlayback(); completeEntrance(); }
   }
 
-  replay.addEventListener('click', function () {
+  events.listen(replay, 'click', function () {
     restoreReplayFocus = true;
     beginEntrance();
     play(true);
-  }, { signal: events.signal });
-  playback.addEventListener('click', function () { if (running) pause(); else play(false); }, { signal: events.signal });
-  timeline.addEventListener('input', function () { pause(); render(Number(timeline.value)); syncPlayback(); }, { signal: events.signal });
-  speed.addEventListener('change', function () { rate = Number(speed.value) === .5 ? .5 : 1; }, { signal: events.signal });
-  chapters.forEach(function (button) {
-    button.addEventListener('click', function () { pause(); render(localTime(chapterTime[button.dataset.chapter])); syncPlayback(); }, { signal: events.signal });
   });
-  cutSelect.addEventListener('change', function () {
+  events.listen(playback, 'click', function () { if (running) pause(); else play(false); });
+  events.listen(timeline, 'input', function () { pause(); render(Number(timeline.value)); syncPlayback(); });
+  events.listen(speed, 'change', function () { rate = Number(speed.value) === .5 ? .5 : 1; });
+  chapters.forEach(function (button) {
+    events.listen(button, 'click', function () { pause(); render(localTime(chapterTime[button.dataset.chapter])); syncPlayback(); });
+  });
+  events.listen(cutSelect, 'change', function () {
     pause();
     cut = cuts[cutSelect.value] || cuts.logo;
     timeline.max = String(cut.duration);
     body.dataset.cut = cutSelect.value;
     applyMotionPreference();
     if (motion.matches) { render(cut.duration); syncPlayback(); } else play(true);
-  }, { signal: events.signal });
-  coefficient.addEventListener('input', function () { renderSmallGraph(coefficient.value); }, { signal: events.signal });
-  playground.querySelector('.curve-reset').addEventListener('click', function () {
+  });
+  events.listen(coefficient, 'input', function () { renderSmallGraph(coefficient.value); });
+  events.listen(playground.querySelector('.curve-reset'), 'click', function () {
     coefficient.value = '.65';
     renderSmallGraph(coefficient.value);
-  }, { signal: events.signal });
-  document.addEventListener('visibilitychange', function () {
+  });
+  events.listen(document, 'visibilitychange', function () {
     if (document.hidden) {
       pause();
       if (!entranceComplete) { render(cut.duration); syncPlayback(); completeEntrance(); }
     }
-  }, { signal: events.signal });
+  });
   var visibility = 'IntersectionObserver' in window ? new IntersectionObserver(function (entries) {
     if (!entries[0].isIntersecting && running) {
       pause();
@@ -3093,18 +3139,18 @@ plt.show()</pre>
     }
   }) : null;
   if (visibility) visibility.observe(brandIntro);
-  window.addEventListener('resize', function () { centerIntro(); measureTarget(); render(current); }, { signal: events.signal });
-  motion.addEventListener('change', applyMotionPreference, { signal: events.signal });
-  window.addEventListener('pagehide', function (event) {
+  events.listen(window, 'resize', function () { centerIntro(); measureTarget(); render(current); });
+  events.listen(motion, 'change', applyMotionPreference);
+  events.listen(window, 'pagehide', function (event) {
     pause();
     if (event.persisted) return;
     disposed = true;
     if (visibility) visibility.disconnect();
     events.abort();
-  }, { signal: events.signal });
-  window.addEventListener('pageshow', function (event) {
+  });
+  events.listen(window, 'pageshow', function (event) {
     if (event.persisted) { measureTarget(); render(entranceComplete ? current : cut.duration); syncPlayback(); completeEntrance(); }
-  }, { signal: events.signal });
+  });
   body.dataset.cut = 'logo';
   beginEntrance();
   renderSmallGraph(coefficient.value);
@@ -3121,7 +3167,7 @@ plt.show()</pre>
   'use strict';
 
   const root = document.documentElement;
-  const events = new AbortController();
+  const events = window.BreakGlassMotion.createListeners();
   const motion = window.matchMedia('(prefers-reduced-motion: reduce)');
   const depthScreen = window.matchMedia('(min-width: 901px) and (hover: hover) and (pointer: fine)');
   const coarseScreen = window.matchMedia('(pointer: coarse)');
@@ -3317,21 +3363,21 @@ plt.show()</pre>
   }
   updateDepth();
 
-  document.addEventListener('focusin', function (event) {
+  events.listen(document, 'focusin', function (event) {
     pendingReveals.forEach(function (element) {
       if (element.contains(event.target)) reveal(element);
     });
-  }, { signal: events.signal });
-  window.addEventListener('scroll', scheduleDepth, { passive: true, signal: events.signal });
-  window.addEventListener('resize', function () {
+  });
+  events.listen(window, 'scroll', scheduleDepth, { passive: true });
+  events.listen(window, 'resize', function () {
     resizeParticles();
     scheduleDepth();
-  }, { passive: true, signal: events.signal });
-  motion.addEventListener('change', onMotionChange, { signal: events.signal });
-  depthScreen.addEventListener('change', scheduleDepth, { signal: events.signal });
-  coarseScreen.addEventListener('change', resizeParticles, { signal: events.signal });
-  document.addEventListener('visibilitychange', onVisibilityChange, { signal: events.signal });
-  window.addEventListener('pagehide', function (event) {
+  }, { passive: true });
+  events.listen(motion, 'change', onMotionChange);
+  events.listen(depthScreen, 'change', scheduleDepth);
+  events.listen(coarseScreen, 'change', resizeParticles);
+  events.listen(document, 'visibilitychange', onVisibilityChange);
+  events.listen(window, 'pagehide', function (event) {
     suspended = true;
     document.body.classList.add('effects-paused');
     stopFrames();
@@ -3340,14 +3386,14 @@ plt.show()</pre>
       if (revealObserver) revealObserver.disconnect();
       events.abort();
     }
-  }, { signal: events.signal });
-  window.addEventListener('pageshow', function () {
+  });
+  events.listen(window, 'pageshow', function () {
     suspended = document.hidden;
     document.body.classList.toggle('effects-paused', suspended);
     resizeParticles();
     startParticles();
     scheduleDepth();
-  }, { signal: events.signal });
+  });
 }());
 </script>
 <script data-showcase-source="showcase-demo.js">
@@ -3365,7 +3411,7 @@ plt.show()</pre>
   var reset = section.querySelector('.curve-reset');
   if (!chart || !slider || !toggle || !status || !reset) return;
   var motion = window.matchMedia('(prefers-reduced-motion: reduce)');
-  var events = new AbortController();
+  var events = window.BreakGlassMotion.createListeners();
   var duration = 6000;
   var elapsed = 0, last = 0, painted = 0, frame = 0;
   var running = false, visible = false, started = false, ownInput = false, disposed = false;
@@ -3425,16 +3471,16 @@ plt.show()</pre>
     stop('manual', '手动控制 · 参数保持你的选择。');
   }
   toggle.hidden = false;
-  toggle.addEventListener('click', function () {
+  events.listen(toggle, 'click', function () {
     if (running) stop('paused', '变化已暂停 · 可继续或亲手调节。'); else play();
-  }, { signal: events.signal });
-  slider.addEventListener('input', manual, { signal: events.signal });
+  });
+  events.listen(slider, 'input', manual);
   // Stop before a keyboard/pointer edit; reset never restarts autoplay.
-  slider.addEventListener('pointerdown', manual, { signal: events.signal });
-  reset.addEventListener('click', function () {
+  events.listen(slider, 'pointerdown', manual);
+  events.listen(reset, 'click', function () {
     started = true; elapsed = 0;
     stop('manual', '已恢复原曲线 · a = 0.65。');
-  }, { signal: events.signal });
+  });
   function preference() {
     toggle.disabled = motion.matches;
     if (motion.matches) stop('reduced', '已减少动态效果 · 曲线仍可手动调节。');
@@ -3450,15 +3496,15 @@ plt.show()</pre>
   }, { threshold: [0, .05] }) : null;
   if (observer) observer.observe(livePanel || chart);
   else { visible = true; started = true; section.classList.add('plot-entered'); }
-  document.addEventListener('visibilitychange', function () {
+  events.listen(document, 'visibilitychange', function () {
     if (document.hidden && running) stop('paused', '变化已暂停 · 可继续或亲手调节。');
-  }, { signal: events.signal });
-  motion.addEventListener('change', preference, { signal: events.signal });
-  window.addEventListener('pagehide', function (event) {
+  });
+  events.listen(motion, 'change', preference);
+  events.listen(window, 'pagehide', function (event) {
     stop('paused', '变化已暂停 · 可继续或亲手调节。');
     if (!event.persisted) { disposed = true; if (observer) observer.disconnect(); events.abort(); }
-  }, { signal: events.signal });
-  window.addEventListener('pageshow', function (event) { if (event.persisted) preference(); }, { signal: events.signal });
+  });
+  events.listen(window, 'pageshow', function (event) { if (event.persisted) preference(); });
   preference();
 })();
 </script>

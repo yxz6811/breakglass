@@ -68,6 +68,8 @@ node --test
 
 顶部导航与左侧章节导航在 Logo 开始上移时才出现，各个章节入口依次弹性渐显，相邻入口错峰 45ms。章节正文入场只播放一次：返回已看过的位置直接显示，首次进入未看过的内容才播放浮现。
 
+Safari 使用媒体查询新旧监听接口的能力检测；旧环境的导航位移回退到 `transform`。系统启用“减少动态效果”时，页面直接呈现完成状态并保留手动调参。GitHub 分支/源码页面不是网站运行入口；手机观看需打开已发布的 HTTP(S) 网页地址，文件预览不能代表浏览器动效效果。
+
 - [展示网站.html](展示网站.html) 是同内容的标准网页入口；下载后可直接用浏览器打开品牌与曲线示意。
 - 两个根入口都内联样式、脚本和 SVG，无需 CDN 或远程接口。页面中的视频破壁入口仍需在完整仓库的 HTTP 静态服务下使用。
 - 维护源文件位于 `site/showcase.html`、`site/showcase*.css/js` 和 `site/assets/breakglass-brand/`；修改后运行 `node scripts/build-showcase.mjs` 同步根入口，再执行 `node scripts/check.mjs`。

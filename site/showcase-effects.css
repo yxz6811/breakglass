@@ -71,6 +71,17 @@ body { isolation: isolate; }
   84% { opacity: 1; translate: var(--chapter-rebound-x) var(--chapter-rebound-y); }
   100% { opacity: 1; translate: 0 0; }
 }
+/* Release transform after arrival so legacy Safari retains proximity feedback. */
+@supports not (translate: 0px) {
+  .chrome-revealed .line-sidebar .ls-item, .chrome-revealed .nav-links a { animation-name: nav-chapter-arrive-legacy; animation-fill-mode: backwards; }
+  .chrome-revealed .line-sidebar .ls-item:focus, .chrome-revealed .nav-links a:focus { opacity: 1 !important; transform: none !important; }
+}
+@keyframes nav-chapter-arrive-legacy {
+  0% { opacity: 0; transform: translate(var(--chapter-from-x), var(--chapter-from-y)); }
+  64% { opacity: 1; transform: translate(var(--chapter-over-x), var(--chapter-over-y)); }
+  84% { opacity: 1; transform: translate(var(--chapter-rebound-x), var(--chapter-rebound-y)); }
+  100% { opacity: 1; transform: translate(0, 0); }
+}
 @keyframes plot-scan {
   0% { transform: translateY(-45%); opacity: 0; }
   22% { opacity: 1; }

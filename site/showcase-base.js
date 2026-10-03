@@ -413,6 +413,7 @@
 
   var motionPreference = window.matchMedia('(prefers-reduced-motion: reduce)');
   var hoverPreference = window.matchMedia('(hover: none)');
+  var mediaEvents = window.BreakGlassMotion.createListeners();
   var reduced = motionPreference.matches;
   var noHover = hoverPreference.matches;
   var mouse = { x: -1e5, y: -1e5, on: false };
@@ -545,7 +546,7 @@
   });
   document.addEventListener('mouseleave', clearMouse);
   host.addEventListener('animationend', function (event) {
-    if (event.animationName === 'nav-chapter-arrive' && event.target.classList.contains('ls-item')) requestUpdate(true);
+    if (event.animationName.indexOf('nav-chapter-arrive') === 0 && event.target.classList.contains('ls-item')) requestUpdate(true);
   });
 
   function boot() { requestUpdate(true); }
@@ -558,14 +559,17 @@
     if (document.hidden) { mouse.on = false; stop(); }
     else requestUpdate(true);
   });
-  window.addEventListener('pagehide', function () { suspended = true; stop(); });
+  window.addEventListener('pagehide', function (event) {
+    suspended = true; stop();
+    if (!event.persisted) mediaEvents.abort();
+  });
   window.addEventListener('pageshow', function () { suspended = false; requestUpdate(true); });
-  motionPreference.addEventListener('change', function (event) {
+  mediaEvents.listen(motionPreference, 'change', function (event) {
     reduced = event.matches;
     mouse.on = false;
     requestUpdate(true);
   });
-  hoverPreference.addEventListener('change', function (event) {
+  mediaEvents.listen(hoverPreference, 'change', function (event) {
     noHover = event.matches;
     clearMouse();
   });

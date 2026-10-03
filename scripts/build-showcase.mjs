@@ -48,7 +48,7 @@ for (const name of ['showcase-base', 'showcase', 'showcase-effects']) {
     `${name}.css link`,
   );
 }
-for (const name of ['showcase-base', 'showcase-motion', 'showcase-effects', 'showcase-demo']) {
+for (const name of ['showcase-compat', 'showcase-base', 'showcase-motion', 'showcase-effects', 'showcase-demo']) {
   const script = await read(`site/${name}.js`);
   new vm.Script(script, { filename: `site/${name}.js` });
   if (/<\/script\b/i.test(script)) throw new Error(`${name}.js contains a closing script tag`);
@@ -79,13 +79,15 @@ if (/<link\b[^>]*\brel=["']stylesheet["']/i.test(html)) throw new Error('Externa
 if (/<script\b[^>]*\bsrc\s*=/i.test(html)) throw new Error('External script remains');
 if (/<img\b/i.test(html)) throw new Error('External image remains');
 const scripts = [...html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script\s*>/gi)];
-if (scripts.length !== 4) throw new Error(`Expected four inline scripts, got ${scripts.length}`);
+if (scripts.length !== 5) throw new Error(`Expected five inline scripts, got ${scripts.length}`);
 scripts.forEach((script, index) => new vm.Script(script[1], { filename: `展示网站:inline-${index + 1}` }));
 
 const original = path.join(root, '展示网站');
 const alias = path.join(root, '展示网站.html');
+const entry = path.join(root, 'index.html');
 await writeFile(original, html, 'utf8');
 await writeFile(alias, html, 'utf8');
-const [originalBytes, aliasBytes] = await Promise.all([readFile(original), readFile(alias)]);
-if (!originalBytes.equals(aliasBytes)) throw new Error('Standalone entries differ');
-console.log(`Built 展示网站 and 展示网站.html (${originalBytes.length} bytes each; inline CSS, SVG and 4 syntax-checked scripts).`);
+await writeFile(entry, html, 'utf8');
+const [originalBytes, aliasBytes, entryBytes] = await Promise.all([readFile(original), readFile(alias), readFile(entry)]);
+if (!originalBytes.equals(aliasBytes) || !originalBytes.equals(entryBytes)) throw new Error('Standalone entries differ');
+console.log(`Built 展示网站, 展示网站.html and index.html (${originalBytes.length} bytes each; inline CSS, SVG and ${scripts.length} syntax-checked scripts).`);

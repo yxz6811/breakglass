@@ -61,7 +61,7 @@
   var entranceComplete = false;
   var introCenter = { x: 0, y: 0, lockupY: 0 };
   var restoreReplayFocus = false;
-  var events = new AbortController();
+  var events = window.BreakGlassMotion.createListeners();
   var cuts = {
     logo: { duration: 2200, from: 4050 },
     story: { duration: 5600, from: 0 },
@@ -316,36 +316,36 @@
     if (reduced) { pause(); render(cut.duration); syncPlayback(); completeEntrance(); }
   }
 
-  replay.addEventListener('click', function () {
+  events.listen(replay, 'click', function () {
     restoreReplayFocus = true;
     beginEntrance();
     play(true);
-  }, { signal: events.signal });
-  playback.addEventListener('click', function () { if (running) pause(); else play(false); }, { signal: events.signal });
-  timeline.addEventListener('input', function () { pause(); render(Number(timeline.value)); syncPlayback(); }, { signal: events.signal });
-  speed.addEventListener('change', function () { rate = Number(speed.value) === .5 ? .5 : 1; }, { signal: events.signal });
-  chapters.forEach(function (button) {
-    button.addEventListener('click', function () { pause(); render(localTime(chapterTime[button.dataset.chapter])); syncPlayback(); }, { signal: events.signal });
   });
-  cutSelect.addEventListener('change', function () {
+  events.listen(playback, 'click', function () { if (running) pause(); else play(false); });
+  events.listen(timeline, 'input', function () { pause(); render(Number(timeline.value)); syncPlayback(); });
+  events.listen(speed, 'change', function () { rate = Number(speed.value) === .5 ? .5 : 1; });
+  chapters.forEach(function (button) {
+    events.listen(button, 'click', function () { pause(); render(localTime(chapterTime[button.dataset.chapter])); syncPlayback(); });
+  });
+  events.listen(cutSelect, 'change', function () {
     pause();
     cut = cuts[cutSelect.value] || cuts.logo;
     timeline.max = String(cut.duration);
     body.dataset.cut = cutSelect.value;
     applyMotionPreference();
     if (motion.matches) { render(cut.duration); syncPlayback(); } else play(true);
-  }, { signal: events.signal });
-  coefficient.addEventListener('input', function () { renderSmallGraph(coefficient.value); }, { signal: events.signal });
-  playground.querySelector('.curve-reset').addEventListener('click', function () {
+  });
+  events.listen(coefficient, 'input', function () { renderSmallGraph(coefficient.value); });
+  events.listen(playground.querySelector('.curve-reset'), 'click', function () {
     coefficient.value = '.65';
     renderSmallGraph(coefficient.value);
-  }, { signal: events.signal });
-  document.addEventListener('visibilitychange', function () {
+  });
+  events.listen(document, 'visibilitychange', function () {
     if (document.hidden) {
       pause();
       if (!entranceComplete) { render(cut.duration); syncPlayback(); completeEntrance(); }
     }
-  }, { signal: events.signal });
+  });
   var visibility = 'IntersectionObserver' in window ? new IntersectionObserver(function (entries) {
     if (!entries[0].isIntersecting && running) {
       pause();
@@ -355,18 +355,18 @@
     }
   }) : null;
   if (visibility) visibility.observe(brandIntro);
-  window.addEventListener('resize', function () { centerIntro(); measureTarget(); render(current); }, { signal: events.signal });
-  motion.addEventListener('change', applyMotionPreference, { signal: events.signal });
-  window.addEventListener('pagehide', function (event) {
+  events.listen(window, 'resize', function () { centerIntro(); measureTarget(); render(current); });
+  events.listen(motion, 'change', applyMotionPreference);
+  events.listen(window, 'pagehide', function (event) {
     pause();
     if (event.persisted) return;
     disposed = true;
     if (visibility) visibility.disconnect();
     events.abort();
-  }, { signal: events.signal });
-  window.addEventListener('pageshow', function (event) {
+  });
+  events.listen(window, 'pageshow', function (event) {
     if (event.persisted) { measureTarget(); render(entranceComplete ? current : cut.duration); syncPlayback(); completeEntrance(); }
-  }, { signal: events.signal });
+  });
   body.dataset.cut = 'logo';
   beginEntrance();
   renderSmallGraph(coefficient.value);
