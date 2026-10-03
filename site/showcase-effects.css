@@ -27,13 +27,14 @@ html.intro-scroll-locked body { position: fixed; top: var(--intro-scroll-y); lef
 .chrome-pending .line-sidebar { opacity: 0; visibility: hidden; pointer-events: none; transition: none; }
 .chrome-pending .topline, .chrome-pending .progress { opacity: 0; }
 
-/* Content stays visible without JS. Each element enters only on its first visit. */
-.effects-ready .reveal {
-  transition: opacity 640ms var(--ease), transform 640ms var(--ease);
+/* Reset only offscreen; every return settles gently from its entry edge. */
+.effects-ready .reveal:not(.is-revealed) { opacity: 0; transform: translateY(var(--reveal-from-y, 22px)); transition: none; }
+.effects-ready .reveal.is-revealed {
+  opacity: 1; transform: none;
+  transition: opacity 640ms var(--ease), transform 640ms cubic-bezier(.175,.885,.32,1.15);
   transition-delay: calc(min(var(--i, 0), 4) * 55ms);
 }
-.effects-ready .reveal:not(.is-revealed) { opacity: 0; transform: translateY(22px); }
-.effects-ready .reveal.is-revealed { opacity: 1; transform: none; }
+.effects-ready .reveal:focus-within { opacity: 1; transform: none; transition: none; }
 .brand-stage { transform-origin: 50% 50%; }
 .brand-focus { position: relative; transform: translateY(0); transition: transform 720ms var(--ease); }
 .intro-entering .brand-focus { transform: translate(var(--intro-x, 0px), var(--intro-y, 0px)); transition: none; }
@@ -103,6 +104,7 @@ html.intro-scroll-locked body { position: fixed; top: var(--intro-scroll-y); lef
 }
 @media (prefers-reduced-motion: reduce) {
   #fx { display: none; }
+  .effects-ready .reveal.is-revealed { transition: none; }
   .effects-ready .reveal:not(.is-revealed) { opacity: 1; transform: none; }
   .brand-stage { transform: none !important; opacity: 1 !important; }
   .brand-focus { transform: none !important; }

@@ -133,6 +133,27 @@ button:disabled, input:disabled, select:disabled { opacity: .45; cursor: default
 .demo-footnote a svg { display: inline-block; width: 16px; height: 16px; vertical-align: middle; margin-left: 5px; fill: none; stroke: currentColor; stroke-width: 1.5; }
 .capability-note { margin-top: 20px; max-width: 52ch; font-size: 13px; line-height: 1.8; color: var(--text-dim); text-wrap: pretty; }
 
+/* Real runtime imagery keeps the architecture sequence and its existing detail interaction. */
+.step { padding: 24px 14px 18px; gap: 12px; justify-content: flex-start; }
+.step h4 { min-height: 2.6em; display: flex; align-items: center; justify-content: center; }
+.step-shot { display: block; width: 100%; height: auto; aspect-ratio: 16 / 10; object-fit: cover; object-position: center; border-radius: 6px; background: #152029; }
+.step-caption { font-size: 12px; line-height: 1.6; color: var(--text-dim); }
+.arch-note { line-height: 1.8; font-size: 13px; }
+.arch-modal__visual { aspect-ratio: auto; background: var(--bg); }
+.runtime-shot { margin: 0; }
+.runtime-shot img { display: block; width: 100%; height: min(50vh, 420px); object-fit: contain; background: #10171b; }
+.runtime-shot figcaption { padding: 12px 38px; color: var(--text-dim); font-size: 12px; line-height: 1.6; }
+.runtime-shot figcaption span { color: var(--accent); margin-right: 12px; }
+.arch-modal__info { min-height: 0; }
+.arch-modal__close { background: rgba(8,11,13,.88); color: var(--text); }
+@media (max-width: 640px) {
+  .arch-modal__visual { aspect-ratio: auto; }
+  .runtime-shot img { height: auto; max-height: 48vh; object-fit: contain; }
+  .runtime-shot figcaption { padding: 12px 20px; }
+  .step h4 { min-height: 0; }
+  .step-shot { max-height: 200px; }
+}
+
 @media (max-width: 900px) {
   .nav { padding-inline: 20px; }
   .page { padding: 100px 24px 80px; }

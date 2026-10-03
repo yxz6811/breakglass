@@ -89,3 +89,18 @@ Logo 入场：初始独立图标位于视口中心，字标出现时形成居中
 - 直接打开 `#p5`：入场为完成状态、没有滚动锁定、保留该章节位置；曲线键盘调整至 0.66、状态为 manual。架构“用户触发”详情可打开，文案内容与强调格式保留。
 
 未进行服务器、账号权限或苹果真机渗透测试；本轮不作全站安全保证。
+
+## 真实运行截图与双向重复渐显
+
+用户最新要求覆盖此前的“只播放一次”：上下滚动再次进入已看过的内容，也播放弹性渐显。范围仍遵循 [Constitution](../BreakGlass-constitution.md)。
+
+- 通过 `extension/demo/index.html` 实际运行包内视频，选择预设、显示工具栏、定位第 6 秒、破壁、键盘调节 a 从 1.0 到 0.6，取得五张 JPEG。架构卡片与详情模板使用这些截图，保留点击展开、焦点恢复及现有品牌样式。资产操作与对应关系见 [截图说明](../../site/assets/runtime/README.md)。
+- 第三层展示当前预制结果的来源提示，第五层展示已实现的 SVG 函数分支；文案明确真实视觉识别、CodeMirror、Python/Pyodide 尚未接入。实际快捷键改为 Alt+B，不使用概念图冒充运行截图。
+- 构建仅允许五个指定 JPEG 路径并检查文件标记，重复引用复用读取、内联为 data 图片。原六脚本 CSP 哈希与资源限制保留；三个根入口相同，各 1842641 字节。
+- 持续观察正文元素：完全离开视口后重置，重新进入时按上下入口从 ±22px 弹性渐显，时长 640ms 并保留逐项延迟。局部可见或保留键盘焦点的内容不会突然隐藏。减少动态偏好、旧式媒体监听、无 IntersectionObserver 回退及离页释放保留。
+- `node --test tests/showcase-demo.test.js tests/showcase-reveal.test.js tests/showcase-scroll-lock.test.js tests/showcase-security.test.js`：39/39 通过，含双向重复、焦点、长内容、过期回调与原有滚动锁、安全回归。
+- `node scripts/build-showcase.mjs` 通过；`node scripts/check.mjs`：88 个 JS/MJS、189 个本地引用及内联脚本通过；`git diff --check` 通过。
+- 本地浏览器桌面 1280×800：五列截图均加载，五个资源为内联 JPEG，无横向溢出。滚动离开标题后 `is-revealed` 移除，返回重新加入；向上返回保留 -22px 入场方向，向下返回为 +22px，捕捉到 opacity=0.568967、transition-duration=0.64s 的中间态。
+- 窄屏 390×844：单列卡片和全部截图加载，无横向溢出；第三层详情大图保持完整比例，说明可见、关闭按钮有焦点，Escape 关闭可用。没有苹果真机，本轮不声称完成 Safari 真机验收。
+
+图表自动演示仍沿用手动接管规则；本次重复的是章节内容入场。GitHub Pages 仍需仓库所有者启用，分支推送不代表托管网站已上线。

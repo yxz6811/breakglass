@@ -5,7 +5,7 @@ const path = require('node:path');
 const vm = require('node:vm');
 
 // Frontend presentation only, within docs/BreakGlass-constitution.md. Execute
-// the real controller: unseen elements enter once, visited content stays visible.
+// the real controller: both scroll directions replay only after a complete exit.
 const source = fs.readFileSync(path.join(__dirname, '../site/showcase-effects.js'), 'utf8');
 const compatSource = fs.readFileSync(path.join(__dirname, '../site/showcase-compat.js'), 'utf8');
 
@@ -41,6 +41,8 @@ function createEffects({ reduced = false, legacyMedia = false, intersectionObser
       this.classes = new Set();
       this.children = new Set();
       this.reveals = 0;
+      this.properties = new Map();
+      this.style = { setProperty: (name, value) => this.properties.set(name, value) };
       this.bounds = { top: 1000, bottom: 1200, left: 100, right: 500, ...rect };
       this.classList = {
         add: name => { this.classes.add(name); if (name === 'is-revealed') this.reveals++; },
@@ -57,6 +59,7 @@ function createEffects({ reduced = false, legacyMedia = false, intersectionObser
   element.children.add(control);
   const document = new EventTarget();
   document.hidden = false;
+  document.activeElement = null;
   document.documentElement = new Element();
   document.body = new Element();
   document.querySelectorAll = selector => selector === '.reveal' ? elements : [];
@@ -102,38 +105,42 @@ function createEffects({ reduced = false, legacyMedia = false, intersectionObser
     element, elements, control, document, window, motion, screen, observers,
     shown: (target = element) => target.classes.has('is-revealed'),
     trigger: (on, nextBounds, target = element) => emit(target, on, nextBounds),
-    focus() { document.send('focusin', { target: control }); },
+    focus(target = control) { document.activeElement = target; document.send('focusin', { target }); },
     reduced(value) { motion.matches = value; motion.send('change'); },
     pagehide(persisted = false) { window.send('pagehide', { persisted }); }
   };
 }
 
-test('first intersection reveals once and visited content stays visible on every return', () => {
+test('a complete exit rearms a reveal for both upward and downward returns', () => {
   const effects = createEffects();
   const observer = effects.observers[0];
   assert.equal(effects.shown(), false);
   effects.trigger(true, { top: 100, bottom: 300 });
   assert.equal(effects.shown(), true);
-  assert.equal(observer.targets.has(effects.element), false);
-  assert.equal(observer.unobserved.has(effects.element), true);
+  assert.equal(observer.targets.has(effects.element), true, 'observations remain live after entry');
+  effects.trigger(true, { top: 120, bottom: 320 });
+  assert.equal(effects.element.reveals, 1, 'updates inside the viewport do not restart motion');
   for (const outside of [{ top: -300, bottom: -100 }, { top: 900, bottom: 1100 }]) {
     effects.trigger(false, outside);
-    assert.equal(effects.shown(), true, 'visited content never hides after leaving');
+    assert.equal(effects.shown(), false, 'a fully offscreen element is ready for its next entrance');
+    assert.equal(effects.element.properties.get('--reveal-from-y'), outside.bottom < 0 ? '-22px' : '22px');
     effects.trigger(true, { top: 100, bottom: 300 });
     assert.equal(effects.shown(), true);
   }
-  assert.equal(effects.element.reveals, 1, 'returning does not repeat the entrance');
+  assert.equal(effects.element.reveals, 3, 'every return repeats the entrance');
+  assert.equal(observer.unobserved.size, 0);
 });
 
-test('content already within the viewport at boot appears directly and is not observed', () => {
+test('content within the viewport at boot appears directly and remains eligible for later returns', () => {
   const effects = createEffects({ bounds: { top: 100, bottom: 300 } });
   assert.equal(effects.shown(), true);
   assert.equal(effects.element.reveals, 1);
-  assert.equal(effects.observers[0].targets.size, 0);
+  assert.equal(effects.observers[0].targets.size, 1);
   effects.trigger(false, { top: -300, bottom: -100 });
+  assert.equal(effects.shown(), false);
   effects.trigger(true, { top: 100, bottom: 300 });
   assert.equal(effects.shown(), true);
-  assert.equal(effects.element.reveals, 1);
+  assert.equal(effects.element.reveals, 2);
 });
 
 test('unseen elements stay pending independently until their own entry', () => {
@@ -147,7 +154,7 @@ test('unseen elements stay pending independently until their own entry', () => {
   assert.equal(effects.observers[0].targets.has(second), true);
   effects.trigger(true, { top: 100, bottom: 300 }, second);
   assert.equal(effects.shown(second), true);
-  assert.equal(effects.observers[0].targets.size, 0);
+  assert.equal(effects.observers[0].targets.size, 2);
 });
 
 test('a tall mobile element enters with any intersection instead of requiring a section ratio', () => {
@@ -158,40 +165,82 @@ test('a tall mobile element enters with any intersection instead of requiring a 
   effects.trigger(false, { top: -2000, bottom: 0 });
   effects.trigger(true, { top: -1900, bottom: 100 });
   assert.equal(effects.shown(), true);
-  assert.equal(effects.element.reveals, 1);
+  assert.equal(effects.element.reveals, 2);
 });
 
-test('keyboard focus reveals its pending ancestor before interaction and leaves others pending', () => {
+test('partially visible elements do not hide or replay when an intersection report is false', () => {
+  const effects = createEffects();
+  effects.trigger(true, { top: 100, bottom: 300 });
+  for (const bounds of [{ top: -1990, bottom: 10 }, { top: 790, bottom: 2790 }]) {
+    effects.trigger(false, bounds);
+    assert.equal(effects.shown(), true);
+    effects.trigger(true, bounds);
+  }
+  assert.equal(effects.element.reveals, 1, 'a tall element stays settled while any part remains visible');
+});
+
+test('keyboard focus reveals its ancestor, protects it outside the viewport, and rearms after focus moves', () => {
   const effects = createEffects({ extraBounds: [{ top: 1400, bottom: 1700 }] });
   assert.equal(effects.shown(), false);
   effects.focus();
   assert.equal(effects.shown(), true);
-  assert.equal(effects.observers[0].targets.has(effects.element), false);
+  assert.equal(effects.observers[0].targets.has(effects.element), true);
   assert.equal(effects.shown(effects.elements[1]), false);
   effects.focus();
-  assert.equal(effects.element.reveals, 1, 'a visited ancestor is no longer pending');
+  assert.equal(effects.element.reveals, 1, 'existing focus does not repeat the entrance');
+  effects.trigger(false, { top: -300, bottom: -100 });
+  assert.equal(effects.shown(), true, 'a focused control must stay readable during scrolling');
+  effects.focus(effects.document.body);
+  assert.equal(effects.shown(), false, 'the offscreen ancestor can rearm once focus leaves');
+  effects.trigger(true, { top: 100, bottom: 300 });
+  assert.equal(effects.element.reveals, 2);
 });
 
-test('live reduced motion reveals all pending elements and does not hide them when reenabled', () => {
+test('live reduced motion reveals all content and reenabling motion preserves visible content', () => {
   const effects = createEffects({ extraBounds: [{ top: 1400, bottom: 1700 }] });
+  effects.trigger(true, { top: 100, bottom: 300 });
   effects.reduced(true);
   assert.ok(effects.elements.every(element => effects.shown(element)));
   assert.equal(effects.observers[0].disconnected, true);
   effects.reduced(false);
-  assert.ok(effects.elements.every(element => effects.shown(element)));
+  assert.equal(effects.shown(), true, 'the content being read never disappears when preferences change');
+  assert.equal(effects.shown(effects.elements[1]), false, 'offscreen content prepares for a later entrance');
   assert.ok(effects.elements.every(element => element.reveals === 1));
+  assert.equal(effects.observers[1].targets.size, 2);
+  effects.trigger(true, { top: 100, bottom: 300 }, effects.elements[1]);
+  assert.equal(effects.elements[1].reveals, 2);
 });
 
-test('initial reduced motion and a missing IntersectionObserver both keep content readable', () => {
-  for (const options of [{ reduced: true }, { intersectionObserver: false }]) {
-    const effects = createEffects({ ...options, extraBounds: [{ top: 1400, bottom: 1700 }] });
-    assert.equal(effects.observers.length, 0);
-    assert.ok(effects.elements.every(element => effects.shown(element)));
-    effects.reduced(true);
-    effects.reduced(false);
-    assert.ok(effects.elements.every(element => effects.shown(element)));
-    assert.ok(effects.elements.every(element => element.reveals === 1));
-  }
+test('initial reduced motion keeps content readable and observing can start when it is disabled', () => {
+  const effects = createEffects({ reduced: true, bounds: { top: 100, bottom: 300 } });
+  assert.equal(effects.observers.length, 0);
+  assert.equal(effects.shown(), true);
+  effects.reduced(false);
+  assert.equal(effects.shown(), true);
+  assert.equal(effects.observers[0].targets.size, 1);
+  effects.trigger(false, { top: 900, bottom: 1100 });
+  effects.trigger(true, { top: 100, bottom: 300 });
+  assert.equal(effects.element.reveals, 2);
+});
+
+test('queued entries from a replaced observer cannot hide or reanimate current content', () => {
+  const effects = createEffects({ bounds: { top: 100, bottom: 300 } });
+  const oldObserver = effects.observers[0];
+  effects.reduced(true);
+  effects.reduced(false);
+  oldObserver.callback([{ target: effects.element, isIntersecting: false, boundingClientRect: { top: 900, bottom: 1100 } }]);
+  assert.equal(effects.shown(), true);
+  assert.equal(effects.element.reveals, 1);
+});
+
+test('without IntersectionObserver all content stays directly readable through preference changes', () => {
+  const effects = createEffects({ intersectionObserver: false, extraBounds: [{ top: 1400, bottom: 1700 }] });
+  assert.equal(effects.observers.length, 0);
+  assert.ok(effects.elements.every(element => effects.shown(element)));
+  effects.reduced(true);
+  effects.reduced(false);
+  assert.ok(effects.elements.every(element => effects.shown(element)));
+  assert.ok(effects.elements.every(element => element.reveals === 1));
 });
 
 test('pagehide disconnects observations and removes lifecycle listeners on final departure', () => {
@@ -206,7 +255,7 @@ test('pagehide disconnects observations and removes lifecycle listeners on final
   assert.equal(effects.shown(), false, 'departed page receives no new reveal work');
 });
 
-test('a bfcache departure preserves pending observations and once-only history', () => {
+test('a bfcache departure preserves observations and repeated return behavior', () => {
   const effects = createEffects({ extraBounds: [{ top: 1400, bottom: 1700 }] });
   effects.trigger(true, { top: 100, bottom: 300 });
   effects.pagehide(true);
@@ -216,6 +265,9 @@ test('a bfcache departure preserves pending observations and once-only history',
   assert.equal(effects.element.reveals, 1);
   effects.trigger(true, { top: 100, bottom: 300 }, effects.elements[1]);
   assert.equal(effects.shown(effects.elements[1]), true);
+  effects.trigger(false, { top: 900, bottom: 1100 });
+  effects.trigger(true, { top: 100, bottom: 300 });
+  assert.equal(effects.element.reveals, 2);
 });
 
 test('legacy MediaQueryList boot preserves first-entry reveal and live reduced-motion readability', () => {
@@ -231,7 +283,10 @@ test('legacy MediaQueryList boot preserves first-entry reveal and live reduced-m
   assert.ok(effects.elements.every(element => effects.shown(element)));
   assert.equal(effects.observers[0].disconnected, true);
   effects.reduced(false);
-  assert.ok(effects.elements.every(element => element.reveals === 1), 'visited reveals remain once-only');
+  assert.equal(effects.shown(), true);
+  assert.equal(effects.shown(effects.elements[1]), false);
+  effects.trigger(true, { top: 100, bottom: 300 }, effects.elements[1]);
+  assert.equal(effects.elements[1].reveals, 2, 'legacy media listeners also resume repeated reveals');
 });
 
 test('legacy preference and lifecycle listeners are removed on final departure', () => {
