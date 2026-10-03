@@ -1,0 +1,113 @@
+/* Effects adapted from breakglass-apple, around the approved brand identity. */
+body { isolation: isolate; }
+html.intro-scroll-locked { overflow: hidden; overscroll-behavior: none; }
+html.intro-scroll-locked body { position: fixed; top: var(--intro-scroll-y); left: var(--intro-scroll-x); width: 100%; padding-right: var(--intro-scroll-padding); overflow: hidden; }
+.bg-core {
+  background: radial-gradient(110% 60% at 50% 114%, rgb(43 150 189 / .12), transparent 72%),
+    radial-gradient(70% 42% at 50% -12%, rgb(113 221 255 / .055), transparent 75%), var(--bg);
+}
+.grid-overlay {
+  display: block;
+  background-size: 88px 88px;
+  opacity: .4;
+}
+#fx { display: block; opacity: .62; }
+.topline {
+  display: block;
+  background: linear-gradient(90deg, transparent, rgb(113 221 255 / .55), transparent);
+}
+.progress { box-shadow: 0 0 9px rgb(113 221 255 / .28); }
+.nav { background: rgb(8 11 13 / .79); transition: opacity 520ms var(--ease), transform 520ms var(--ease); }
+.line-sidebar { transition: opacity 260ms var(--ease); }
+.ls-item { --chapter-from-x: -18px; --chapter-from-y: 0px; --chapter-over-x: 3px; --chapter-over-y: 0px; --chapter-rebound-x: -1px; --chapter-rebound-y: 0px; }
+.nav-links a { --chapter-from-x: 0px; --chapter-from-y: -10px; --chapter-over-x: 0px; --chapter-over-y: 2px; --chapter-rebound-x: 0px; --chapter-rebound-y: -.5px; }
+.chrome-revealed .line-sidebar .ls-item, .chrome-revealed .nav-links a { animation: nav-chapter-arrive 620ms var(--ease) var(--chapter-delay, 0ms) both; }
+.chrome-revealed .line-sidebar .ls-item:focus-visible, .chrome-revealed .nav-links a:focus-visible { opacity: 1 !important; translate: 0 0 !important; }
+.chrome-pending .nav { opacity: 0; transform: translateY(-12px); visibility: hidden; pointer-events: none; transition: none; }
+.chrome-pending .line-sidebar { opacity: 0; visibility: hidden; pointer-events: none; transition: none; }
+.chrome-pending .topline, .chrome-pending .progress { opacity: 0; }
+
+/* Content stays visible without JS. Each element enters only on its first visit. */
+.effects-ready .reveal {
+  transition: opacity 640ms var(--ease), transform 640ms var(--ease);
+  transition-delay: calc(min(var(--i, 0), 4) * 55ms);
+}
+.effects-ready .reveal:not(.is-revealed) { opacity: 0; transform: translateY(22px); }
+.effects-ready .reveal.is-revealed { opacity: 1; transform: none; }
+.brand-stage { transform-origin: 50% 50%; }
+.brand-focus { position: relative; transform: translateY(0); transition: transform 720ms var(--ease); }
+.intro-entering .brand-focus { transform: translate(var(--intro-x, 0px), var(--intro-y, 0px)); transition: none; }
+.hero-copy { opacity: 1; transform: none; transition: opacity 600ms var(--ease) 320ms, transform 600ms var(--ease) 320ms; }
+.intro-entering .hero-copy { opacity: 0; transform: translateY(18px); visibility: hidden; transition: none; }
+.btn { transition: transform 220ms var(--ease), background 220ms, filter 220ms; }
+.curve-panel { transition: background 240ms var(--ease); }
+.chart-surface { position: relative; isolation: isolate; }
+.chart-surface svg { position: relative; z-index: 1; }
+.watch-panel .chart-surface {
+  border: 1px dashed rgb(113 221 255 / .2);
+  margin-block: 15px;
+  background: radial-gradient(ellipse at 50% 100%, rgb(113 221 255 / .04), transparent 70%);
+}
+.watch-panel .chart-surface svg { margin: 0; }
+.live-panel .chart-surface::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background: linear-gradient(180deg, transparent 28%, rgb(113 221 255 / .12) 50%, transparent 72%);
+  opacity: 0;
+  pointer-events: none;
+}
+.plot-entered .live-panel .chart-surface::before { animation: plot-scan 1800ms var(--ease) 1; }
+.plot-entered .small-curve { animation: curve-draw 1100ms var(--ease) 1; }
+.small-curve { filter: drop-shadow(0 0 3px rgb(113 221 255 / .24)); }
+.demo-active .small-node { animation: node-light 1800ms ease-in-out infinite; }
+.demo-motion-control { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin-top: 10px; }
+.demo-motion-status { color: var(--text-dim); font-size: 12px; line-height: 1.6; }
+.demo-autoplay { flex: none; min-height: 44px; padding: 6px 10px; border: 1px solid var(--edge); border-radius: 6px; background: transparent; color: var(--text); font-size: 12px; cursor: pointer; transition: border-color 200ms, background 200ms; }
+.demo-autoplay[aria-pressed=true] { border-color: rgb(113 221 255 / .6); color: var(--accent); }
+.ls-item:focus-visible .ls-label { opacity: 1; transform: none; }
+@keyframes nav-chapter-arrive {
+  0% { opacity: 0; translate: var(--chapter-from-x) var(--chapter-from-y); }
+  64% { opacity: 1; translate: var(--chapter-over-x) var(--chapter-over-y); }
+  84% { opacity: 1; translate: var(--chapter-rebound-x) var(--chapter-rebound-y); }
+  100% { opacity: 1; translate: 0 0; }
+}
+/* Release transform after arrival so legacy Safari retains proximity feedback. */
+@supports not (translate: 0px) {
+  .chrome-revealed .line-sidebar .ls-item, .chrome-revealed .nav-links a { animation-name: nav-chapter-arrive-legacy; animation-fill-mode: backwards; }
+  .chrome-revealed .line-sidebar .ls-item:focus, .chrome-revealed .nav-links a:focus { opacity: 1 !important; transform: none !important; }
+}
+@keyframes nav-chapter-arrive-legacy {
+  0% { opacity: 0; transform: translate(var(--chapter-from-x), var(--chapter-from-y)); }
+  64% { opacity: 1; transform: translate(var(--chapter-over-x), var(--chapter-over-y)); }
+  84% { opacity: 1; transform: translate(var(--chapter-rebound-x), var(--chapter-rebound-y)); }
+  100% { opacity: 1; transform: translate(0, 0); }
+}
+@keyframes plot-scan {
+  0% { transform: translateY(-45%); opacity: 0; }
+  22% { opacity: 1; }
+  100% { transform: translateY(45%); opacity: 0; }
+}
+@keyframes curve-draw { from { stroke-dasharray: 1; stroke-dashoffset: 1; } to { stroke-dasharray: 1; stroke-dashoffset: 0; } }
+@keyframes node-light { 0%,100% { filter: drop-shadow(0 0 3px rgb(113 221 255 / .35)); } 50% { filter: drop-shadow(0 0 7px rgb(113 221 255 / .85)); } }
+@media (hover: hover) and (pointer: fine) {
+  .btn:hover { transform: translateY(-2px); }
+  .curve-panel:hover { background: rgb(113 221 255 / .025); }
+  .demo-autoplay:hover { border-color: var(--accent); background: rgb(113 221 255 / .06); }
+}
+@media (max-width: 600px) {
+  #fx { opacity: .42; }
+  .grid-overlay { opacity: .24; }
+  .watch-panel .chart-surface { margin-block: 18px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  #fx { display: none; }
+  .effects-ready .reveal:not(.is-revealed) { opacity: 1; transform: none; }
+  .brand-stage { transform: none !important; opacity: 1 !important; }
+  .brand-focus { transform: none !important; }
+  .intro-entering .hero-copy { opacity: 1; transform: none; visibility: visible; }
+  .live-panel .chart-surface::before { display: none; }
+  .small-curve, .small-node { filter: none; }
+}
+body.effects-paused *, body.effects-paused *::before, body.effects-paused *::after { animation-play-state: paused !important; }
