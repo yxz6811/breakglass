@@ -1,0 +1,447 @@
+{
+  "sourceCommit": "08e84da67e7d2315c0045c54abcb18e300d19838",
+  "checkedAt": "2026-10-03T10:39:35.313Z",
+  "rootTests": {
+    "directory": "tests/",
+    "allFileCount": 61,
+    "testFileCount": 56,
+    "testFiles": [
+      "tests/acceptance-original.test.js",
+      "tests/acceptance-supplement.test.js",
+      "tests/alignment.test.js",
+      "tests/backend-edges.test.js",
+      "tests/content-rect.test.js",
+      "tests/evaluate.test.js",
+      "tests/external-simulator.test.js",
+      "tests/figures.test.js",
+      "tests/geometry-actions.test.js",
+      "tests/geometry-frame.test.js",
+      "tests/geometry-parity.test.js",
+      "tests/geometry-request.test.js",
+      "tests/geometry-scene.test.js",
+      "tests/geometry-session.test.js",
+      "tests/latency.test.js",
+      "tests/lesson-ask.test.js",
+      "tests/lesson-reading.test.js",
+      "tests/liquid-glass-dock.test.js",
+      "tests/liquid-glass-toolbar.test.js",
+      "tests/p0-audit.test.js",
+      "tests/p0-page-audit.test.js",
+      "tests/p0-roadshow.test.js",
+      "tests/page-a11y.test.js",
+      "tests/page-figures.test.js",
+      "tests/page-geometry.test.js",
+      "tests/page-guide.test.js",
+      "tests/page-integration.test.js",
+      "tests/page-lesson.test.js",
+      "tests/page-p2.test.js",
+      "tests/page-p3.test.js",
+      "tests/page-presentation.test.js",
+      "tests/page-tutor-edges.test.js",
+      "tests/page-tutor.test.js",
+      "tests/page-ui.test.js",
+      "tests/page-vision.test.js",
+      "tests/place-in-frame.test.js",
+      "tests/preset-contract.test.js",
+      "tests/session.test.js",
+      "tests/showcase-demo.test.js",
+      "tests/showcase-reveal.test.js",
+      "tests/showcase-scroll-lock.test.js",
+      "tests/showcase-security.test.js",
+      "tests/site-background.test.js",
+      "tests/site-ui.test.js",
+      "tests/tutor-ask.test.js",
+      "tests/tutor-numbers.test.js",
+      "tests/tutor-parse.test.js",
+      "tests/tutor-sidebar-edges.test.js",
+      "tests/validate.test.js",
+      "tests/vision-config.test.js",
+      "tests/vision-latency.test.js",
+      "tests/vision-reject.test.js",
+      "tests/vision-validate.test.js",
+      "tests/vision-wake.test.js",
+      "tests/wake-contract.test.js",
+      "tests/wake-timeout.test.js"
+    ]
+  },
+  "readerTests": {
+    "directory": "breakglass-reader/tests/",
+    "allFileCount": 9,
+    "testFileCount": 7,
+    "testFiles": [
+      "breakglass-reader/tests/geometry-ask.test.mjs",
+      "breakglass-reader/tests/geometry-read.test.mjs",
+      "breakglass-reader/tests/geometry.test.mjs",
+      "breakglass-reader/tests/jpeg.test.mjs",
+      "breakglass-reader/tests/locate.test.mjs",
+      "breakglass-reader/tests/read.test.mjs",
+      "breakglass-reader/tests/server.test.mjs"
+    ]
+  },
+  "totalTestFileCount": 63,
+  "readme": {
+    "relativePath": "README.md",
+    "exists": true,
+    "bytes": 13238,
+    "sha256": "6dba3e365f08cbeb62271e1fb30226820af9723e261520849052d092c334f78d",
+    "localLinks": [
+      {
+        "href": "docs/BreakGlass-frontend-validation.md",
+        "relativePath": "docs/BreakGlass-frontend-validation.md",
+        "exists": true
+      },
+      {
+        "href": "docs/BreakGlass-geometry-validation.md",
+        "relativePath": "docs/BreakGlass-geometry-validation.md",
+        "exists": true
+      },
+      {
+        "href": "breakglass-reader/README.md",
+        "relativePath": "breakglass-reader/README.md",
+        "exists": true
+      },
+      {
+        "href": "docs/BreakGlass-optimization-2026-10-03.md",
+        "relativePath": "docs/BreakGlass-optimization-2026-10-03.md",
+        "exists": true
+      },
+      {
+        "href": "breakglass-reader/README.md",
+        "relativePath": "breakglass-reader/README.md",
+        "exists": true
+      },
+      {
+        "href": "specs/005-insitu-right-triangle/quickstart.md",
+        "relativePath": "specs/005-insitu-right-triangle/quickstart.md",
+        "exists": true
+      },
+      {
+        "href": "docs/BreakGlass-geometry-validation.md",
+        "relativePath": "docs/BreakGlass-geometry-validation.md",
+        "exists": true
+      },
+      {
+        "href": "docs/BreakGlass-geometry-parity-2026-10-03.md",
+        "relativePath": "docs/BreakGlass-geometry-parity-2026-10-03.md",
+        "exists": true
+      },
+      {
+        "href": "extension/assets/video/README.md",
+        "relativePath": "extension/assets/video/README.md",
+        "exists": true
+      },
+      {
+        "href": "specs/005-insitu-right-triangle/quickstart.md#9-2026-10-03-自制几何示例视频增补",
+        "relativePath": "specs/005-insitu-right-triangle/quickstart.md",
+        "exists": true
+      },
+      {
+        "href": "展示网站",
+        "relativePath": "展示网站",
+        "exists": true
+      },
+      {
+        "href": "展示网站.html",
+        "relativePath": "展示网站.html",
+        "exists": true
+      },
+      {
+        "href": "docs/BreakGlass-constitution.md",
+        "relativePath": "docs/BreakGlass-constitution.md",
+        "exists": true
+      },
+      {
+        "href": "AGENTS.md",
+        "relativePath": "AGENTS.md",
+        "exists": true
+      },
+      {
+        "href": "docs/frontend-backend-boundary.md",
+        "relativePath": "docs/frontend-backend-boundary.md",
+        "exists": true
+      },
+      {
+        "href": "docs/frontend-task-tracker.md",
+        "relativePath": "docs/frontend-task-tracker.md",
+        "exists": true
+      },
+      {
+        "href": "docs/BreakGlass-constitution.md",
+        "relativePath": "docs/BreakGlass-constitution.md",
+        "exists": true
+      },
+      {
+        "href": "docs/BreakGlass-openmaic-learning.md",
+        "relativePath": "docs/BreakGlass-openmaic-learning.md",
+        "exists": true
+      },
+      {
+        "href": "specs/001-insitu-parabola/spec.md",
+        "relativePath": "specs/001-insitu-parabola/spec.md",
+        "exists": true
+      },
+      {
+        "href": "specs/001-insitu-parabola/plan.md",
+        "relativePath": "specs/001-insitu-parabola/plan.md",
+        "exists": true
+      },
+      {
+        "href": "specs/001-insitu-parabola/tasks.md",
+        "relativePath": "specs/001-insitu-parabola/tasks.md",
+        "exists": true
+      },
+      {
+        "href": "specs/001-insitu-parabola/quickstart.md",
+        "relativePath": "specs/001-insitu-parabola/quickstart.md",
+        "exists": true
+      },
+      {
+        "href": "specs/003-preplay-lesson-points/spec.md",
+        "relativePath": "specs/003-preplay-lesson-points/spec.md",
+        "exists": true
+      },
+      {
+        "href": "specs/004-figures-and-tutor/spec.md",
+        "relativePath": "specs/004-figures-and-tutor/spec.md",
+        "exists": true
+      },
+      {
+        "href": "specs/004-figures-and-tutor/geometry-handoff.md",
+        "relativePath": "specs/004-figures-and-tutor/geometry-handoff.md",
+        "exists": true
+      },
+      {
+        "href": "specs/005-insitu-right-triangle/spec.md",
+        "relativePath": "specs/005-insitu-right-triangle/spec.md",
+        "exists": true
+      },
+      {
+        "href": "specs/005-insitu-right-triangle/plan.md",
+        "relativePath": "specs/005-insitu-right-triangle/plan.md",
+        "exists": true
+      },
+      {
+        "href": "specs/005-insitu-right-triangle/tasks.md",
+        "relativePath": "specs/005-insitu-right-triangle/tasks.md",
+        "exists": true
+      },
+      {
+        "href": "specs/005-insitu-right-triangle/contracts/scene-actions.md",
+        "relativePath": "specs/005-insitu-right-triangle/contracts/scene-actions.md",
+        "exists": true
+      },
+      {
+        "href": "specs/005-insitu-right-triangle/quickstart.md",
+        "relativePath": "specs/005-insitu-right-triangle/quickstart.md",
+        "exists": true
+      },
+      {
+        "href": "docs/BreakGlass-geometry-parity-2026-10-03.md",
+        "relativePath": "docs/BreakGlass-geometry-parity-2026-10-03.md",
+        "exists": true
+      },
+      {
+        "href": "docs/BreakGlass-visual-spec.md",
+        "relativePath": "docs/BreakGlass-visual-spec.md",
+        "exists": true
+      },
+      {
+        "href": "docs/BreakGlass-ui-alignment-2026-10-03.md",
+        "relativePath": "docs/BreakGlass-ui-alignment-2026-10-03.md",
+        "exists": true
+      },
+      {
+        "href": "docs/BreakGlass-test-report-2026-10-03.md",
+        "relativePath": "docs/BreakGlass-test-report-2026-10-03.md",
+        "exists": true
+      },
+      {
+        "href": "docs/BreakGlass-ui-design-guide.md",
+        "relativePath": "docs/BreakGlass-ui-design-guide.md",
+        "exists": true
+      },
+      {
+        "href": "docs/BreakGlass-ui-inventory.md",
+        "relativePath": "docs/BreakGlass-ui-inventory.md",
+        "exists": true
+      },
+      {
+        "href": "docs/BreakGlass-ui-todo.md",
+        "relativePath": "docs/BreakGlass-ui-todo.md",
+        "exists": true
+      }
+    ],
+    "allLocalLinkTargetsExist": true
+  },
+  "evidenceDirectory": "docs/test-evidence/repository-audit-2026-10-03",
+  "existingEvidenceBeforeInventory": [
+    {
+      "name": "bfcache-reproduction.cjs",
+      "bytes": 3193,
+      "exists": true
+    },
+    {
+      "name": "bfcache-reproduction.json",
+      "bytes": 412,
+      "exists": true
+    },
+    {
+      "name": "bfcache-reproduction.log",
+      "bytes": 1618,
+      "exists": true
+    },
+    {
+      "name": "bfcache-reproduction.md",
+      "bytes": 3457,
+      "exists": true
+    },
+    {
+      "name": "geometry-desktop.jpg",
+      "bytes": 314523,
+      "exists": true
+    },
+    {
+      "name": "geometry-ffmpeg-version.stderr.log",
+      "bytes": 0,
+      "exists": true
+    },
+    {
+      "name": "geometry-ffmpeg-version.stdout.log",
+      "bytes": 1479,
+      "exists": true
+    },
+    {
+      "name": "geometry-media.json",
+      "bytes": 9385,
+      "exists": true
+    },
+    {
+      "name": "geometry-mobile.jpg",
+      "bytes": 229336,
+      "exists": true
+    },
+    {
+      "name": "http-range.json",
+      "bytes": 339,
+      "exists": true
+    },
+    {
+      "name": "http-source-sha256.json",
+      "bytes": 5292,
+      "exists": true
+    },
+    {
+      "name": "node-test.json",
+      "bytes": 206,
+      "exists": true
+    },
+    {
+      "name": "node-test.log",
+      "bytes": 127666,
+      "exists": true
+    },
+    {
+      "name": "preview-context.json",
+      "bytes": 1506,
+      "exists": true
+    },
+    {
+      "name": "run-context.json",
+      "bytes": 616,
+      "exists": true
+    },
+    {
+      "name": "showcase-build.json",
+      "bytes": 4735,
+      "exists": true
+    },
+    {
+      "name": "showcase-build.stderr.log",
+      "bytes": 0,
+      "exists": true
+    },
+    {
+      "name": "showcase-build.stdout.log",
+      "bytes": 120,
+      "exists": true
+    },
+    {
+      "name": "source-ci.json",
+      "bytes": 727,
+      "exists": true
+    },
+    {
+      "name": "static-check.json",
+      "bytes": 198,
+      "exists": true
+    },
+    {
+      "name": "static-check.log",
+      "bytes": 87,
+      "exists": true
+    },
+    {
+      "name": "triangle-3-4-5-decode.stderr.log",
+      "bytes": 0,
+      "exists": true
+    },
+    {
+      "name": "triangle-3-4-5-decode.stdout.log",
+      "bytes": 183,
+      "exists": true
+    },
+    {
+      "name": "triangle-3-4-5-probe.stderr.log",
+      "bytes": 1483,
+      "exists": true
+    },
+    {
+      "name": "triangle-3-4-5-probe.stdout.log",
+      "bytes": 0,
+      "exists": true
+    },
+    {
+      "name": "triangle-5-12-13-decode.stderr.log",
+      "bytes": 0,
+      "exists": true
+    },
+    {
+      "name": "triangle-5-12-13-decode.stdout.log",
+      "bytes": 183,
+      "exists": true
+    },
+    {
+      "name": "triangle-5-12-13-probe.stderr.log",
+      "bytes": 1485,
+      "exists": true
+    },
+    {
+      "name": "triangle-5-12-13-probe.stdout.log",
+      "bytes": 0,
+      "exists": true
+    },
+    {
+      "name": "triangle-8-15-17-decode.stderr.log",
+      "bytes": 0,
+      "exists": true
+    },
+    {
+      "name": "triangle-8-15-17-decode.stdout.log",
+      "bytes": 183,
+      "exists": true
+    },
+    {
+      "name": "triangle-8-15-17-probe.stderr.log",
+      "bytes": 1485,
+      "exists": true
+    },
+    {
+      "name": "triangle-8-15-17-probe.stdout.log",
+      "bytes": 0,
+      "exists": true
+    }
+  ],
+  "evidenceBoundary": "File counts describe discoverable *.test.js/mjs/cjs source files, not the number of executed test cases. No test runner was invoked in this supplement.",
+  "startedAt": "2026-10-03T10:39:29.913Z",
+  "finishedAt": "2026-10-03T10:39:35.314Z"
+}

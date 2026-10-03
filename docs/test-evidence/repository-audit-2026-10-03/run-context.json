@@ -1,0 +1,13 @@
+{
+  "startedAt": "2026-10-03T18:34:48.7324846+08:00",
+  "cwd": "D:\\前端\\breakglass-geometry-plan",
+  "sourceCommit": "08e84da67e7d2315c0045c54abcb18e300d19838",
+  "branch": "codex/right-triangle-plan",
+  "origin123456": "08e84da67e7d2315c0045c54abcb18e300d19838",
+  "originMain": "7e04c30fe4ff19745f4e3a811a5b1967282668ad",
+  "workingTreeBefore": [],
+  "os": "Microsoft Windows NT 10.0.26200.0",
+  "node": "v24.21.0",
+  "ffmpeg": "ffmpeg version 7.1-essentials_build-www.gyan.dev Copyright (c) 2000-2024 the FFmpeg developers",
+  "modelMode": "local HTTP and model test doubles, no real provider"
+}

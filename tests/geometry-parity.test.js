@@ -754,6 +754,204 @@ test('recognition retry requires the current paused frame and never substitutes 
   } finally { h.page.dispose(); }
 });
 
+test('persisted navigation retains the confirmed local scene and repeated returns keep controls usable once', () => {
+  const h = harness();
+  try {
+    h.loadVideo(); h.confirmPreset();
+    const source = h.video.src;
+    const listenerSnapshot = () => [
+      h.elements['ab-form'].listenerCount('submit'), h.elements['review-form'].listenerCount('submit'),
+      h.elements['preset-button'].listenerCount('click'), h.elements['geometry-restore'].listenerCount('click'),
+      h.video.listenerCount('timeupdate')
+    ];
+    const listeners = listenerSnapshot();
+    assert.ok(listeners.every((count) => count === 1), 'setup has one business handler per control');
+    for (let round = 0; round < 3; round++) {
+      h.elements['experiment-ab'].value = String(6 + round); h.elements['ab-form'].dispatch('submit');
+      const before = h.page.session.getState(), captures = h.captures.length, loads = h.mediaCalls.load;
+      const lengthDraft = `123.${round}`, questionDraft = `尚未提交的问题 ${round}`;
+      h.elements['experiment-ab'].value = lengthDraft; h.elements['experiment-ab'].dispatch('input');
+      h.elements.question.value = questionDraft; h.elements.question.dispatch('input');
+      h.window.dispatch('pagehide', { persisted: true });
+      assert.deepEqual(h.page.session.getState(), before, 'caching retains confirmed conditions and original snapshot');
+      assert.equal(h.video.src, source);
+      assert.deepEqual(h.revokedUrls, [], 'the cached page still owns its local video URL');
+      h.window.dispatch('pageshow', { persisted: true });
+      assert.deepEqual(h.page.session.getState(), before, 'restoring does not change the revision or conditions');
+      assert.deepEqual(listenerSnapshot(), listeners, 'a return neither removes nor duplicates business handlers');
+      assert.equal(h.requests.length, 0, 'restoring does not call a reader');
+      assert.equal(h.captures.length, captures, 'restoring does not capture a new frame');
+      assert.equal(h.mediaCalls.load, loads, 'restoring does not reload the video');
+      assert.equal(h.mediaCalls.play, 0, 'restoring does not automatically play');
+      assert.equal(h.elements['experiment-panel'].hidden, false);
+      assert.equal(h.elements['geometry-restore'].disabled, false);
+      assert.equal(h.elements['experiment-ab'].value, lengthDraft, 'restoring retains an unsubmitted length draft');
+      assert.equal(h.elements.question.value, questionDraft, 'restoring retains an unsubmitted question draft');
+      h.elements['experiment-ac'].value = '8'; h.elements['ac-form'].dispatch('submit');
+      const changed = h.page.session.getState();
+      assert.deepEqual(changed.scene.lengths, { AB: 6 + round, AC: 8 });
+      assert.equal(changed.scene.sceneRevision, before.scene.sceneRevision + 1, 'one submit applies exactly one revision');
+      h.elements['geometry-restore'].dispatch('click');
+      assert.deepEqual(h.page.session.getState().scene.lengths, { AB: 3, AC: 4 });
+      assert.equal(h.elements['bc-value'].textContent, '5');
+    }
+    h.elements['preset-button'].dispatch('click');
+    assert.equal(h.page.session.getState().phase, 'review', 'preset remains usable after repeated cache returns');
+    h.elements['right-angle-check'].checked = true; h.elements['review-form'].dispatch('submit');
+    assert.equal(h.page.session.getState().phase, 'confirmed');
+    assert.deepEqual(h.revokedUrls, []);
+  } finally { h.page.dispose(); }
+});
+
+test('persisted navigation preserves a candidate and its unsubmitted correction fields', () => {
+  const h = harness();
+  try {
+    h.loadVideo(); h.elements['preset-button'].dispatch('click');
+    const before = h.page.session.getState(), source = h.video.src, captures = h.captures.length;
+    assert.equal(before.phase, 'review');
+    h.elements['candidate-ab'].value = '6'; h.elements['label-b'].value = '端点B';
+    h.elements['right-angle-check'].checked = true;
+    h.window.dispatch('pagehide', { persisted: true });
+    assert.deepEqual(h.page.session.getState(), before);
+    h.window.dispatch('pageshow', { persisted: true });
+    assert.deepEqual(h.page.session.getState(), before);
+    assert.equal(h.elements['candidate-ab'].value, '6');
+    assert.equal(h.elements['label-b'].value, '端点B');
+    assert.equal(h.elements['right-angle-check'].checked, true);
+    assert.equal(h.elements['review-panel'].hidden, false);
+    assert.equal(h.elements['experiment-ab-range'].disabled, true, 'return does not implicitly confirm the candidate');
+    assert.equal(h.video.src, source); assert.deepEqual(h.revokedUrls, []);
+    assert.equal(h.requests.length, 0); assert.equal(h.captures.length, captures);
+    h.elements['review-form'].dispatch('submit');
+    const confirmed = h.page.session.getState();
+    assert.equal(confirmed.phase, 'confirmed');
+    assert.deepEqual(confirmed.original.lengths, { AB: 6, AC: 4 });
+    assert.equal(confirmed.scene.labels.B, '端点B');
+    assert.equal(confirmed.result.BC, Math.hypot(6, 4));
+  } finally { h.page.dispose(); }
+});
+
+test('persisted departure cancels pending reading and asking without applying late results or restarting them', () => {
+  for (const kind of ['read', 'ask']) {
+    const h = harness();
+    try {
+      h.loadVideo(); h.confirmPreset();
+      h.elements['experiment-ab'].value = '6'; h.elements['ab-form'].dispatch('submit');
+      const before = h.page.session.getState(), source = h.video.src;
+      let pending;
+      if (kind === 'read') {
+        h.elements['reader-url'].value = READER; h.elements['recognize-frame'].dispatch('click');
+        pending = h.requests.at(-1);
+      } else pending = pendingAsk(h);
+      assert.equal(pending.canceled, false);
+      const questionDraft = h.elements.question.value;
+      h.window.dispatch('pagehide', { persisted: true });
+      assert.equal(pending.canceled, true, `${kind}: cached departure cancels work`);
+      assert.deepEqual(h.page.session.getState(), before, `${kind}: cancellation preserves the confirmed scene`);
+      const lateSuccess = () => kind === 'read'
+        ? pending.onSuccess({ status: 'candidate', scene: candidate(pending, { AB: 9, AC: 12 }) }) : answer(pending, 9);
+      lateSuccess();
+      assert.deepEqual(h.page.session.getState(), before, `${kind}: late success cannot change a suspended scene`);
+      h.window.dispatch('pageshow', { persisted: true });
+      const feedback = h.elements['ask-feedback'].textContent, status = h.elements['page-status'].textContent;
+      const history = h.elements['ask-log'].textContent;
+      lateSuccess(); pending.onFailure({ code: 'network_error', message: '迟到的服务错误' });
+      assert.deepEqual(h.page.session.getState(), before, `${kind}: late callbacks cannot change the restored scene`);
+      assert.equal(h.elements['ask-feedback'].textContent, feedback);
+      assert.equal(h.elements['page-status'].textContent, status);
+      assert.equal(h.elements['ask-log'].textContent, history);
+      assert.equal(h.requests.length, 1, `${kind}: return does not retry a canceled request`);
+      assert.equal(h.elements['read-busy'].hidden, true);
+      assert.equal(h.elements['read-cancel'].hidden, true);
+      assert.equal(h.elements['ask-cancel'].hidden, true);
+      assert.equal(h.elements['recognize-frame'].disabled, false);
+      assert.equal(h.elements['ask-submit'].disabled, false);
+      assert.equal(h.elements.question.value, questionDraft, 'canceling for cache navigation retains the question draft');
+      assert.equal(h.video.src, source); assert.deepEqual(h.revokedUrls, []);
+      question(h, '把 AB 改成 8');
+      assert.equal(h.page.session.getState().scene.lengths.AB, 8, `${kind}: local actions still work after return`);
+      assert.equal(h.requests.length, 1);
+    } finally { h.page.dispose(); }
+  }
+});
+
+test('cached departure retires browser promises without restarting playback or overriding a newer operation', async () => {
+  for (const action of ['play', 'fullscreen', 'return']) {
+    for (const rejected of [false, true]) {
+      const first = deferred(), second = deferred(); let calls = 0;
+      const option = action === 'fullscreen' ? 'fullscreenImpl' : 'playImpl';
+      const h = harness({ [option]: () => ++calls === 1 ? first.promise : second.promise });
+      try {
+        h.loadVideo(); h.confirmPreset();
+        const control = action === 'return' ? 'return-video' : `geometry-${action}`;
+        h.elements[control].dispatch('click'); await flush();
+        assert.equal(calls, 1);
+        h.window.dispatch('pagehide', { persisted: true }); h.window.dispatch('pageshow', { persisted: true });
+        assert.equal(calls, 1, `${action}: cache return does not restart the browser operation`);
+        assert.equal(h.video.paused, true);
+        const busyControl = action === 'fullscreen' ? 'geometry-fullscreen' : 'geometry-play';
+        assert.equal(h.elements[busyControl].disabled, false, `${action}: canceled operation releases its busy state`);
+        if (action !== 'return') {
+          h.elements[control].dispatch('click'); await flush();
+          assert.equal(calls, 2, 'a fresh explicit operation can start after restoring');
+          assert.equal(h.elements[busyControl].disabled, true);
+        }
+        const status = h.elements['page-status'].textContent;
+        if (rejected) first.reject(new Error('cached operation rejected late')); else first.resolve();
+        await flush();
+        assert.equal(h.elements['page-status'].textContent, status, `${action}: rejected=${rejected} cannot rewrite restored feedback`);
+        if (action !== 'return') {
+          assert.equal(h.elements[busyControl].disabled, true, 'the stale promise cannot release a newer pending operation');
+          second.resolve(); await flush();
+          assert.equal(h.elements[busyControl].disabled, false);
+        }
+        assert.equal(h.requests.length, 0);
+        assert.deepEqual(h.revokedUrls, []);
+      } finally { h.page.dispose(); }
+    }
+  }
+});
+
+test('final nonpersisted departure releases the cached controller and ignores late browser promises', async () => {
+  for (const action of ['read', 'ask', 'play', 'fullscreen']) {
+    const pendingPromise = deferred();
+    const options = action === 'play' ? { playImpl: () => pendingPromise.promise }
+      : action === 'fullscreen' ? { fullscreenImpl: () => pendingPromise.promise } : {};
+    const h = harness(options);
+    try {
+      h.loadVideo(); h.confirmPreset();
+      h.window.dispatch('pagehide', { persisted: true }); h.window.dispatch('pageshow', { persisted: true });
+      const source = h.video.src;
+      let request;
+      if (action === 'read') {
+        h.elements['reader-url'].value = READER; h.elements['recognize-frame'].dispatch('click'); request = h.requests.at(-1);
+      } else if (action === 'ask') request = pendingAsk(h);
+      else { h.elements[`geometry-${action}`].dispatch('click'); await flush(); }
+      if (action === 'read' || action === 'ask') assert.ok(request, `${action}: restored controls can start a fresh request`);
+      h.window.dispatch('pagehide', { persisted: false });
+      assert.equal(h.page.session.getState().phase, 'empty');
+      assert.deepEqual(h.revokedUrls, [source], `${action}: final departure releases the local URL exactly once`);
+      assert.equal(h.elements['preset-button'].listenerCount('click'), 0);
+      assert.equal(h.elements['ab-form'].listenerCount('submit'), 0);
+      assert.equal(h.video.listenerCount('timeupdate'), 0);
+      assert.equal(h.window.listenerCount('pagehide'), 0);
+      assert.equal(h.window.listenerCount('pageshow'), 0);
+      if (request) assert.equal(request.canceled, true);
+      const status = h.elements['page-status'].textContent, feedback = h.elements['ask-feedback'].textContent;
+      if (action === 'read') request.onSuccess({ status: 'candidate', scene: candidate(request) });
+      else if (action === 'ask') answer(request);
+      else if (action === 'play') pendingPromise.resolve();
+      else pendingPromise.reject(new Error('late browser denial'));
+      await flush();
+      h.window.dispatch('pageshow', { persisted: true }); h.elements['preset-button'].dispatch('click');
+      assert.equal(h.page.session.getState().phase, 'empty', `${action}: final disposal is permanent`);
+      assert.equal(h.elements['page-status'].textContent, status);
+      assert.equal(h.elements['ask-feedback'].textContent, feedback);
+      h.page.dispose(); assert.deepEqual(h.revokedUrls, [source], 'explicit disposal remains idempotent');
+    } finally { h.page.dispose(); }
+  }
+});
+
 test('late play and fullscreen promises cannot update page state after disposal', async () => {
   for (const [action, option] of [['geometry-play', 'playImpl'], ['geometry-fullscreen', 'fullscreenImpl']]) {
     for (const rejected of [false, true]) {

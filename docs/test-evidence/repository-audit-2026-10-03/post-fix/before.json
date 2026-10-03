@@ -1,0 +1,23 @@
+{
+  "phase": "before-fix",
+  "command": "node --test tests/geometry-parity.test.js tests/page-geometry.test.js",
+  "workingDirectory": "D:\\前端\\breakglass-geometry-plan",
+  "startedAt": null,
+  "finishedAt": null,
+  "timingAvailability": "unavailable: exact command start/end timestamps were not recorded; no timestamps inferred from file metadata or request identifiers",
+  "exitCode": 1,
+  "tests": 47,
+  "passed": 42,
+  "failed": 5,
+  "cancelled": 0,
+  "skipped": 0,
+  "todo": 0,
+  "reportedDurationMs": 837.7126,
+  "sourceHead": "08e84da67e7d2315c0045c54abcb18e300d19838",
+  "sourceState": "Old geometry implementation; worktree changes at execution were five new BFCache regression tests in tests/geometry-parity.test.js. Root had not yet written geometry.js fix.",
+  "result": "Existing 42 targeted tests passed; all five newly added BFCache regression tests failed.",
+  "logSource": "C:\\Users\\27736\\AppData\\Local\\Temp\\breakglass-bfcache-regression-before.log",
+  "logFile": "geometry-regression-before.log",
+  "browserVerification": "not performed by this command; test harness uses fake DOM/media boundaries",
+  "passingFullSuiteCountContribution": 0
+}

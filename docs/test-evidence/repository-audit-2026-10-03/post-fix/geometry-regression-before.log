@@ -1,0 +1,455 @@
+✔ the three teaching clips point to bundled MP4 files with distinct known triangle conditions (20.0639ms)
+✔ choosing a teaching clip only changes its description until explicit loading (46.3498ms)
+✔ loading a teaching clip retires old requests and metadata only pauses at the question frame (30.4927ms)
+✔ each loaded sample requires confirmation and restores its own conditions before returning to four seconds (59.8474ms)
+✔ sample presets cannot pause playback or expose conditions outside the question interval (12.1858ms)
+✔ a rejected MIME keeps the loaded sample while a local video returns to the generic preset (15.4673ms)
+✔ a failed sample retires its scene and cannot capture or load conditions until reloaded (22.7014ms)
+✔ invalid seconds cannot seek, discard a confirmed scene or cancel its model request (15.5877ms)
+✔ valid explicit seek pauses at the chosen second and rejects the previous scene request (11.4639ms)
+✔ a pending play operation cannot be duplicated and retires the old scene before late model actions (23.7261ms)
+✔ saving a new frame cancels old model actions and removes the old confirmed snapshot (15.4686ms)
+✔ a failed re-read of the confirmed frame preserves the experiment until a new candidate is reviewed (12.2661ms)
+✔ selecting a non-video MIME preserves the existing media, scene and pending work (2.8117ms)
+✔ native play and seeking events cancel both frame reading and scene actions (20.9529ms)
+✔ recognition disables duplicate recognition while media controls can cancel the pending read (20.6335ms)
+✔ fullscreen failure leaves the experiment usable, and fullscreen Escape does not exit it (6.6896ms)
+✔ Escape in the question clears its draft, while Alt+B ignores editable fields (4.4679ms)
+✔ reader memory validates the host and credentials and stores only the local origin (28.5353ms)
+✔ unavailable session storage never blocks manual work or initiates a request (4.6238ms)
+✔ slider, number form and local question share one side update and extend the visible range (8.8002ms)
+✔ ranges wait for confirmation and extreme valid lengths keep finite bounds with atomic rejection (12.6605ms)
+✔ restoring or applying a valid local action clears rejected length errors and invalid attributes (7.6414ms)
+✔ question examples fill editable drafts without changing the scene or submitting anything (2.6725ms)
+✔ question history uses text, labels result provenance, caps at forty entries and clears on a new scene (29.7074ms)
+✔ clearing question history cancels a pending turn without applying its late reply (2.8549ms)
+✔ failed and canceled model turns stay explicit, and retry uses the same question without stale actions (16.484ms)
+✔ editing a draft withdraws the old retry without submitting or overwriting the new question (2.7255ms)
+✔ recognition retry requires the current paused frame and never substitutes a preset (2.1304ms)
+✖ persisted navigation retains the confirmed local scene and repeated returns keep controls usable once (10.7352ms)
+✖ persisted navigation preserves a candidate and its unsubmitted correction fields (2.4768ms)
+✖ persisted departure cancels pending reading and asking without applying late results or restarting them (5.3173ms)
+✖ cached departure retires browser promises without restarting playback or overriding a newer operation (14.7222ms)
+✖ final nonpersisted departure releases the cached controller and ignores late browser promises (19.0841ms)
+✔ late play and fullscreen promises cannot update page state after disposal (26.3055ms)
+✔ page confirms explicit preset, computes single-side changes and restores original (50.133ms)
+✔ field validation keeps invalid input and requires explicit condition confirmation (12.8523ms)
+✔ local Chinese question uses the same model and model mode never silently uses local commands (18.2367ms)
+✔ quiz supports wrong, retry, correct and skip; returning video does not require passing (34.566ms)
+✔ canceled or stale model actions cannot replace a manually modified scene (15.8454ms)
+✔ actual frame candidate point correction retains vision origin and confirmed snapshot (12.749ms)
+✔ editing an input cancels pending model actions before submitting a change (5.0397ms)
+✔ a current read response for an invalid frame cleans up pending controls (4.0249ms)
+✔ dragging uses uniform SVG scale including centered letterboxing (11.0261ms)
+✔ HTML keeps local script order, visible labels and standalone narrow-screen layout (4.9658ms)
+✔ SVG keyboard adjustment preserves focus on the same side after every render (20.7568ms)
+✔ long vertex labels use compact symbols plus a complete wrapping mapping (13.5056ms)
+✔ very short AB keeps vertex labels apart and edge readings on another baseline (11.1057ms)
+ℹ tests 47
+ℹ suites 0
+ℹ pass 42
+ℹ fail 5
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 837.7126
+
+✖ failing tests:
+
+test at tests\geometry-parity.test.js:757:1
+✖ persisted navigation retains the confirmed local scene and repeated returns keep controls usable once (10.7352ms)
+  AssertionError [ERR_ASSERTION]: caching retains confirmed conditions and original snapshot
+  + actual - expected
+  
+    {
+  +   lastChange: null,
+  +   original: null,
+  +   phase: 'empty',
+  +   result: null,
+  +   scene: null
+  -   lastChange: {
+  -     after: {
+  -       editedByUser: true,
+  -       frameSize: {
+  -         height: 360,
+  -         width: 640
+  -       },
+  -       frameTime: 6,
+  -       kind: 'right-triangle',
+  -       labels: {
+  -         A: 'A',
+  -         B: 'B',
+  -         C: 'C'
+  -       },
+  -       lengths: {
+  -         AB: 6,
+  -         AC: 4
+  -       },
+  -       originSource: 'preset',
+  -       requestId: 'geometry-scene-1791024838339-3',
+  -       rightAngleAt: 'A',
+  -       sceneRevision: 2,
+  -       schemaVersion: '1.0.0',
+  -       source: 'manual',
+  -       unit: 'unit',
+  -       vertices: null,
+  -       videoId: 'local-video-1791024838339-1'
+  -     },
+  -     before: {
+  -       editedByUser: false,
+  -       frameSize: {
+  -         height: 360,
+  -         width: 640
+  -       },
+  -       frameTime: 6,
+  -       kind: 'right-triangle',
+  -       labels: {
+  -         A: 'A',
+  -         B: 'B',
+  -         C: 'C'
+  -       },
+  -       lengths: {
+  -         AB: 3,
+  -         AC: 4
+  -       },
+  -       originSource: 'preset',
+  -       requestId: 'geometry-scene-1791024838339-3',
+  -       rightAngleAt: 'A',
+  -       sceneRevision: 1,
+  -       schemaVersion: '1.0.0',
+  -       source: 'preset',
+  -       unit: 'unit',
+  -       vertices: null,
+  -       videoId: 'local-video-1791024838339-1'
+  -     },
+  -     restored: false
+  -   },
+  -   original: {
+  -     editedByUser: false,
+  -     frameSize: {
+  -       height: 360,
+  -       width: 640
+  -     },
+  -     frameTime: 6,
+  -     kind: 'right-triangle',
+  -     labels: {
+  -       A: 'A',
+  -       B: 'B',
+  -       C: 'C'
+  -     },
+  -     lengths: {
+  -       AB: 3,
+  -       AC: 4
+  -     },
+  -     originSource: 'preset',
+  -     requestId: 'geometry-scene-1791024838339-3',
+  -     rightAngleAt: 'A',
+  -     sceneRevision: 1,
+  -     schemaVersion: '1.0.0',
+  -     source: 'preset',
+  -     unit: 'unit',
+  -     vertices: null,
+  -     videoId: 'local-video-1791024838339-1'
+  -   },
+  -   phase: 'confirmed',
+  -   result: {
+  -     BC: 7.211102550927979,
+  -     normalizedVertices: {
+  -       A: {
+  -         x: 0,
+  -         y: 0
+  -       },
+  -       B: {
+  -         x: 1,
+  -         y: 0
+  -       },
+  -       C: {
+  -         x: 0,
+  -         y: 0.6666666666666666
+  -       }
+  -     }
+  -   },
+  -   scene: {
+  -     editedByUser: true,
+  -     frameSize: {
+  -       height: 360,
+  -       width: 640
+  -     },
+  -     frameTime: 6,
+  -     kind: 'right-triangle',
+  -     labels: {
+  -       A: 'A',
+  -       B: 'B',
+  -       C: 'C'
+  -     },
+  -     lengths: {
+  -       AB: 6,
+  -       AC: 4
+  -     },
+  -     originSource: 'preset',
+  -     requestId: 'geometry-scene-1791024838339-3',
+  -     rightAngleAt: 'A',
+  -     sceneRevision: 2,
+  -     schemaVersion: '1.0.0',
+  -     source: 'manual',
+  -     unit: 'unit',
+  -     vertices: null,
+  -     videoId: 'local-video-1791024838339-1'
+  -   }
+    }
+  
+      at TestContext.<anonymous> (D:\前端\breakglass-geometry-plan\tests\geometry-parity.test.js:776:14)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:974:18)
+      at Test.postRun (node:internal/test_runner/test:1542:19)
+      at Test.run (node:internal/test_runner/test:1467:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: { phase: 'empty', scene: null, original: null, result: null, lastChange: null },
+    expected: { phase: 'confirmed', scene: { schemaVersion: '1.0.0', kind: 'right-triangle', requestId: 'geometry-scene-1791024838339-3', videoId: 'local-video-1791024838339-1', frameTime: 6, frameSize: [Object], sceneRevision: 2, rightAngleAt: 'A', labels: [Object], lengths: [Object], unit: 'unit', source: 'manual', originSource: 'preset', editedByUser: true, vertices: null }, original: { schemaVersion: '1.0.0', kind: 'right-triangle', requestId: 'geometry-scene-1791024838339-3', videoId: 'local-video-1791024838339-1', frameTime: 6, frameSize: [Object], sceneRevision: 1, rightAngleAt: 'A', labels: [Object], lengths: [Object], unit: 'unit', source: 'preset', originSource: 'preset', editedByUser: false, vertices: null }, result: { BC: 7.211102550927979, normalizedVertices: [Object] }, lastChange: { before: [Object], after: [Object], restored: false } },
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+
+test at tests\geometry-parity.test.js:806:1
+✖ persisted navigation preserves a candidate and its unsubmitted correction fields (2.4768ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+    {
+      lastChange: null,
+      original: null,
+  +   phase: 'empty',
+  -   phase: 'review',
+      result: null,
+  +   scene: null
+  -   scene: {
+  -     editedByUser: false,
+  -     frameSize: {
+  -       height: 360,
+  -       width: 640
+  -     },
+  -     frameTime: 6,
+  -     kind: 'right-triangle',
+  -     labels: {
+  -       A: 'A',
+  -       B: 'B',
+  -       C: 'C'
+  -     },
+  -     lengths: {
+  -       AB: 3,
+  -       AC: 4
+  -     },
+  -     originSource: 'preset',
+  -     requestId: 'geometry-scene-1791024838350-3',
+  -     rightAngleAt: 'A',
+  -     sceneRevision: 0,
+  -     schemaVersion: '1.0.0',
+  -     source: 'preset',
+  -     unit: 'unit',
+  -     vertices: null,
+  -     videoId: 'local-video-1791024838350-1'
+  -   }
+    }
+  
+      at TestContext.<anonymous> (D:\前端\breakglass-geometry-plan\tests\geometry-parity.test.js:815:12)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:974:18)
+      at Test.postRun (node:internal/test_runner/test:1542:19)
+      at Test.run (node:internal/test_runner/test:1467:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: { phase: 'empty', scene: null, original: null, result: null, lastChange: null },
+    expected: { phase: 'review', scene: { schemaVersion: '1.0.0', kind: 'right-triangle', requestId: 'geometry-scene-1791024838350-3', videoId: 'local-video-1791024838350-1', frameTime: 6, frameSize: [Object], sceneRevision: 0, rightAngleAt: 'A', labels: [Object], lengths: [Object], unit: 'unit', source: 'preset', originSource: 'preset', editedByUser: false, vertices: null }, original: null, result: null, lastChange: null },
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+
+test at tests\geometry-parity.test.js:834:1
+✖ persisted departure cancels pending reading and asking without applying late results or restarting them (5.3173ms)
+  AssertionError [ERR_ASSERTION]: read: cancellation preserves the confirmed scene
+  + actual - expected
+  
+    {
+  +   lastChange: null,
+  +   original: null,
+  +   phase: 'empty',
+  +   result: null,
+  +   scene: null
+  -   lastChange: {
+  -     after: {
+  -       editedByUser: true,
+  -       frameSize: {
+  -         height: 360,
+  -         width: 640
+  -       },
+  -       frameTime: 6,
+  -       kind: 'right-triangle',
+  -       labels: {
+  -         A: 'A',
+  -         B: 'B',
+  -         C: 'C'
+  -       },
+  -       lengths: {
+  -         AB: 6,
+  -         AC: 4
+  -       },
+  -       originSource: 'preset',
+  -       requestId: 'geometry-scene-1791024838352-3',
+  -       rightAngleAt: 'A',
+  -       sceneRevision: 2,
+  -       schemaVersion: '1.0.0',
+  -       source: 'manual',
+  -       unit: 'unit',
+  -       vertices: null,
+  -       videoId: 'local-video-1791024838352-1'
+  -     },
+  -     before: {
+  -       editedByUser: false,
+  -       frameSize: {
+  -         height: 360,
+  -         width: 640
+  -       },
+  -       frameTime: 6,
+  -       kind: 'right-triangle',
+  -       labels: {
+  -         A: 'A',
+  -         B: 'B',
+  -         C: 'C'
+  -       },
+  -       lengths: {
+  -         AB: 3,
+  -         AC: 4
+  -       },
+  -       originSource: 'preset',
+  -       requestId: 'geometry-scene-1791024838352-3',
+  -       rightAngleAt: 'A',
+  -       sceneRevision: 1,
+  -       schemaVersion: '1.0.0',
+  -       source: 'preset',
+  -       unit: 'unit',
+  -       vertices: null,
+  -       videoId: 'local-video-1791024838352-1'
+  -     },
+  -     restored: false
+  -   },
+  -   original: {
+  -     editedByUser: false,
+  -     frameSize: {
+  -       height: 360,
+  -       width: 640
+  -     },
+  -     frameTime: 6,
+  -     kind: 'right-triangle',
+  -     labels: {
+  -       A: 'A',
+  -       B: 'B',
+  -       C: 'C'
+  -     },
+  -     lengths: {
+  -       AB: 3,
+  -       AC: 4
+  -     },
+  -     originSource: 'preset',
+  -     requestId: 'geometry-scene-1791024838352-3',
+  -     rightAngleAt: 'A',
+  -     sceneRevision: 1,
+  -     schemaVersion: '1.0.0',
+  -     source: 'preset',
+  -     unit: 'unit',
+  -     vertices: null,
+  -     videoId: 'local-video-1791024838352-1'
+  -   },
+  -   phase: 'confirmed',
+  -   result: {
+  -     BC: 7.211102550927979,
+  -     normalizedVertices: {
+  -       A: {
+  -         x: 0,
+  -         y: 0
+  -       },
+  -       B: {
+  -         x: 1,
+  -         y: 0
+  -       },
+  -       C: {
+  -         x: 0,
+  -         y: 0.6666666666666666
+  -       }
+  -     }
+  -   },
+  -   scene: {
+  -     editedByUser: true,
+  -     frameSize: {
+  -       height: 360,
+  -       width: 640
+  -     },
+  -     frameTime: 6,
+  -     kind: 'right-triangle',
+  -     labels: {
+  -       A: 'A',
+  -       B: 'B',
+  -       C: 'C'
+  -     },
+  -     lengths: {
+  -       AB: 6,
+  -       AC: 4
+  -     },
+  -     originSource: 'preset',
+  -     requestId: 'geometry-scene-1791024838352-3',
+  -     rightAngleAt: 'A',
+  -     sceneRevision: 2,
+  -     schemaVersion: '1.0.0',
+  -     source: 'manual',
+  -     unit: 'unit',
+  -     vertices: null,
+  -     videoId: 'local-video-1791024838352-1'
+  -   }
+    }
+  
+      at TestContext.<anonymous> (D:\前端\breakglass-geometry-plan\tests\geometry-parity.test.js:849:14)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:974:18)
+      at Test.postRun (node:internal/test_runner/test:1542:19)
+      at Test.run (node:internal/test_runner/test:1467:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: { phase: 'empty', scene: null, original: null, result: null, lastChange: null },
+    expected: { phase: 'confirmed', scene: { schemaVersion: '1.0.0', kind: 'right-triangle', requestId: 'geometry-scene-1791024838352-3', videoId: 'local-video-1791024838352-1', frameTime: 6, frameSize: [Object], sceneRevision: 2, rightAngleAt: 'A', labels: [Object], lengths: [Object], unit: 'unit', source: 'manual', originSource: 'preset', editedByUser: true, vertices: null }, original: { schemaVersion: '1.0.0', kind: 'right-triangle', requestId: 'geometry-scene-1791024838352-3', videoId: 'local-video-1791024838352-1', frameTime: 6, frameSize: [Object], sceneRevision: 1, rightAngleAt: 'A', labels: [Object], lengths: [Object], unit: 'unit', source: 'preset', originSource: 'preset', editedByUser: false, vertices: null }, result: { BC: 7.211102550927979, normalizedVertices: [Object] }, lastChange: { before: [Object], after: [Object], restored: false } },
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+
+test at tests\geometry-parity.test.js:876:1
+✖ cached departure retires browser promises without restarting playback or overriding a newer operation (14.7222ms)
+  AssertionError [ERR_ASSERTION]: play: canceled operation releases its busy state
+  
+  true !== false
+  
+      at TestContext.<anonymous> (D:\前端\breakglass-geometry-plan\tests\geometry-parity.test.js:891:16)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: true,
+    expected: false,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests\geometry-parity.test.js:913:1
+✖ final nonpersisted departure releases the cached controller and ignores late browser promises (19.0841ms)
+  TypeError: Cannot read properties of undefined (reading 'onSuccess')
+      at TestContext.<anonymous> (D:\前端\breakglass-geometry-plan\tests\geometry-parity.test.js:938:38)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:974:18)
+      at Test.postRun (node:internal/test_runner/test:1542:19)
+      at Test.run (node:internal/test_runner/test:1467:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7)

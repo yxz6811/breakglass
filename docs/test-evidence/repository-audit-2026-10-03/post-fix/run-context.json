@@ -1,0 +1,37 @@
+{
+  "recordedAt": "2026-10-03T11:03:12.357Z",
+  "cwd": "D:\\前端\\breakglass-geometry-plan",
+  "sourceCommit": "42c33fd78e2ca4824faed0d1e3194879673876dc",
+  "node": "v24.21.0",
+  "platform": "win32",
+  "osRelease": "10.0.26200",
+  "sourceFiles": [
+    {
+      "path": "extension/src/page/geometry.js",
+      "bytes": 51909,
+      "sha256": "4290456a9f8dd2175f1993952498fac71300a2c81d4d168274ef0d329b2a0c8d"
+    },
+    {
+      "path": "tests/geometry-parity.test.js",
+      "bytes": 53061,
+      "sha256": "4423663298758495517fb454af84b40d0ab512ddd629570fcabc506ec130417e"
+    },
+    {
+      "path": "specs/001-insitu-parabola/quickstart.md",
+      "bytes": 2927,
+      "sha256": "0beeacc7e3f778c39592c4ae918617c0b522f58f546cc83593b04c80ff0c4055"
+    },
+    {
+      "path": "specs/003-preplay-lesson-points/tasks.md",
+      "bytes": 10855,
+      "sha256": "c6a1d0d840b97380c175bf7a58aedaab387452e6c85cc235ca62526f5eeeeae8"
+    },
+    {
+      "path": "specs/004-figures-and-tutor/quickstart.md",
+      "bytes": 8548,
+      "sha256": "34966d0360bce1695b5a16a6816440774e62a186ad00c228d82efd015956da42"
+    }
+  ],
+  "worktreeStatus": " M README.md\n?? docs/BreakGlass-repository-test-report-2026-10-03.md\n?? docs/test-evidence/repository-audit-2026-10-03/\n",
+  "note": "Context snapshot after the full test and static-check runs. Only README, report and evidence remain uncommitted; source and regression tests are committed."
+}

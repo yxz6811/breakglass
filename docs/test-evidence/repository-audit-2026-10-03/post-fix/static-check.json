@@ -1,0 +1,8 @@
+{
+  "command": "node scripts/check.mjs",
+  "startedAt": "2026-10-03T19:00:24.5147412+08:00",
+  "finishedAt": "2026-10-03T19:00:43.8966726+08:00",
+  "elapsedMs": 19354.2572,
+  "exitCode": 0,
+  "sourceCommit": "42c33fd78e2ca4824faed0d1e3194879673876dc"
+}

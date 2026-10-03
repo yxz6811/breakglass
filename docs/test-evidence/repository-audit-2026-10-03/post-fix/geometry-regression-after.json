@@ -1,0 +1,11 @@
+{
+  "command": "node --test tests/geometry-parity.test.js tests/page-geometry.test.js",
+  "startedAt": "2026-10-03T18:59:53.1016781+08:00",
+  "finishedAt": "2026-10-03T18:59:54.6075025+08:00",
+  "elapsedMs": 1483.5623,
+  "exitCode": 0,
+  "baseCommit": "08e84da67e7d2315c0045c54abcb18e300d19838",
+  "geometrySha256": "4290456a9f8dd2175f1993952498fac71300a2c81d4d168274ef0d329b2a0c8d",
+  "testSha256": "4423663298758495517fb454af84b40d0ab512ddd629570fcabc506ec130417e",
+  "sourceState": "08e84da HEAD plus uncommitted geometry lifecycle fix and five new regression tests"
+}

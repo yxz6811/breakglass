@@ -27,6 +27,7 @@
     let askToken = 0;
     let returning = false;
     let disposed = false;
+    let suspended = false;
     let readPending = false;
     let askPending = false;
     let playPending = false;
@@ -36,6 +37,7 @@
     let activeQuestion = null;
     let mediaEpoch = 0;
     let playToken = 0;
+    let fullscreenToken = 0;
     let pendingReturn = null;
     const addressKey = 'breakglass.geometryReader';
     const logLimit = 40;
@@ -554,15 +556,16 @@
       const target = document.documentElement || node('geometry-shell');
       const exitFull = Boolean(document.fullscreenElement);
       if (exitFull ? !document.exitFullscreen : !target?.requestFullscreen) { status('当前浏览器不支持工作台全屏。', true); return; }
+      const token = ++fullscreenToken;
       fullscreenPending = true; updateVideoButtons();
       let result;
       try { result = exitFull ? document.exitFullscreen() : target.requestFullscreen(); }
       catch { fullscreenPending = false; updateVideoButtons(); status('未能切换全屏，请使用浏览器的全屏操作。', true); return; }
       Promise.resolve(result).then(() => {
-        if (disposed) return;
+        if (disposed || token !== fullscreenToken) return;
         fullscreenPending = false; updateVideoButtons();
       }, () => {
-        if (disposed) return;
+        if (disposed || token !== fullscreenToken) return;
         fullscreenPending = false; updateVideoButtons(); status('未能切换全屏，请使用浏览器的全屏操作。', true);
       });
     }
@@ -746,6 +749,23 @@
       if (readPending || askPending) { cancelRead('已取消当前请求，视频与有效条件保留。'); cancelAsk('已取消提问，旧动作不会执行。'); return; }
       if (session.getState().phase !== 'empty' || captured) { exit(); node('preset-button').focus?.(); }
     });
+    function suspend() {
+      if (disposed || suspended) return;
+      suspended = true;
+      // A cached page still owns its scene, drafts, listeners and local video URL.
+      ++mediaEpoch; ++playToken; ++fullscreenToken;
+      pendingReturn = null; returning = false; playPending = false; fullscreenPending = false;
+      cancelRead(readPending ? '离开页面时已取消识别，视频与有效条件保留。' : undefined);
+      cancelAsk(askPending ? '离开页面时已取消提问，迟到动作不会执行。' : undefined);
+      video.pause(); updateVideoButtons();
+    }
+    function resume(event) {
+      if (!event.persisted || disposed || !suspended) return;
+      suspended = false;
+      // Refresh controls without render(), which would overwrite unsubmitted fields.
+      if (binding && !BG.geometryFrame.isFrameCurrent(video, binding, videoId)) invalidateFrame();
+      else updateVideoButtons();
+    }
     function dispose() {
       if (disposed) return;
       cancelRead(); cancelAsk(); disposed = true; ++mediaEpoch; pendingReturn = null;
@@ -754,7 +774,8 @@
       for (const dock of docks) if (dock.root === node('geometry-toolbar')) dock.destroy();
       if (videoUrl) window.URL.revokeObjectURL(videoUrl);
     }
-    listen(window, 'pagehide', dispose);
+    listen(window, 'pagehide', (event) => { if (event.persisted) suspend(); else dispose(); });
+    listen(window, 'pageshow', resume);
     rememberAddress(true); clearLog(); clipDescription(); render(); updateVideoButtons();
     return { session, capture, render, exit, dispose };
   }
