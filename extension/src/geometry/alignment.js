@@ -40,6 +40,18 @@
     return { x: point.x * scale, y: point.y * scale };
   }
 
+  // 已经过裁剪的任意数学点。圆有上下两支，不能再次按 x 求一个 y。
+  function mathCoordinatesToPage(definition, point, scale) {
+    const xRatio = (point.x - definition.domain.min) / (definition.domain.max - definition.domain.min);
+    const yRatio = definition.yAxis === 'up'
+      ? (definition.range.max - point.y) / (definition.range.max - definition.range.min)
+      : (point.y - definition.range.min) / (definition.range.max - definition.range.min);
+    return sourcePointToPage({
+      x: definition.region.x + xRatio * definition.region.width,
+      y: definition.region.y + yRatio * definition.region.height
+    }, scale);
+  }
+
   function pagePointToSource(point, scale) {
     return { x: point.x / scale, y: point.y / scale };
   }
@@ -231,6 +243,7 @@
     DEFAULT_TOLERANCE,
     mathPointToSource,
     mathPointToPage,
+    mathCoordinatesToPage,
     sourcePointToPage,
     pagePointToSource,
     deviationRatio,
