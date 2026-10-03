@@ -80,16 +80,19 @@ export function checkRequest(body) {
  * @param {T[]} items
  * @param {number} limit
  * @param {(item: T, index: number) => Promise<R>} worker
+ * @param {AbortSignal} [signal] 取消后不再领取后续帧
  * @returns {Promise<R[]>}
  */
-async function mapLimited(items, limit, worker) {
+async function mapLimited(items, limit, worker, signal) {
   const results = new Array(items.length);
   let next = 0;
   const run = async () => {
     while (next < items.length) {
+      signal?.throwIfAborted();
       const index = next;
       next += 1;
       results[index] = await worker(items[index], index);
+      signal?.throwIfAborted();
     }
   };
   await Promise.all(Array.from({ length: Math.max(1, Math.min(limit, items.length)) }, run));
@@ -101,7 +104,7 @@ async function mapLimited(items, limit, worker) {
  * @returns {string}
  */
 function shortNumber(value) {
-  return String(Math.round(value * 100) / 100);
+  return String(Number(value.toPrecision(8)));
 }
 
 /**
@@ -123,7 +126,8 @@ function equationLine(params) {
  *   placement: object, lessonLine: string } | { ok: false, reason: string, transport?: boolean }>}
  */
 async function readFrame(frame, context) {
-  const { request, settings, fetchImpl, budget } = context;
+  const { request, settings, fetchImpl, budget, signal } = context;
+  signal?.throwIfAborted();
   const bytes = decodeJpegDataUrl(frame.image);
   const image = bytes ? jpegSize(bytes) : null;
   if (!image) return { ok: false, reason: 'image_unreadable' };
@@ -136,15 +140,16 @@ async function readFrame(frame, context) {
     image,
     time: frame.time,
     courseText: request.courseText,
-    signal: AbortSignal.any([budget, AbortSignal.timeout(settings.timeoutMs)]),
+    signal: AbortSignal.any([budget, AbortSignal.timeout(settings.timeoutMs), ...(signal ? [signal] : [])]),
     fetchImpl
   });
+  signal?.throwIfAborted();
   if (!reply.ok) return reply;
   const answer = reply.answer;
   if (answer.hasParabola !== true) return { ok: false, reason: 'no_parabola' };
 
   const equation = answer.equation && typeof answer.equation === 'object' ? answer.equation : {};
-  const params = { a: Number(equation.a), h: Number(equation.h), k: Number(equation.k) };
+  const params = { a: equation.a, h: equation.h, k: equation.k };
   if (!finite(params.a) || !finite(params.h) || !finite(params.k) || Math.abs(params.a) < 1e-6) {
     return { ok: false, reason: 'equation_invalid' };
   }
@@ -152,7 +157,7 @@ async function readFrame(frame, context) {
   if (!axes.ok) return axes;
   const placement = placeCurve(
     params,
-    { min: Number(answer.curveXMin), max: Number(answer.curveXMax) },
+    { min: answer.curveXMin, max: answer.curveXMax },
     axes.map,
     image,
     request.frameSize
@@ -229,10 +234,12 @@ function uniqueLine(line, time, seen) {
  * @param {typeof fetch} [options.fetchImpl]
  * @param {(entry: object) => void} [options.log] 只收编号、计数、原因和耗时
  * @param {() => number} [options.now]
+ * @param {AbortSignal} [options.signal] 页面断开或主动取消时的信号
  * @returns {Promise<{ status: number, payload: object }>}
  */
 export async function readLesson(body, options) {
-  const { settings, pageRules, fetchImpl = fetch, log = () => {}, now = Date.now } = options;
+  const { settings, pageRules, fetchImpl = fetch, log = () => {}, now = Date.now, signal } = options;
+  signal?.throwIfAborted();
   const started = now();
   const checked = checkRequest(body);
   if (!checked.ok) {
@@ -259,8 +266,13 @@ export async function readLesson(body, options) {
   const readings = await mapLimited(
     request.frames,
     settings.concurrency,
-    (frame) => readFrame(frame, { request, settings, fetchImpl, budget }).catch(() => ({ ok: false, reason: 'frame_failed' }))
+    (frame) => readFrame(frame, { request, settings, fetchImpl, budget, signal }).catch(() => {
+      signal?.throwIfAborted();
+      return { ok: false, reason: 'frame_failed' };
+    }),
+    signal
   );
+  signal?.throwIfAborted();
 
   const reasons = {};
   for (const item of readings) {

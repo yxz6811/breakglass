@@ -190,6 +190,7 @@ function assetFetch(url) {
 
 function createWindow() {
   const timers = new Map();
+  const frames = new Map();
   const listeners = new Map();
   const mediaQueries = [];
   const observers = [];
@@ -205,6 +206,12 @@ function createWindow() {
       return id;
     },
     clearTimeout(id) { timers.delete(id); },
+    requestAnimationFrame(handler) {
+      const id = ++sequence;
+      frames.set(id, handler);
+      return id;
+    },
+    cancelAnimationFrame(id) { frames.delete(id); },
     addEventListener(type, handler) {
       const list = listeners.get(type) || [];
       list.push(handler);
@@ -245,6 +252,12 @@ function createWindow() {
     mediaQueries,
     observers,
     now: () => nowMs,
+    frame(ms = 16) {
+      nowMs += ms;
+      const batch = [...frames.values()];
+      frames.clear();
+      batch.forEach((handler) => handler(nowMs));
+    },
     advance(ms) {
       nowMs += ms;
       for (;;) {
@@ -344,6 +357,7 @@ async function createHarness(options = {}) {
     document: documentStub,
     win: fake.win,
     advance: fake.advance,
+    frame: fake.frame,
     flush,
     now: fake.now,
     mediaQueries: fake.mediaQueries,

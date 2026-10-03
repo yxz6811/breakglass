@@ -197,7 +197,7 @@ a { color: var(--accent); }
 .stage__frame { display: block; width: 100%; height: min(88vh, 860px); border: 0; background: #02070e; }
 .stage__fallback { margin: 0; padding: 22px; color: var(--warn); }
 .stage__narrow { display: none; }
-/* 演示页是桌面视口页面（min-width: 960px），窄屏嵌 iframe 只会看到空白，改成明说 + 新标签页打开 */
+/* 窄屏给出独立演示入口，避免内嵌工作台占据过长的文章阅读区域。 */
 @media (max-width: 900px) {
   .stage__frame { display: none; }
   .stage__narrow { display: grid; gap: 12px; justify-items: start; padding: 26px 22px; }
@@ -245,6 +245,7 @@ a { color: var(--accent); }
 /* 翻页分区 */
 .mp-section { padding-bottom: 6px; }
 @media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
   .reveal, .reveal-stagger > * {
     opacity: 1 !important;
     transform: none !important;
@@ -298,26 +299,47 @@ a { color: var(--accent); }
   opacity: clamp(0, calc(var(--p, 1) * 1.28 - var(--i, 0) * 0.03), 1);
   transform: translateY(calc((1 - var(--p, 1)) * 5px));
 }
-.dis .ch::before {
-  content: attr(data-glyph);
+.dis .ch__glyph {
   position: absolute;
   left: 0;
   top: 0;
   color: var(--accent);
   pointer-events: none;
+  user-select: none;
   opacity: clamp(0, calc(1.1 - var(--p, 1) * 1.85 + var(--i, 0) * 0.035), 1);
 }
 @media (prefers-reduced-motion: reduce) {
   .dis .ch { opacity: 1 !important; transform: none !important; }
-  .dis .ch::before { opacity: 0 !important; }
+  .dis .ch__glyph { opacity: 0 !important; }
 }
 
-/* ---------- 第 1 页：留空封面（只有背景） ---------- */
+/* ---------- 第 1 页：背景封面与进入链接 ---------- */
 /* 文章页：涟漪当纹理，压低到不干扰阅读；封面保持原强度 */
 /* 文章页：图案要看得见，但不能压住正文 —— 0.36 是提亮后仍可读的档位 */
 .article-body .bg-canvas { opacity: 0.36; }
 .cover-body { overflow: hidden; }
 .cover { position: relative; z-index: 1; min-height: 100vh; min-height: 100svh; }
+.cover__enter {
+  position: absolute;
+  left: 50%;
+  bottom: max(32px, env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  display: inline-flex;
+  align-items: center;
+  gap: 16px;
+  min-height: 44px;
+  padding: 10px 22px;
+  border-radius: var(--radius-pill);
+  color: var(--ink);
+  white-space: nowrap;
+  text-decoration: none;
+  background: var(--panel-soft);
+  box-shadow: 0 8px 24px rgba(3, 8, 18, 0.35), inset 0 1px 0 var(--glass-edge);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+}
+.cover__enter:hover { background: var(--panel); }
+.cover__enter svg { width: 20px; height: 20px; }
 
 /* ---------- 文章页排版（纯文字，可读性优先） ---------- */
 /* 正文一栏居中，从上到下阅读 */

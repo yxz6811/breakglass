@@ -107,6 +107,16 @@ button:disabled, input:disabled { opacity: 0.45; }
   transition: transform var(--motion-state) var(--ease-out);
 }
 .lg-dock[data-revealed='true'] { transform: translateX(-50%); }
+.dock-reveal {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  z-index: 41;
+  min-height: 44px;
+  padding: 10px 16px;
+  border-radius: var(--radius-pill);
+  box-shadow: 0 6px 18px var(--glass-shadow);
+}
 .lg-glass {
   position: absolute;
   inset: 10px 0 24px;
@@ -296,6 +306,30 @@ button:disabled, input:disabled { opacity: 0.45; }
   .lg-items { gap: 8px; padding: 10px 12px; }
   .lg-tip { display: none; }
   .lg-item.is-next .lg-tip { display: block; }
+}
+@media (max-width: 560px) {
+  .lg-dock { top: 64px; width: calc(100% - 24px); }
+  .lg-items { flex-wrap: wrap; justify-content: center; gap: 8px; }
+  .lg-item { flex: none; }
+  .lg-items .status-chip { max-width: 100%; white-space: normal; text-align: center; }
+  .app-header { padding-top: 42px; }
+}
+/* 无悬停设备无需寻找顶端热区，控件留在正常文档流内。 */
+@media (hover: none) {
+  .dock-reveal { display: none; }
+  .lg-dock, .lg-dock[data-revealed='true'] {
+    position: relative;
+    top: auto;
+    left: auto;
+    width: fit-content;
+    max-width: calc(100% - 24px);
+    margin: 16px auto 0;
+    padding-bottom: 0;
+    transform: none;
+  }
+  .lg-glass, .lg-dock[data-refract='on'] .lg-refract { bottom: 0; }
+  .lg-items { flex-wrap: wrap; justify-content: center; }
+  .app-header { padding-top: 0; }
 }
 
 /* ---------- 降级（规范 §5.4）---------- */

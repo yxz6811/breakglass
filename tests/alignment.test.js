@@ -156,3 +156,52 @@ test('采样点数可以指定，且不改变映射结果', () => {
   assert.equal(nine.points[4].mathX, 0);
   assert.equal(Math.abs(five.points[2].expected.x - nine.points[4].expected.x) < 1e-9, true);
 });
+
+test('合法的大域与小系数不会在采样乘法中溢出', () => {
+  const { validateCurveResult } = require('../extension/src/curve/validate');
+  const wide = {
+    ...definition,
+    domain: { min: 0, max: 1e307 },
+    parameters: {
+      a: { initial: 1e-308, min: 1e-308, max: 1e-308, step: 1e-309 },
+      h: definition.parameters.h,
+      k: definition.parameters.k
+    }
+  };
+  assert.equal(validateCurveResult({
+    requestId: 'wide-domain', videoId: 'fixture-wide', time: 0,
+    frameSize: { width: 1920, height: 1080 }, source: 'preset', fallback: null,
+    definition: wide
+  }).ok, true, 'the entire adjustable definition can be evaluated finitely');
+  const report = sampleAlignment({
+    definition: wide, parameters: { a: 1e-308, h: 0, k: 0 },
+    scale: 1, contentRect: { width: 1920, height: 1080 }, samples: 81
+  });
+  assert.equal(report.points.length, 81);
+  assert.equal(report.points.at(-1).mathX, wide.domain.max);
+  assert.equal(report.points.every((point) => Number.isFinite(point.mathX) &&
+    Number.isFinite(point.expected.x) && Number.isFinite(point.expected.y)), true);
+});
+
+test('极大但有限的越界 y 仍贴在正确边缘，不因比例差值溢出翻转', () => {
+  const { validateCurveResult } = require('../extension/src/curve/validate');
+  const extreme = {
+    ...definition,
+    range: { min: 0, max: 1e308 },
+    parameters: {
+      a: definition.parameters.a,
+      h: definition.parameters.h,
+      k: { initial: -1e308, min: -1e308, max: -1e308, step: 1 }
+    }
+  };
+  assert.equal(validateCurveResult({
+    requestId: 'extreme-y', videoId: 'fixture-extreme-y', time: 0,
+    frameSize: { width: 1920, height: 1080 }, source: 'preset', fallback: null,
+    definition: extreme
+  }).ok, true);
+  const parameters = { a: 0.8, h: 0, k: -1e308 };
+  assert.equal(mathPointToSource(extreme, parameters, 0).y,
+    extreme.region.y + extreme.region.height, 'up axis clips below-range y to the bottom edge');
+  assert.equal(mathPointToSource({ ...extreme, yAxis: 'down' }, parameters, 0).y,
+    extreme.region.y, 'down axis clips below-range y to the top edge');
+});

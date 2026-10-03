@@ -136,3 +136,15 @@ test('重复的编号或课程说明也只用约定原因', () => {
   assert.deepEqual(verdict.points.map((item) => item.id), ['same']);
   assert.deepEqual(verdict.dropped.map((item) => item.reason), ['抛物线没有通过检查', '抛物线没有通过检查']);
 });
+
+test('当次请求绑定拒绝未采样帧、旧编号、不同 duration 和变化的源尺寸', () => {
+  const request = { readingId: 'lesson-run', videoId: 'local-binding', duration: 12, sampleTimes: [0.75, 3.75], frameSize: SOURCE };
+  const payload = reading([point(4, 'unsampled'), point(3.75, 'sampled')], { duration: 12 });
+  const verdict = lesson.validateLessonReading(payload, SOURCE, request);
+  assert.deepEqual(verdict.points.map((item) => item.id), ['sampled']);
+  assert.deepEqual(verdict.dropped, [{ reason: '时间无效' }]);
+  assert.equal(lesson.validateLessonReading(payload, SOURCE, { ...request, readingId: 'old' }).ok, false);
+  assert.equal(lesson.validateLessonReading(payload, SOURCE, { ...request, duration: 13 }).ok, false);
+  assert.equal(lesson.validateLessonReading(payload, SOURCE, { ...request, sampleTimes: [] }).ok, false);
+  assert.equal(lesson.validateLessonReading(payload, { width: 1280, height: 720 }, request).ok, false);
+});

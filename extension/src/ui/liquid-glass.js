@@ -92,6 +92,27 @@
      */
     bindEdgeReveal() {
       this.hideTimer = null;
+      this.noHover = window.matchMedia ? window.matchMedia('(hover: none)') : null;
+      this.revealControl = this.root.id && document.querySelector
+        ? document.querySelector('[data-dock-reveal="' + this.root.id + '"]') : null;
+      this.onRevealControl = () => {
+        this.reveal();
+        const firstEnabled = this.items.find((item) => !item.disabled && !item.hidden);
+        if (firstEnabled && typeof firstEnabled.focus === 'function') firstEnabled.focus();
+      };
+      this.onRevealFocus = () => this.reveal();
+      this.onRevealBlur = () => this.scheduleHide();
+      if (this.revealControl) {
+        this.revealControl.addEventListener('click', this.onRevealControl);
+        this.revealControl.addEventListener('focus', this.onRevealFocus);
+        this.revealControl.addEventListener('blur', this.onRevealBlur);
+      }
+      this.onHoverChange = () => {
+        if (this.noHover && this.noHover.matches) this.reveal();
+        else this.scheduleHide();
+      };
+      if (this.noHover && this.noHover.addEventListener) this.noHover.addEventListener('change', this.onHoverChange);
+      if (this.noHover && this.noHover.matches) this.reveal();
       /** @type {{ clientX: number, clientY: number } | null} */
       this.lastPointer = null;
       this.onWindowPointer = (event) => {
@@ -126,18 +147,22 @@
         this.hideTimer = null;
       }
       this.root.dataset.revealed = 'true';
+      if (this.revealControl) this.revealControl.setAttribute('aria-expanded', 'true');
     }
 
     /**
      * 焦点还在栏内时不收。到点后再看一次指针：滑出动画结束前指针可能已经停在栏的落点上。
      */
     scheduleHide() {
-      if (this.focusIndex >= 0 || this.hideTimer !== null) return;
+      if ((this.noHover && this.noHover.matches) || this.focusIndex >= 0
+          || (this.revealControl && document.activeElement === this.revealControl) || this.hideTimer !== null) return;
       this.hideTimer = window.setTimeout(() => {
         this.hideTimer = null;
-        if (this.focusIndex >= 0) return;
+        if ((this.noHover && this.noHover.matches) || this.focusIndex >= 0
+            || (this.revealControl && document.activeElement === this.revealControl)) return;
         if (this.pointerWantsDock(this.lastPointer)) return;
         delete this.root.dataset.revealed;
+        if (this.revealControl) this.revealControl.setAttribute('aria-expanded', 'false');
       }, 220);
     }
 
@@ -212,6 +237,12 @@
       this.stop();
       if (this.hideTimer !== null) window.clearTimeout(this.hideTimer);
       if (this.onWindowPointer) window.removeEventListener('pointermove', this.onWindowPointer);
+      if (this.noHover && this.noHover.removeEventListener) this.noHover.removeEventListener('change', this.onHoverChange);
+      if (this.revealControl) {
+        this.revealControl.removeEventListener('click', this.onRevealControl);
+        this.revealControl.removeEventListener('focus', this.onRevealFocus);
+        this.revealControl.removeEventListener('blur', this.onRevealBlur);
+      }
       this.root.removeEventListener('pointermove', this.onPointerMove);
       this.root.removeEventListener('pointerleave', this.onPointerLeave);
       this.root.removeEventListener('focusin', this.onFocusIn);

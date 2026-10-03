@@ -28,3 +28,10 @@ test('rejects an unknown equation id and a non-finite x', () => {
   assert.throws(() => evaluateCurve({ equationId: 'official.parabola', parameters: {} }, 0), /未知 equationId/);
   assert.throws(() => evaluateCurve(definition, Number.NaN), TypeError);
 });
+
+test('rejects undeclared, inherited and zero parabola coefficients at evaluation', () => {
+  assert.throws(() => evaluateWithParameters(definition, { a: 1, h: 0, k: 0, unused: 2 }, 1), /未知参数/);
+  assert.throws(() => evaluateWithParameters(definition, Object.create({ a: 1, h: 0, k: 0 }), 1), /有限数值/);
+  assert.throws(() => evaluateWithParameters(definition, { a: 0, h: 0, k: 1 }, 1), /不得为 0/);
+  assert.equal(evaluateWithParameters(definition, { a: 0.0001, h: 0, k: 0 }, 2), 0.0004);
+});

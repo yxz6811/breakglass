@@ -88,3 +88,39 @@ test('滑块范围围着读数，a 为负时也包住初值', () => {
   assert.deepEqual(ranges.h, { initial: 3, min: 1, max: 5, step: 0.1 });
   assert.deepEqual(ranges.k, { initial: -0.5, min: -2.5, max: 1.5, step: 0.1 });
 });
+
+test('小系数保留初值和有效步长，正负开口的范围都不跨零', () => {
+  for (const a of [0.0001, -0.0001, 0.00012345, -0.00012345, 0.1, -0.1]) {
+    const ranges = sliderRanges({ a, h: 0.00012345, k: 1.23456789 });
+    assert.equal(ranges.a.initial, a);
+    assert.ok(ranges.a.min < a && ranges.a.max > a);
+    assert.ok(Math.sign(ranges.a.min) === Math.sign(a) && Math.sign(ranges.a.max) === Math.sign(a));
+    assert.ok(ranges.a.step > 0 && ranges.a.step <= Math.abs(a) / 10 + 1e-15);
+    assert.equal(ranges.h.initial, 0.00012345);
+    assert.equal(ranges.k.initial, 1.23456789);
+  }
+});
+
+test('原生 range 的 min/max 都与精确初值相隔整数步，避免自动吸附改写初值', () => {
+  for (const params of [
+    { a: 0.00012345, h: 0.00012345, k: 1.23456789 },
+    { a: -0.00012345, h: -0.00012345, k: -1.23456789 },
+    { a: 0.0001, h: 0, k: 1 },
+    { a: 1, h: 3, k: -0.5 }
+  ]) {
+    const ranges = sliderRanges(params);
+    for (const [name, item] of Object.entries(ranges)) {
+      assert.equal(item.initial, params[name]);
+      for (const delta of [item.initial - item.min, item.max - item.initial]) {
+        const steps = delta / item.step;
+        assert.ok(Math.abs(steps - Math.round(steps)) <= 1e-9, `${name}: ${steps} 不是整数步`);
+        assert.ok(steps >= 1);
+      }
+    }
+    assert.ok(Math.sign(ranges.a.min) === Math.sign(params.a) && Math.sign(ranges.a.max) === Math.sign(params.a));
+  }
+  const tiny = sliderRanges({ a: 0.00012345, h: 0, k: 1 }).a;
+  assert.equal(tiny.step, 0.00001);
+  assert.ok(Math.abs(tiny.min - 0.00006345) <= 1e-18);
+  assert.ok(Math.abs(tiny.max - 0.00018345) <= 1e-18);
+});

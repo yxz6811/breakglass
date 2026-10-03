@@ -88,7 +88,7 @@ test('请求体带源尺寸，画面最多 8 张，每张只带时间和图片',
   const sent = body({
     frames,
     secret: 'nope',
-    origin: 'external',
+    origin: 'external', duration: 12,
     url: 'https://reader.example/lesson',
     apiKey: 'sk-test'
   });
@@ -105,11 +105,13 @@ test('请求体带源尺寸，画面最多 8 张，每张只带时间和图片',
 
 test('回包要对上这一次的阅读编号、视频编号，且来源是 external', () => {
   const request = body();
-  const good = { readingId: 'reading-1', videoId: 'local-binding-1', origin: 'external', points: [] };
+  const good = { readingId: 'reading-1', videoId: 'local-binding-1', origin: 'external', duration: 12, points: [] };
   assert.equal(ask.acceptResponse(request, good), good);
   assert.equal(ask.acceptResponse(request, { ...good, readingId: 'reading-0' }), null);
   assert.equal(ask.acceptResponse(request, { ...good, videoId: 'local-binding-0' }), null);
   assert.equal(ask.acceptResponse(request, { ...good, origin: 'preset' }), null);
+  assert.equal(ask.acceptResponse(request, { ...good, duration: 13 }), null);
+  assert.equal(ask.acceptResponse(request, { ...good, duration: undefined }), null);
   assert.equal(ask.acceptResponse(request, null), null);
 });
 
@@ -153,7 +155,7 @@ test('POST 一次 JSON，5 分钟没回就按超时失败并中止请求', async
 
 test('非 2xx、断网和对不上的回包都算 unavailable', async () => {
   await withoutGlobalFetch(async () => {
-    const mismatched = { readingId: 'reading-9', videoId: 'local-binding-1', origin: 'external', points: [] };
+    const mismatched = { readingId: 'reading-9', videoId: 'local-binding-1', origin: 'external', duration: 12, points: [] };
     const cases = [
       () => Promise.resolve({ ok: false, status: 502, json: async () => ({}) }),
       () => Promise.reject(new TypeError('offline')),
@@ -173,7 +175,7 @@ test('非 2xx、断网和对不上的回包都算 unavailable', async () => {
 test('对得上的回包交给 onSuccess，并清掉超时', async () => {
   await withoutGlobalFetch(async () => {
     const clock = fakeClock();
-    const payload = { readingId: 'reading-1', videoId: 'local-binding-1', origin: 'external', points: [] };
+    const payload = { readingId: 'reading-1', videoId: 'local-binding-1', origin: 'external', duration: 12, points: [] };
     const successes = [];
     const failures = [];
     ask.startLessonAsk({
@@ -214,7 +216,7 @@ test('取消只停下请求，不当作失败，迟到的回包也不再交出�
     handle.cancel();
     assert.equal(signal.aborted, true);
     assert.equal(clock.cleared.length, 1);
-    release({ ok: true, status: 200, json: async () => ({ readingId: 'reading-1', videoId: 'local-binding-1', origin: 'external', points: [] }) });
+    release({ ok: true, status: 200, json: async () => ({ readingId: 'reading-1', videoId: 'local-binding-1', origin: 'external', duration: 12, points: [] }) });
     await flush();
     clock.fire();
     assert.deepEqual(failures, []);

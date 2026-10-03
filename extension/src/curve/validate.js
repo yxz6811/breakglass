@@ -85,11 +85,15 @@
         return fail('incomplete_parameters', `参数 ${name} 缺失。`);
       }
     }
+    if (parameterNames.some((name) => !required.includes(name))) {
+      return fail('unknown_parameter', 'parameters 只能包含已登记的曲线系数。');
+    }
     for (const name of parameterNames) {
       const parameter = definition.parameters[name];
       if (!parameter || !finite(parameter.initial) || !finite(parameter.min) ||
           !finite(parameter.max) || !finite(parameter.step) || parameter.step <= 0 ||
-          parameter.min > parameter.initial || parameter.initial > parameter.max) {
+          parameter.min > parameter.initial || parameter.initial > parameter.max ||
+          !finite(parameter.max - parameter.min)) {
         return fail('invalid_parameter_range', `参数 ${name} 的范围无效。`);
       }
     }
@@ -99,9 +103,19 @@
 
     for (const key of ['domain', 'range']) {
       const bounds = definition[key];
-      if (!bounds || !finite(bounds.min) || !finite(bounds.max) || bounds.min >= bounds.max) {
+      if (!bounds || !finite(bounds.min) || !finite(bounds.max) || bounds.min >= bounds.max ||
+          !finite(bounds.max - bounds.min)) {
         return fail('invalid_bounds', `${key} 范围无效。`);
       }
+    }
+    const evaluate = equationEvaluator(root);
+    if (!evaluate || typeof evaluate.assertFiniteDomain !== 'function') {
+      return fail('evaluator_unavailable', '曲线求值范围校验器不可用。');
+    }
+    try {
+      evaluate.assertFiniteDomain(definition);
+    } catch (error) {
+      return fail('invalid_curve_values', error.message || '曲线在可调范围内无法有限求值。');
     }
     if (definition.yAxis !== 'up' && definition.yAxis !== 'down') {
       return fail('invalid_axis', 'yAxis 必须为 up 或 down。');
@@ -145,13 +159,14 @@
  * @returns {string[] | null}
  */
 function requiredParameterNames(root, equationId) {
-  const live = root.BreakGlass && root.BreakGlass.evaluate && root.BreakGlass.evaluate.requiredParameters;
-  if (live && Object.prototype.hasOwnProperty.call(live, equationId)) return live[equationId];
-  if (typeof require === 'function') {
-    const evaluate = require('./evaluate');
-    if (evaluate.requiredParameters && Object.prototype.hasOwnProperty.call(evaluate.requiredParameters, equationId)) {
-      return evaluate.requiredParameters[equationId];
-    }
-  }
+  const evaluate = equationEvaluator(root);
+  if (evaluate && evaluate.requiredParameters &&
+      Object.prototype.hasOwnProperty.call(evaluate.requiredParameters, equationId)) return evaluate.requiredParameters[equationId];
   return null;
+}
+
+function equationEvaluator(root) {
+  const live = root.BreakGlass && root.BreakGlass.evaluate;
+  if (live) return live;
+  return typeof require === 'function' ? require('./evaluate') : null;
 }

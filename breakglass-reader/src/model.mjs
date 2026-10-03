@@ -67,6 +67,7 @@ export function parseAnswer(content) {
  * @returns {Promise<{ ok: true, answer: Record<string, unknown> } | { ok: false, reason: string, transport: boolean }>}
  */
 export async function askModel({ settings, dataUrl, image, time, courseText, signal, fetchImpl }) {
+  if (signal.aborted) return { ok: false, reason: 'model_timeout', transport: true };
   const body = {
     model: settings.model,
     temperature: 0,
@@ -98,14 +99,16 @@ export async function askModel({ settings, dataUrl, image, time, courseText, sig
     const timedOut = error && (error.name === 'TimeoutError' || error.name === 'AbortError');
     return { ok: false, reason: timedOut ? 'model_timeout' : 'model_unreachable', transport: true };
   }
+  if (signal.aborted) return { ok: false, reason: 'model_timeout', transport: true };
   if (!response.ok) return { ok: false, reason: `model_http_${response.status}`, transport: true };
 
   let payload;
   try {
     payload = await response.json();
   } catch {
-    return { ok: false, reason: 'model_bad_json', transport: true };
+    return { ok: false, reason: signal.aborted ? 'model_timeout' : 'model_bad_json', transport: true };
   }
+  if (signal.aborted) return { ok: false, reason: 'model_timeout', transport: true };
   const choice = payload && Array.isArray(payload.choices) ? payload.choices[0] : null;
   const answer = parseAnswer(choice && choice.message ? choice.message.content : null);
   if (!answer) return { ok: false, reason: 'answer_unreadable', transport: false };

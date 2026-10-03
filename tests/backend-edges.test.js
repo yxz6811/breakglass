@@ -160,7 +160,8 @@ test('drag values stay finite and inside the validated range', () => {
   assert.equal(session.updateParameter('h', '').ok, false);
   assert.equal(session.getState().currentParameters.h, 0);
 
-  assert.equal(session.updateParameter('h', Number.POSITIVE_INFINITY).session.currentParameters.h, 2);
+  assert.equal(session.updateParameter('h', Number.POSITIVE_INFINITY).code, 'invalid_parameter_value');
+  assert.equal(session.getState().currentParameters.h, 0, 'invalid updates preserve the previous parameter');
   assert.equal(session.updateParameter('h', -99).session.currentParameters.h, -2);
   assert.equal(session.updateParameter('a', 1).code, 'parameter_not_draggable');
   assert.equal(session.getState().currentParameters.a, 0.8);

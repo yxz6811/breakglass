@@ -1,16 +1,17 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { once } from 'node:events';
+import http from 'node:http';
 import { createReaderServer } from '../src/server.mjs';
 import { loadSettings } from '../src/settings.mjs';
-import { fakeModel, lessonRequest, pageRules, parabolaAnswer, settings } from './helpers/fixtures.mjs';
+import { FRAME_DATA_URL, fakeModel, lessonRequest, pageRules, parabolaAnswer, settings } from './helpers/fixtures.mjs';
 
 const EXTENSION_ORIGIN = 'chrome-extension://abcdefghijklmnopabcdefghijklmnop';
 
 /**
  * 在随机端口起一个服务，测完关掉。
  *
- * @param {(base: string) => Promise<void>} run
+ * @param {(base: string, server: import('node:http').Server) => Promise<void>} run
  * @param {object} [overrides]
  */
 async function withServer(run, overrides = {}) {
@@ -20,7 +21,7 @@ async function withServer(run, overrides = {}) {
   await once(server, 'listening');
   const { port } = server.address();
   try {
-    await run(`http://127.0.0.1:${port}`);
+    await run(`http://127.0.0.1:${port}`, server);
   } finally {
     server.close();
   }
@@ -125,4 +126,74 @@ test('配置：默认只听本机，总预算压在页面 300 秒截止之前，
   assert.equal(tight.allowOrigin(EXTENSION_ORIGIN), true);
   assert.equal(tight.allowOrigin('chrome-extension://ponmlkjihgfedcbaponmlkjihgfedcba'), false);
   assert.equal(tight.allowOrigin('http://127.0.0.1:8768'), true);
+});
+
+test('客户端断开会取消模型，迟到的响应不会开始下一帧或写入断开的连接', { timeout: 3000 }, async () => {
+  const calls = [];
+  const logs = [];
+  let entered;
+  const started = new Promise((resolve) => { entered = resolve; });
+  let finishModel;
+  const lateReply = new Promise((resolve) => { finishModel = resolve; });
+  let finished;
+  const cancelled = new Promise((resolve) => { finished = resolve; });
+  const server = createReaderServer({
+    settings: settings({ concurrency: 1 }), pageRules,
+    fetchImpl: async (url, init) => {
+      calls.push(init);
+      entered();
+      // 故意模拟不配合取消的模型；迟到结果仍不能继续队列。
+      return lateReply;
+    },
+    log: (entry) => {
+      logs.push(entry);
+      if (entry.event === 'cancelled') finished();
+    }
+  });
+  server.listen(0, '127.0.0.1');
+  await once(server, 'listening');
+  const base = `http://127.0.0.1:${server.address().port}`;
+  const client = http.request(`${base}/read`, { method: 'POST', headers: { 'content-type': 'application/json' } });
+  let responses = 0;
+  client.on('response', () => { responses += 1; });
+  client.on('error', () => {});
+  try {
+    client.end(JSON.stringify(lessonRequest({ frames: [
+      { time: 2, image: FRAME_DATA_URL }, { time: 6.451, image: FRAME_DATA_URL }
+    ] })));
+    await started;
+    const upstreamAborted = once(calls[0].signal, 'abort');
+    client.destroy();
+    await upstreamAborted;
+    assert.equal(calls[0].signal.aborted, true);
+    finishModel({ ok: true, json: async () => ({ choices: [{ message: { content: JSON.stringify(parabolaAnswer()) } }] }) });
+    await cancelled;
+    assert.equal(calls.length, 1);
+    assert.equal(responses, 0);
+    assert.equal(logs.some((entry) => entry.event === 'read' || entry.event === 'crashed'), false);
+    const health = await fetch(`${base}/health`);
+    assert.equal(health.status, 200);
+    await health.text();
+  } finally {
+    client.destroy();
+    finishModel({ ok: false, status: 503 });
+    server.closeAllConnections();
+    await new Promise((resolve) => server.close(resolve));
+  }
+});
+
+test('请求体上传期间断开也会结束读取，服务仍可接受下一次请求', { timeout: 3000 }, async () => {
+  await withServer(async (base, server) => {
+    const incoming = once(server, 'request');
+    const client = http.request(`${base}/read`, { method: 'POST', headers: { 'content-type': 'application/json' } });
+    client.on('error', () => {});
+    client.write('{"readingId":');
+    const [request] = await incoming;
+    const disconnected = once(request, 'aborted');
+    client.destroy();
+    await disconnected;
+    const health = await fetch(`${base}/health`);
+    assert.equal(health.status, 200);
+    await health.text();
+  });
 });

@@ -91,7 +91,7 @@
     });
   }
 
-  /* 滚轮翻页：页内先逐段，走到头就翻到下一页（共 6 页，第 1 页为留空封面） */
+  /* 滚轮翻页：页内先逐段，走到头就翻到下一页（共 6 页，第 1 页为背景封面） */
   var pager = document.querySelector('[data-pager]');
   var sections = Array.prototype.slice.call(document.querySelectorAll('[data-page-section]'));
   var nextPage = document.body.getAttribute('data-next-page') || '';
@@ -100,11 +100,15 @@
   function goToPage(url) {
     if (!url || going) return;
     going = true;
+    if (reduceMotion) { window.location.href = url; return; }
     document.documentElement.style.transition = 'opacity 460ms var(--ease-out)';
     document.documentElement.style.opacity = '0';
     window.setTimeout(function () { window.location.href = url; }, 460);
   }
   window.addEventListener('keydown', function (event) {
+    if (event.defaultPrevented || event.ctrlKey || event.metaKey || event.altKey) return;
+    var target = event.target;
+    if (target && (target.isContentEditable || /^(INPUT|TEXTAREA|SELECT|BUTTON|A)$/.test(target.tagName))) return;
     if (event.key === 'ArrowDown' || event.key === 'PageDown' || (event.key === ' ' && !event.shiftKey)) {
       var list = sections;
       var at = 0;
@@ -115,7 +119,7 @@
     } else if (event.key === 'ArrowUp' || event.key === 'PageUp') {
       if (window.scrollY < 40) { event.preventDefault(); goToPage(prevPage); }
     } else if (event.key === 'Escape') {
-      goToPage('../index.html');
+      if (document.body.getAttribute('data-page') !== '1') goToPage('../index.html');
     }
   });
   if (pager && sections.length > 0) {
@@ -167,9 +171,10 @@
       if (locked) return;
       locked = true;
       var destination = sections[next];
-      window.scrollTo({ top: sectionTop(destination) - offset, behavior: 'smooth' });
+      window.scrollTo({ top: sectionTop(destination) - offset, behavior: reduceMotion ? 'auto' : 'smooth' });
       playEntry(destination);
-      window.setTimeout(function () { locked = false; }, 820);
+      if (reduceMotion) locked = false;
+      else window.setTimeout(function () { locked = false; }, 820);
     }, { passive: false });
   }
 
@@ -203,7 +208,14 @@
         span.className = 'ch';
         span.style.setProperty('--i', String(index % 26));
         span.setAttribute('data-glyph', GLYPHS[(index * 5 + chunk.charCodeAt(0)) % GLYPHS.length]);
-        span.textContent = chunk;
+        // CSS generated content is announced by some accessibility trees.
+        // Give the decorative layer its own node so assistive tools can ignore it.
+        var glyph = document.createElement('span');
+        glyph.className = 'ch__glyph';
+        glyph.setAttribute('aria-hidden', 'true');
+        glyph.textContent = span.getAttribute('data-glyph');
+        span.appendChild(glyph);
+        span.appendChild(document.createTextNode(chunk));
         fragment.appendChild(span);
         index += 1;
         position += chunk.length;

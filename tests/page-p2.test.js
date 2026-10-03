@@ -50,9 +50,13 @@ test('hang：等待态可取消，1.5 秒后自动回退并持续显示原因', 
     assert.equal(elements['source-label'].textContent, '预先准备的示例 · 超时回退');
     assert.equal(elements['source-note'].textContent.includes('1.5 秒'), true);
     assert.equal(elements['cancel-button'].hidden, true);
+    assert.equal(harness.win.__breakglassLatency.summary()['fallback-frame-ready'], undefined);
+    harness.frame();
+    harness.frame();
     const summary = harness.win.__breakglassLatency.summary();
-    assert.equal(summary['fallback-visible'].count >= 1, true, '应记录回退显现耗时');
-    assert.equal(summary['fallback-visible'].max <= 100, true, 'SC-003 口径应小于 0.1 秒');
+    assert.equal(summary['fallback-dom-ready'].count, 1);
+    assert.equal(summary['fallback-frame-ready'].count, 1, '两次帧回调后才记录绘制机会');
+    assert.equal(summary['fallback-frame-ready'].max, 32, '替身只验证帧排程，不替代浏览器性能验收');
   } finally {
     harness.restore();
   }

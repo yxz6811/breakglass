@@ -80,7 +80,7 @@
    * @param {Function} validate
    * @returns {string | null} 丢掉原因；通过时为 null
    */
-  function rejectPoint(point, reading, sourceSize, validate) {
+  function rejectPoint(point, reading, sourceSize, validate, request) {
     if (!point || typeof point.id !== 'string' || point.id.length === 0) return '抛物线没有通过检查';
     if (typeof point.lessonLine !== 'string' || codePointLength(point.lessonLine) === 0 || codePointLength(point.lessonLine) > LINE_LIMIT) {
       return '抛物线没有通过检查';
@@ -88,6 +88,7 @@
     if (!point.curve || point.curve.videoId !== reading.videoId) return '不是这一段视频';
     if (typeof point.time !== 'number' || !Number.isFinite(point.time) || point.time < 0) return '时间无效';
     if (point.time > reading.duration) return '落在视频外面';
+    if (request && !request.sampleTimes.includes(point.time)) return '时间无效';
     const verdict = validate(point.curve, {
       videoId: reading.videoId,
       frameSize: sourceSize
@@ -126,14 +127,22 @@
   /**
    * @param {object} reading
    * @param {{ width: number, height: number }} sourceSize
+   * @param {{ readingId: string, videoId: string, duration: number, sampleTimes: number[] }} [request] 当次实际发送的帧，而非重新推算的采样表
    * @returns {{ ok: boolean, points: object[], dropped: { reason: string }[], first: object | null }}
    */
-  function validateLessonReading(reading, sourceSize) {
+  function validateLessonReading(reading, sourceSize, request) {
     const validate = curveValidator(root);
     if (!reading || reading.origin !== 'external' || typeof reading.readingId !== 'string' || reading.readingId.length === 0 ||
         typeof reading.videoId !== 'string' || reading.videoId.length === 0 ||
         typeof reading.duration !== 'number' || !Number.isFinite(reading.duration) || reading.duration <= 0 ||
         !sourceSize || !(sourceSize.width > 0) || !(sourceSize.height > 0) || !validate) {
+      return { ok: false, points: [], dropped: [{ reason: '不是这一段视频' }], first: null };
+    }
+    if (request && (reading.readingId !== request.readingId || reading.videoId !== request.videoId ||
+        reading.duration !== request.duration || !Array.isArray(request.sampleTimes) ||
+        request.sampleTimes.length === 0 || request.sampleTimes.length > MAX_POINTS ||
+        (request.frameSize && (request.frameSize.width !== sourceSize.width || request.frameSize.height !== sourceSize.height)) ||
+        request.sampleTimes.some((time) => typeof time !== 'number' || !Number.isFinite(time) || time < 0 || time > request.duration))) {
       return { ok: false, points: [], dropped: [{ reason: '不是这一段视频' }], first: null };
     }
     const dropped = [];
@@ -149,7 +158,7 @@
         dropped.push({ reason: '抛物线没有通过检查' });
         return;
       }
-      const reason = rejectPoint(point, reading, sourceSize, validate);
+      const reason = rejectPoint(point, reading, sourceSize, validate, request);
       if (reason) {
         dropped.push({ reason });
         return;
