@@ -5,7 +5,7 @@
   'use strict';
 
   const root = document.documentElement;
-  const events = new AbortController();
+  const events = window.BreakGlassMotion.createListeners();
   const motion = window.matchMedia('(prefers-reduced-motion: reduce)');
   const depthScreen = window.matchMedia('(min-width: 901px) and (hover: hover) and (pointer: fine)');
   const coarseScreen = window.matchMedia('(pointer: coarse)');
@@ -13,7 +13,8 @@
   const context = canvas && canvas.getContext('2d');
   const hero = document.querySelector('.brand-intro');
   const stage = hero && hero.querySelector('.brand-stage');
-  const pendingReveals = new Set(document.querySelectorAll('.reveal'));
+  const revealElements = new Set(document.querySelectorAll('.reveal'));
+  const pendingReveals = new Set(revealElements);
   let revealObserver = null;
   let particles = [];
   let width = 0;
@@ -27,14 +28,22 @@
   let sprite = null;
 
   function reveal(element) {
+    if (!pendingReveals.delete(element)) return;
     element.classList.add('is-revealed');
-    pendingReveals.delete(element);
-    if (revealObserver) revealObserver.unobserve(element);
+  }
+
+  function resetReveal(element, bounds) {
+    // A partially visible or focused control must never disappear during a scroll.
+    if (bounds.bottom > 0 && bounds.top < window.innerHeight) return;
+    if (element.contains(document.activeElement)) return;
+    element.style.setProperty('--reveal-from-y', bounds.bottom <= 0 ? '-22px' : '22px');
+    element.classList.remove('is-revealed');
+    pendingReveals.add(element);
   }
 
   function revealAll() {
     pendingReveals.forEach(reveal);
-    if (revealObserver) revealObserver.disconnect();
+    if (revealObserver) { revealObserver.disconnect(); revealObserver = null; }
   }
 
   function observeReveals() {
@@ -42,16 +51,22 @@
       revealAll();
       return;
     }
-    revealObserver = new IntersectionObserver(function (entries) {
+    const observer = new IntersectionObserver(function (entries) {
+      // Ignore queued work from an observer replaced by a preference change.
+      if (disposed || motion.matches || revealObserver !== observer) return;
       entries.forEach(function (entry) {
-        // Observe each element, so tall mobile sections do not need to fit the viewport.
+        // Keep observing both edges: leave completely, then replay on either return.
+        // Individual targets let tall mobile sections enter without fitting the viewport.
         if (entry.isIntersecting) reveal(entry.target);
+        else resetReveal(entry.target, entry.boundingClientRect);
       });
-    }, { threshold: 0, rootMargin: '0px 0px -24px 0px' });
-    pendingReveals.forEach(function (element) {
+    }, { threshold: 0, rootMargin: '0px' });
+    revealObserver = observer;
+    revealElements.forEach(function (element) {
       const bounds = element.getBoundingClientRect();
       if (bounds.top < window.innerHeight && bounds.bottom > 0) reveal(element);
-      else revealObserver.observe(element);
+      else resetReveal(element, bounds);
+      revealObserver.observe(element);
     });
   }
 
@@ -175,6 +190,7 @@
   function onMotionChange() {
     stopFrames();
     if (motion.matches) revealAll();
+    else if (!revealObserver) observeReveals();
     paintParticles(0);
     updateDepth();
     startParticles();
@@ -201,21 +217,22 @@
   }
   updateDepth();
 
-  document.addEventListener('focusin', function (event) {
-    pendingReveals.forEach(function (element) {
+  events.listen(document, 'focusin', function (event) {
+    revealElements.forEach(function (element) {
       if (element.contains(event.target)) reveal(element);
+      else if (!motion.matches && revealObserver) resetReveal(element, element.getBoundingClientRect());
     });
-  }, { signal: events.signal });
-  window.addEventListener('scroll', scheduleDepth, { passive: true, signal: events.signal });
-  window.addEventListener('resize', function () {
+  });
+  events.listen(window, 'scroll', scheduleDepth, { passive: true });
+  events.listen(window, 'resize', function () {
     resizeParticles();
     scheduleDepth();
-  }, { passive: true, signal: events.signal });
-  motion.addEventListener('change', onMotionChange, { signal: events.signal });
-  depthScreen.addEventListener('change', scheduleDepth, { signal: events.signal });
-  coarseScreen.addEventListener('change', resizeParticles, { signal: events.signal });
-  document.addEventListener('visibilitychange', onVisibilityChange, { signal: events.signal });
-  window.addEventListener('pagehide', function (event) {
+  }, { passive: true });
+  events.listen(motion, 'change', onMotionChange);
+  events.listen(depthScreen, 'change', scheduleDepth);
+  events.listen(coarseScreen, 'change', resizeParticles);
+  events.listen(document, 'visibilitychange', onVisibilityChange);
+  events.listen(window, 'pagehide', function (event) {
     suspended = true;
     document.body.classList.add('effects-paused');
     stopFrames();
@@ -224,12 +241,12 @@
       if (revealObserver) revealObserver.disconnect();
       events.abort();
     }
-  }, { signal: events.signal });
-  window.addEventListener('pageshow', function () {
+  });
+  events.listen(window, 'pageshow', function () {
     suspended = document.hidden;
     document.body.classList.toggle('effects-paused', suspended);
     resizeParticles();
     startParticles();
     scheduleDepth();
-  }, { signal: events.signal });
+  });
 }());

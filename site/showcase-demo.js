@@ -12,7 +12,7 @@
   var reset = section.querySelector('.curve-reset');
   if (!chart || !slider || !toggle || !status || !reset) return;
   var motion = window.matchMedia('(prefers-reduced-motion: reduce)');
-  var events = new AbortController();
+  var events = window.BreakGlassMotion.createListeners();
   var duration = 6000;
   var elapsed = 0, last = 0, painted = 0, frame = 0;
   var running = false, visible = false, started = false, ownInput = false, disposed = false;
@@ -72,16 +72,16 @@
     stop('manual', '手动控制 · 参数保持你的选择。');
   }
   toggle.hidden = false;
-  toggle.addEventListener('click', function () {
+  events.listen(toggle, 'click', function () {
     if (running) stop('paused', '变化已暂停 · 可继续或亲手调节。'); else play();
-  }, { signal: events.signal });
-  slider.addEventListener('input', manual, { signal: events.signal });
+  });
+  events.listen(slider, 'input', manual);
   // Stop before a keyboard/pointer edit; reset never restarts autoplay.
-  slider.addEventListener('pointerdown', manual, { signal: events.signal });
-  reset.addEventListener('click', function () {
+  events.listen(slider, 'pointerdown', manual);
+  events.listen(reset, 'click', function () {
     started = true; elapsed = 0;
     stop('manual', '已恢复原曲线 · a = 0.65。');
-  }, { signal: events.signal });
+  });
   function preference() {
     toggle.disabled = motion.matches;
     if (motion.matches) stop('reduced', '已减少动态效果 · 曲线仍可手动调节。');
@@ -97,14 +97,14 @@
   }, { threshold: [0, .05] }) : null;
   if (observer) observer.observe(livePanel || chart);
   else { visible = true; started = true; section.classList.add('plot-entered'); }
-  document.addEventListener('visibilitychange', function () {
+  events.listen(document, 'visibilitychange', function () {
     if (document.hidden && running) stop('paused', '变化已暂停 · 可继续或亲手调节。');
-  }, { signal: events.signal });
-  motion.addEventListener('change', preference, { signal: events.signal });
-  window.addEventListener('pagehide', function (event) {
+  });
+  events.listen(motion, 'change', preference);
+  events.listen(window, 'pagehide', function (event) {
     stop('paused', '变化已暂停 · 可继续或亲手调节。');
     if (!event.persisted) { disposed = true; if (observer) observer.disconnect(); events.abort(); }
-  }, { signal: events.signal });
-  window.addEventListener('pageshow', function (event) { if (event.persisted) preference(); }, { signal: events.signal });
+  });
+  events.listen(window, 'pageshow', function (event) { if (event.persisted) preference(); });
   preference();
 })();

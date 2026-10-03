@@ -4,6 +4,8 @@
 <html lang="zh-CN">
 <head>
 <meta charset="utf-8"/>
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; script-src-attr 'none'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-src 'none'; worker-src 'none'; media-src 'none'" data-showcase-csp/>
+<meta name="referrer" content="no-referrer"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
 <title>破壁 BreakGlass — 让知识可以被触碰</title>
 <meta name="theme-color" content="#080b0d" />
@@ -351,6 +353,8 @@ plt.show()</pre>
              aria-label="点击展开：用户触发">
           <span class="num">01</span>
           <h4>用户触发</h4>
+          <img class="step-shot" src="./assets/runtime/01-user-trigger.jpg" alt="" width="1264" height="1001" loading="lazy" decoding="async"/>
+          <span class="step-caption">暂停这一帧，开始动手</span>
         </div>
 
         <div class="step reveal" style="--i:3"
@@ -358,6 +362,8 @@ plt.show()</pre>
              aria-label="点击展开：内容几何探测层">
           <span class="num">02</span>
           <h4>内容几何探测层</h4>
+          <img class="step-shot" src="./assets/runtime/02-geometry-frame.jpg" alt="" width="856" height="540" loading="lazy" decoding="async"/>
+          <span class="step-caption">定位视频内容区</span>
         </div>
 
         <div class="step reveal" style="--i:4"
@@ -365,6 +371,8 @@ plt.show()</pre>
              aria-label="点击展开：多模态感知层">
           <span class="num">03</span>
           <h4>多模态感知层</h4>
+          <img class="step-shot" src="./assets/runtime/03-preset-result.jpg" alt="" width="1264" height="1001" loading="lazy" decoding="async"/>
+          <span class="step-caption">当前使用本地预制结果</span>
         </div>
 
         <div class="step reveal" style="--i:5"
@@ -372,6 +380,8 @@ plt.show()</pre>
              aria-label="点击展开：原位图层挂载层">
           <span class="num">04</span>
           <h4>原位图层挂载层</h4>
+          <img class="step-shot" src="./assets/runtime/04-in-situ-overlay.jpg" alt="" width="842" height="540" loading="lazy" decoding="async"/>
+          <span class="step-caption">曲线直接叠在视频上</span>
         </div>
 
         <div class="step reveal" style="--i:6"
@@ -379,12 +389,15 @@ plt.show()</pre>
              aria-label="点击展开：双分支业务分流">
           <span class="num">05</span>
           <h4>双分支业务分流</h4>
+          <img class="step-shot" src="./assets/runtime/05-function-branch.jpg" alt="" width="1264" height="1001" loading="lazy" decoding="async"/>
+          <span class="step-caption">函数分支 · 实时调参</span>
         </div>
 
       </div>
 
       <p class="arch-note reveal" style="--i:7">
-        架构示意 · 各层能力按 P0 / P1 分阶段实现与验证。
+        仓库真实运行截图 · 点击各层查看大图与实现说明。<br>
+        当前演示为 P0 本地预制抛物线；真实视觉识别与代码执行属于 P1。
       </p>
 
     </div>
@@ -492,7 +505,7 @@ plt.show()</pre>
       <div class="arch-modal__eyebrow arch-modal__anim d1" id="archEyebrow">LAYER</div>
       <h3 class="arch-modal__title arch-modal__anim d1" id="archTitle"></h3>
       <p  class="arch-modal__desc  arch-modal__anim d2" id="archDesc"></p>
-      <p class="capability-note">技术方案示意，尚未全部实现。当前体验使用本地预制抛物线；真实视觉识别与代码执行属于后续 P1 目标。</p>
+      <p class="capability-note">截图来自仓库前端演示实际运行。当前使用本地预制抛物线；真实视觉识别与 Python / Pyodide 代码执行尚未接入。</p>
     </div>
   </div>
 </div>
@@ -502,54 +515,10 @@ plt.show()</pre>
      模板 01 · 用户触发
      ===================================================== -->
 <template id="tpl-arch-1">
-  <svg viewBox="0 0 720 405" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
-    <defs>
-      <linearGradient id="a1-bg" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0" stop-color="#0d1422"/><stop offset="1" stop-color="#06090f"/>
-      </linearGradient>
-      <radialGradient id="a1-ring" cx="0.5" cy="0.5" r="0.5">
-        <stop offset="0" stop-color="#2997ff" stop-opacity="0.55"/>
-        <stop offset="1" stop-color="#2997ff" stop-opacity="0"/>
-      </radialGradient>
-    </defs>
-    <rect width="720" height="405" fill="url(#a1-bg)"/>
-    <g transform="translate(42,36)">
-      <rect width="8" height="8" rx="2" fill="#2997ff"/>
-      <text x="18" y="8" font-family="ui-monospace,monospace" font-size="11"
-            font-weight="600" fill="#cfd8e6" letter-spacing="1.6">LAYER 01 / USER TRIGGER</text>
-    </g>
-    <g transform="translate(60,74)">
-      <rect width="480" height="272" rx="14" fill="#0a0e16" stroke="rgba(255,255,255,.08)"/>
-      <rect width="480" height="30" rx="14" fill="rgba(255,255,255,.04)"/>
-      <rect y="20" width="480" height="10" fill="rgba(255,255,255,.04)"/>
-      <circle cx="18" cy="15" r="4" fill="#ff5f57"/>
-      <circle cx="32" cy="15" r="4" fill="#febc2e"/>
-      <circle cx="46" cy="15" r="4" fill="#28c840"/>
-      <rect x="70" y="8" width="320" height="16" rx="4" fill="rgba(255,255,255,.05)"/>
-      <text x="80" y="20" font-family="monospace" font-size="10" fill="#6e7681">bilibili.com/video/BV1xx</text>
-      <rect x="20" y="48" width="440" height="188" rx="10" fill="#050810"/>
-      <text x="38" y="76" font-family="monospace" font-size="11" fill="#5a6478">lecture_07.mp4</text>
-      <circle cx="240" cy="142" r="26" fill="rgba(41,151,255,.15)" stroke="#2997ff" stroke-width="1.4"/>
-      <path d="M 232 130 L 250 142 L 232 154 Z" fill="#64d2ff"/>
-      <rect x="20" y="246" width="440" height="4" rx="2" fill="rgba(255,255,255,.08)"/>
-      <rect x="20" y="246" width="170" height="4" rx="2" fill="#2997ff"/>
-    </g>
-    <g transform="translate(586,210)">
-      <circle r="52" fill="url(#a1-ring)"/>
-      <circle r="42" fill="none" stroke="#2997ff" stroke-width="1" opacity=".18"/>
-      <circle r="30" fill="none" stroke="#2997ff" stroke-width="1" opacity=".32"/>
-      <circle r="20" fill="rgba(41,151,255,.2)" stroke="#64d2ff" stroke-width="1.4"/>
-      <circle r="11" fill="#2997ff"/>
-      <text x="0" y="4" text-anchor="middle"
-            font-family="-apple-system,PingFang SC,sans-serif"
-            font-size="12" font-weight="700" fill="#fff">破</text>
-    </g>
-    <g transform="translate(60,376)">
-      <text font-family="monospace" font-size="12" fill="#8b96a8">快捷键 </text>
-      <text x="52" font-family="monospace" font-size="12" fill="#cfd8e6" font-weight="600">⌘ ⇧ B</text>
-      <text x="126" font-family="monospace" font-size="12" fill="#8b96a8"> 或点击扩展图标</text>
-    </g>
-  </svg>
+  <figure class="runtime-shot">
+    <img src="./assets/runtime/01-user-trigger.jpg" alt="前端演示停在第六秒，破壁按钮可用，曲线尚未出现" decoding="async"/>
+    <figcaption><span>真实运行截图</span>第 6 秒暂停 · 工具栏与 Alt+B 触发入口</figcaption>
+  </figure>
 </template>
 
 
@@ -557,60 +526,10 @@ plt.show()</pre>
      模板 02 · 内容几何探测层
      ===================================================== -->
 <template id="tpl-arch-2">
-  <svg viewBox="0 0 720 405" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
-    <defs>
-      <linearGradient id="a2-bg" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0" stop-color="#0d1422"/><stop offset="1" stop-color="#06090f"/>
-      </linearGradient>
-    </defs>
-    <rect width="720" height="405" fill="url(#a2-bg)"/>
-    <g transform="translate(42,36)">
-      <rect width="8" height="8" rx="2" fill="#2997ff"/>
-      <text x="18" y="8" font-family="ui-monospace,monospace" font-size="11"
-            font-weight="600" fill="#cfd8e6" letter-spacing="1.6">LAYER 02 / GEOMETRY PROBE</text>
-    </g>
-    <g transform="translate(60,96)">
-      <rect width="240" height="200" rx="12" fill="#0a0e16" stroke="rgba(255,255,255,.1)"/>
-      <text x="18" y="28" font-family="monospace" font-size="11" fill="#8b96a8">&lt;video&gt;</text>
-      <rect x="16" y="42" width="208" height="128" rx="8" fill="#050810"/>
-      <rect x="28" y="60" width="80" height="6" rx="3" fill="rgba(255,255,255,.2)"/>
-      <rect x="28" y="76" width="120" height="6" rx="3" fill="rgba(255,255,255,.14)"/>
-      <path d="M 40 150 Q 80 96 120 130 Q 160 108 200 118"
-            stroke="#5a9fd8" stroke-width="1.6" fill="none"/>
-      <rect x="24" y="54" width="96" height="34" rx="4"
-            fill="none" stroke="#2997ff" stroke-width="1.2" stroke-dasharray="4 3"/>
-      <rect x="24" y="98" width="188" height="64" rx="4"
-            fill="none" stroke="#a78bfa" stroke-width="1.2" stroke-dasharray="4 3"/>
-      <text x="18" y="192" font-family="monospace" font-size="11" fill="#64d2ff">z-index: 0 · 保持在底层</text>
-    </g>
-    <g transform="translate(322,188)">
-      <line x1="0" y1="0" x2="60" y2="0" stroke="#2997ff" stroke-width="1.8"/>
-      <path d="M 54,-6 L 66,0 L 54,6 Z" fill="#2997ff"/>
-      <text x="30" y="-14" text-anchor="middle"
-            font-family="monospace" font-size="10" fill="#8b96a8">drawImage()</text>
-      <text x="30" y="24" text-anchor="middle"
-            font-family="monospace" font-size="10" fill="#8b96a8">截取当前帧</text>
-    </g>
-    <g transform="translate(404,96)">
-      <rect width="256" height="200" rx="12" fill="#0a0e16"
-            stroke="rgba(41,151,255,.42)" stroke-dasharray="5 4"/>
-      <text x="18" y="28" font-family="monospace" font-size="11" fill="#64d2ff">&lt;canvas&gt;</text>
-      <rect x="16" y="42" width="224" height="128" rx="8"
-            fill="rgba(41,151,255,.04)" stroke="rgba(41,151,255,.24)"/>
-      <g stroke="rgba(41,151,255,.15)" stroke-width="1">
-        <line x1="72" y1="42" x2="72" y2="170"/>
-        <line x1="128" y1="42" x2="128" y2="170"/>
-        <line x1="184" y1="42" x2="184" y2="170"/>
-        <line x1="16" y1="88" x2="240" y2="88"/>
-        <line x1="16" y1="128" x2="240" y2="128"/>
-      </g>
-      <path d="M 40 150 Q 80 96 120 130 Q 160 108 200 118"
-            stroke="#64d2ff" stroke-width="1.6" fill="none"/>
-      <text x="18" y="192" font-family="monospace" font-size="11" fill="#64d2ff">
-        像素数据 · [W, H, 4]
-      </text>
-    </g>
-  </svg>
+  <figure class="runtime-shot">
+    <img src="./assets/runtime/02-geometry-frame.jpg" alt="暂停在第六秒的视频内容区，显示教材中的抛物线图像" decoding="async"/>
+    <figcaption><span>真实运行截图</span>实际视频画面 · 内容区坐标映射</figcaption>
+  </figure>
 </template>
 
 
@@ -618,86 +537,10 @@ plt.show()</pre>
      模板 03 · 多模态感知层
      ===================================================== -->
 <template id="tpl-arch-3">
-  <svg viewBox="0 0 720 405" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
-    <defs>
-      <linearGradient id="a3-bg" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0" stop-color="#0d1422"/><stop offset="1" stop-color="#06090f"/>
-      </linearGradient>
-    </defs>
-    <rect width="720" height="405" fill="url(#a3-bg)"/>
-    <g transform="translate(42,36)">
-      <rect width="8" height="8" rx="2" fill="#2997ff"/>
-      <text x="18" y="8" font-family="ui-monospace,monospace" font-size="11"
-            font-weight="600" fill="#cfd8e6" letter-spacing="1.6">LAYER 03 / MULTIMODAL PERCEPTION</text>
-    </g>
-
-    <g transform="translate(44,96)">
-      <rect width="164" height="210" rx="12" fill="#0a0e16" stroke="rgba(255,255,255,.1)"/>
-      <text x="16" y="24" font-family="monospace" font-size="11" fill="#8b96a8">INPUT FRAME</text>
-      <rect x="14" y="38" width="136" height="156" rx="6" fill="#050810"/>
-      <rect x="26" y="54" width="68" height="6" rx="3" fill="rgba(255,255,255,.22)"/>
-      <rect x="26" y="68" width="100" height="6" rx="3" fill="rgba(255,255,255,.14)"/>
-      <path d="M 26 168 Q 56 108 86 146 Q 116 118 144 132"
-            stroke="#64d2ff" stroke-width="1.6" fill="none"/>
-      <rect x="22" y="48" width="106" height="50" rx="4"
-            fill="none" stroke="#2997ff" stroke-width="1.4" stroke-dasharray="4 3"/>
-      <rect x="22" y="106" width="128" height="84" rx="4"
-            fill="none" stroke="#a78bfa" stroke-width="1.4" stroke-dasharray="4 3"/>
-    </g>
-
-    <g transform="translate(214,194)">
-      <line x1="0" y1="0" x2="34" y2="0" stroke="#2997ff" stroke-width="1.8"/>
-      <path d="M 28,-6 L 40,0 L 28,6 Z" fill="#2997ff"/>
-    </g>
-
-    <g transform="translate(272,116)">
-      <circle cx="80" cy="80" r="78" fill="none" stroke="rgba(41,151,255,.22)" stroke-width="1"/>
-      <circle cx="80" cy="80" r="58" fill="rgba(41,151,255,.08)" stroke="#2997ff" stroke-width="1.6"/>
-      <circle cx="80" cy="80" r="36" fill="rgba(41,151,255,.14)"/>
-      <g fill="#64d2ff">
-        <circle cx="62" cy="62" r="3.6"/>
-        <circle cx="98" cy="64" r="3.6"/>
-        <circle cx="80" cy="98" r="3.6"/>
-        <circle cx="65" cy="92" r="2.8"/>
-        <circle cx="96" cy="94" r="2.8"/>
-      </g>
-      <g stroke="#2997ff" stroke-width="1" opacity=".7">
-        <line x1="62" y1="62" x2="80" y2="98"/>
-        <line x1="98" y1="64" x2="80" y2="98"/>
-        <line x1="62" y1="62" x2="65" y2="92"/>
-        <line x1="98" y1="64" x2="96" y2="94"/>
-        <line x1="65" y1="92" x2="96" y2="94"/>
-      </g>
-      <text x="80" y="186" text-anchor="middle"
-            font-family="ui-monospace,monospace" font-size="11"
-            fill="#64d2ff" letter-spacing="1.8">VISION AI</text>
-    </g>
-
-    <g transform="translate(452,194)">
-      <line x1="0" y1="0" x2="34" y2="0" stroke="#a78bfa" stroke-width="1.8"/>
-      <path d="M 28,-6 L 40,0 L 28,6 Z" fill="#a78bfa"/>
-    </g>
-
-    <g transform="translate(500,96)">
-      <rect width="176" height="210" rx="12" fill="#0a0e16"
-            stroke="rgba(167,139,250,.42)"/>
-      <text x="16" y="24" font-family="monospace" font-size="11" fill="#a78bfa">STRUCTURED OUTPUT</text>
-      <g font-family="monospace" font-size="10">
-        <text x="16" y="52" fill="#cfd8e6">{</text>
-        <text x="26" y="70" fill="#64d2ff">"type":</text>
-        <text x="76" y="70" fill="#a78bfa">"code"</text>
-        <text x="26" y="88" fill="#64d2ff">"bbox":</text>
-        <text x="76" y="88" fill="#cfd8e6">[24,48,106,50]</text>
-        <text x="16" y="106" fill="#cfd8e6">}</text>
-        <text x="16" y="130" fill="#cfd8e6">{</text>
-        <text x="26" y="148" fill="#64d2ff">"type":</text>
-        <text x="76" y="148" fill="#a78bfa">"graph"</text>
-        <text x="26" y="166" fill="#64d2ff">"bbox":</text>
-        <text x="76" y="166" fill="#cfd8e6">[22,106,128,84]</text>
-        <text x="16" y="184" fill="#cfd8e6">}</text>
-      </g>
-    </g>
-  </svg>
+  <figure class="runtime-shot">
+    <img src="./assets/runtime/03-preset-result.jpg" alt="交互启动后的演示页面，明确提示这是预先准备的示例，不代表实时识别成功" decoding="async"/>
+    <figcaption><span>真实运行截图</span>本地预制示例 · 真实视觉识别待接入</figcaption>
+  </figure>
 </template>
 
 
@@ -705,79 +548,10 @@ plt.show()</pre>
      模板 04 · 原位图层挂载层
      ===================================================== -->
 <template id="tpl-arch-4">
-  <svg viewBox="0 0 720 405" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
-    <defs>
-      <linearGradient id="a4-bg" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0" stop-color="#0d1422"/><stop offset="1" stop-color="#06090f"/>
-      </linearGradient>
-      <linearGradient id="a4-layer" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0" stop-color="rgba(41,151,255,.26)"/>
-        <stop offset="1" stop-color="rgba(41,151,255,.05)"/>
-      </linearGradient>
-      <linearGradient id="a4-fill" x1="0" y1="0" x2="1" y2="0">
-        <stop offset="0" stop-color="#64d2ff"/><stop offset="1" stop-color="#2997ff"/>
-      </linearGradient>
-    </defs>
-    <rect width="720" height="405" fill="url(#a4-bg)"/>
-    <g transform="translate(42,36)">
-      <rect width="8" height="8" rx="2" fill="#2997ff"/>
-      <text x="18" y="8" font-family="ui-monospace,monospace" font-size="11"
-            font-weight="600" fill="#cfd8e6" letter-spacing="1.6">LAYER 04 / IN-SITU OVERLAY</text>
-    </g>
-
-    <g transform="translate(70,108)">
-      <rect width="540" height="210" rx="14" fill="#050810" stroke="rgba(255,255,255,.08)"/>
-      <text x="18" y="28" font-family="monospace" font-size="11" fill="#8b96a8">
-        VIDEO ELEMENT · z-index: 0
-      </text>
-      <g opacity="0.55">
-        <rect x="36" y="60" width="90" height="6" rx="3" fill="rgba(255,255,255,.35)"/>
-        <rect x="36" y="76" width="130" height="6" rx="3" fill="rgba(255,255,255,.2)"/>
-        <path d="M 200 176 Q 250 106 300 142 Q 350 112 400 128 Q 450 118 500 126"
-              stroke="#5a9fd8" stroke-width="1.6" fill="none"/>
-      </g>
-
-      <g transform="translate(50,-38)">
-        <rect width="440" height="196" rx="12"
-              fill="url(#a4-layer)"
-              stroke="rgba(41,151,255,.55)" stroke-dasharray="6 4"/>
-        <text x="16" y="26" font-family="monospace" font-size="11"
-              fill="#64d2ff" font-weight="600">OVERLAY · z-index: 9999</text>
-        <text x="16" y="46" font-family="monospace" font-size="10" fill="#8b96a8">
-          pointer-events: auto · backdrop-filter
-        </text>
-        <g transform="translate(24,66)">
-          <rect width="180" height="10" rx="3" fill="rgba(41,151,255,.42)"/>
-          <rect y="20" width="230" height="8" rx="3" fill="rgba(255,255,255,.2)"/>
-          <rect y="36" width="190" height="8" rx="3" fill="rgba(255,255,255,.12)"/>
-          <g transform="translate(320,26)">
-            <circle r="20" fill="none" stroke="#2997ff" stroke-width="1" opacity=".5"/>
-            <circle r="12" fill="rgba(41,151,255,.28)"/>
-            <circle r="6" fill="#64d2ff"/>
-          </g>
-        </g>
-        <g transform="translate(24,146)">
-          <rect width="380" height="4" rx="2" fill="rgba(255,255,255,.1)"/>
-          <rect width="250" height="4" rx="2" fill="url(#a4-fill)"/>
-          <text y="26" font-family="monospace" font-size="10" fill="#8b96a8">
-            ◈ glass-fill · 240ms
-          </text>
-        </g>
-      </g>
-    </g>
-
-    <g transform="translate(620,108)">
-      <rect width="70" height="210" rx="12" fill="#0a0e16" stroke="rgba(255,255,255,.08)"/>
-      <text x="35" y="24" text-anchor="middle" font-family="monospace" font-size="10" fill="#8b96a8">layer</text>
-      <text x="35" y="80" text-anchor="middle" font-family="monospace"
-            font-size="22" font-weight="700" fill="#64d2ff">9999</text>
-      <text x="35" y="98" text-anchor="middle" font-family="monospace" font-size="10" fill="#8b96a8">overlay</text>
-      <line x1="14" y1="122" x2="56" y2="122" stroke="rgba(255,255,255,.1)"/>
-      <text x="35" y="160" text-anchor="middle" font-family="monospace"
-            font-size="22" font-weight="700" fill="#7d8a9c">0</text>
-      <text x="35" y="178" text-anchor="middle" font-family="monospace" font-size="10" fill="#8b96a8">video</text>
-    </g>
-  </svg>
+  <figure class="runtime-shot">
+    <img src="./assets/runtime/04-in-situ-overlay.jpg" alt="视频原画面上叠加青色SVG曲线和白色可拖动控制点" decoding="async"/>
+    <figcaption><span>真实运行截图</span>原位 SVG 覆层 · 支持拖动与退出</figcaption>
+  </figure>
 </template>
 
 
@@ -785,77 +559,10 @@ plt.show()</pre>
      模板 05 · 双分支业务分流
      ===================================================== -->
 <template id="tpl-arch-5">
-  <svg viewBox="0 0 720 405" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
-    <defs>
-      <linearGradient id="a5-bg" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0" stop-color="#0d1422"/><stop offset="1" stop-color="#06090f"/>
-      </linearGradient>
-    </defs>
-    <rect width="720" height="405" fill="url(#a5-bg)"/>
-    <g transform="translate(42,36)">
-      <rect width="8" height="8" rx="2" fill="#2997ff"/>
-      <text x="18" y="8" font-family="ui-monospace,monospace" font-size="11"
-            font-weight="600" fill="#cfd8e6" letter-spacing="1.6">LAYER 05 / DUAL-BRANCH ROUTING</text>
-    </g>
-
-    <g transform="translate(80,200)">
-      <circle r="30" fill="rgba(41,151,255,.14)"/>
-      <circle r="22" fill="#2997ff"/>
-      <text x="0" y="5" text-anchor="middle"
-            font-family="monospace" font-size="11" font-weight="700" fill="#fff">AI</text>
-    </g>
-
-    <path d="M 106,200 Q 146,200 158,150 Q 174,100 214,94"
-          stroke="#2997ff" stroke-width="1.6" fill="none" opacity=".72"/>
-    <path d="M 106,200 Q 146,200 158,250 Q 174,300 214,306"
-          stroke="#a78bfa" stroke-width="1.6" fill="none" opacity=".72"/>
-
-    <g transform="translate(214,32)">
-      <rect width="440" height="128" rx="12" fill="#0a0e16"
-            stroke="rgba(41,151,255,.42)"/>
-      <text x="20" y="26" font-family="monospace" font-size="11"
-            fill="#64d2ff" font-weight="600" letter-spacing="1.2">CODE BRANCH</text>
-      <rect x="20" y="42" width="196" height="72" rx="6"
-            fill="rgba(41,151,255,.08)" stroke="rgba(41,151,255,.28)"/>
-      <text x="30" y="62" font-family="monospace" font-size="10" fill="#8b96a8">import numpy as np</text>
-      <text x="30" y="78" font-family="monospace" font-size="10" fill="#8b96a8">plt.plot(np.sin(x))</text>
-      <text x="30" y="94" font-family="monospace" font-size="10" fill="#8b96a8">plt.show()</text>
-      <text x="30" y="108" font-family="monospace" font-size="9.5" fill="#64d2ff">→ CodeMirror</text>
-      <text x="238" y="82" font-family="monospace" font-size="12" fill="#8b96a8">→</text>
-      <rect x="256" y="42" width="164" height="72" rx="6"
-            fill="rgba(167,139,250,.08)" stroke="rgba(167,139,250,.36)"/>
-      <text x="270" y="62" font-family="monospace" font-size="11"
-            fill="#a78bfa" font-weight="600">Pyodide</text>
-      <text x="270" y="80" font-family="monospace" font-size="10" fill="#8b96a8">WASM runtime</text>
-      <text x="270" y="96" font-family="monospace" font-size="10" fill="#64d2ff">✓ sandboxed</text>
-    </g>
-
-    <g transform="translate(214,244)">
-      <rect width="440" height="128" rx="12" fill="#0a0e16"
-            stroke="rgba(167,139,250,.42)"/>
-      <text x="20" y="26" font-family="monospace" font-size="11"
-            fill="#a78bfa" font-weight="600" letter-spacing="1.2">GRAPH BRANCH</text>
-      <rect x="20" y="42" width="196" height="72" rx="6"
-            fill="rgba(41,151,255,.05)" stroke="rgba(41,151,255,.24)"/>
-      <g transform="translate(30,50)">
-        <line x1="0" y1="32" x2="176" y2="32" stroke="rgba(255,255,255,.14)"/>
-        <line x1="88" y1="0" x2="88" y2="60" stroke="rgba(255,255,255,.14)"/>
-        <path d="M 8,50 Q 48,4 88,32 Q 128,58 168,14"
-              stroke="#a78bfa" stroke-width="1.8" fill="none" stroke-linecap="round"/>
-        <circle cx="88" cy="32" r="3.2" fill="#d8f4ff"/>
-      </g>
-      <text x="30" y="108" font-family="monospace" font-size="9.5" fill="#64d2ff">
-        → 参数可拖动
-      </text>
-      <text x="238" y="82" font-family="monospace" font-size="12" fill="#8b96a8">→</text>
-      <rect x="256" y="42" width="164" height="72" rx="6"
-            fill="rgba(41,151,255,.08)" stroke="rgba(41,151,255,.36)"/>
-      <text x="270" y="62" font-family="-apple-system,PingFang SC,sans-serif"
-            font-size="12" fill="#64d2ff" font-weight="600">SVG 渲染引擎</text>
-      <text x="270" y="80" font-family="monospace" font-size="10" fill="#8b96a8">矢量路径重绘</text>
-      <text x="270" y="96" font-family="monospace" font-size="10" fill="#64d2ff">✓ 实时反馈</text>
-    </g>
-  </svg>
+  <figure class="runtime-shot">
+    <img src="./assets/runtime/05-function-branch.jpg" alt="抛物线开口参数a设为0.6后，曲线变宽，右侧显示a、h、k控制" decoding="async"/>
+    <figcaption><span>真实运行截图</span>a = 0.6 · 函数图像分支实际调节结果</figcaption>
+  </figure>
 </template>
 
 
@@ -866,6 +573,8 @@ plt.show()</pre>
 </noscript>
 
 
+<script src="./showcase-compat.js" defer></script>
+<script src="./showcase-scroll-lock.js" defer></script>
 <script src="./showcase-base.js" defer></script>
 <script src="./showcase-motion.js" defer></script>
 <script src="./showcase-effects.js" defer></script>

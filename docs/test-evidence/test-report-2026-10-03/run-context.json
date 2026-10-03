@@ -1,0 +1,20 @@
+{
+  "reportDate": "2026-10-03",
+  "timeZone": "Asia/Shanghai",
+  "workingDirectory": "D:\\前端\\breakglass-geometry-plan",
+  "sourceCommit": "6c8cfefb92a06d22216f5709650f3e28fdbbc973",
+  "localBranch": "codex/right-triangle-plan",
+  "upstream": "origin/123456",
+  "worktreeCleanBeforeChecks": true,
+  "nodeVersion": "v24.21.0",
+  "osVersion": "Microsoft Windows NT 10.0.26200.0",
+  "shell": "PowerShell",
+  "ffmpegVersion": "7.1-essentials_build-www.gyan.dev",
+  "ffmpegExecutable": "C:\\Users\\27736\\AppData\\Local\\Temp\\breakglass-005-test-tools\\ffmpeg.exe",
+  "ffmpegPathScope": "test process only",
+  "commandsRunInParallel": true,
+  "realModelProviderCalled": false,
+  "browserManualTestsRerun": false,
+  "nodeTestMetadata": "node-test.json",
+  "staticCheckMetadata": "static-check.json"
+}

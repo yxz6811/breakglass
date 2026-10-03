@@ -1,0 +1,262 @@
+TAP version 13
+# Subtest: the three teaching clips point to bundled MP4 files with distinct known triangle conditions
+ok 1 - the three teaching clips point to bundled MP4 files with distinct known triangle conditions
+  ---
+  duration_ms: 75.5894
+  type: 'test'
+  ...
+# Subtest: choosing a teaching clip only changes its description until explicit loading
+ok 2 - choosing a teaching clip only changes its description until explicit loading
+  ---
+  duration_ms: 311.5092
+  type: 'test'
+  ...
+# Subtest: loading a teaching clip retires old requests and metadata only pauses at the question frame
+ok 3 - loading a teaching clip retires old requests and metadata only pauses at the question frame
+  ---
+  duration_ms: 81.278
+  type: 'test'
+  ...
+# Subtest: each loaded sample requires confirmation and restores its own conditions before returning to four seconds
+ok 4 - each loaded sample requires confirmation and restores its own conditions before returning to four seconds
+  ---
+  duration_ms: 563.2065
+  type: 'test'
+  ...
+# Subtest: sample presets cannot pause playback or expose conditions outside the question interval
+ok 5 - sample presets cannot pause playback or expose conditions outside the question interval
+  ---
+  duration_ms: 82.5921
+  type: 'test'
+  ...
+# Subtest: a rejected MIME keeps the loaded sample while a local video returns to the generic preset
+ok 6 - a rejected MIME keeps the loaded sample while a local video returns to the generic preset
+  ---
+  duration_ms: 257.9732
+  type: 'test'
+  ...
+# Subtest: a failed sample retires its scene and cannot capture or load conditions until reloaded
+ok 7 - a failed sample retires its scene and cannot capture or load conditions until reloaded
+  ---
+  duration_ms: 45.0715
+  type: 'test'
+  ...
+# Subtest: invalid seconds cannot seek, discard a confirmed scene or cancel its model request
+ok 8 - invalid seconds cannot seek, discard a confirmed scene or cancel its model request
+  ---
+  duration_ms: 154.7813
+  type: 'test'
+  ...
+# Subtest: valid explicit seek pauses at the chosen second and rejects the previous scene request
+ok 9 - valid explicit seek pauses at the chosen second and rejects the previous scene request
+  ---
+  duration_ms: 55.8013
+  type: 'test'
+  ...
+# Subtest: a pending play operation cannot be duplicated and retires the old scene before late model actions
+ok 10 - a pending play operation cannot be duplicated and retires the old scene before late model actions
+  ---
+  duration_ms: 87.3188
+  type: 'test'
+  ...
+# Subtest: saving a new frame cancels old model actions and removes the old confirmed snapshot
+ok 11 - saving a new frame cancels old model actions and removes the old confirmed snapshot
+  ---
+  duration_ms: 33.5503
+  type: 'test'
+  ...
+# Subtest: a failed re-read of the confirmed frame preserves the experiment until a new candidate is reviewed
+ok 12 - a failed re-read of the confirmed frame preserves the experiment until a new candidate is reviewed
+  ---
+  duration_ms: 270.5214
+  type: 'test'
+  ...
+# Subtest: selecting a non-video MIME preserves the existing media, scene and pending work
+ok 13 - selecting a non-video MIME preserves the existing media, scene and pending work
+  ---
+  duration_ms: 202.275
+  type: 'test'
+  ...
+# Subtest: native play and seeking events cancel both frame reading and scene actions
+ok 14 - native play and seeking events cancel both frame reading and scene actions
+  ---
+  duration_ms: 561.0399
+  type: 'test'
+  ...
+# Subtest: recognition disables duplicate recognition while media controls can cancel the pending read
+ok 15 - recognition disables duplicate recognition while media controls can cancel the pending read
+  ---
+  duration_ms: 414.0857
+  type: 'test'
+  ...
+# Subtest: fullscreen failure leaves the experiment usable, and fullscreen Escape does not exit it
+ok 16 - fullscreen failure leaves the experiment usable, and fullscreen Escape does not exit it
+  ---
+  duration_ms: 204.3869
+  type: 'test'
+  ...
+# Subtest: Escape in the question clears its draft, while Alt+B ignores editable fields
+ok 17 - Escape in the question clears its draft, while Alt+B ignores editable fields
+  ---
+  duration_ms: 357.1351
+  type: 'test'
+  ...
+# Subtest: reader memory validates the host and credentials and stores only the local origin
+ok 18 - reader memory validates the host and credentials and stores only the local origin
+  ---
+  duration_ms: 315.6131
+  type: 'test'
+  ...
+# Subtest: unavailable session storage never blocks manual work or initiates a request
+ok 19 - unavailable session storage never blocks manual work or initiates a request
+  ---
+  duration_ms: 14.1003
+  type: 'test'
+  ...
+# Subtest: slider, number form and local question share one side update and extend the visible range
+ok 20 - slider, number form and local question share one side update and extend the visible range
+  ---
+  duration_ms: 23.1838
+  type: 'test'
+  ...
+# Subtest: ranges wait for confirmation and extreme valid lengths keep finite bounds with atomic rejection
+ok 21 - ranges wait for confirmation and extreme valid lengths keep finite bounds with atomic rejection
+  ---
+  duration_ms: 49.221
+  type: 'test'
+  ...
+# Subtest: restoring or applying a valid local action clears rejected length errors and invalid attributes
+ok 22 - restoring or applying a valid local action clears rejected length errors and invalid attributes
+  ---
+  duration_ms: 182.0104
+  type: 'test'
+  ...
+# Subtest: question examples fill editable drafts without changing the scene or submitting anything
+ok 23 - question examples fill editable drafts without changing the scene or submitting anything
+  ---
+  duration_ms: 150.748
+  type: 'test'
+  ...
+# Subtest: question history uses text, labels result provenance, caps at forty entries and clears on a new scene
+ok 24 - question history uses text, labels result provenance, caps at forty entries and clears on a new scene
+  ---
+  duration_ms: 299.0027
+  type: 'test'
+  ...
+# Subtest: clearing question history cancels a pending turn without applying its late reply
+ok 25 - clearing question history cancels a pending turn without applying its late reply
+  ---
+  duration_ms: 19.7869
+  type: 'test'
+  ...
+# Subtest: failed and canceled model turns stay explicit, and retry uses the same question without stale actions
+ok 26 - failed and canceled model turns stay explicit, and retry uses the same question without stale actions
+  ---
+  duration_ms: 59.2847
+  type: 'test'
+  ...
+# Subtest: editing a draft withdraws the old retry without submitting or overwriting the new question
+ok 27 - editing a draft withdraws the old retry without submitting or overwriting the new question
+  ---
+  duration_ms: 21.292
+  type: 'test'
+  ...
+# Subtest: recognition retry requires the current paused frame and never substitutes a preset
+ok 28 - recognition retry requires the current paused frame and never substitutes a preset
+  ---
+  duration_ms: 12.6567
+  type: 'test'
+  ...
+# Subtest: late play and fullscreen promises cannot update page state after disposal
+ok 29 - late play and fullscreen promises cannot update page state after disposal
+  ---
+  duration_ms: 134.1854
+  type: 'test'
+  ...
+# Subtest: page confirms explicit preset, computes single-side changes and restores original
+ok 30 - page confirms explicit preset, computes single-side changes and restores original
+  ---
+  duration_ms: 414.3396
+  type: 'test'
+  ...
+# Subtest: field validation keeps invalid input and requires explicit condition confirmation
+ok 31 - field validation keeps invalid input and requires explicit condition confirmation
+  ---
+  duration_ms: 58.3866
+  type: 'test'
+  ...
+# Subtest: local Chinese question uses the same model and model mode never silently uses local commands
+ok 32 - local Chinese question uses the same model and model mode never silently uses local commands
+  ---
+  duration_ms: 164.0451
+  type: 'test'
+  ...
+# Subtest: quiz supports wrong, retry, correct and skip; returning video does not require passing
+ok 33 - quiz supports wrong, retry, correct and skip; returning video does not require passing
+  ---
+  duration_ms: 160.0031
+  type: 'test'
+  ...
+# Subtest: canceled or stale model actions cannot replace a manually modified scene
+ok 34 - canceled or stale model actions cannot replace a manually modified scene
+  ---
+  duration_ms: 164.3178
+  type: 'test'
+  ...
+# Subtest: actual frame candidate point correction retains vision origin and confirmed snapshot
+ok 35 - actual frame candidate point correction retains vision origin and confirmed snapshot
+  ---
+  duration_ms: 57.4237
+  type: 'test'
+  ...
+# Subtest: editing an input cancels pending model actions before submitting a change
+ok 36 - editing an input cancels pending model actions before submitting a change
+  ---
+  duration_ms: 18.4127
+  type: 'test'
+  ...
+# Subtest: a current read response for an invalid frame cleans up pending controls
+ok 37 - a current read response for an invalid frame cleans up pending controls
+  ---
+  duration_ms: 64.0777
+  type: 'test'
+  ...
+# Subtest: dragging uses uniform SVG scale including centered letterboxing
+ok 38 - dragging uses uniform SVG scale including centered letterboxing
+  ---
+  duration_ms: 145.9679
+  type: 'test'
+  ...
+# Subtest: HTML keeps local script order, visible labels and standalone narrow-screen layout
+ok 39 - HTML keeps local script order, visible labels and standalone narrow-screen layout
+  ---
+  duration_ms: 30.3271
+  type: 'test'
+  ...
+# Subtest: SVG keyboard adjustment preserves focus on the same side after every render
+ok 40 - SVG keyboard adjustment preserves focus on the same side after every render
+  ---
+  duration_ms: 80.8755
+  type: 'test'
+  ...
+# Subtest: long vertex labels use compact symbols plus a complete wrapping mapping
+ok 41 - long vertex labels use compact symbols plus a complete wrapping mapping
+  ---
+  duration_ms: 49.2753
+  type: 'test'
+  ...
+# Subtest: very short AB keeps vertex labels apart and edge readings on another baseline
+ok 42 - very short AB keeps vertex labels apart and edge readings on another baseline
+  ---
+  duration_ms: 48.3355
+  type: 'test'
+  ...
+1..42
+# tests 42
+# suites 0
+# pass 42
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 6278.3321

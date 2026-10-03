@@ -1,0 +1,10 @@
+{
+  "command": "node --test --test-reporter=tap tests/page-geometry.test.js tests/geometry-parity.test.js",
+  "startedAt": "2026-10-03T10:03:59.911Z",
+  "finishedAt": "2026-10-03T10:04:06.584Z",
+  "elapsedMs": 6673,
+  "exitCode": 0,
+  "signal": null,
+  "nodeVersion": "v24.21.0",
+  "log": "geometry-directed.log"
+}

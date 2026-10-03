@@ -5,10 +5,11 @@ const path = require('node:path');
 const vm = require('node:vm');
 
 const source = fs.readFileSync(path.join(__dirname, '../site/showcase-demo.js'), 'utf8');
+const compatSource = fs.readFileSync(path.join(__dirname, '../site/showcase-compat.js'), 'utf8');
 
 // Execute the real controller with a deterministic clock. The input adapter stands
 // in for the existing graph renderer; these tests check ownership and scheduling.
-function createDemo({ reduced = false } = {}) {
+function createDemo({ reduced = false, legacyMedia = false } = {}) {
   let stamp = 0;
   let nextFrame = 0;
   let observer = null;
@@ -21,12 +22,26 @@ function createDemo({ reduced = false } = {}) {
       const listeners = this.listeners.get(type) || new Set();
       listeners.add(callback);
       this.listeners.set(type, listeners);
-      if (options.signal) options.signal.addEventListener('abort', () => listeners.delete(callback), { once: true });
+    }
+    removeEventListener(type, callback) {
+      this.listeners.get(type)?.delete(callback);
     }
     dispatchEvent(event) {
       for (const callback of [...(this.listeners.get(event.type) || [])]) callback(event);
       return true;
     }
+  }
+  class MediaQueryList extends EventTarget {
+    constructor(matches) {
+      super();
+      this.matches = matches;
+      if (legacyMedia) {
+        this.addEventListener = undefined;
+        this.removeEventListener = undefined;
+      }
+    }
+    addListener(callback) { EventTarget.prototype.addEventListener.call(this, 'change', callback); }
+    removeListener(callback) { EventTarget.prototype.removeEventListener.call(this, 'change', callback); }
   }
   class Element extends EventTarget {
     constructor() {
@@ -66,8 +81,7 @@ function createDemo({ reduced = false } = {}) {
   const document = new EventTarget();
   document.hidden = false;
   document.querySelector = selector => selector === '#p5' ? section : null;
-  const motion = new EventTarget();
-  motion.matches = reduced;
+  const motion = new MediaQueryList(reduced);
   const window = new EventTarget();
   window.matchMedia = () => motion;
   window.IntersectionObserver = true;
@@ -78,14 +92,17 @@ function createDemo({ reduced = false } = {}) {
     observe(element) { assert.equal(element, chart); }
     disconnect() { observer = null; }
   }
-  vm.runInNewContext(source, {
-    document, window, Event: InputEvent, IntersectionObserver, AbortController,
+  const context = vm.createContext({
+    document, window, Event: InputEvent, IntersectionObserver,
     performance: { now: () => stamp }
   });
+  // No AbortController is provided, as older WebKit cannot own listeners with signals.
+  vm.runInContext(compatSource, context);
+  vm.runInContext(source, context);
 
   function send(target, type, options = {}) { target.dispatchEvent(new InputEvent(type, options)); }
   return {
-    section, slider, toggle, status, frames, renderedValues,
+    section, slider, toggle, status, frames, renderedValues, document, window, motion, resetElement: reset,
     visible(ratio) { observer([{ isIntersecting: ratio > 0, intersectionRatio: ratio }]); },
     advance(milliseconds) {
       const end = stamp + milliseconds;
@@ -224,4 +241,49 @@ test('reduced motion prevents automatic playback while preserving manual paramet
   demo.input(1.1);
   assert.equal(demo.slider.value, '1.1');
   assert.equal(demo.renderedValues.at(-1), 1.1);
+});
+
+test('legacy MediaQueryList starts the real demo and honors live reduced-motion changes', () => {
+  const demo = createDemo({ legacyMedia: true });
+  assert.equal(demo.motion.addEventListener, undefined);
+  assert.equal(demo.motion.listeners.get('change').size, 1);
+  demo.visible(.8);
+  assert.equal(demo.section.dataset.demoPlayback, 'playing');
+  demo.advance(800);
+  assert.notEqual(demo.slider.value, '0.65', 'legacy bootstrap paints the changing curve');
+  const value = demo.slider.value;
+  demo.reduced(true);
+  assert.equal(demo.frames.size, 0);
+  assert.equal(demo.toggle.disabled, true);
+  demo.advance(1000);
+  assert.equal(demo.slider.value, value);
+  demo.reduced(false);
+  assert.equal(demo.toggle.disabled, false);
+  assert.equal(demo.frames.size, 0, 'preference alone does not resume the demo');
+  demo.clickToggle();
+  assert.equal(demo.frames.size, 1);
+  demo.advance(6000);
+  assert.equal(demo.section.dataset.demoPlayback, 'complete');
+  assert.equal(demo.slider.value, '0.65');
+});
+
+test('final departure removes modern and legacy demo listeners without AbortController', () => {
+  for (const legacyMedia of [false, true]) {
+    const demo = createDemo({ legacyMedia });
+    demo.visible(.8);
+    demo.advance(500);
+    demo.pagehide();
+    assert.equal(demo.frames.size, 0);
+    assert.equal(demo.motion.listeners.get('change').size, 0);
+    assert.equal(demo.document.listeners.get('visibilitychange').size, 0);
+    assert.equal(demo.window.listeners.get('pagehide').size, 0);
+    assert.equal(demo.window.listeners.get('pageshow').size, 0);
+    assert.equal(demo.toggle.listeners.get('click').size, 0);
+    assert.equal(demo.slider.listeners.get('input').size, 1, 'existing renderer still owns its listener');
+    assert.equal(demo.resetElement.listeners.get('click').size, 1, 'existing reset handler is preserved');
+    demo.reduced(true);
+    demo.clickToggle();
+    assert.equal(demo.frames.size, 0);
+    assert.equal(demo.toggle.disabled, false, 'departed controller no longer reacts to preferences');
+  }
 });
