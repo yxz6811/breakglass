@@ -73,7 +73,7 @@ ask(snapshot, text) -> answer
 { "target": "parameter", "name": "k", "value": 1 }
 ```
 
-`values` 来自登记的 `valuesAt`。抛物线只有一个 y，圆可以有零个或两个。`inside` 与 `values` 一一对应，按快照的 `domain` 和 `range` 判断。窗口外时 `reply` 写出真实的 y，并写明这个点在当前坐标窗口外。
+`values` 来自登记的 `valuesAt`，四种图形都交给模型的 `readAt`。抛物线、直线、正弦各有一个 y；圆可以有零个、一个或两个。`inside` 与 `values` 一一对应，按快照的 `domain` 和 `range` 判断。窗口外时 `reply` 写出真实的 y，并写明这个点在当前坐标窗口外。横坐标先按读数写法取四位小数再代入，回答里印出的式子用印出的数重算，得到印出的 y。
 
 ## 写入约定
 
@@ -84,9 +84,9 @@ ask(snapshot, text) -> answer
 3. `answer.kind` 为 `applied`。
 4. `answer.parameters` 的键集合与快照的系数键集合相同。
 
-写入时对每个 `adopted` 不等于 `before` 的系数调用 `setParameter(name, adopted)`。`adopted` 已经按步长对齐并夹过范围，会话层再夹一次也得到同一个数。全部写入后再 `drawCurve()`。任何一条 `setParameter` 失败，页面把已写入的系数设回 `before`，回答改为这次没有改。
+写入时把每个 `adopted` 不等于 `before` 的系数收成一次 `figureSession.updateParameters`。抛物线这一路仍会落到会话的 `setParameter`，直线、圆、正弦写进本地图形。`adopted` 已经按步长对齐并夹过范围。写完后核对图形系数与 `answer.parameters` 逐项相同。失败、对不上或显示区域不可用时，页面用送出前的系数再写回去，回答改为这次没有改。
 
-`read`、`unchanged`、`unavailable` 都不调用 `setParameter`。
+`read`、`unchanged`、`unavailable` 都不写入。
 
 ## 回答里的数
 

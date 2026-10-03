@@ -11,11 +11,13 @@
   /** 绝对值超过它的数不当作系数或横坐标，避免平方后溢出成无穷。 */
   const LIMIT = 1e6;
   const DIGITS = { 零: 0, 〇: 0, 一: 1, 二: 2, 两: 2, 三: 3, 四: 4, 五: 5, 六: 6, 七: 7, 八: 8, 九: 9 };
-  const CN_INT = '[零〇一二两三四五六七八九十]+';
+  const UNITS = { 十: 10, 百: 100, 千: 1000 };
+  const CN_INT = '[零〇一二两三四五六七八九十百千]+';
   const ARABIC = '\\d+(?:\\.\\d+)?';
 
   /**
    * 句子里一个数的写法。解析层用它找位置，`parseNumber` 负责换成数值。
+   * 后面紧跟着还能接下去的写法（`1.2.3`、`1e2`、「一万」）时整段不算数，免得只取到开头那一截。
    * @type {string}
    */
   const NUMBER_SOURCE = '(?:(?:负|[-+])\\s*)?(?:'
@@ -24,20 +26,54 @@
     + '|' + ARABIC
     + '|\\.\\d+'
     + '|' + CN_INT + '(?:点[零〇一二三四五六七八九]+)?'
-    + ')';
+    + ')(?!\\.?\\d|e[+-]?\\d|[零〇一二两三四五六七八九十百千万亿])';
 
   /**
-   * 中文整数，只认零到九十九。「一二」这种逐位写法不算。
+   * 中文整数，认到九千九百九十九，例如「十二」「一百」「两千零五」。
+   * 「一二」这种逐位写法、「一百五」这种省略单位的口语都不算。
    * @param {string} text
    * @returns {number | null}
    */
   function chineseInteger(text) {
     if (!text) return null;
     if (/^\d+$/.test(text)) return Number(text);
-    const tens = /^([一二两三四五六七八九])?十([一二三四五六七八九])?$/.exec(text);
-    if (tens) return (tens[1] ? DIGITS[tens[1]] : 1) * 10 + (tens[2] ? DIGITS[tens[2]] : 0);
-    if (text.length === 1 && Object.prototype.hasOwnProperty.call(DIGITS, text)) return DIGITS[text];
-    return null;
+    if (!/^[零〇一二两三四五六七八九十百千]+$/.test(text)) return null;
+    const chars = Array.from(text);
+    if (chars.length === 1 && Object.prototype.hasOwnProperty.call(DIGITS, text)) return DIGITS[text];
+    let total = 0;
+    let digit = null;
+    let lastUnit = Infinity;
+    let zeroed = false;
+    for (const char of chars) {
+      if (Object.prototype.hasOwnProperty.call(DIGITS, char)) {
+        if (digit !== null) return null;
+        if (DIGITS[char] === 0) {
+          if (lastUnit === Infinity || zeroed) return null;
+          zeroed = true;
+          continue;
+        }
+        digit = DIGITS[char];
+        continue;
+      }
+      const unit = UNITS[char];
+      if (unit >= lastUnit) return null;
+      if (digit === null) {
+        if (unit !== 10 || lastUnit !== Infinity) return null;
+        digit = 1;
+      }
+      if (zeroed && unit * 10 >= lastUnit) return null;
+      total += digit * unit;
+      lastUnit = unit;
+      digit = null;
+      zeroed = false;
+    }
+    if (digit !== null) {
+      if (lastUnit > 10 && !zeroed) return null;
+      total += digit;
+    } else if (zeroed) {
+      return null;
+    }
+    return total;
   }
 
   /**
@@ -46,7 +82,7 @@
    * @returns {number | null}
    */
   function chineseNumber(text) {
-    const match = /^([零〇一二两三四五六七八九十]+)(?:点([零〇一二三四五六七八九]+))?$/.exec(text);
+    const match = /^([零〇一二两三四五六七八九十百千]+)(?:点([零〇一二三四五六七八九]+))?$/.exec(text);
     if (!match) return null;
     const whole = chineseInteger(match[1]);
     if (whole === null) return null;

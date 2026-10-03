@@ -4,7 +4,7 @@ const assert = require('node:assert/strict');
 const figures = require('../extension/src/tutor/figures');
 const parser = require('../extension/src/tutor/parse');
 
-const parabola = figures.get('fixture.parabola');
+const parabola = figures.get('parabola');
 
 /**
  * @param {string} text
@@ -159,22 +159,42 @@ test('有数没目标、空句与对不上的话', () => {
 });
 
 test('没有顶点的图形问顶点会被拒绝', () => {
-  const line = figures.register({
-    equationId: 'test.parse-line',
-    label: '直线',
-    aliases: { m: ['斜率', 'm'], b: ['截距', 'b'] },
-    valuesAt: (snapshot, values, x) => [values.m * x + values.b]
-  });
+  const line = figures.get('line');
   assert.deepEqual(parser.parse('顶点在哪里', line).problems, [{ kind: 'no_vertex' }]);
+  assert.deepEqual(parser.parse('把顶点高度改成 -1', line).problems, [{ kind: 'no_vertex' }]);
   assert.deepEqual(parser.parse('向左平移 1', line).problems, [{ kind: 'no_shift' }]);
+  assert.deepEqual(parser.parse('向下平移 1', line).sets, [{ name: 'b', delta: -1 }]);
   assert.deepEqual(parser.parse('把斜率改成 2', line).sets, [{ name: 'm', spoken: 2 }], '自己登记的说法不算其他图形');
+  assert.deepEqual(parser.parse('把开口改成 2', line).problems, [{ kind: 'foreign', word: '开口', owner: '抛物线' }]);
+  assert.deepEqual(parser.parse('顶点在哪里', figures.get('sine')).problems, [{ kind: 'no_vertex' }]);
+});
+
+test('圆的关键点叫圆心：可读、可移，问顶点会被拒绝', () => {
+  const circle = figures.get('circle');
+  assert.equal(circle.pointWord, '圆心');
+  assert.deepEqual(parser.parse('圆心在哪', circle).reads, [{ target: 'vertex' }]);
+  assert.deepEqual(parser.parse('把圆心移到 (1, -1)', circle).sets, [{ name: 'h', spoken: 1 }, { name: 'k', spoken: -1 }]);
+  assert.deepEqual(parser.parse('圆心纵坐标改成 2', circle).sets, [{ name: 'k', spoken: 2 }]);
+  assert.deepEqual(parser.parse('顶点在哪', circle).problems, [{ kind: 'no_vertex' }]);
+  assert.deepEqual(parser.parse('把圆心移到 (1, -1)', parabola).problems, [{ kind: 'foreign', word: '圆心', owner: '圆' }]);
 });
 
 test('登记会拒绝缺字段、说法冲突与重复登记', () => {
-  assert.throws(() => figures.register({ label: 'x', aliases: {}, valuesAt() {} }), /equationId/);
-  assert.throws(() => figures.register({ equationId: 'test.no-values', label: 'x', aliases: { a: ['a'] } }), /valuesAt/);
-  assert.throws(() => figures.register({ equationId: 'test.clash', label: 'x', aliases: { a: ['p'], b: ['P'] }, valuesAt() { return []; } }), /同时指向/);
-  assert.throws(() => figures.register({ equationId: 'fixture.parabola', label: '抛物线', aliases: { a: ['a'] }, valuesAt() { return []; } }), /重复登记/);
+  assert.throws(() => figures.register({ label: 'x', aliases: {}, valuesAt() {} }), /kind/);
+  assert.throws(() => figures.register({ kind: 'test.no-values', label: 'x', aliases: { a: ['a'] } }), /valuesAt/);
+  assert.throws(() => figures.register({ kind: 'test.clash', label: 'x', aliases: { a: ['p'], b: ['P'] }, valuesAt() { return []; } }), /同时指向/);
+  assert.throws(() => figures.register({ kind: 'parabola', label: '抛物线', aliases: { a: ['a'] }, valuesAt() { return []; } }), /重复登记/);
   assert.equal(figures.get('unknown'), null);
-  assert.equal(figures.list().includes('fixture.parabola'), true);
+  assert.deepEqual(figures.list().slice(0, 4), ['parabola', 'line', 'circle', 'sine']);
+});
+
+test('登记的叫法与图形模型给滑块的标签逐字相同', () => {
+  const model = require('../extension/src/geometry/figures');
+  const preset = require('../extension/assets/presets/demo-parabola.json');
+  for (const kind of ['line', 'circle', 'sine']) {
+    const definition = model.createFigure(kind, preset.definition).definition;
+    for (const [name, item] of Object.entries(definition.parameters)) {
+      assert.equal(figures.get(kind).names[name], item.label, kind + ' ' + name);
+    }
+  }
 });

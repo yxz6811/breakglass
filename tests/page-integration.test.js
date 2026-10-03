@@ -32,6 +32,7 @@ test('演示页按依赖顺序加载本地脚本', () => {
     '../src/curve/evaluate.js',
     '../src/geometry/content-rect.js',
     '../src/geometry/alignment.js',
+    '../src/geometry/figures.js',
     '../src/session/session.js',
     '../src/attempt/simulator.js',
     '../src/session/wake.js',
@@ -202,7 +203,7 @@ test('提问区在控制栏里，有标签、记录区和默认禁用的送出',
 
 test('回答里的系数叫法与滑块标签逐字相同', () => {
   const html = readText('demo/index.html');
-  const parabola = require('../extension/src/tutor/figures').get('fixture.parabola');
+  const parabola = require('../extension/src/tutor/figures').get('parabola');
   for (const [name, label] of Object.entries(parabola.names)) {
     assert.match(html, new RegExp('<label for="parameter-' + name + '">' + label + '</label>'), name);
   }

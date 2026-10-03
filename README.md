@@ -72,6 +72,7 @@ node --test
 - [任务清单](specs/001-insitu-parabola/tasks.md)
 - [快速验收](specs/001-insitu-parabola/quickstart.md)
 - [开播前阅读](specs/003-preplay-lesson-points/spec.md)
+- [四种图形与提问接口交接（故事 1）](specs/004-figures-and-tutor/geometry-handoff.md)
 - [视觉规范](docs/BreakGlass-visual-spec.md)
 - [UI 设计建议](docs/BreakGlass-ui-design-guide.md)
 - [UI 现状清单](docs/BreakGlass-ui-inventory.md)

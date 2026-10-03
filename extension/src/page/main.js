@@ -11,8 +11,10 @@
   } = window.BreakGlass;
   const lessonApi = window.BreakGlass.lesson || null;
   const askApi = window.BreakGlass.lessonAsk || null;
+  const figuresApi = window.BreakGlass.figures || null;
   const tutorNumbers = window.BreakGlass.tutorNumbers;
   const tutorApi = window.BreakGlass.tutor || null;
+  const tutorFigures = window.BreakGlass.tutorFigures || null;
   const $ = (selector) => document.querySelector(selector);
   const video = $('#demo-video');
   const stage = $('#video-stage');
@@ -35,6 +37,16 @@
     { name: 'h', input: slider, output: sliderValue },
     { name: 'k', input: sliderK, output: sliderKValue }
   ];
+  const figureSelect = $('#figure-kind');
+  const figureTitle = $('#figure-title');
+  const figureFormula = $('#figure-formula');
+  const figureNote = $('#figure-note');
+  const parabolaParameters = $('#parabola-parameters');
+  const localParameters = $('#local-parameters');
+  const figureRows = [1, 2, 3].map((index) => ({
+    row: $('#figure-row-' + index), label: $('#figure-label-' + index),
+    input: $('#parameter-figure-' + index), output: $('#parameter-figure-' + index + '-value'), name: null
+  }));
   const sourceLabel = $('#source-label');
   const sourceNote = $('#source-note');
   const stateLabel = $('#state-label');
@@ -62,7 +74,7 @@
   const tutorLog = $('#tutor-log');
   const tutorHint = $('#tutor-hint');
   const tutorExamples = $('#tutor-examples');
-  const tutorExampleButtons = tutorExamples && typeof tutorExamples.querySelectorAll === 'function'
+  let tutorExampleButtons = tutorExamples && typeof tutorExamples.querySelectorAll === 'function'
     ? Array.from(tutorExamples.querySelectorAll('[data-tutor-example]')) : [];
   /** 提问记录最多保留的条数，问与答各算一条。 */
   const TUTOR_LOG_LIMIT = 20;
@@ -71,6 +83,8 @@
    * @type {string}
    */
   let tutorEpoch = '';
+  /** 示例按钮现在是哪种图形的问法。页面初始写的是抛物线。 */
+  let tutorExamplesKind = 'parabola';
 
   /**
    * 相对演示页的扩展包视频。仓库落盘路径只写在 extension/assets/video/README.md。
@@ -92,6 +106,11 @@
   let localClock = null;
   let overlay = null;
   let dragging = false;
+  // 本地探索属于 004 故事 1；不改 CurveResult、识别白名单或 1500ms 唤醒。
+  // 产品约束：docs/BreakGlass-constitution.md。提问读取的也必须是这一份状态。
+  let figureKind = 'parabola';
+  let localFigure = null;
+  let figureOutsideWindow = false;
   /** @type {{ name: string, value: number, mathX: number } | null} */
   let dragOrigin = null;
   let placedRectKey = '';
@@ -235,7 +254,9 @@
   }
 
   function setSlidersEnabled(enabled) {
-    sliderRows.forEach((row) => { if (row.input) row.input.disabled = !enabled; });
+    sliderRows.forEach((row) => { if (row.input) row.input.disabled = !enabled || figureKind !== 'parabola'; });
+    figureRows.forEach((row) => { if (row.input) row.input.disabled = !enabled || figureKind === 'parabola' || !row.name; });
+    if (figureSelect) figureSelect.disabled = !enabled || !figuresApi;
     setTutorEnabled(enabled);
   }
 
@@ -276,7 +297,11 @@
       entry.appendChild(body);
     }
     tutorLog.appendChild(entry);
-    while (tutorLog.children.length > TUTOR_LOG_LIMIT) tutorLog.children[0].remove();
+    // 超出上限时从最早一条删起；删到问题时连同紧跟的回答一起删，不留没有问题的回答。
+    while (tutorLog.children.length > TUTOR_LOG_LIMIT) {
+      tutorLog.children[0].remove();
+      while (tutorLog.children.length && /tutor__entry--tutor/.test(tutorLog.children[0].className)) tutorLog.children[0].remove();
+    }
     tutorLog.hidden = false;
     tutorLog.scrollTop = tutorLog.scrollHeight;
   }
@@ -288,60 +313,267 @@
   }
 
   /**
-   * 写回提问得到的系数。会话已不是送出时那一次、键集合不符或任何一项写入失败时，
-   * 把已写的系数退回原值并返回 false；写完后核对会话里的数与解答一致。
-   * @param {ReturnType<typeof tutorApi.snapshotFrom>} snapshot
-   * @param {ReturnType<typeof tutorApi.ask>} answer
-   * @returns {boolean}
+   * 示例换成这种图形的问法。只在图形种类变了时重建；按钮只写 textContent。
+   * @param {string} kind
    */
-  function applyTutorAnswer(snapshot, answer) {
-    const state = sessionState();
-    if (!controller || !overlay || !state || state.status !== 'interactive' || state.requestId !== snapshot.requestId) return false;
-    const expectedKeys = Object.keys(snapshot.parameters).sort().join(',');
-    if (Object.keys(answer.parameters).sort().join(',') !== expectedKeys) return false;
-    const written = [];
-    const rollback = () => {
-      written.forEach((item) => controller.setParameter(item.name, item.before));
-      drawCurve();
-      return false;
-    };
-    for (const item of answer.adjustments) {
-      if (item.adopted === item.before) continue;
-      const outcome = controller.setParameter(item.name, item.adopted);
-      if (!outcome || !outcome.ok) return rollback();
-      written.push(item);
-    }
-    const after = sessionState();
-    if (!after || Object.keys(answer.parameters).some((name) => after.currentParameters[name] !== answer.parameters[name])) {
-      return rollback();
-    }
-    dragging = false;
-    dragOrigin = null;
-    drawCurve();
-    return true;
+  function renderTutorExamples(kind) {
+    if (kind === tutorExamplesKind || !tutorExamples || !tutorFigures || typeof document.createElement !== 'function') return;
+    const entry = tutorFigures.get(kind);
+    if (!entry) return;
+    tutorExampleButtons.forEach((button) => button.remove());
+    tutorExampleButtons = entry.examples.map((text) => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.dataset.tutorExample = text;
+      button.textContent = text;
+      tutorExamples.appendChild(button);
+      return button;
+    });
+    tutorExamplesKind = kind;
   }
 
   /**
-   * 送出提问区的一句话：用当前会话的快照求解，必要时写回系数并重画，再记下问与答。
+   * 提问区跟着画面上的图形走：换了一次破壁或换了图形，就清空记录、换示例。
+   * @param {object | null} figure activeFigure() 的结果
+   */
+  function syncTutorFigure(figure) {
+    const state = figure ? sessionState() : null;
+    const epoch = figure ? String(state && state.requestId || '') + '|' + figure.kind : '';
+    if (epoch === tutorEpoch) return;
+    tutorEpoch = epoch;
+    clearTutorLog();
+    renderTutorExamples(figure ? figure.kind : 'parabola');
+  }
+
+  /**
+   * 两份系数逐项相同。
+   * @param {Record<string, number>} left
+   * @param {Record<string, number>} right
+   * @returns {boolean}
+   */
+  function sameParameters(left, right) {
+    const names = Object.keys(left);
+    return names.length === Object.keys(right).length && names.every((name) => right[name] === left[name]);
+  }
+
+  /**
+   * 写回提问得到的系数，与滑块走同一个 updateFigureParameters，一次写完。
+   * 画面已不是送出时那一次破壁、那一种图形，或写入失败、写完的数与解答不一致时，
+   * 退回送出时的系数，返回失败原因。
+   * @param {ReturnType<typeof tutorApi.snapshotFrom>} snapshot
+   * @param {ReturnType<typeof tutorApi.ask>} answer
+   * @returns {{ ok: true } | { ok: false, code: string }}
+   */
+  function applyTutorAnswer(snapshot, answer) {
+    const state = sessionState();
+    const current = figureSnapshot();
+    const before = {};
+    Object.keys(snapshot.parameters).forEach((name) => { before[name] = snapshot.parameters[name].value; });
+    const sameKeys = Object.keys(answer.parameters).sort().join(',') === Object.keys(before).sort().join(',');
+    if (!overlay || !state || state.status !== 'interactive' || state.requestId !== snapshot.requestId
+      || !current || current.kind !== snapshot.kind || !sameParameters(before, current.parameters) || !sameKeys) {
+      return { ok: false, code: 'stale' };
+    }
+    const updates = {};
+    answer.adjustments.forEach((item) => { if (item.adopted !== item.before) updates[item.name] = item.adopted; });
+    const outcome = updateFigureParameters(updates);
+    if (outcome && outcome.ok && outcome.figure && sameParameters(answer.parameters, outcome.figure.parameters)) {
+      dragging = false;
+      dragOrigin = null;
+      return { ok: true };
+    }
+    const written = figureSnapshot();
+    if (written && written.kind === snapshot.kind && !sameParameters(before, written.parameters)) updateFigureParameters(before);
+    return { ok: false, code: outcome && !outcome.ok && outcome.code ? outcome.code : 'mismatch' };
+  }
+
+  /**
+   * 写回失败时的回答。这时图像保持送出前的样子。
+   * @param {string} code
+   * @returns {string}
+   */
+  function tutorFailureReply(code) {
+    if (code === 'mapping_unavailable') return '画面的显示区域现在对不上，这次没有改图。恢复显示区域后再问一次。';
+    return '画面刚刚变了，这次没有改成功，图像保持原样。可以再问一次。';
+  }
+
+  /**
+   * 送出提问区的一句话：用画面上当前图形的快照求解，必要时写回系数并重画，再记下问与答。
    */
   function submitTutor() {
     if (!tutorApi || !tutorInput || tutorInput.disabled) return;
     const text = String(tutorInput.value || '').trim();
-    const snapshot = tutorApi.snapshotFrom(sessionState());
-    snapshot.interactive = snapshot.interactive && Boolean(overlay);
+    const state = sessionState();
+    const snapshot = tutorApi.snapshotFrom(figureSnapshot(), {
+      requestId: state ? state.requestId : null,
+      interactive: Boolean(state && state.status === 'interactive' && overlay)
+    });
     const answer = tutorApi.ask(snapshot, text);
     if (!text) {
+      tutorInput.value = '';
       appendTutorEntry('tutor', answer.reply);
       return;
     }
     let reply = answer.reply;
-    if (answer.kind === 'applied' && answer.changed && !applyTutorAnswer(snapshot, answer)) {
-      reply = '画面刚刚变了，这次没有改成功，图像保持原样。可以再问一次。';
+    if (answer.kind === 'applied' && answer.changed) {
+      const applied = applyTutorAnswer(snapshot, answer);
+      if (!applied.ok) reply = tutorFailureReply(applied.code);
     }
     appendTutorEntry('user', text);
     appendTutorEntry('tutor', reply);
     tutorInput.value = '';
   }
+
+  function activeFigure() {
+    const state = sessionState();
+    if (!figuresApi || !state || state.status !== 'interactive' || !state.result) return null;
+    if (figureKind !== 'parabola') return localFigure;
+    const figure = figuresApi.createFigure('parabola', state.result.definition);
+    figure.parameters = { ...state.currentParameters };
+    return figure;
+  }
+
+  function syncFigureControls() {
+    const figure = activeFigure();
+    const local = Boolean(figure && figure.kind !== 'parabola');
+    if (figureSelect) figureSelect.value = figure ? figure.kind : 'parabola';
+    if (figureTitle) figureTitle.textContent = (figure ? figure.label : '抛物线') + '参数';
+    if (parabolaParameters) parabolaParameters.hidden = local;
+    if (localParameters) localParameters.hidden = !local;
+    if (figureFormula) {
+      figureFormula.hidden = !figure;
+      figureFormula.textContent = figure && figuresApi.formula ? figuresApi.formula(figure) : '';
+    }
+    if (figureNote) figureNote.textContent = !figure
+      ? '破壁后可切换图形。新图形由本地公式绘制。'
+      : local && figureOutsideWindow ? '当前图形全部在坐标窗口外。调整系数或重置，可以让它回到窗口内。'
+        : local ? '本地数学图形 · 未从视频识别。重置只恢复当前图形。' : '切换图形可探索直线、圆与正弦。';
+    if (figure && !local) sliderRows.forEach((row) => {
+      if (!row.input || !row.output) return;
+      const item = figure.definition.parameters[row.name];
+      row.input.min = String(item.min);
+      row.input.max = String(item.max);
+      row.input.step = String(item.step);
+      row.input.value = String(figure.parameters[row.name]);
+      row.output.textContent = formatParameter(figure.parameters[row.name], item);
+      row.input.setAttribute('aria-valuetext', row.output.textContent + '（范围 ' + item.min + ' 到 ' + item.max + '）');
+    });
+    const names = local ? Object.keys(figure.definition.parameters) : [];
+    figureRows.forEach((row, index) => {
+      row.name = names[index] || null;
+      if (row.row) row.row.hidden = !row.name;
+      if (!row.name || !row.input || !row.output) return;
+      const item = figure.definition.parameters[row.name];
+      if (row.label) row.label.textContent = item.label || row.name;
+      row.input.min = String(item.min);
+      row.input.max = String(item.max);
+      row.input.step = String(item.step);
+      row.input.value = String(figure.parameters[row.name]);
+      row.output.textContent = formatParameter(figure.parameters[row.name], item);
+      row.input.setAttribute('aria-valuetext', row.output.textContent + '（范围 ' + item.min + ' 到 ' + item.max + '）');
+    });
+    syncTutorFigure(figure);
+    setSlidersEnabled(Boolean(figure));
+  }
+
+  /**
+   * 滑块标签的写法。提问区的回答用同一个函数，滑块上的数与回答里的数逐字相同。
+   * @param {number} value
+   * @param {{ step: number } | undefined} item
+   * @returns {string}
+   */
+  function formatParameter(value, item) {
+    return tutorNumbers.formatParameter(value, item);
+  }
+
+  function clearFigure() {
+    figureKind = 'parabola';
+    localFigure = null;
+    figureOutsideWindow = false;
+  }
+
+  function unavailableFigureMapping() {
+    if (readContentRect()) return null;
+    const failure = { ok: false, code: 'mapping_unavailable', message: '当前视频显示区域无法更新图形，本次没有改图。请恢复显示区域后重试。' };
+    syncFigureControls();
+    setStatus(failure.message, 'error');
+    return failure;
+  }
+
+  function selectFigure(kind) {
+    const state = sessionState();
+    if (!figuresApi || !overlay || !state || state.status !== 'interactive') return { ok: false, code: 'not_interactive' };
+    const unavailable = unavailableFigureMapping();
+    if (unavailable) return unavailable;
+    let candidate;
+    try {
+      const base = state.result.definition;
+      const frame = state.result.frameSize;
+      // 新图形使用清晰的本地坐标窗口；视频抛物线仍保持原来的区域与范围。
+      const localBase = kind === 'parabola' ? base : {
+        ...base,
+        domain: { min: -4, max: 4 }, range: { min: -4, max: 4 },
+        region: { x: frame.width * .08, y: frame.height * .08, width: frame.width * .84, height: frame.height * .78 }
+      };
+      candidate = figuresApi.createFigure(kind, localBase);
+    }
+    catch { return { ok: false, code: 'unknown_figure' }; }
+    dragging = false;
+    dragOrigin = null;
+    figureKind = kind;
+    localFigure = kind === 'parabola' ? null : candidate;
+    if (!drawCurve()) return { ok: false, code: 'render_failed' };
+    setSource(state.result);
+    setStatus(figureOutsideWindow ? '当前图形全部在坐标窗口外。调整系数或重置，可以让它回到窗口内。'
+      : candidate.label + '已显示。调整自己的系数，或拖动画面控制点。');
+    return { ok: true, figure: figureSnapshot() };
+  }
+
+  function figureSnapshot() {
+    const figure = activeFigure();
+    return figure ? JSON.parse(JSON.stringify(figure)) : null;
+  }
+
+  function updateFigureParameters(updates) {
+    const figure = activeFigure();
+    if (!figure || !overlay) return { ok: false, code: 'not_interactive' };
+    const unavailable = unavailableFigureMapping();
+    if (unavailable) return unavailable;
+    const changed = figuresApi.updateParameters(figure, updates);
+    if (!changed.ok) return changed;
+    if (figureKind === 'parabola') {
+      Object.entries(changed.figure.parameters).forEach(([name, value]) => controller.setParameter(name, value));
+    } else localFigure = changed.figure;
+    if (!drawCurve()) return { ok: false, code: 'render_failed' };
+    setStatus(figureOutsideWindow ? '当前图形全部在坐标窗口外。调整系数或重置，可以让它回到窗口内。'
+      : figure.label + '系数已更新。图形按当前数值绘制。');
+    return { ...changed, figure: figureSnapshot() };
+  }
+
+  function resetFigureParameters() {
+    if (!activeFigure()) return { ok: false, code: 'not_interactive' };
+    const unavailable = unavailableFigureMapping();
+    if (unavailable) return unavailable;
+    dragging = false;
+    dragOrigin = null;
+    if (figureKind === 'parabola') controller.reset();
+    else localFigure = figuresApi.resetFigure(localFigure);
+    if (!drawCurve()) return { ok: false, code: 'render_failed' };
+    setStatus(figureOutsideWindow ? '已恢复初始参数，图形仍在坐标窗口外。请调整系数。' : '已恢复当前图形的初始参数。');
+    return { ok: true, figure: figureSnapshot() };
+  }
+
+  // 故事 2 使用此接口，与滑块/拖动共用真实状态；不接受字符串代码或改变视频识别来源。
+  window.BreakGlass.figureSession = {
+    getState: figureSnapshot,
+    select: selectFigure,
+    updateParameters: updateFigureParameters,
+    reset: resetFigureParameters,
+    readAt: (x) => {
+      const figure = activeFigure();
+      return figure ? figuresApi.readAt(figure, x) : { ok: false, code: 'not_interactive' };
+    }
+  };
 
   function setPrimaryAction(action) {
     if (wakeButton) wakeButton.dataset.variant = action === 'wake' ? 'primary' : 'ghost';
@@ -573,6 +805,9 @@
       mode = 'idle';
       title = '破壁没有打开';
       detail = (state && state.message) || '结果不可用，可以重试或退出。';
+    } else if (open && figureKind !== 'parabola') {
+      // 本地坐标轴和刻度完整可见；状态与来源继续在面板、顶栏展示。
+      mode = '';
     } else if (open) {
       mode = 'open';
       title = '破壁已打开';
@@ -686,6 +921,13 @@
   }
 
   function setSource(result, note) {
+    if (result && figureKind !== 'parabola' && localFigure) {
+      sourceLabel.textContent = '本地数学图形 · ' + localFigure.label;
+      sourceNote.textContent = '按当前系数在浏览器中计算；未从视频识别。切回抛物线可继续原来的结果。';
+      sourceLabel.classList.remove('is-fallback');
+      sourceLabel.classList.remove('is-warn');
+      return;
+    }
     sourceLabel.textContent = sourceText(result);
     const vision = isPackagedVision(result);
     const preset = Boolean(result) && result.source === 'preset';
@@ -756,6 +998,47 @@
     const mathX = definition.domain.min +
       ((sourceX - region.x) / region.width) * (definition.domain.max - definition.domain.min);
     return Number.isFinite(mathX) ? mathX : null;
+  }
+
+  function mathYFromPointer(event, definition) {
+    const rect = readContentRect();
+    if (!rect || !Number.isFinite(event.clientY)) return null;
+    const sourceY = (event.clientY - rect.contentRect.top) / rect.scale;
+    const ratio = (sourceY - definition.region.y) / definition.region.height;
+    return definition.yAxis === 'up'
+      ? definition.range.max - ratio * (definition.range.max - definition.range.min)
+      : definition.range.min + ratio * (definition.range.max - definition.range.min);
+  }
+
+  function drawFigureCoordinates(figure, rect) {
+    const group = overlay.querySelector('g.figure-coordinates');
+    if (!group) return;
+    group.style.display = figure ? '' : 'none';
+    if (!figure) return;
+    const d = figure.definition;
+    const map = (x, y) => alignment.mathCoordinatesToPage(d, { x, y }, rect.scale);
+    const parts = [`<rect x="0" y="0" width="${rect.contentRect.width}" height="${rect.contentRect.height}" fill="#0E1720"/>`];
+    const line = (x0, y0, x1, y1, axis) => {
+      const a = map(x0, y0), b = map(x1, y1);
+      parts.push(`<line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" stroke="${axis ? '#C8DCE6' : '#4E6474'}" stroke-opacity="${axis ? '.85' : '.35'}" stroke-width="1"/>`);
+    };
+    for (let index = 0; index <= 4; index += 1) {
+      const x = d.domain.min + (d.domain.max - d.domain.min) * index / 4;
+      const y = d.range.min + (d.range.max - d.range.min) * index / 4;
+      line(x, d.range.min, x, d.range.max, false);
+      line(d.domain.min, y, d.domain.max, y, false);
+    }
+    if (d.range.min <= 0 && d.range.max >= 0) line(d.domain.min, 0, d.domain.max, 0, true);
+    if (d.domain.min <= 0 && d.domain.max >= 0) line(0, d.range.min, 0, d.range.max, true);
+    const low = map(d.domain.min, d.range.min), high = map(d.domain.max, d.range.max);
+    parts.push(`<text x="${low.x}" y="${low.y + 11}" fill="#C8DCE6" font-size="10">${d.domain.min}</text>`);
+    parts.push(`<text x="${high.x}" y="${low.y + 11}" text-anchor="end" fill="#C8DCE6" font-size="10">${d.domain.max} x</text>`);
+    parts.push(`<text x="${low.x - 3}" y="${high.y + 9}" text-anchor="end" fill="#C8DCE6" font-size="10">${d.range.max}</text>`);
+    parts.push(`<text x="${low.x - 3}" y="${low.y}" text-anchor="end" fill="#C8DCE6" font-size="10">${d.range.min}</text>`);
+    const origin = map(0, 0);
+    parts.push(`<text x="${origin.x + 4}" y="${origin.y + 12}" fill="#C8DCE6" font-size="10">0</text>`);
+    parts.push(`<text x="${origin.x + 5}" y="${high.y + 10}" fill="#C8DCE6" font-size="10">y</text>`);
+    group.innerHTML = parts.join('');
   }
 
   // 坐标换算统一走 geometry/alignment.js，页面不再另写一套映射。
@@ -834,6 +1117,7 @@
       dragOrigin = null;
       if (overlay) overlay.remove();
       overlay = null;
+      clearFigure();
       window.__breakglassAlignment = null;
       if (controller) {
         controller.fail('render_failed', '曲线无法绘制，请重试或退出。');
@@ -847,7 +1131,8 @@
     const state = sessionState();
     if (!state || state.status !== 'interactive' || !state.result || !overlay) return;
     const result = state.result;
-    const definition = result.definition;
+    const local = figureKind !== 'parabola' ? activeFigure() : null;
+    const definition = local ? local.definition : result.definition;
     const rect = readContentRect();
     if (!rect) {
       const box = video.getBoundingClientRect();
@@ -874,11 +1159,14 @@
     overlay.style.height = `${rect.contentRect.height}px`;
     overlay.setAttribute('viewBox', `0 0 ${rect.contentRect.width} ${rect.contentRect.height}`);
 
-    const parameters = state.currentParameters;
+    const parameters = local ? local.parameters : state.currentParameters;
     const path = [];
-    alignment.visibleCurvePolylines(definition, parameters, 81).forEach((line) => {
+    const polylines = local ? figuresApi.visiblePolylines(local) : alignment.visibleCurvePolylines(definition, parameters, 81);
+    figureOutsideWindow = Boolean(local && polylines.length === 0);
+    polylines.forEach((line) => {
       line.forEach((point, index) => {
-        const [px, py] = pagePointForMath(definition, parameters, point.x, rect);
+        const mapped = local ? alignment.mathCoordinatesToPage(definition, point, rect.scale) : null;
+        const [px, py] = mapped ? [mapped.x, mapped.y] : pagePointForMath(definition, parameters, point.x, rect);
         path.push(`${index === 0 ? 'M' : 'L'} ${px.toFixed(2)} ${py.toFixed(2)}`);
       });
     });
@@ -886,16 +1174,37 @@
     overlay.querySelector('path').setAttribute('d', pathData);
     const hitPath = overlay.querySelector('path.curve-hit');
     if (hitPath) hitPath.setAttribute('d', pathData);
-    publishAlignment(definition, parameters, rect);
+    if (local) window.__breakglassAlignment = null;
+    else publishAlignment(definition, parameters, rect);
+    drawFigureCoordinates(local, rect);
+    overlay.setAttribute('aria-label', local ? '可调节的本地' + local.label : '可拖动的抛物线结果');
 
     const dragParameter = definition.dragParameter;
     const dragValue = parameters[dragParameter];
-    const [cx, cy] = pagePointForMath(definition, parameters, dragParameter === 'h' ? dragValue : definition.domain.min, rect);
+    const control = local ? figuresApi.controlPoint(local) : null;
+    const mappedControl = control ? alignment.mathCoordinatesToPage(definition, control, rect.scale) : null;
+    const [cx, cy] = mappedControl ? [mappedControl.x, mappedControl.y]
+      : pagePointForMath(definition, parameters, dragParameter === 'h' ? dragValue : definition.domain.min, rect);
     const handle = overlay.querySelector('circle');
     handle.setAttribute('cx', cx.toFixed(2));
     handle.setAttribute('cy', cy.toFixed(2));
+    const offscreen = control && (control.x < definition.domain.min || control.x > definition.domain.max || control.y < definition.range.min || control.y > definition.range.max);
+    handle.style.display = offscreen ? 'none' : '';
+    handle.setAttribute('tabindex', offscreen ? '-1' : '0');
+    handle.setAttribute('role', 'slider');
+    handle.setAttribute('aria-label', (local ? local.label : '抛物线') + '控制点，调节 ' + dragParameter);
+    handle.setAttribute('aria-valuemin', String(definition.parameters[dragParameter].min));
+    handle.setAttribute('aria-valuemax', String(definition.parameters[dragParameter].max));
+    handle.setAttribute('aria-valuenow', String(dragValue));
+    const hotHandle = overlay.querySelector('circle.curve-hit');
+    if (hotHandle) {
+      hotHandle.setAttribute('cx', cx.toFixed(2));
+      hotHandle.setAttribute('cy', cy.toFixed(2));
+      hotHandle.style.display = offscreen ? 'none' : '';
+    }
 
     sliderRows.forEach((row) => {
+      if (local) return;
       if (!row.input || !row.output) return;
       const value = Number(parameters[row.name]);
       if (!Number.isFinite(value)) return;
@@ -914,6 +1223,8 @@
         row.input.setAttribute('aria-valuetext', displayValue + '（范围 ' + item.min + ' 到 ' + item.max + '）');
       }
     });
+    syncFigureControls();
+    syncStageBanner();
     return true;
   }
 
@@ -925,6 +1236,7 @@
     placedRectKey = '';
     if (overlay) overlay.remove();
     overlay = null;
+    clearFigure();
     window.__breakglassAlignment = null;
     if (pauseVideo && video && !video.paused) video.pause();
     if (wakeHandle) wakeHandle.exit();
@@ -943,7 +1255,7 @@
     // 可见路径保持细线。后面的透明宽路径负责拖动命中。
     // 视觉控制点 r=10，另加一个透明 r=18 的热区圆。热区放在后面，
     // 这样 querySelector('circle') 和 querySelector('path') 仍拿到可见图形。
-    overlay.innerHTML = '<path fill="none" stroke="#71ddff" stroke-width="3" stroke-linecap="round"></path>'
+    overlay.innerHTML = '<g class="figure-coordinates" aria-hidden="true"></g><path fill="none" stroke="#71ddff" stroke-width="3" stroke-linecap="round"></path>'
       + '<path class="curve-hit" fill="none" stroke="transparent" stroke-width="24" stroke-linecap="round"></path>'
       + '<circle r="10" fill="#08111f" stroke="#ffffff" stroke-width="3" tabindex="0"></circle>'
       + '<circle class="curve-hit" r="18" fill="transparent" stroke="none" aria-hidden="true"></circle>';
@@ -953,22 +1265,28 @@
       if (event.target === overlay) return;
       const state = sessionState();
       if (!state || !state.result) return;
-      const definition = state.result.definition;
-      const mathX = mathXFromPointer(event, definition);
+      const figure = activeFigure();
+      const definition = figure ? figure.definition : state.result.definition;
+      const vertical = figureKind === 'line';
+      const mathX = vertical ? mathYFromPointer(event, definition) : mathXFromPointer(event, definition);
       const name = definition.dragParameter;
-      if (mathX === null || !Number.isFinite(state.currentParameters[name])) return;
+      const parameters = figure ? figure.parameters : state.currentParameters;
+      if (mathX === null || !Number.isFinite(parameters[name])) return;
       dragging = true;
-      dragOrigin = { name, value: state.currentParameters[name], mathX };
+      dragOrigin = { name, value: parameters[name], mathX, vertical };
       if (overlay.setPointerCapture) overlay.setPointerCapture(event.pointerId);
     });
     overlay.addEventListener('pointermove', (event) => {
       if (!dragging || !dragOrigin) return;
       const state = sessionState();
       if (!state || !state.result) return;
-      const mathX = mathXFromPointer(event, state.result.definition);
+      const figure = activeFigure();
+      const definition = figure ? figure.definition : state.result.definition;
+      const mathX = dragOrigin.vertical ? mathYFromPointer(event, definition) : mathXFromPointer(event, definition);
       if (mathX === null) return;
-      controller.updateParameter(dragOrigin.name, dragOrigin.value + (mathX - dragOrigin.mathX));
-      drawCurve();
+      const value = dragOrigin.value + (mathX - dragOrigin.mathX);
+      if (figuresApi) updateFigureParameters({ [dragOrigin.name]: value });
+      else { controller.updateParameter(dragOrigin.name, value); drawCurve(); }
     });
     /**
      * 松手或指针被系统取消时结束拖动，避免下一次移动继续改参数。
@@ -984,6 +1302,15 @@
     overlay.addEventListener('pointerup', endDrag);
     overlay.addEventListener('pointercancel', endDrag);
     overlay.addEventListener('lostpointercapture', endDrag);
+    overlay.addEventListener('keydown', (event) => {
+      if (!['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(event.key)) return;
+      const figure = activeFigure();
+      if (!figure || event.target !== overlay.querySelector('circle')) return;
+      event.preventDefault();
+      const name = figure.definition.dragParameter;
+      const direction = event.key === 'ArrowLeft' || event.key === 'ArrowDown' ? -1 : 1;
+      updateFigureParameters({ [name]: figure.parameters[name] + direction * figure.definition.parameters[name].step });
+    });
     return drawCurve();
   }
 
@@ -1100,13 +1427,13 @@
    * 会话回到 paused-ready 时复位按钮、来源和等待条。取消文案只在这一处消费。
    */
   function paintPausedReady() {
+    clearFigure();
+    syncFigureControls();
     visionStartedAt = null;
     hideWaitingControls();
     resetButton.disabled = true;
     exitButton.disabled = true;
     setSlidersEnabled(false);
-    tutorEpoch = '';
-    clearTutorLog();
     setPrimaryAction('wake');
     const note = pendingIdle;
     pendingIdle = null;
@@ -1145,11 +1472,6 @@
       resetButton.disabled = false;
       exitButton.disabled = false;
       setSlidersEnabled(true);
-      const epoch = String(state.requestId || '') + '|' + String(result && result.definition ? result.definition.equationId : '');
-      if (epoch !== tutorEpoch) {
-        tutorEpoch = epoch;
-        clearTutorLog();
-      }
       setPrimaryAction('wake');
       if (overlay) {
         overlay.classList.add('is-entering');
@@ -1962,13 +2284,17 @@
   cancelButton.addEventListener('click', cancelWaiting);
   retryButton.addEventListener('click', wake);
   resetButton.addEventListener('click', () => {
+    if (figuresApi) {
+      const outcome = resetFigureParameters();
+      if (outcome.ok && outcome.figure && tutorLog && tutorLog.children.length) {
+        appendTutorEntry('note', '已恢复' + outcome.figure.label + '的初始系数。');
+      }
+      return;
+    }
     dragging = false;
     dragOrigin = null;
     if (controller) controller.reset();
-    if (drawCurve()) {
-      setStatus('已恢复本次结果的初始参数。');
-      if (tutorLog && tutorLog.children.length) appendTutorEntry('note', '已恢复这次破壁的初始系数。');
-    }
+    if (drawCurve()) setStatus('已恢复本次结果的初始参数。');
   });
   exitButton.addEventListener('click', removeOverlay);
   if (tutorForm) {
@@ -1992,9 +2318,21 @@
   sliderRows.forEach((row) => {
     if (!row.input) return;
     row.input.addEventListener('input', () => {
-      if (!controller) return;
+      if (!controller || figureKind !== 'parabola') return;
+      if (figuresApi) { updateFigureParameters({ [row.name]: Number(row.input.value) }); return; }
       controller.setParameter(row.name, Number(row.input.value));
       drawCurve();
+    });
+  });
+  if (figureSelect) figureSelect.addEventListener('change', () => {
+    const selected = selectFigure(figureSelect.value);
+    if (!selected.ok) syncFigureControls();
+  });
+  figureRows.forEach((row) => {
+    if (!row.input) return;
+    row.input.addEventListener('input', () => {
+      if (figureKind === 'parabola' || !row.name) return;
+      updateFigureParameters({ [row.name]: Number(row.input.value) });
     });
   });
   fullscreenButton.addEventListener('click', () => {

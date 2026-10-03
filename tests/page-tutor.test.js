@@ -199,7 +199,129 @@ test('重置后在记录里补一句，没有记录时不补', async () => {
     elements['reset-button'].dispatch('click');
     assert.equal(elements['parameter-k-value'].textContent, '1.0');
     const log = entries(harness);
-    assert.deepEqual(log[log.length - 1], { role: 'note', text: '已恢复这次破壁的初始系数。' });
+    assert.deepEqual(log[log.length - 1], { role: 'note', text: '已恢复抛物线的初始系数。' });
+  } finally {
+    harness.restore();
+  }
+});
+
+/**
+ * @param {object} harness
+ * @returns {object}
+ */
+function session(harness) {
+  return harness.win.BreakGlass.figureSession;
+}
+
+/**
+ * 用页面上的图形选择切换图形。
+ * @param {object} harness
+ * @param {string} kind
+ */
+function select(harness, kind) {
+  harness.elements['figure-kind'].value = kind;
+  harness.elements['figure-kind'].dispatch('change');
+  assert.equal(session(harness).getState().kind, kind);
+}
+
+test('换图形就清空记录，示例换成这种图形的问法', async () => {
+  const harness = await interactiveHarness();
+  try {
+    const { elements } = harness;
+    ask(harness, '把顶点高度改成 -1');
+    assert.equal(elements['tutor-log'].children.length, 2);
+    select(harness, 'line');
+    assert.equal(elements['tutor-log'].children.length, 0, '直线旁边不留抛物线的数');
+    assert.equal(elements['tutor-log'].hidden, true);
+    const buttons = elements['tutor-examples'].children;
+    assert.deepEqual(buttons.map((button) => button.dataset.tutorExample), ['把斜率改成 2', '截距减小 1', 'x 等于 1 时 y 是多少']);
+    assert.deepEqual(buttons.map((button) => button.textContent), buttons.map((button) => button.dataset.tutorExample));
+    assert.ok(buttons.every((button) => button.type === 'button' && button.disabled === false));
+    elements['tutor-examples'].dispatch('click', { target: buttons[0] });
+    assert.equal(elements['tutor-input'].value, '把斜率改成 2');
+
+    ask(harness, '把斜率改成 2');
+    elements['reset-button'].dispatch('click');
+    assert.deepEqual(entries(harness).at(-1), { role: 'note', text: '已恢复直线的初始系数。' });
+    select(harness, 'circle');
+    assert.equal(elements['tutor-log'].children.length, 0);
+    assert.equal(elements['tutor-examples'].children[1].dataset.tutorExample, '把圆心移到 (1, -1)');
+    elements['exit-button'].dispatch('click');
+    assert.ok(elements['tutor-examples'].children.every((button) => button.disabled === true), '退出后示例回到禁用');
+    assert.equal(elements['tutor-examples'].children[0].dataset.tutorExample, '把顶点高度改成 -1', '下一次破壁先是抛物线');
+  } finally {
+    harness.restore();
+  }
+});
+
+test('在直线、圆、正弦上提问：改的是画面上的图形，读数与 figureSession.readAt 相同', async () => {
+  const harness = await interactiveHarness();
+  try {
+    const { elements } = harness;
+    const api = session(harness);
+
+    select(harness, 'line');
+    ask(harness, '把斜率改成 2');
+    assert.deepEqual(api.getState().parameters, { m: 2, b: 1 });
+    assert.equal(elements['parameter-figure-1-value'].textContent, '2.0');
+    assert.equal(elements['parameter-figure-1'].value, '2');
+    assert.match(entries(harness)[1].text, /^斜率 m 从 1\.0 改为 2\.0，直线变陡/);
+    ask(harness, 'x 等于 1 时 y 是多少');
+    assert.deepEqual(api.readAt(1).values, [3]);
+    assert.match(entries(harness)[3].text, /y = 2\.0 × 1 \+ 1\.0 = 3/);
+    ask(harness, '把顶点高度改成 -1');
+    assert.equal(api.getState().kind, 'line', '抛物线的说法不把图形改回抛物线');
+    assert.deepEqual(api.getState().parameters, { m: 2, b: 1 });
+    assert.match(entries(harness)[5].text, /^当前的直线没有顶点/);
+
+    select(harness, 'circle');
+    ask(harness, 'x 等于 0 时 y 是多少');
+    assert.deepEqual(api.readAt(0).values, [2, 0]);
+    assert.match(entries(harness)[1].text, /有两个 y：y = 2 或 y = 0/);
+    ask(harness, '把圆心移到 (1, -1)');
+    assert.deepEqual(api.getState().parameters, { h: 1, k: -1, r: 1 });
+    assert.equal(elements['parameter-figure-1-value'].textContent, '1.0');
+    assert.equal(elements['parameter-figure-2-value'].textContent, '-1.0');
+    assert.match(entries(harness)[3].text, /圆心现在是 \(1\.0, -1\.0\)/);
+
+    select(harness, 'sine');
+    elements['parameter-figure-1'].value = '2';
+    elements['parameter-figure-1'].dispatch('input');
+    ask(harness, 'x 等于 1 时 y 是多少');
+    const [y] = api.readAt(1).values;
+    const reply = entries(harness)[1].text;
+    assert.match(reply, /^x = 1 时，y = 2\.0 × sin\(1 − 0\.0\) \+ 1\.0 = /, '读的是拖动滑块之后的振幅');
+    const shown = Number(/= (-?\d+(?:\.\d+)?)。/.exec(reply)[1]);
+    assert.ok(Math.abs(shown - y) < 5e-5, `回答 ${shown} 与画面读数 ${y} 一致`);
+    ask(harness, '向右平移 1');
+    assert.deepEqual(api.getState().parameters, { a: 2, h: 1, k: 1 });
+    assert.equal(elements['parameter-figure-2-value'].textContent, '1.0');
+  } finally {
+    harness.restore();
+  }
+});
+
+test('显示区域对不上时提问不改图，并说明原因', async () => {
+  let objectFit = 'contain';
+  const harness = await createHarness({ getComputedStyle: () => ({ objectFit, objectPosition: '50% 50%' }) });
+  try {
+    harness.ready();
+    harness.elements['wake-button'].dispatch('click');
+    const api = session(harness);
+    select(harness, 'circle');
+    const before = api.getState();
+    const path = curvePath(harness);
+    objectFit = 'fill';
+    ask(harness, '把半径改成 2');
+    assert.deepEqual(api.getState(), before);
+    assert.equal(curvePath(harness), path);
+    assert.equal(harness.elements['parameter-figure-3-value'].textContent, '1.0');
+    assert.equal(entries(harness)[1].text, '画面的显示区域现在对不上，这次没有改图。恢复显示区域后再问一次。');
+    ask(harness, 'x=0 时 y 是多少');
+    assert.match(entries(harness)[3].text, /有两个 y/, '只读不改的提问照常回答');
+    objectFit = 'contain';
+    ask(harness, '把半径改成 2');
+    assert.equal(api.getState().parameters.r, 2);
   } finally {
     harness.restore();
   }
