@@ -60,6 +60,16 @@ node --test
 
 没有视频时页面提示选择视频或选择预设，不会挂上曲线。本轮网页方式的浏览器验证见验收记录，Chrome 扩展内的完整验收仍待完成；识别任意视频仍不在当前范围。
 
+## 项目展示网站
+
+`yanghan2026-patch-1` 分支原来的根文件 [展示网站](展示网站) 已融合品牌演示：2.2 秒 Logo 入场、自绘字标、黑白青配色，以及“观看 / 亲手验证”的抛物线对照。八节介绍、章节导航和架构详情保留。
+
+- [展示网站.html](展示网站.html) 是同内容的标准网页入口；下载后可直接用浏览器打开品牌与曲线示意。
+- 两个根入口都内联样式、脚本和 SVG，无需 CDN 或远程接口。页面中的视频破壁入口仍需在完整仓库的 HTTP 静态服务下使用。
+- 维护源文件位于 `site/showcase.html`、`site/showcase*.css/js` 和 `site/assets/breakglass-brand/`；修改后运行 `node scripts/build-showcase.mjs` 同步根入口，再执行 `node scripts/check.mjs`。
+
+展示页的曲线来自本地数学函数，并明确标记预制来源；视觉识别与 Python/Pyodide 仍按 [Constitution](docs/BreakGlass-constitution.md) 的 P1 边界记录为规划，网页动效不代表产品链路验收。
+
 ## 文档入口
 
 - [项目约定](AGENTS.md)
