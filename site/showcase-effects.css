@@ -1,5 +1,7 @@
 /* Effects adapted from breakglass-apple, around the approved brand identity. */
 body { isolation: isolate; }
+html.intro-scroll-locked { overflow: hidden; overscroll-behavior: none; }
+html.intro-scroll-locked body { position: fixed; top: var(--intro-scroll-y); left: var(--intro-scroll-x); width: 100%; padding-right: var(--intro-scroll-padding); overflow: hidden; }
 .bg-core {
   background: radial-gradient(110% 60% at 50% 114%, rgb(43 150 189 / .12), transparent 72%),
     radial-gradient(70% 42% at 50% -12%, rgb(113 221 255 / .055), transparent 75%), var(--bg);

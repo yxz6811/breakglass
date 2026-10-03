@@ -4,6 +4,8 @@
 <html lang="zh-CN">
 <head>
 <meta charset="utf-8"/>
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-HT22BS7B4ShkpKDRWMIvM3knDbvCZPAgblnapcXaA/g=' 'sha256-WS4210ZXVnUklxDt8og1eAqjENksHM56aIsoa+AyuOM=' 'sha256-6EplBBjNCg7Y9Fi0ht/+7EESc+v4oIqh43R8UGW8Ttc=' 'sha256-BI23YMuzvX39odaTjUgcIEG/2fhCtkmlTXTxOWErp4o=' 'sha256-hQC4QNH9vtbePilbF5maD5rvV+5Yoe4Za7uZpnwvxE4=' 'sha256-eEjMey5X/4MD8eYMUt2xUBgaoNXv2ASg0ng5pYUCd1s='; script-src-attr 'none'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-src 'none'; worker-src 'none'; media-src 'none'" data-showcase-csp/>
+<meta name="referrer" content="no-referrer"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
 <title>破壁 BreakGlass — 让知识可以被触碰</title>
 <meta name="theme-color" content="#080b0d" />
@@ -1165,6 +1167,8 @@ button:disabled, input:disabled, select:disabled { opacity: .45; cursor: default
 <style data-showcase-source="showcase-effects.css">
 /* Effects adapted from breakglass-apple, around the approved brand identity. */
 body { isolation: isolate; }
+html.intro-scroll-locked { overflow: hidden; overscroll-behavior: none; }
+html.intro-scroll-locked body { position: fixed; top: var(--intro-scroll-y); left: var(--intro-scroll-x); width: 100%; padding-right: var(--intro-scroll-padding); overflow: hidden; }
 .bg-core {
   background: radial-gradient(110% 60% at 50% 114%, rgb(43 150 189 / .12), transparent 72%),
     radial-gradient(70% 42% at 50% -12%, rgb(113 221 255 / .055), transparent 75%), var(--bg);
@@ -2202,6 +2206,85 @@ plt.show()</pre>
   };
 }());
 </script>
+<script data-showcase-source="showcase-scroll-lock.js">
+/* Entrance scrolling only; docs/BreakGlass-constitution.md frontend scope. */
+(function () {
+  'use strict';
+  window.BreakGlassMotion.createScrollLock = function () {
+    var root = document.documentElement;
+    var locked = false, disposed = false, listeners = null;
+    var position = { x: 0, y: 0 };
+    var saved = [];
+    var properties = ['--intro-scroll-x', '--intro-scroll-y', '--intro-scroll-padding'];
+    var scrollKeys = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'PageUp', 'PageDown', 'Home', 'End', ' ', 'Spacebar'];
+
+    function prevent(event) {
+      if (event.ctrlKey || (event.touches && event.touches.length > 1)) return;
+      event.preventDefault();
+    }
+    function blockKey(event) {
+      var target = event.target;
+      if (target && (target.isContentEditable || (target.closest && target.closest('input, textarea, select, [contenteditable], [role="textbox"]')))) return;
+      if (scrollKeys.indexOf(event.key) !== -1) event.preventDefault();
+    }
+    function blockAnchor(event) {
+      var target = event.target;
+      var link = target && target.closest && target.closest('a[href]');
+      if (!link) return;
+      var url = new URL(link.getAttribute('href'), window.location.href);
+      var current = window.location;
+      if (url.hash && url.origin === current.origin && url.pathname === current.pathname && url.search === current.search) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
+    }
+    function lock() {
+      if (locked || disposed) return;
+      position = { x: window.scrollX || 0, y: window.scrollY || 0 };
+      var gap = Math.max(0, window.innerWidth - root.clientWidth);
+      var padding = parseFloat(window.getComputedStyle(document.body).paddingRight) || 0;
+      saved = properties.map(function (name) {
+        return { name: name, value: root.style.getPropertyValue(name), priority: root.style.getPropertyPriority(name) };
+      });
+      root.style.setProperty(properties[0], -position.x + 'px');
+      root.style.setProperty(properties[1], -position.y + 'px');
+      root.style.setProperty(properties[2], padding + gap + 'px');
+      root.classList.add('intro-scroll-locked');
+      root.dataset.introScroll = 'locked';
+      locked = true;
+      listeners = window.BreakGlassMotion.createListeners();
+      listeners.listen(document, 'wheel', prevent, { passive: false, capture: true });
+      listeners.listen(document, 'touchmove', prevent, { passive: false, capture: true });
+      listeners.listen(document, 'keydown', blockKey, { capture: true });
+      listeners.listen(document, 'click', blockAnchor, { capture: true });
+    }
+    function unlock() {
+      if (!locked) return;
+      locked = false;
+      listeners.abort();
+      listeners = null;
+      root.classList.remove('intro-scroll-locked');
+      root.dataset.introScroll = 'unlocked';
+      saved.forEach(function (property) {
+        if (property.value) root.style.setProperty(property.name, property.value, property.priority);
+        else root.style.removeProperty(property.name);
+      });
+      var behavior = root.style.getPropertyValue('scroll-behavior');
+      var priority = root.style.getPropertyPriority('scroll-behavior');
+      root.style.setProperty('scroll-behavior', 'auto', 'important');
+      window.scrollTo(position.x, position.y);
+      if (behavior) root.style.setProperty('scroll-behavior', behavior, priority);
+      else root.style.removeProperty('scroll-behavior');
+    }
+    return {
+      lock: lock,
+      unlock: unlock,
+      isLocked: function () { return locked; },
+      dispose: function () { unlock(); disposed = true; }
+    };
+  };
+}());
+</script>
 <script data-showcase-source="showcase-base.js">
 /* Source: github.com/yxz6811/breakglass, yanghan2026-patch-1, e46bed00291c262effa7982dc3f67f2701f36191, root file 展示网站.
    Frontend constraints: docs/BreakGlass-constitution.md (1.6.0); P0 preset parabola only. This extraction preserves original showcase content and does not implement or validate its P1 claims. */
@@ -2333,17 +2416,27 @@ plt.show()</pre>
   };
 
   function setContent(key) {
+    if (!Object.prototype.hasOwnProperty.call(DATA, key)) return false;
     var d = DATA[key];
     if (!d) return false;
 
     var tpl = document.getElementById(d.tplId);
-    visual.innerHTML = '';
+    while (visual.firstChild) visual.removeChild(visual.firstChild);
     if (tpl && tpl.content) {
       visual.appendChild(tpl.content.cloneNode(true));
     }
     eyebrow.textContent = d.eyebrow;
     titleEl.textContent = d.title;
-    descEl.innerHTML = d.desc;
+    descEl.textContent = '';
+    // Keep the authored emphasis without interpreting descriptions as HTML.
+    var description = d.desc.match(/^(.*?)<em>(.*?)<\/em>(.*?)$/);
+    if (description) {
+      descEl.appendChild(document.createTextNode(description[1]));
+      var emphasis = document.createElement('em');
+      emphasis.textContent = description[2];
+      descEl.appendChild(emphasis);
+      descEl.appendChild(document.createTextNode(description[3]));
+    } else descEl.textContent = d.desc;
 
     var info = modal.querySelector('.arch-modal__info');
     if (info) info.scrollTop = 0;
@@ -2846,6 +2939,8 @@ plt.show()</pre>
   var introCenter = { x: 0, y: 0, lockupY: 0 };
   var restoreReplayFocus = false;
   var events = window.BreakGlassMotion.createListeners();
+  var scrollLock = window.BreakGlassMotion.createScrollLock();
+  var unlockTimer = 0;
   var cuts = {
     logo: { duration: 2200, from: 4050 },
     story: { duration: 5600, from: 0 },
@@ -2891,8 +2986,13 @@ plt.show()</pre>
     introCenter.y = window.innerHeight / 2 - (logoBounds.top + logoBounds.height / 2);
     introCenter.lockupY = window.innerHeight / 2 - (rect.top + rect.height / 2);
   }
-  function completeEntrance() {
-    if (entranceComplete) return;
+  function releaseScroll() {
+    window.clearTimeout(unlockTimer);
+    unlockTimer = 0;
+    scrollLock.unlock();
+  }
+  function completeEntrance(immediate) {
+    if (entranceComplete) { if (immediate) releaseScroll(); return; }
     entranceComplete = true;
     showChrome(true);
     body.classList.remove('intro-entering');
@@ -2903,8 +3003,16 @@ plt.show()</pre>
       var focus = document.activeElement;
       if (focus === document.body || focus === chromeRoot || (heroCopy && heroCopy.contains(focus))) replay.focus({ preventScroll: true });
     }
+    if (immediate || motion.matches || document.hidden) releaseScroll();
+    else {
+      // Cover the 720ms lift, 920ms copy reveal and 935ms last navigation item.
+      unlockTimer = window.setTimeout(releaseScroll, 960);
+    }
   }
   function beginEntrance() {
+    window.clearTimeout(unlockTimer);
+    unlockTimer = 0;
+    scrollLock.lock();
     entranceComplete = false;
     body.classList.remove('intro-ready');
     body.classList.add('intro-entering');
@@ -3083,7 +3191,7 @@ plt.show()</pre>
   }
   function play(restart) {
     pause();
-    if (motion.matches || disposed) { render(cut.duration); completeEntrance(); return; }
+    if (motion.matches || disposed) { render(cut.duration); completeEntrance(true); return; }
     measureTarget();
     if (restart || current >= cut.duration) render(0);
     running = true;
@@ -3097,7 +3205,7 @@ plt.show()</pre>
     chapters.forEach(function (element) { element.disabled = reduced || chapterTime[element.dataset.chapter] < cut.from; });
     motionNote.hidden = !reduced;
     body.dataset.reducedMotion = String(reduced);
-    if (reduced) { pause(); render(cut.duration); syncPlayback(); completeEntrance(); }
+    if (reduced) { pause(); render(cut.duration); syncPlayback(); completeEntrance(true); }
   }
 
   events.listen(replay, 'click', function () {
@@ -3127,7 +3235,8 @@ plt.show()</pre>
   events.listen(document, 'visibilitychange', function () {
     if (document.hidden) {
       pause();
-      if (!entranceComplete) { render(cut.duration); syncPlayback(); completeEntrance(); }
+      if (!entranceComplete) { render(cut.duration); syncPlayback(); }
+      completeEntrance(true);
     }
   });
   var visibility = 'IntersectionObserver' in window ? new IntersectionObserver(function (entries) {
@@ -3135,7 +3244,7 @@ plt.show()</pre>
       pause();
       render(cut.duration);
       syncPlayback();
-      completeEntrance();
+      completeEntrance(true);
     }
   }) : null;
   if (visibility) visibility.observe(brandIntro);
@@ -3143,20 +3252,39 @@ plt.show()</pre>
   events.listen(motion, 'change', applyMotionPreference);
   events.listen(window, 'pagehide', function (event) {
     pause();
+    releaseScroll();
     if (event.persisted) return;
     disposed = true;
+    scrollLock.dispose();
     if (visibility) visibility.disconnect();
     events.abort();
   });
   events.listen(window, 'pageshow', function (event) {
-    if (event.persisted) { measureTarget(); render(entranceComplete ? current : cut.duration); syncPlayback(); completeEntrance(); }
+    if (event.persisted) { measureTarget(); render(entranceComplete ? current : cut.duration); syncPlayback(); completeEntrance(true); }
   });
   body.dataset.cut = 'logo';
-  beginEntrance();
-  renderSmallGraph(coefficient.value);
-  measureTarget();
-  applyMotionPreference();
-  if (!motion.matches) play(true);
+  try {
+    renderSmallGraph(coefficient.value);
+    measureTarget();
+    var initialTarget = window.location.hash && document.getElementById(window.location.hash.slice(1));
+    // Let valid chapter links retain native fragment positioning before locking the body.
+    if (initialTarget && !brandIntro.contains(initialTarget)) {
+      render(cut.duration);
+      syncPlayback();
+      applyMotionPreference();
+      completeEntrance(true);
+    } else {
+      beginEntrance();
+      applyMotionPreference();
+      if (!motion.matches) play(true);
+    }
+  } catch (error) {
+    releaseScroll();
+    showChrome(true);
+    body.classList.remove('intro-entering');
+    if (heroCopy) heroCopy.removeAttribute('inert');
+    throw error;
+  }
 })();
 </script>
 <script data-showcase-source="showcase-effects.js">

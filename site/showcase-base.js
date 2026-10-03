@@ -128,17 +128,27 @@
   };
 
   function setContent(key) {
+    if (!Object.prototype.hasOwnProperty.call(DATA, key)) return false;
     var d = DATA[key];
     if (!d) return false;
 
     var tpl = document.getElementById(d.tplId);
-    visual.innerHTML = '';
+    while (visual.firstChild) visual.removeChild(visual.firstChild);
     if (tpl && tpl.content) {
       visual.appendChild(tpl.content.cloneNode(true));
     }
     eyebrow.textContent = d.eyebrow;
     titleEl.textContent = d.title;
-    descEl.innerHTML = d.desc;
+    descEl.textContent = '';
+    // Keep the authored emphasis without interpreting descriptions as HTML.
+    var description = d.desc.match(/^(.*?)<em>(.*?)<\/em>(.*?)$/);
+    if (description) {
+      descEl.appendChild(document.createTextNode(description[1]));
+      var emphasis = document.createElement('em');
+      emphasis.textContent = description[2];
+      descEl.appendChild(emphasis);
+      descEl.appendChild(document.createTextNode(description[3]));
+    } else descEl.textContent = d.desc;
 
     var info = modal.querySelector('.arch-modal__info');
     if (info) info.scrollTop = 0;

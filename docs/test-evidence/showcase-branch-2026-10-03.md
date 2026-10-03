@@ -71,3 +71,21 @@ Logo 入场：初始独立图标位于视口中心，字标出现时形成居中
 - `node scripts/check.mjs`：85 个 JS/MJS、178 处本地引用及内联脚本通过（新增根入口后的引用数以发布验证补充记录为准）。本地 in-app browser 重载后 Logo 时间推进至 683ms，导航处于 pending，五个脚本均已内联，开场正常启动。
 
 本轮没有苹果真机，兼容分支由隔离脚本测试覆盖；不能声称已完成 Safari 真机验收。历史 WebKit API 差异见 [MediaQueryList 修复](https://bugs.webkit.org/show_bug.cgi?id=203288)、[Safari 14.1 个别变换属性](https://webkit.org/blog/11648/new-webkit-features-in-safari-14-1/)。
+
+发布尝试：账号 `2292576833` 具有 push 权限，但 admin 与 maintain 均为 false。创建 Pages API 返回 HTTP 404，网站没有被该操作发布。已请仓库所有者选择 `yanghan2026-patch-1`、`/(root)` 启用；不得把分支推送当作网页上线。
+
+## 入场滚动锁定与基础防护
+
+本轮依照 [Constitution](../BreakGlass-constitution.md) 保持静态前端范围。
+
+- 入场及重播时固定 body、保留原滚动坐标和滚动条占位，拦截滚轮/单指触摸/翻页键及同页锚点；输入控件与浏览器缩放保持可用。
+- Logo 结束后再等待 960ms，覆盖 720ms 上移、920ms 文字和最长 935ms 导航渐显，然后清理监听、恢复原样式及坐标。后台、离页、减少动态偏好立即释放；有效非首页锚点跳过首页入场，保留阅读位置。
+- CSP 使用六段内联脚本的 SHA-256 白名单，构建时按 HTML 换行规则归一化；禁止脚本事件属性、eval、不需要的连接/内嵌页面/插件/表单/Worker/媒体加载。保留必要的内联样式，加入 `no-referrer`，移除架构文案 HTML 插入路径。
+- 没有在 meta 中声称提供 `frame-ancestors`、HSTS、X-Frame-Options 或 nosniff；这些响应头由托管平台配置，本轮未实施。CSP 范围是展示文档，不影响跳转后的独立视频演示文档。规则依据 [CSP 规范](https://www.w3.org/TR/CSP3/) 与 [HTML 换行预处理](https://html.spec.whatwg.org/multipage/parsing.html#preprocessing-the-input-stream)。
+- `node --test tests/showcase-demo.test.js tests/showcase-reveal.test.js tests/showcase-scroll-lock.test.js tests/showcase-security.test.js`：36/36 通过，包含事件释放、位置/样式恢复、编辑/缩放保留、原演示行为、六段脚本授权与修改脚本拒绝、跨换行构建一致性。
+- `node scripts/build-showcase.mjs`：三个入口各 156170 字节，六段内联脚本；`node scripts/check.mjs`：88 个 JS/MJS、179 处本地引用及内联脚本通过；`git diff --check` 通过。
+- 本地浏览器：半速重播逻辑时间 350ms，PageDown 后 scrollY 仍为 0，body 为 fixed、状态 locked；结束后 body 为 static、状态 unlocked，PageDown 可滚至 729.6px。
+- 临时测试副本添加了未授权脚本和 `onerror`：两项执行标记均未出现，正常入场逻辑时间推进至 567ms。该探测页仅用于本地验证，不发布。
+- 直接打开 `#p5`：入场为完成状态、没有滚动锁定、保留该章节位置；曲线键盘调整至 0.66、状态为 manual。架构“用户触发”详情可打开，文案内容与强调格式保留。
+
+未进行服务器、账号权限或苹果真机渗透测试；本轮不作全站安全保证。

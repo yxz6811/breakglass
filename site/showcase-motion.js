@@ -62,6 +62,8 @@
   var introCenter = { x: 0, y: 0, lockupY: 0 };
   var restoreReplayFocus = false;
   var events = window.BreakGlassMotion.createListeners();
+  var scrollLock = window.BreakGlassMotion.createScrollLock();
+  var unlockTimer = 0;
   var cuts = {
     logo: { duration: 2200, from: 4050 },
     story: { duration: 5600, from: 0 },
@@ -107,8 +109,13 @@
     introCenter.y = window.innerHeight / 2 - (logoBounds.top + logoBounds.height / 2);
     introCenter.lockupY = window.innerHeight / 2 - (rect.top + rect.height / 2);
   }
-  function completeEntrance() {
-    if (entranceComplete) return;
+  function releaseScroll() {
+    window.clearTimeout(unlockTimer);
+    unlockTimer = 0;
+    scrollLock.unlock();
+  }
+  function completeEntrance(immediate) {
+    if (entranceComplete) { if (immediate) releaseScroll(); return; }
     entranceComplete = true;
     showChrome(true);
     body.classList.remove('intro-entering');
@@ -119,8 +126,16 @@
       var focus = document.activeElement;
       if (focus === document.body || focus === chromeRoot || (heroCopy && heroCopy.contains(focus))) replay.focus({ preventScroll: true });
     }
+    if (immediate || motion.matches || document.hidden) releaseScroll();
+    else {
+      // Cover the 720ms lift, 920ms copy reveal and 935ms last navigation item.
+      unlockTimer = window.setTimeout(releaseScroll, 960);
+    }
   }
   function beginEntrance() {
+    window.clearTimeout(unlockTimer);
+    unlockTimer = 0;
+    scrollLock.lock();
     entranceComplete = false;
     body.classList.remove('intro-ready');
     body.classList.add('intro-entering');
@@ -299,7 +314,7 @@
   }
   function play(restart) {
     pause();
-    if (motion.matches || disposed) { render(cut.duration); completeEntrance(); return; }
+    if (motion.matches || disposed) { render(cut.duration); completeEntrance(true); return; }
     measureTarget();
     if (restart || current >= cut.duration) render(0);
     running = true;
@@ -313,7 +328,7 @@
     chapters.forEach(function (element) { element.disabled = reduced || chapterTime[element.dataset.chapter] < cut.from; });
     motionNote.hidden = !reduced;
     body.dataset.reducedMotion = String(reduced);
-    if (reduced) { pause(); render(cut.duration); syncPlayback(); completeEntrance(); }
+    if (reduced) { pause(); render(cut.duration); syncPlayback(); completeEntrance(true); }
   }
 
   events.listen(replay, 'click', function () {
@@ -343,7 +358,8 @@
   events.listen(document, 'visibilitychange', function () {
     if (document.hidden) {
       pause();
-      if (!entranceComplete) { render(cut.duration); syncPlayback(); completeEntrance(); }
+      if (!entranceComplete) { render(cut.duration); syncPlayback(); }
+      completeEntrance(true);
     }
   });
   var visibility = 'IntersectionObserver' in window ? new IntersectionObserver(function (entries) {
@@ -351,7 +367,7 @@
       pause();
       render(cut.duration);
       syncPlayback();
-      completeEntrance();
+      completeEntrance(true);
     }
   }) : null;
   if (visibility) visibility.observe(brandIntro);
@@ -359,18 +375,37 @@
   events.listen(motion, 'change', applyMotionPreference);
   events.listen(window, 'pagehide', function (event) {
     pause();
+    releaseScroll();
     if (event.persisted) return;
     disposed = true;
+    scrollLock.dispose();
     if (visibility) visibility.disconnect();
     events.abort();
   });
   events.listen(window, 'pageshow', function (event) {
-    if (event.persisted) { measureTarget(); render(entranceComplete ? current : cut.duration); syncPlayback(); completeEntrance(); }
+    if (event.persisted) { measureTarget(); render(entranceComplete ? current : cut.duration); syncPlayback(); completeEntrance(true); }
   });
   body.dataset.cut = 'logo';
-  beginEntrance();
-  renderSmallGraph(coefficient.value);
-  measureTarget();
-  applyMotionPreference();
-  if (!motion.matches) play(true);
+  try {
+    renderSmallGraph(coefficient.value);
+    measureTarget();
+    var initialTarget = window.location.hash && document.getElementById(window.location.hash.slice(1));
+    // Let valid chapter links retain native fragment positioning before locking the body.
+    if (initialTarget && !brandIntro.contains(initialTarget)) {
+      render(cut.duration);
+      syncPlayback();
+      applyMotionPreference();
+      completeEntrance(true);
+    } else {
+      beginEntrance();
+      applyMotionPreference();
+      if (!motion.matches) play(true);
+    }
+  } catch (error) {
+    releaseScroll();
+    showChrome(true);
+    body.classList.remove('intro-entering');
+    if (heroCopy) heroCopy.removeAttribute('inert');
+    throw error;
+  }
 })();
