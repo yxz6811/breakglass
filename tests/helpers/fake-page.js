@@ -33,10 +33,11 @@ const ELEMENT_IDS = [
   'stage-banner', 'stage-banner-title', 'stage-banner-detail',
   'figure-kind', 'figure-title', 'figure-formula', 'figure-note',
   'parabola-parameters', 'local-parameters',
-  'figure-row-1', 'figure-row-2', 'figure-row-3',
-  'figure-label-1', 'figure-label-2', 'figure-label-3',
-  'parameter-figure-1', 'parameter-figure-2', 'parameter-figure-3',
-  'parameter-figure-1-value', 'parameter-figure-2-value', 'parameter-figure-3-value'
+  'figure-row-1', 'figure-row-2', 'figure-row-3', 'figure-row-4', 'figure-row-5',
+  'figure-label-1', 'figure-label-2', 'figure-label-3', 'figure-label-4', 'figure-label-5',
+  'parameter-figure-1', 'parameter-figure-2', 'parameter-figure-3', 'parameter-figure-4', 'parameter-figure-5',
+  'parameter-figure-1-value', 'parameter-figure-2-value', 'parameter-figure-3-value',
+  'parameter-figure-4-value', 'parameter-figure-5-value'
 ];
 
 // 忠实一点的 style 替身：main.js 会同时用 style.left = ... 和 style.setProperty。
@@ -285,7 +286,7 @@ async function createHarness(options = {}) {
     const tag = id === 'demo-video' ? 'video'
       : (id === 'figure-kind' ? 'select'
         : (id === 'preset-video' ? 'button'
-          : (/^parameter-(?:a|h|k|figure-[123])$/.test(id) || id === 'local-video' || id === 'lesson-endpoint' || id === 'lesson-note' ? 'input' : 'div')));
+          : (/^parameter-(?:a|h|k|figure-[1-5])$/.test(id) || id === 'local-video' || id === 'lesson-endpoint' || id === 'lesson-note' ? 'input' : 'div')));
     elements[id] = element(tag);
   }
   applyMarkupState(elements);

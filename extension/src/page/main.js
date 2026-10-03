@@ -40,7 +40,7 @@
   const figureNote = $('#figure-note');
   const parabolaParameters = $('#parabola-parameters');
   const localParameters = $('#local-parameters');
-  const figureRows = [1, 2, 3].map((index) => ({
+  const figureRows = [1, 2, 3, 4, 5].map((index) => ({
     row: $('#figure-row-' + index), label: $('#figure-label-' + index),
     input: $('#parameter-figure-' + index), output: $('#parameter-figure-' + index + '-value'), name: null
   }));
@@ -262,7 +262,8 @@
     if (figureNote) figureNote.textContent = !figure
       ? '破壁后可切换图形。新图形由本地公式绘制。'
       : local && figureOutsideWindow ? '当前图形全部在坐标窗口外。调整系数或重置，可以让它回到窗口内。'
-        : local ? '本地数学图形 · 未从视频识别。重置只恢复当前图形。' : '切换图形可探索直线、圆与正弦。';
+        : local && figure.kind === 'polygon' ? '本地数学图形 · 调整边数可切换正三角形、正方形等；旋转角度使用度。重置只恢复当前图形。'
+          : local ? '本地数学图形 · 未从视频识别。重置只恢复当前图形。' : '切换图形，调整它的系数，观察形状变化。';
     if (figure && !local) sliderRows.forEach((row) => {
       if (!row.input || !row.output) return;
       const item = figure.definition.parameters[row.name];
@@ -291,7 +292,7 @@
   }
 
   function formatParameter(value, item) {
-    const precision = item && item.step > 0 ? Math.min(12, Math.max(1, -Math.floor(Math.log10(item.step)))) : 1;
+    const precision = item && item.step > 0 ? Math.min(12, Math.max(0, -Math.floor(Math.log10(item.step)))) : 1;
     const rounded = Number(value.toFixed(precision));
     const tolerance = Math.max(Number.EPSILON * Math.max(Math.abs(value), Math.abs(rounded)) * 32, item ? item.step * 1e-9 : 0);
     return (rounded !== 0 || value === 0) && Math.abs(rounded - value) <= tolerance
@@ -352,7 +353,11 @@
     const unavailable = unavailableFigureMapping();
     if (unavailable) return unavailable;
     const changed = figuresApi.updateParameters(figure, updates);
-    if (!changed.ok) return changed;
+    if (!changed.ok) {
+      syncFigureControls();
+      setStatus((changed.message || '这些系数无法应用。') + ' 本次没有改图。', 'error');
+      return changed;
+    }
     if (figureKind === 'parabola') {
       Object.entries(changed.figure.parameters).forEach(([name, value]) => controller.setParameter(name, value));
     } else localFigure = changed.figure;

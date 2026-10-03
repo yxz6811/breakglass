@@ -6,6 +6,7 @@ const path = require('node:path');
 const { createHarness, flush } = require('./helpers/fake-page.js');
 
 const extensionDir = path.join(__dirname, '..', 'extension');
+const localKinds = ['line', 'circle', 'sine', 'ellipse', 'hyperbola', 'polygon'];
 
 async function interactive(options) {
   const harness = await createHarness(options);
@@ -51,8 +52,8 @@ function figureUi(harness) {
   const ids = ['figure-kind', 'figure-title', 'figure-formula', 'figure-note',
     'source-label', 'source-note', 'parabola-parameters', 'local-parameters',
     'parameter-a', 'parameter-h', 'parameter-k', 'parameter-a-value', 'parameter-h-value', 'parameter-k-value',
-    'parameter-figure-1', 'parameter-figure-2', 'parameter-figure-3',
-    'parameter-figure-1-value', 'parameter-figure-2-value', 'parameter-figure-3-value'];
+    ...Array.from({ length: 5 }, (_, index) => 'parameter-figure-' + (index + 1)),
+    ...Array.from({ length: 5 }, (_, index) => 'parameter-figure-' + (index + 1) + '-value')];
   return Object.fromEntries(ids.map((id) => [id, {
     value: elements[id].value, text: elements[id].textContent,
     hidden: elements[id].hidden, disabled: elements[id].disabled
@@ -66,10 +67,10 @@ test('图形选择器和本地滑块有标签，脚本从扩展包加载', () =>
   assert.ok(picker);
   assert.match(picker[0], /disabled/);
   assert.match(picker[0], /aria-describedby="figure-note"/);
-  for (const kind of ['parabola', 'line', 'circle', 'sine']) {
+  for (const kind of ['parabola', ...localKinds]) {
     assert.match(html, new RegExp('<option[^>]*value="' + kind + '"'));
   }
-  for (const index of [1, 2, 3]) {
+  for (const index of [1, 2, 3, 4, 5]) {
     assert.match(html, new RegExp('<label[^>]*id="figure-label-' + index + '"[^>]*for="parameter-figure-' + index + '"'));
     assert.match(html, new RegExp('<input[^>]*id="parameter-figure-' + index + '"[^>]*type="range"[^>]*disabled'));
     assert.match(html, new RegExp('<output[^>]*id="parameter-figure-' + index + '-value"[^>]*for="parameter-figure-' + index + '"'));
@@ -105,12 +106,12 @@ test('破壁前和 1500ms 等待中不接受切换、更新或读数', async () 
   } finally { harness.restore(); }
 });
 
-test('四种图形切换后各自滑块改变真实 SVG，显示当前参数与本地来源', async () => {
+test('七种图形切换后各自滑块改变真实 SVG，显示当前参数与本地来源', async () => {
   const harness = await interactive();
   try {
     const { elements } = harness;
     const overlay = harness.overlay();
-    for (const kind of ['line', 'circle', 'sine', 'parabola']) {
+    for (const kind of [...localKinds, 'parabola']) {
       select(harness, kind);
       assert.equal(harness.overlay(), overlay, '复用覆盖层，仅显示当前图形');
       const before = curvePath(harness);
@@ -137,9 +138,12 @@ test('四种图形切换后各自滑块改变真实 SVG，显示当前参数与�
         assert.match(elements['source-label'].textContent, new RegExp(figure.label));
         assert.match(elements['source-note'].textContent, /未从视频识别/);
         assert.equal(harness.win.__breakglassAlignment, null, '本地图形不伪装成视频对齐证据');
-        assert.equal(elements['figure-row-3'].hidden, names.length < 3);
+        for (const index of [1, 2, 3, 4, 5]) {
+          assert.equal(elements['figure-row-' + index].hidden, index > names.length);
+          assert.equal(elements['parameter-figure-' + index].disabled, index > names.length);
+        }
         names.forEach((parameter, index) => {
-          assert.match(elements['figure-label-' + (index + 1)].textContent, new RegExp(parameter));
+          assert.match(elements['figure-label-' + (index + 1)].textContent, new RegExp(parameter === 'theta' ? 'θ' : parameter));
           assert.equal(elements['parameter-figure-' + (index + 1)].min, String(figure.definition.parameters[parameter].min));
           assert.equal(elements['parameter-figure-' + (index + 1)].max, String(figure.definition.parameters[parameter].max));
         });
@@ -154,7 +158,7 @@ test('离开抛物线后旧 a/h/k 控件无法改当前本地图形或原有结�
   try {
     const api = session(harness);
     const originalParabola = api.getState();
-    for (const kind of ['line', 'circle', 'sine']) {
+    for (const kind of localKinds) {
       select(harness, kind);
       const before = api.getState();
       const beforePath = curvePath(harness);
@@ -179,7 +183,7 @@ test('重置只恢复当前图形的初值，并把实际系数同步回滑块',
   const harness = await interactive();
   try {
     const api = session(harness);
-    for (const kind of ['line', 'circle', 'sine', 'parabola']) {
+    for (const kind of [...localKinds, 'parabola']) {
       select(harness, kind);
       const initial = api.getState();
       const initialPath = curvePath(harness);
@@ -266,6 +270,190 @@ test('四种图形的读数和真实路径使用同一组修改后的系数', as
   } finally { harness.restore(); }
 });
 
+test('椭圆和双曲线的四个系数改变真实 SVG，读数满足当前圆锥曲线方程', async () => {
+  const harness = await interactive();
+  try {
+    const api = session(harness);
+    const cases = [
+      { kind: 'ellipse', parameters: { h: 0.3, k: -0.5, rx: 1.8, ry: 0.8 },
+        sizes: ['rx', 'ry'], values: [2.1, 0.9], sign: 1 },
+      { kind: 'hyperbola', parameters: { h: -0.4, k: 0.5, a: 0.8, b: 1.3 },
+        sizes: ['a', 'b'], values: [1.1, 0.9], sign: -1 }
+    ];
+    for (const item of cases) {
+      select(harness, item.kind);
+      assert.equal(api.updateParameters(item.parameters).ok, true);
+      for (const [index, value] of item.values.entries()) {
+        const before = curvePath(harness);
+        const input = harness.elements['parameter-figure-' + (index + 3)];
+        input.value = String(value);
+        input.dispatch('input');
+        assert.equal(api.getState().parameters[item.sizes[index]], value);
+        assert.equal(Number(harness.elements['parameter-figure-' + (index + 3) + '-value'].textContent), value);
+        assert.notEqual(curvePath(harness), before);
+      }
+      const figure = api.getState();
+      const p = figure.parameters;
+      const horizontal = p[item.sizes[0]], vertical = p[item.sizes[1]];
+      const x = p.h + horizontal * (item.sign === 1 ? 0.5 : 1.5);
+      const height = vertical * Math.sqrt(item.sign === 1 ? 0.75 : 1.25);
+      const reading = api.readAt(x);
+      assert.equal(reading.ok, true);
+      assert.equal(reading.values.length, 2);
+      closeTo(reading.values[0], p.k + height);
+      closeTo(reading.values[1], p.k - height);
+      assert.deepEqual(reading.visible, [true, true]);
+      assert.deepEqual(api.readAt(p.h + horizontal).values, [p.k]);
+      if (item.kind === 'hyperbola') {
+        assert.deepEqual(api.readAt(p.h).values, []);
+        assert.equal([...curvePath(harness).matchAll(/\bM\b/g)].length, 2, '双曲线左右两支各自起笔');
+      } else assert.deepEqual(api.readAt(p.h + 2 * horizontal).values, []);
+      const points = renderedPoints(harness, figure);
+      assert.ok(points.length > 20);
+      assert.ok(points.some((point) => point.y > p.k) && points.some((point) => point.y < p.k));
+      for (const point of points) {
+        closeTo(((point.x - p.h) / horizontal) ** 2 + item.sign * ((point.y - p.k) / vertical) ** 2, 1, 0.008);
+      }
+    }
+  } finally { harness.restore(); }
+});
+
+test('正多边形半径、边数和角度同步绘制读数，非整数边数拒绝整组修改', async () => {
+  const harness = await interactive();
+  try {
+    select(harness, 'polygon');
+    const api = session(harness);
+    assert.equal(api.updateParameters({ h: 0.25, k: -0.5, r: 1.7, n: 6, theta: 0 }).ok, true);
+    for (const [row, name, value] of [[3, 'r', 1.8], [4, 'n', 4], [5, 'theta', 30]]) {
+      const before = curvePath(harness);
+      const input = harness.elements['parameter-figure-' + row];
+      input.value = String(value);
+      input.dispatch('input');
+      assert.equal(api.getState().parameters[name], value);
+      assert.equal(Number(harness.elements['parameter-figure-' + row + '-value'].textContent), value);
+      assert.notEqual(curvePath(harness), before);
+    }
+    assert.equal(harness.elements['parameter-figure-4'].step, '1');
+    assert.equal(harness.elements['parameter-figure-4-value'].textContent, '4');
+    const figure = api.getState(), { h, k, r, theta } = figure.parameters;
+    const radians = theta * Math.PI / 180;
+    const c = Math.cos(radians), s = Math.sin(radians);
+    // 四边形是旋转后的 |x|+|y|=r，独立检验每个实际路径点。
+    const points = renderedPoints(harness, figure);
+    assert.ok(points.length >= 5);
+    for (const point of points) {
+      const u = (point.x - h) * c + (point.y - k) * s;
+      const v = -(point.x - h) * s + (point.y - k) * c;
+      closeTo(Math.abs(u) + Math.abs(v), r, 0.003);
+    }
+    const center = api.readAt(h);
+    assert.equal(center.ok, true);
+    closeTo(center.values[0], k + r / (c + s));
+    closeTo(center.values[1], k - r / (c + s));
+    assert.deepEqual(center.visible, [true, true]);
+
+    const before = api.getState(), beforePath = curvePath(harness), beforeUi = figureUi(harness);
+    const result = api.updateParameters({ r: 2.2, n: 4.5, theta: 45 });
+    assert.equal(result.ok, false);
+    assert.equal(result.code, 'invalid_parameters');
+    assert.deepEqual(api.getState(), before);
+    assert.equal(curvePath(harness), beforePath);
+    assert.deepEqual(figureUi(harness), beforeUi, '拒绝时控件继续显示实际整数边数');
+    assert.equal(api.updateParameters({ n: 4, theta: 45 }).ok, true);
+    const ambiguous = api.readAt(h + r / Math.sqrt(2));
+    assert.equal(ambiguous.ok, false, '竖直边上的无限多个 y 不伪装成两个端点');
+    assert.equal(ambiguous.code, 'ambiguous_read');
+    closeTo(ambiguous.interval.min, k - r / Math.sqrt(2));
+    closeTo(ambiguous.interval.max, k + r / Math.sqrt(2));
+
+    for (const kind of ['line', 'ellipse', 'parabola']) {
+      select(harness, kind);
+      const state = api.getState(), path = curvePath(harness);
+      for (const row of [4, 5].filter((index) => kind !== 'ellipse' || index === 5)) {
+        assert.equal(harness.elements['parameter-figure-' + row].disabled, true);
+        harness.elements['parameter-figure-' + row].value = '7';
+        harness.elements['parameter-figure-' + row].dispatch('input');
+      }
+      assert.deepEqual(api.getState(), state, '离开正多边形后隐藏控件不修改 ' + kind);
+      assert.equal(curvePath(harness), path);
+    }
+  } finally { harness.restore(); }
+});
+
+test('新增图形控制点的方向键和水平拖动只修改相应半径或实半轴', async () => {
+  const harness = await interactive();
+  try {
+    const api = session(harness), overlay = harness.overlay();
+    for (const [kind, name] of [['ellipse', 'rx'], ['hyperbola', 'a'], ['polygon', 'r']]) {
+      select(harness, kind);
+      const before = api.getState();
+      const handle = overlay.querySelector('circle');
+      assert.match(handle.getAttribute('aria-label'), new RegExp(name));
+      assert.equal(handle.getAttribute('role'), 'slider');
+      const increment = before.definition.parameters[name].step;
+      const initialPath = curvePath(harness);
+      overlay.dispatch('keydown', { key: 'ArrowRight', target: handle });
+      closeTo(api.getState().parameters[name], before.parameters[name] + increment);
+      assert.notEqual(curvePath(harness), initialPath);
+      const scale = Math.min(harness.video.rect.width / harness.video.videoWidth,
+        harness.video.rect.height / harness.video.videoHeight);
+      const pixelsPerUnit = before.definition.region.width * scale /
+        (before.definition.domain.max - before.definition.domain.min);
+      const afterKey = api.getState();
+      const clientX = harness.video.rect.left + Number(handle.getAttribute('cx'));
+      overlay.dispatch('pointerdown', { target: handle, pointerId: 1, clientX });
+      overlay.dispatch('pointermove', { pointerId: 1, clientX: clientX + 0.4 * pixelsPerUnit });
+      const afterDrag = api.getState();
+      closeTo(afterDrag.parameters[name], afterKey.parameters[name] + 0.4);
+      for (const key of Object.keys(before.parameters).filter((key) => key !== name)) {
+        assert.equal(afterDrag.parameters[key], before.parameters[key]);
+      }
+      closeTo(Number(handle.getAttribute('aria-valuenow')), afterDrag.parameters[name]);
+      const points = renderedPoints(harness, afterDrag);
+      assert.ok(points.length > 0);
+      overlay.dispatch('pointercancel', { pointerId: 1 });
+      overlay.dispatch('pointermove', { pointerId: 1, clientX: clientX + pixelsPerUnit });
+      assert.deepEqual(api.getState(), afterDrag, '拖动取消后移动不再改变图形');
+      const sourceControlX = before.definition.region.x +
+        ((afterDrag.parameters.h + afterDrag.parameters[name] - before.definition.domain.min) /
+          (before.definition.domain.max - before.definition.domain.min)) * before.definition.region.width;
+      closeTo(Number(handle.getAttribute('cx')), sourceControlX * scale, 0.006);
+    }
+  } finally { harness.restore(); }
+});
+
+test('新增图形全部越界时路径为空，重置恢复图形且双曲线不连跨支假边', async () => {
+  const harness = await interactive();
+  try {
+    const api = session(harness), overlay = harness.overlay();
+    for (const [kind, parameters] of [
+      ['ellipse', { h: 0, k: 0, rx: 8, ry: 8 }],
+      ['hyperbola', { h: 0, k: 0, a: 8, b: 1 }],
+      ['polygon', { h: 0, k: 0, r: 8, n: 4, theta: 0 }]
+    ]) {
+      select(harness, kind);
+      assert.equal(api.updateParameters(parameters).ok, true);
+      assert.equal(curvePath(harness), '', kind + ' 不把不可见部分贴到窗口边界');
+      assert.equal(overlay.querySelector('path.curve-hit').getAttribute('d'), '');
+      assert.match(harness.elements['figure-note'].textContent, /坐标窗口外.*调整.*重置/);
+      assert.equal(api.reset().ok, true);
+      assert.ok(curvePath(harness).length > 0);
+      assert.doesNotMatch(harness.elements['figure-note'].textContent, /坐标窗口外/);
+    }
+    select(harness, 'hyperbola');
+    assert.equal(api.updateParameters({ h: 0, k: 0, a: 1, b: 1 }).ok, true);
+    const path = curvePath(harness);
+    assert.equal([...path.matchAll(/\bM\b/g)].length, 2);
+    const subpaths = path.split(/M\s+/).filter(Boolean);
+    for (const subpath of subpaths) {
+      const xs = [...subpath.matchAll(/(?:^|L\s+)(-?[\d.]+)\s+-?[\d.]+/g)].map((match) => Number(match[1]));
+      assert.ok(xs.length >= 2, '每一支有可见线段');
+      const center = harness.win.BreakGlass.alignment.mathCoordinatesToPage(api.getState().definition, { x: 0, y: 0 }, 2 / 3).x;
+      assert.ok(xs.every((x) => x < center) || xs.every((x) => x > center), '每一支只含自身的窗口内点');
+    }
+  } finally { harness.restore(); }
+});
+
 test('完全越界不画假边，窗口外读数仍保留真实数值并标明不可见', async () => {
   const harness = await interactive();
   try {
@@ -321,7 +509,7 @@ test('退出、播放和换视频都清空图形，下一次破壁回到抛物�
   const harness = await interactive();
   try {
     const api = session(harness);
-    select(harness, 'circle');
+    select(harness, 'polygon');
     harness.elements['exit-button'].dispatch('click');
     assert.equal(api.getState(), null);
     assert.equal(harness.overlay(), null);
@@ -329,7 +517,7 @@ test('退出、播放和换视频都清空图形，下一次破壁回到抛物�
     assert.equal(api.reset().ok, false);
     harness.elements['wake-button'].dispatch('click');
     assert.equal(api.getState().kind, 'parabola');
-    select(harness, 'sine');
+    select(harness, 'ellipse');
     harness.video.paused = false;
     harness.video.dispatch('play');
     assert.equal(api.getState(), null);
@@ -338,7 +526,7 @@ test('退出、播放和换视频都清空图形，下一次破壁回到抛物�
     harness.video.dispatch('pause');
     harness.elements['wake-button'].dispatch('click');
     assert.equal(api.getState().kind, 'parabola');
-    select(harness, 'line');
+    select(harness, 'hyperbola');
     harness.elements['local-video'].files = [new Blob(['video'], { type: 'video/mp4' })];
     harness.elements['local-video'].dispatch('change');
     assert.equal(api.getState(), null);
@@ -451,7 +639,7 @@ test('本地图形遮住视频里的原曲线并隐藏舞台提示，回到抛�
     const overlay = harness.overlay();
     assert.equal(elements['stage-banner'].hidden, false);
     assert.equal(elements['stage-banner'].dataset.mode, 'open');
-    for (const kind of ['line', 'circle', 'sine']) {
+    for (const kind of localKinds) {
       select(harness, kind);
       assert.equal(elements['stage-banner'].hidden, true);
       const group = overlay.querySelector('g.figure-coordinates');

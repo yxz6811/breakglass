@@ -39,7 +39,10 @@ test('the parabola uses the unchanged accepted definition and initial coefficien
 });
 
 test('each local figure declares only its own labelled finite coefficients', () => {
-  const expected = { line: ['m', 'b'], circle: ['h', 'k', 'r'], sine: ['a', 'h', 'k'] };
+  const expected = {
+    line: ['m', 'b'], circle: ['h', 'k', 'r'], sine: ['a', 'h', 'k'],
+    ellipse: ['h', 'k', 'rx', 'ry'], hyperbola: ['h', 'k', 'a', 'b'], polygon: ['h', 'k', 'r', 'n', 'theta']
+  };
   for (const [kind, parameterNames] of Object.entries(expected)) {
     const figure = createFigure(kind, base);
     assert.deepEqual(Object.keys(figure.parameters), parameterNames);
@@ -57,7 +60,7 @@ test('each local figure declares only its own labelled finite coefficients', () 
 
 test('new figures preserve one pixel scale for both axes inside the accepted region', () => {
   for (const source of [base, { ...base, domain: { min: -8, max: 8 }, range: { min: -2, max: 2 }, yAxis: 'down' }]) {
-    for (const kind of ['line', 'circle', 'sine']) {
+    for (const kind of ['line', 'circle', 'sine', 'ellipse', 'hyperbola', 'polygon']) {
       const { definition } = createFigure(kind, source);
       const r = definition.region;
       near(r.width / (definition.domain.max - definition.domain.min), r.height / (definition.range.max - definition.range.min));
@@ -76,7 +79,7 @@ test('local horizontal and vertical position ranges match their accepted descrip
   const sine = createFigure('sine', base);
   for (const key of ['initial', 'min', 'max', 'step']) {
     assert.equal(line.definition.parameters.b[key], base.parameters.k[key]);
-    for (const figure of [circle, sine]) {
+    for (const figure of [circle, sine, ...['ellipse', 'hyperbola', 'polygon'].map((kind) => createFigure(kind, base))]) {
       assert.equal(figure.definition.parameters.h[key], base.parameters.h[key]);
       assert.equal(figure.definition.parameters.k[key], base.parameters.k[key]);
     }
@@ -120,7 +123,11 @@ test('changing coefficients retains exact values between slider steps', () => {
 });
 
 test('reset restores each kind from its own descriptors', () => {
-  const updates = { parabola: { a: 1.2, h: 2, k: -1 }, line: { m: -1, b: -1 }, circle: { h: 1, k: -1, r: 2 }, sine: { a: -2, h: 1, k: 2 } };
+  const updates = {
+    parabola: { a: 1.2, h: 2, k: -1 }, line: { m: -1, b: -1 }, circle: { h: 1, k: -1, r: 2 }, sine: { a: -2, h: 1, k: 2 },
+    ellipse: { h: 1, k: -1, rx: 3, ry: 2 }, hyperbola: { h: 1, k: -1, a: 2, b: 3 },
+    polygon: { h: 1, k: -1, r: 3, n: 5, theta: 30 }
+  };
   for (const kind of Object.keys(updates)) {
     const initial = createFigure(kind, base);
     const modified = changed(initial, updates[kind]);
@@ -283,7 +290,10 @@ test('control points follow each actual figure and formulas contain its actual n
   const values = {
     line: { updates: { m: -2, b: 1.5 }, point: { x: 0, y: 1.5 } },
     circle: { updates: { h: 1, k: 2, r: 0.5 }, point: { x: 1.5, y: 2 } },
-    sine: { updates: { a: -2, h: 1, k: 2 }, point: { x: 1, y: 2 } }
+    sine: { updates: { a: -2, h: 1, k: 2 }, point: { x: 1, y: 2 } },
+    ellipse: { updates: { h: 1, k: 2, rx: 0.5, ry: 1.5 }, point: { x: 1.5, y: 2 } },
+    hyperbola: { updates: { h: 1, k: 2, a: 0.5, b: 1.5 }, point: { x: 1.5, y: 2 } },
+    polygon: { updates: { h: 1, k: 2, r: 0.5, n: 5, theta: 60 }, point: { x: 1.5, y: 2 } }
   };
   for (const [kind, item] of Object.entries(values)) {
     const figure = changed(createFigure(kind, base), item.updates);
@@ -292,5 +302,233 @@ test('control points follow each actual figure and formulas contain its actual n
     assert.equal(typeof text, 'string');
     assert.equal(/[<>]/.test(text), false);
     for (const value of Object.values(item.updates)) assert.ok(text.includes(String(value)), text);
+  }
+});
+
+const centeredWindow = { ...base, domain: { min: -4, max: 4 }, range: { min: -4, max: 4 } };
+
+test('new positive dimensions use each axis span with an eight-unit limit and remain positive in tiny windows', () => {
+  const ellipse = createFigure('ellipse', { ...base, domain: { min: -2, max: 2 }, range: { min: -10, max: 10 } });
+  assert.deepEqual(ellipse.parameters, { h: 0, k: 1, rx: 2, ry: 1 });
+  assert.equal(ellipse.definition.parameters.rx.max, 4);
+  assert.equal(ellipse.definition.parameters.ry.max, 8);
+  const hyperbola = createFigure('hyperbola', centeredWindow);
+  assert.deepEqual(hyperbola.parameters, { h: 0, k: 1, a: 1, b: 1 });
+  const polygon = createFigure('polygon', centeredWindow);
+  assert.deepEqual(polygon.parameters, { h: 0, k: 1, r: 2, n: 6, theta: 0 });
+  const tiny = { ...base, domain: { min: 0, max: 0.02 }, range: { min: 0, max: 0.01 } };
+  for (const kind of ['ellipse', 'hyperbola', 'polygon']) {
+    const figure = createFigure(kind, tiny);
+    for (const name of { ellipse: ['rx', 'ry'], hyperbola: ['a', 'b'], polygon: ['r'] }[kind]) {
+      const item = figure.definition.parameters[name];
+      assert.ok(item.min > 0 && item.min < item.max);
+      assert.ok(item.initial >= item.min && item.initial <= item.max);
+      assert.equal(changed(figure, { [name]: -1 }).parameters[name], item.min);
+    }
+  }
+});
+
+test('polygon edge count rejects every fractional request atomically and clamps finite integer requests', () => {
+  const figure = createFigure('polygon', centeredWindow);
+  const original = structuredClone(figure);
+  for (const n of [3.5, 99.5, -5.5, NaN, Infinity, '6']) {
+    const result = updateParameters(figure, { h: 1, n, theta: 45 });
+    assert.equal(result.ok, false);
+    assert.equal(result.figure, figure);
+    assert.deepEqual(result.changes, {});
+    assert.deepEqual(figure, original);
+  }
+  assert.equal(changed(figure, { n: 99 }).parameters.n, 12);
+  assert.equal(changed(figure, { n: -10 }).parameters.n, 3);
+  const exact = changed(figure, { n: 5, theta: 30.125, r: 1.2345 });
+  assert.deepEqual(exact.parameters, { h: 0, k: 1, r: 1.2345, n: 5, theta: 30.125 });
+  const corrupted = { ...figure, parameters: { ...figure.parameters, n: 6.5 } };
+  assert.equal(readAt(corrupted, 0).ok, false);
+  assert.throws(() => visiblePolylines(corrupted), /必须是整数/);
+});
+
+test('ellipse readouts use translated unequal semi-axes with two intersections, one tangent and no solution', () => {
+  const figure = changed(createFigure('ellipse', centeredWindow), { h: 0.5, k: -1, rx: 2, ry: 3 });
+  assert.deepEqual(readAt(figure, 0.5), { ok: true, x: 0.5, values: [2, -4], visible: [true, true] });
+  const read = readAt(figure, 1.5);
+  near(read.values[0], -1 + 3 * Math.sqrt(3) / 2);
+  near(read.values[1], -1 - 3 * Math.sqrt(3) / 2);
+  assert.deepEqual(readAt(figure, 2.5), { ok: true, x: 2.5, values: [-1], visible: [true] });
+  assert.deepEqual(readAt(figure, -1.5), { ok: true, x: -1.5, values: [-1], visible: [true] });
+  assert.deepEqual(readAt(figure, 3), { ok: true, x: 3, values: [], visible: [] });
+  const decimal = changed(figure, { h: 0.1, rx: 0.2 });
+  for (const x of [0.1 - 0.2, 0.1 + 0.2]) assert.deepEqual(readAt(decimal, x).values, [-1]);
+});
+
+test('horizontal hyperbola readouts keep both branches, vertex tangencies and the center gap', () => {
+  const figure = changed(createFigure('hyperbola', centeredWindow), { h: 0.5, k: -1, a: 1, b: 2 });
+  for (const x of [-0.5, 1.5]) assert.deepEqual(readAt(figure, x), { ok: true, x, values: [-1], visible: [true] });
+  for (const x of [0, 0.5, 1]) assert.deepEqual(readAt(figure, x), { ok: true, x, values: [], visible: [] });
+  for (const x of [-1.5, 2.5]) {
+    const read = readAt(figure, x);
+    near(read.values[0], -1 + 2 * Math.sqrt(3));
+    near(read.values[1], -1 - 2 * Math.sqrt(3));
+    assert.deepEqual(read.visible, [true, false]);
+  }
+  const decimal = changed(figure, { h: 0.1, a: 0.2 });
+  for (const x of [0.1 - 0.2, 0.1 + 0.2]) assert.deepEqual(readAt(decimal, x).values, [-1]);
+});
+
+test('polygon readouts intersect actual rotated edges, deduplicate vertices and explain coincident vertical edges', () => {
+  const diamond = changed(createFigure('polygon', centeredWindow), { h: 0.5, k: -1, r: 2, n: 4, theta: 0 });
+  assert.deepEqual(readAt(diamond, 0.5), { ok: true, x: 0.5, values: [1, -3], visible: [true, true] });
+  assert.deepEqual(readAt(diamond, 1.5), { ok: true, x: 1.5, values: [0, -2], visible: [true, true] });
+  assert.deepEqual(readAt(diamond, 2.5), { ok: true, x: 2.5, values: [-1], visible: [true] });
+  assert.deepEqual(readAt(diamond, 3), { ok: true, x: 3, values: [], visible: [] });
+  const square = changed(diamond, { h: 0, k: 0, theta: 45 });
+  const ambiguity = readAt(square, Math.SQRT2);
+  assert.equal(ambiguity.ok, false);
+  assert.equal(ambiguity.code, 'ambiguous_read');
+  near(ambiguity.interval.min, -Math.SQRT2);
+  near(ambiguity.interval.max, Math.SQRT2);
+  assert.match(ambiguity.message, /竖直边.*区间/);
+  assert.deepEqual(ambiguity.values, []);
+  const center = readAt(square, 0);
+  near(center.values[0], Math.SQRT2);
+  near(center.values[1], -Math.SQRT2);
+  const hexagon = changed(createFigure('polygon', centeredWindow), { k: 0 });
+  const read = readAt(hexagon, 0);
+  near(read.values[0], Math.sqrt(3));
+  near(read.values[1], -Math.sqrt(3));
+});
+
+test('ellipse paths close on the true ellipse and preserve separate clipped arcs with sparse sampling', () => {
+  const whole = changed(createFigure('ellipse', centeredWindow), { h: 0.5, k: 0, rx: 2, ry: 1 });
+  const lines = visiblePolylines(whole, 33);
+  assert.equal(lines.length, 1);
+  near(lines[0][0].x, lines[0].at(-1).x);
+  near(lines[0][0].y, lines[0].at(-1).y);
+  for (const point of lines[0]) near(((point.x - 0.5) / 2) ** 2 + point.y ** 2, 1);
+  withinWindow(whole, lines);
+
+  const slice = changed(createFigure('ellipse', { ...centeredWindow, range: { min: -0.5, max: 0.5 } }), { k: 0, rx: 3, ry: 1 });
+  const arcs = visiblePolylines(slice, 2);
+  assert.equal(arcs.length, 2);
+  for (const arc of arcs) {
+    assert.ok(arc.every((point) => Math.abs(point.x) >= 3 * Math.sqrt(0.75) - 1e-9));
+    near(Math.abs(arc[0].y), 0.5);
+    near(Math.abs(arc.at(-1).y), 0.5);
+    for (const point of arc) near((point.x / 3) ** 2 + point.y ** 2, 1);
+  }
+  withinWindow(slice, arcs);
+});
+
+test('hyperbola samples keep independent exact branches through both window boundary types at minimum sample count', () => {
+  const figure = changed(createFigure('hyperbola', centeredWindow), { k: 0, a: 1, b: 1 });
+  const branches = visiblePolylines(figure, 2);
+  assert.equal(branches.length, 2);
+  for (const branch of branches) {
+    assert.ok(branch.every((point) => Math.abs(point.x) >= 1));
+    assert.ok(branch.every((point) => Math.sign(point.x) === Math.sign(branch[0].x)));
+    for (const point of branch) near(point.x ** 2 - point.y ** 2, 1);
+    near(Math.abs(branch[0].x), 4);
+    near(Math.abs(branch.at(-1).x), 4);
+    near(Math.abs(branch[0].y), Math.sqrt(15));
+  }
+  withinWindow(figure, branches);
+  const short = changed(createFigure('hyperbola', { ...centeredWindow, range: { min: -0.5, max: 0.5 } }), { k: 0, a: 0.5, b: 0.5 });
+  const shortBranches = visiblePolylines(short, 2);
+  assert.equal(shortBranches.length, 2);
+  for (const branch of shortBranches) {
+    assert.deepEqual(branch.map((point) => point.y), [-0.5, 0, 0.5]);
+    for (const point of branch) near((point.x / 0.5) ** 2 - (point.y / 0.5) ** 2, 1);
+  }
+});
+
+test('hyperbola re-entry across an invisible vertex makes separate arcs without any boundary or center bridge', () => {
+  const figure = changed(createFigure('hyperbola', { ...centeredWindow, domain: { min: 1.5, max: 2 } }), { k: 0, a: 0.5, b: 1 });
+  const arcs = visiblePolylines(figure, 2);
+  assert.equal(arcs.length, 2);
+  assert.ok(arcs[0].every((point) => point.y < 0));
+  assert.ok(arcs[1].every((point) => point.y > 0));
+  for (const arc of arcs) {
+    near((arc[0].x / 0.5) ** 2 - arc[0].y ** 2, 1);
+    near((arc.at(-1).x / 0.5) ** 2 - arc.at(-1).y ** 2, 1);
+    assert.ok(arc[0].x === 1.5 || Math.abs(arc[0].x - 2) < 1e-9);
+    assert.ok(arc.at(-1).x === 1.5 || Math.abs(arc.at(-1).x - 2) < 1e-9);
+  }
+  withinWindow(figure, arcs);
+});
+
+test('polygon draws exact closed straight edges and clips them without adding a rectangular boundary', () => {
+  const figure = changed(createFigure('polygon', centeredWindow), { k: 0, n: 5, theta: 30, r: 2 });
+  const lines = visiblePolylines(figure, 2);
+  assert.equal(lines.length, 1);
+  assert.equal(lines[0].length, 6);
+  assert.deepEqual(lines[0][0], lines[0].at(-1));
+  for (let i = 0; i < 5; i += 1) {
+    near(lines[0][i].x, 2 * Math.cos(Math.PI / 6 + 2 * Math.PI * i / 5));
+    near(lines[0][i].y, 2 * Math.sin(Math.PI / 6 + 2 * Math.PI * i / 5));
+  }
+  const cut = changed(createFigure('polygon', { ...centeredWindow, domain: { min: -1, max: 1 }, range: { min: -1.5, max: 1.5 } }), { k: 0, r: 2, n: 4 });
+  const arcs = visiblePolylines(cut);
+  assert.equal(arcs.length, 4);
+  for (const arc of arcs) {
+    assert.equal(arc.length, 2);
+    for (const point of arc) near(Math.abs(point.x) + Math.abs(point.y), 2);
+  }
+  withinWindow(cut, arcs);
+});
+
+test('new shapes fully outside or surrounding the window produce no fake lines, including isolated ellipse tangencies', () => {
+  const small = { ...centeredWindow, domain: { min: -1, max: 1 }, range: { min: -1, max: 1 } };
+  const outside = [
+    changed(createFigure('ellipse', small), { h: 2, k: 0, rx: 1, ry: 1 }),
+    changed(createFigure('ellipse', small), { h: -2, k: 0, rx: 1, ry: 1 }),
+    changed(createFigure('ellipse', small), { h: 0, k: 2, rx: 1, ry: 1 }),
+    changed(createFigure('ellipse', small), { h: 0, k: -2, rx: 1, ry: 1 }),
+    changed(createFigure('ellipse', small), { h: 0, k: 0, rx: 2, ry: 2 }),
+    changed(createFigure('hyperbola', centeredWindow), { h: 0, k: 0, a: 8, b: 1 }),
+    changed(createFigure('polygon', centeredWindow), { h: 0, k: 0, r: 8, n: 4, theta: 0 })
+  ];
+  for (const figure of outside) {
+    assert.deepEqual(visiblePolylines(figure, 2), [], figure.kind);
+    assert.deepEqual(visiblePolylines(figure, 321), [], figure.kind);
+  }
+});
+
+test('new model calculations stay bounded and reject corrupted or overflowing data before publishing it', () => {
+  for (const kind of ['ellipse', 'hyperbola', 'polygon']) {
+    const figure = changed(createFigure(kind, centeredWindow), { k: 0 });
+    const lines = visiblePolylines(figure, Number.MAX_VALUE);
+    const size = lines.reduce((total, line) => total + line.length, 0);
+    assert.ok(size <= (kind === 'hyperbola' ? 8210 : kind === 'polygon' ? 13 : 4110));
+    withinWindow(figure, lines);
+    assert.equal(readAt(figure, Infinity).ok, false);
+    const invalid = { ...figure, parameters: { ...figure.parameters, h: Infinity } };
+    assert.equal(readAt(invalid, 0).ok, false);
+    assert.throws(() => visiblePolylines(invalid), TypeError);
+  }
+  const huge = { ...base, domain: { min: -1e308, max: 0 } };
+  const supported = createFigure('hyperbola', huge);
+  assert.ok(readAt(supported, -1e308).values.every(Number.isFinite));
+  const overflow = updateParameters(supported, { a: 0.1, b: 8 });
+  assert.equal(overflow.ok, false);
+  assert.equal(overflow.figure, supported);
+  assert.deepEqual(overflow.changes, {});
+});
+
+test('formula text removes binary arithmetic tails while retaining small decimals and signs without rounding model state', () => {
+  const binary = 1.1 + 0.1;
+  const tiny = 1.23456789e-8;
+  const figure = changed(createFigure('hyperbola', centeredWindow), { h: tiny, k: -0.1 - 0.2, a: binary, b: 0.25 });
+  assert.equal(formula(figure), `(x − (${tiny}))² / 1.2² − (y − (-0.3))² / 0.25² = 1`);
+  assert.equal(figure.parameters.a, binary);
+  assert.equal(figure.parameters.k, -0.1 - 0.2);
+  near(readAt(figure, tiny + binary).values[0], -0.1 - 0.2, 0);
+  const updates = {
+    parabola: { h: 0.1 + 0.2 }, line: { m: binary, b: -0.1 - 0.2 }, circle: { r: binary },
+    sine: { a: binary, h: tiny }, ellipse: { rx: binary, ry: binary }, polygon: { r: binary, theta: -0.1 - 0.2 }
+  };
+  for (const [kind, values] of Object.entries(updates)) {
+    const text = formula(changed(createFigure(kind, centeredWindow), values));
+    assert.equal(text.includes(String(binary)), false, text);
+    assert.equal(text.includes(String(-0.1 - 0.2)), false, text);
+    assert.equal(text.includes(String(0.1 + 0.2)), false, text);
   }
 });
