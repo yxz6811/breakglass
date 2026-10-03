@@ -31,6 +31,11 @@ button, select { color: inherit; }
 .nav-brand img, .nav-brand .nav-logo { display: block; width: 32px; height: 32px; flex: none; }
 .nav-brand span { color: var(--text); font-size: 14px; }
 .nav-links a { min-height: 44px; display: flex; align-items: center; }
+.nav-actions { display: flex; align-items: center; gap: 14px; flex: none; }
+.nav-github { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-width: 44px; min-height: 44px; padding-inline: 4px; color: var(--text-dim); font-size: 12px; font-weight: 500; text-decoration: none; white-space: nowrap; transition: color 180ms var(--ease); }
+.nav-github svg { display: block; flex: none; }
+.nav-github:hover { color: var(--text); }
+.nav-actions .nav-cta { margin-left: 0; white-space: nowrap; }
 .nav-cta { min-height: 36px; display: flex; align-items: center; background: var(--accent); color: var(--bg); }
 .page { padding: 112px 72px 100px; }
 .page-inner { max-width: 1040px; }
@@ -156,6 +161,7 @@ button:disabled, input:disabled, select:disabled { opacity: .45; cursor: default
 
 @media (max-width: 900px) {
   .nav { padding-inline: 20px; }
+  .nav-actions { margin-left: auto; }
   .page { padding: 100px 24px 80px; }
   .brand-intro { padding-top: 100px; padding-bottom: 44px; }
   .line-sidebar { display: none; }
@@ -164,7 +170,8 @@ button:disabled, input:disabled, select:disabled { opacity: .45; cursor: default
   .brand-intro .brand-symbol { width: 130px; height: 130px; }
 }
 @media (max-width: 600px) {
-  .nav { padding-inline: 18px; }
+  .nav { padding-inline: 18px; gap: 12px; }
+  .nav-actions { gap: 8px; }
   .nav-brand { gap: 6px; }
   .nav-brand img, .nav-brand .nav-logo { width: 29px; height: 29px; }
   .nav-brand span { font-size: 12px; }
@@ -187,6 +194,10 @@ button:disabled, input:disabled, select:disabled { opacity: .45; cursor: default
   .curve-panel + .curve-panel { border-left: 0; border-top: 1px solid var(--edge); }
   .curve-frozen-note { max-width: 100%; }
   .demo-footnote a { margin-left: 0; display: block; min-height: 44px; }
+}
+@media (max-width: 380px) {
+  .nav { padding-inline: 14px; gap: 8px; }
+  .nav-github span { display: none; }
 }
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
