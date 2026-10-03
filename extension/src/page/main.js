@@ -753,21 +753,12 @@
     overlay.setAttribute('viewBox', `0 0 ${rect.contentRect.width} ${rect.contentRect.height}`);
 
     const parameters = state.currentParameters;
-    const samples = [];
-    const span = definition.domain.max - definition.domain.min;
-    for (let index = 0; index <= 80; index += 1) {
-      samples.push(definition.domain.min + span * (index / 80));
-    }
-    const vertex = Number(parameters.h);
-    if (Number.isFinite(vertex) && vertex > definition.domain.min && vertex < definition.domain.max &&
-        !samples.some((value) => Math.abs(value - vertex) <= 1e-9)) {
-      samples.push(vertex);
-    }
-    samples.sort((left, right) => left - right);
     const path = [];
-    samples.forEach((x, index) => {
-      const [px, py] = pagePointForMath(definition, parameters, x, rect);
-      path.push(`${index === 0 ? 'M' : 'L'} ${px.toFixed(2)} ${py.toFixed(2)}`);
+    alignment.visibleCurvePolylines(definition, parameters, 81).forEach((line) => {
+      line.forEach((point, index) => {
+        const [px, py] = pagePointForMath(definition, parameters, point.x, rect);
+        path.push(`${index === 0 ? 'M' : 'L'} ${px.toFixed(2)} ${py.toFixed(2)}`);
+      });
     });
     const pathData = path.join(' ');
     overlay.querySelector('path').setAttribute('d', pathData);
