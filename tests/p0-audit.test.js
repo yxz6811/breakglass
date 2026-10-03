@@ -70,8 +70,8 @@ test('yAxis down 把较大的 y 放在区域下沿', () => {
     yAxis: 'down',
     parameters: definition.parameters
   };
-  const atMax = mathPointToSource(down, { a: 0, h: 0, k: 4 }, 0);
-  const atMin = mathPointToSource(down, { a: 0, h: 0, k: -4 }, 0);
+  const atMax = mathPointToSource(down, { a: 1, h: 0, k: 4 }, 0);
+  const atMin = mathPointToSource(down, { a: 1, h: 0, k: -4 }, 0);
   assert.equal(atMax.y, definition.region.y + definition.region.height);
   assert.equal(atMin.y, definition.region.y);
 });

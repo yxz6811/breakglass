@@ -28,11 +28,11 @@
 
 **Alternatives considered**: 定位完成前先把新曲线画上。破壁还没点，而且尺寸可能仍未核对当前帧。
 
-## 4. 尺寸不符与退回
+## 4. 尺寸不符与失败保留视频
 
-**Decision**: `curve.frameSize` 必须等于当前 `videoWidth` × `videoHeight`。不等则丢掉该点，原因「抛物线没有通过检查」，不调用 `createWake`，也不把 `extension/assets/presets/demo-parabola.json` 画到这一帧。整次失败、断网，或 300000ms 内零个通过点时，把视频源换回 `../assets/video/breakglass-demo-9s.mp4`，清空失败片子的内存点。退回之后，只有这支片子自己的单点预制可以按现有路径破壁。验收片子的地址字符串不得包含 `breakglass-demo-9s.mp4`。
+**Decision**: `curve.frameSize` 必须等于本次请求的源尺寸和当前 `videoWidth` × `videoHeight`，点的时间必须属于实际发送的帧。不等则丢掉该点，不调用 `createWake`，也不把 `extension/assets/presets/demo-parabola.json` 画到这一帧。按 Constitution 1.8.0，整次失败、断网，或 300000ms 内零个通过点时，保留用户视频并清空失败结果。只有主动点击「选择预设」后，示例片自己的单点预制才可按现有路径破壁。验收片子的地址字符串不得包含 `breakglass-demo-9s.mp4`。
 
-**Rationale**: 预制曲线的时间是第 6 秒，文件名才是 9 秒。顶到别的帧上会把来源说错。退回的是片子，不是把那条曲线借给失败的帧。
+**Rationale**: 预制曲线的时间是第 6 秒，文件名才是 9 秒。顶到别的帧上会把来源说错，自动换片也会丢失用户当前上下文。因此失败时保留视频，示例需要主动选择。
 
 **Alternatives considered**: 尺寸不符时改画第 6 秒的预制曲线。团队明确拒绝。断网时留在用户片子上继续显示半份点。那些点没有完整阅读，不能当成这支片子的结果。
 
@@ -54,7 +54,7 @@
 
 ## 7. 送出与密钥
 
-**Decision**: 仅自动开始的这一次阅读可以发送课程文本（可空，最长 8000 字）和至多 8 张采样画面。地址来自当次输入，空白则无法完成外部阅读，走退回。不增加 `host_permissions`，不修改 CSP。跨域失败视同读失败并退回。测试注入假的 `fetch`。
+**Decision**: 仅自动开始的这一次阅读可以发送课程文本（可空，最长 8000 字）和至多 8 张采样画面。地址来自当次输入，空白则不发送请求，提示填写地址并保留用户视频。不增加 `host_permissions`，不修改 CSP。跨域失败视同读失败，保留视频并清空失败结果。测试注入假的 `fetch`。
 
 **Rationale**: 原则 II 和 VII 只放开这批稀疏画面。代理不在本仓库实现。
 

@@ -177,20 +177,22 @@ export function placeCurve(params, drawn, map, image, frameSize) {
 }
 
 /**
- * 页面滑块的范围：围着读出的值留出可调的余地，步长 0.1。
+ * 页面滑块的范围：保留读数，a 的范围保持同号，步长随系数量级缩小。
  *
  * @param {{ a: number, h: number, k: number }} params
  * @returns {Record<'a' | 'h' | 'k', { initial: number, min: number, max: number, step: number }>}
  */
 export function sliderRanges(params) {
-  const around = (value, span) => ({
-    initial: round(value, 3),
-    min: round(value - span, 3),
-    max: round(value + span, 3),
-    step: 0.1
-  });
+  const around = (value, span, step = 0.1) => {
+    // range 的步栅格从 min 起算；两边都留整数步，初值才能保持在格点上。
+    const steps = Math.max(1, Math.floor(span / step));
+    const distance = steps * step;
+    return { initial: value, min: value - distance, max: value + distance, step };
+  };
+  const aExponent = Math.min(-1, Math.floor(Math.log10(Math.abs(params.a))) - 1);
+  const aStep = Math.max(Number.MIN_VALUE, Number('1e' + aExponent));
   return {
-    a: around(params.a, Math.max(0.5, Math.abs(params.a) * 0.5)),
+    a: around(params.a, Math.abs(params.a) * 0.5, aStep),
     h: around(params.h, 2),
     k: around(params.k, 2)
   };

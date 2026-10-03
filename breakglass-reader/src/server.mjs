@@ -17,26 +17,36 @@ function readBody(request) {
     const chunks = [];
     let size = 0;
     let done = false;
-    request.on('data', (chunk) => {
+    const finish = (result) => {
+      if (done) return;
+      done = true;
+      request.off('data', onData);
+      request.off('end', onEnd);
+      request.off('error', onError);
+      request.off('aborted', onAbort);
+      resolve(result);
+    };
+    const onData = (chunk) => {
       if (done) return;
       size += chunk.length;
       if (size > BODY_LIMIT) {
-        done = true;
-        resolve({ ok: false, status: 413 });
+        finish({ ok: false, status: 413 });
         return;
       }
       chunks.push(chunk);
-    });
-    request.on('end', () => {
-      if (done) return;
-      done = true;
-      resolve({ ok: true, text: Buffer.concat(chunks).toString('utf8') });
-    });
-    request.on('error', () => {
-      if (done) return;
-      done = true;
-      resolve({ ok: false, status: 400 });
-    });
+    };
+    const onEnd = () => finish({ ok: true, text: Buffer.concat(chunks).toString('utf8') });
+    const onError = () => finish({ ok: false, status: 400 });
+    const onAbort = () => {
+      finish({ ok: false, status: 400 });
+      // aborted 后流还会报 ECONNRESET，已经结束读取也要接住这次错误。
+      request.once('error', () => {});
+    };
+    request.on('data', onData);
+    request.once('end', onEnd);
+    request.once('error', onError);
+    request.once('aborted', onAbort);
+    if (request.destroyed) onError();
   });
 }
 
@@ -47,6 +57,7 @@ function readBody(request) {
  * @param {Record<string, string>} headers
  */
 function sendJson(response, status, payload, headers) {
+  if (response.destroyed || response.writableEnded) return;
   response.writeHead(status, { ...headers, 'content-type': 'application/json; charset=utf-8' });
   response.end(JSON.stringify(payload));
 }
@@ -104,25 +115,42 @@ export function createReaderServer({ settings, pageRules, fetchImpl = fetch, log
       return;
     }
 
-    const body = await readBody(request);
-    if (!body.ok) {
-      sendJson(response, body.status, { error: body.status === 413 ? '请求太大。' : '请求没有读完。' }, cors);
-      if (body.status === 413) request.destroy();
-      return;
-    }
-    let parsed;
+    const cancelled = new AbortController();
+    const onDisconnect = () => cancelled.abort(new DOMException('阅读请求已断开。', 'AbortError'));
+    const onClose = () => {
+      // IncomingMessage 的正常 close 也会在请求体读完时触发；响应提前关闭才是客户端取消。
+      if (!response.writableEnded) onDisconnect();
+    };
+    request.once('aborted', onDisconnect);
+    response.once('close', onClose);
     try {
-      parsed = JSON.parse(body.text);
-    } catch {
-      sendJson(response, 400, { error: '请求不是 JSON。' }, cors);
-      return;
-    }
-    try {
-      const result = await readLesson(parsed, { settings, pageRules, fetchImpl, log });
+      const body = await readBody(request);
+      if (cancelled.signal.aborted) return;
+      if (!body.ok) {
+        sendJson(response, body.status, { error: body.status === 413 ? '请求太大。' : '请求没有读完。' }, cors);
+        if (body.status === 413) request.destroy();
+        return;
+      }
+      let parsed;
+      try {
+        parsed = JSON.parse(body.text);
+      } catch {
+        sendJson(response, 400, { error: '请求不是 JSON。' }, cors);
+        return;
+      }
+      const result = await readLesson(parsed, { settings, pageRules, fetchImpl, log, signal: cancelled.signal });
+      if (cancelled.signal.aborted) return;
       sendJson(response, result.status, result.payload, cors);
     } catch {
+      if (cancelled.signal.aborted) {
+        log({ event: 'cancelled' });
+        return;
+      }
       log({ event: 'crashed' });
       sendJson(response, 500, { error: '阅读服务出错了。' }, cors);
+    } finally {
+      request.off('aborted', onDisconnect);
+      response.off('close', onClose);
     }
   });
 }

@@ -22,7 +22,9 @@
   // 三层坐标：数学坐标 → 源帧像素 → 页面 CSS 像素（相对内容矩形左上角）。
   function mathPointToSource(definition, parameters, mathX) {
     if (!evaluate) throw new Error('alignment 需要 evaluate 模块。');
-    const y = evaluate.evaluateWithParameters(definition, parameters, mathX);
+    const evaluatedY = evaluate.evaluateWithParameters(definition, parameters, mathX);
+    // 越界曲线先贴边，避免有限但相距极大的 y 与 range 端点相减溢出后贴错边。
+    const y = Math.max(definition.range.min, Math.min(definition.range.max, evaluatedY));
     const xRatio = unitInterval((mathX - definition.domain.min) / (definition.domain.max - definition.domain.min));
     const rawY = definition.yAxis === 'up'
       ? (definition.range.max - y) / (definition.range.max - definition.range.min)
@@ -85,7 +87,7 @@
     const span = definition.domain.max - definition.domain.min;
     const list = [];
     for (let index = 0; index < count; index += 1) {
-      list.push(definition.domain.min + span * index / (count - 1));
+      list.push(definition.domain.min + span * (index / (count - 1)));
     }
     const vertex = parameters && Number.isFinite(parameters.h) ? parameters.h : null;
     if (vertex !== null && vertex > definition.domain.min && vertex < definition.domain.max) {

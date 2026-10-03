@@ -57,17 +57,19 @@ test('识别失败也记录 vision-decision，仍然不碰 fallback-visible', as
   }
 });
 
-test('预制路径不写 vision-decision，超时回退仍只写 fallback-visible', async () => {
+test('预制路径不写 vision-decision，超时回退分别写 DOM 和帧时序', async () => {
   const harness = await createHarness({ config: { externalAttempt: 'hang' } });
   try {
     harness.ready();
     harness.elements['wake-button'].dispatch('click');
     harness.advance(1500);
     await flush();
+    harness.frame();
+    harness.frame();
     const summary = harness.win.__breakglassLatency.summary();
     assert.equal(VISION_NAME in summary, false, '预制路径不得写识别计时');
-    assert.equal(typeof summary['fallback-visible'], 'object');
-    assert.equal(summary['fallback-visible'].count >= 1, true);
+    assert.equal(typeof summary['fallback-dom-ready'], 'object');
+    assert.equal(summary['fallback-frame-ready'].count, 1);
   } finally {
     harness.restore();
   }

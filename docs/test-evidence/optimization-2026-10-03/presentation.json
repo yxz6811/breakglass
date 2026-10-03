@@ -1,0 +1,26 @@
+{
+  "browser": "Codex In-app Browser",
+  "viewport": {
+    "width": 1280,
+    "height": 720
+  },
+  "scenario": "packaged preset; one initial wake followed by 20 repeat wake/exit cycles",
+  "endpoint": "two-animation-frames",
+  "pixelPresentationVerified": false,
+  "summary": {
+    "preset-wake-dom-ready": {
+      "count": 21,
+      "p50": 1.699999999254942,
+      "p95": 3.5,
+      "max": 16.5,
+      "cache": "hot"
+    },
+    "preset-wake-frame-ready": {
+      "count": 21,
+      "p50": 27.299999998882413,
+      "p95": 35.69999999925494,
+      "max": 210.40000000037253,
+      "cache": "hot"
+    }
+  }
+}

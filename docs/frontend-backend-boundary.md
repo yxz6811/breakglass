@@ -8,11 +8,11 @@
 
 `yxz6811/breakglass` 当前是前端项目。P0 的交付物是一个 Chrome MV3 扩展和扩展内的离线演示页：使用 HTML5 Video API 播放受控视频，用原生 SVG 显示可调节的抛物线，并用随扩展打包的预制 JSON 完成可重复演示。
 
-本仓库不新增业务后端、数据库、账号系统、云端 Python 执行容器或自建识别服务。Node.js 只用于开发期的纯函数测试，不是业务运行时，也不是后端替代品。
+本仓库不新增业务后端、数据库、账号系统、云端 Python 执行容器或自建识别服务。扩展没有 Node.js 运行时依赖。根据前端 Constitution 1.6.0 及 Spec Constitution 1.8.0，既有 `breakglass-reader/` 是开播前阅读的独立例外：源码在仓库、不进入扩展包、不部署云端后台；全仓库测试与该服务需要 Node.js ≥22.9。
 
 Python/Pyodide、本地 Web Worker 和真实视觉识别属于独立 P1 vertical slice。它们只有在单独的开关、契约、安全预算和验收证据齐备后才能进入实现，不得阻塞或抬高 P0 的验收门槛。
 
-Spec Kit 的治理记忆还保留了一个未来的窄例外：如果团队书面批准单帧离开浏览器，可以另行部署无状态感知代理。但该例外目前没有解除 `AGENTS.md` 的前端仓库边界，也没有授权把代理代码放进本仓库；在上传决定、边界修订和独立 P1 立项完成前，仍按“无后端、预制/本地路径”执行。
+Spec Kit 的治理记忆已经记录了开播前阅读的窄例外。用户填写阅读地址后，页面仅向该地址发送最多 8 张缩小的帧及相关元数据，既有 reader 根据环境配置调用模型。密钥不进入浏览器或扩展；该例外不授权新增通用后台、数据库或云端部署，也不代表任意视频阅读已验收。
 
 ## 2. 责任分工
 
@@ -36,11 +36,11 @@ Spec Kit 的治理记忆还保留了一个未来的窄例外：如果团队书�
 - 视频上方独立的 SVG/HTML overlay、曲线求值、参数拖动、重置、ESC 退出和窗口变化后的坐标重算。
 - 随扩展打包的静态视频、预制 `CurveResult` JSON、运行配置和明确标识的开发/演示 Mock。
 - API 适配层、请求取消、超时、响应映射和错误提示，前提是外部接口契约已经书面确认。
-- Node.js 20+ 的 `node --test` 纯函数测试，以及不提供业务接口的前端开发工具。
+- Node.js 的 `node --test` 测试及不提供业务接口的前端开发工具；既有 `breakglass-reader/` 按 Constitution 的独立例外维护。
 
 ## 4. 禁止在本仓库新增的内容
 
-以下变更越过当前职责边界，不能为了补齐演示流程而直接添加：
+除 Constitution 已明确批准的既有独立 reader 外，以下新增变更越过当前职责边界，不能为了补齐演示流程而直接添加：
 
 - FastAPI、Express、Node.js HTTP 服务、Docker 服务、云端 Python 执行容器或独立 BFF。
 - 数据库、表结构、迁移、服务端持久化、历史记录服务、账号注册/登录和服务端鉴权。
@@ -103,7 +103,7 @@ P1 立项至少要同时记录精确依赖版本、资源来源与完整性校�
 | 结果规则任务 | `CurveResult` 校验、白名单求值器、运行配置、预制 JSON、会话是否允许绘制 | 仍是前端工程内的纯函数和静态资源，不是 API 服务 |
 | 后端/识别任务 | 真实识别、单帧上传、感知代理 | 当前不派发；需先完成上传决定、Constitution 修订和独立 P1 立项 |
 
-当前承诺仍是扩展自带演示页上的单场景抛物线。2026-10-02 操作者确认 P0 主路径的 Chrome 手工验收通过，见 `docs/BreakGlass-frontend-validation.md`。仓库仍未提交正式视频文件。故事 2、故事 3 已有自动测试；它们的耗时记录和四画幅实测比例还没写。真实识别仍未派发。
+当前承诺仍是扩展自带演示页上的单场景抛物线。2026-10-02 操作者确认 P0 主路径的 Chrome 手工验收通过，见 `docs/BreakGlass-frontend-validation.md`。9 秒演示视频已提交。故事 2、故事 3 已有自动测试；真实呈现耗时和四画幅实测比例仍需验收。独立阅读服务已有源码和模型替身测试，真实模型与另一支视频的阅读仍未通过验收。
 
 ### 识别适配切片（`specs/002-vision-result-adapter/`）的边界
 
@@ -111,7 +111,7 @@ P1 立项至少要同时记录精确依赖版本、资源来源与完整性校�
 
 - `source: "vision"` 在本切片**只**表示 `evidence: "packaged-sample"` 的打包样例；它不表示外部接口已返回，不表示单帧已离开浏览器，也不表示识别服务已接通。
 - 不新增上传地址、主机权限、内容脚本、远程脚本或后端进程；样例读取路径只有扩展包内的 `extension/assets/vision/fixture-parabola.json`。
-- 真实上传仍是未批准的外部依赖；`.specify/memory/constitution.md` 的 `TODO(FRAME_UPLOAD)` 仍未解除。
+- 此处描述的是 002 打包识别样例，不上传画面。后续 003 开播前阅读按 Constitution 1.8.0 的独立例外发送稀疏帧，不能用其例外声称 002 已接通真实识别。
 - 识别适配的开关、样例、校验与会话规则属于本仓库的「结果规则」侧；页面只消费 `createWake` 的 `onChange` 状态并显示来源文案。
 - `.specify/memory/constitution.md` 已由 1.3.0 修订为 1.4.0：默认关闭时 `interactive` 的 `result.source` 仍只能是 `preset`，只有 `visionAdapter: "fixture"` + `externalAttempt: "off"` 时才允许 `source: "vision"` + `fallback: null` + `evidence: "packaged-sample"`。
 

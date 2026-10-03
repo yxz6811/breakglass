@@ -19,9 +19,11 @@
   "source": "preset",
   "fallback": null,
   "definition": {
-    "equationId": "string",
+    "equationId": "fixture.parabola",
     "parameters": {
-      "a": { "initial": 1, "min": -2, "max": 2, "step": 0.1 }
+      "a": { "initial": 1, "min": 0.4, "max": 1.2, "step": 0.1 },
+      "h": { "initial": 0, "min": -2, "max": 2, "step": 0.1 },
+      "k": { "initial": 0, "min": -2, "max": 2, "step": 0.1 }
     },
     "dragParameter": "a",
     "domain": { "min": -10, "max": 10 },
@@ -41,10 +43,10 @@
 | source | 只有 `preset` 或 `vision`。本功能的生产者只能写 `preset` |
 | fallback | `null` 或 `timeout` |
 | equationId | 必须存在对应求值器 |
-| parameters | 至少一个。initial、min、max、step 均为有限数，且 min ≤ initial ≤ max，step > 0。`fixture.parabola` 还必须同时给出有限的 a、h、k |
+| parameters | 只能包含求值器登记的系数。initial、min、max、step 和 max−min 均为有限数，且 min ≤ initial ≤ max，step > 0。`fixture.parabola` 必须且只能给出 a、h、k；a 非零，整个 a 范围保持同号且不包含 0。允许合法的小系数和小 step，不做固定小数位舍入 |
 | dragParameter | 必须是 parameters 的键 |
 | region | 宽高为正，且完全落在 frameSize 内 |
-| domain、range | min < max，端点有限 |
+| domain、range | min < max，端点与 max−min 均有限 |
 
 ## 进入交互前
 
@@ -55,7 +57,9 @@
 3. `time` 落在当前目标容差内。
 4. `frameSize` 等于当前视频源尺寸。
 5. `requestId` 等于当前等待或当前会话。退出、取消、换帧之后，旧编号失效。
-6. 求值器存在。参数钳制在范围内。
+6. 求值器存在。所有可调参数组合在整个 domain 内均能有限求值；抛物线以各系数、x 区间端点和顶点覆盖极值。有限的越界输入钳制在范围内，NaN、Infinity 和非数值更新直接拒绝并保留上一状态。
+
+这些规则落实 [`docs/BreakGlass-constitution.md`](../../../docs/BreakGlass-constitution.md) 的确定性结果门禁；只证明安全可绘制，不代表真实识别、语义正确或与视频对齐已经验收。
 
 失败时不绘制曲线，并给出可重试或可退出的说明。不得把失败改写成成功，也不得把 `preset` 显示成识别成功。
 

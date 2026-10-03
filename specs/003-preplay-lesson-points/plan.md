@@ -8,7 +8,7 @@
 
 ## Summary
 
-片子可以播放时自行开始稀疏阅读，最多 8 处，整段截止 5 分钟。第一处 `CurveResult` 通过后暂停在该帧。破壁和「下一个」只取出已经存好的点。定位未落定前破壁禁用。尺寸不符的点丢掉，不用 `breakglass-demo-9s.mp4` 上的预制曲线顶上。读失败、断网或 5 分钟内无一处通过时，回到这支预先准备的片子。点击破壁到覆盖层出现仍要求热缓存至少 20 次、P95 ≤ 100ms，并与第一处耗时分开。破壁后的 `contentRect` 与 `maxRatio` ≤ 0.02 尚无记录。
+片子可以播放且已填写阅读地址时自行开始稀疏阅读，最多 8 处，整段截止 5 分钟。第一处 `CurveResult` 通过后暂停在该帧。破壁和「下一个」只取出已经存好的点。定位未落定前破壁禁用。尺寸不符的点丢掉，不用 `breakglass-demo-9s.mp4` 上的预制曲线顶上。按 Constitution 1.8.0，读失败、断网或 5 分钟内无一处通过时，保留用户视频并丢弃失败结果；示例只通过「选择预设」加载。点击破壁到覆盖层出现仍要求热缓存至少 20 次、P95 ≤ 100ms，并与第一处耗时分开。破壁后的 `contentRect` 与 `maxRatio` ≤ 0.02 尚无记录。
 
 ## Technical Context
 
@@ -38,7 +38,7 @@
 
 | 门禁 | 结果 | 依据 |
 | --- | --- | --- |
-| P0 离线演示不被本切片抬高门槛 | 通过 | 预先准备片子上的单点演示保留；失败才回到该片子 |
+| P0 离线演示不被本切片抬高门槛 | 通过 | 预先准备片子上的单点演示保留；通过「选择预设」进入 |
 | 技术路线只选一条 | 通过 | 沿用 Vanilla JS + 原生 CSS/SVG |
 | MV3 权限与 CSP 保持现有表面 | 通过 | 不改 `extension/manifest.json` |
 | 不在本仓库实现阅读服务或感知代理 | 通过 | 地址只来自当次页面 |
@@ -75,11 +75,11 @@ specs/003-preplay-lesson-points/
 extension/
 ├── manifest.json                          # 不改权限与 CSP
 ├── assets/config.json                     # 不增加地址或密钥
-├── assets/video/breakglass-demo-9s.mp4    # 只作失败退回的片子，可仍缺失
+├── assets/video/breakglass-demo-9s.mp4    # 已有包内示例，只通过选择预设加载
 ├── src/
 │   ├── lesson/reading.js                  # 采样时刻、校验、存点、下一个
 │   ├── lesson/ask.js                      # 稀疏画面请求；测试注入 fetch
-│   ├── page/main.js                       # 自动开始、暂停、下一个、退回
+│   ├── page/main.js                       # 自动开始、暂停、下一个、失败保留视频
 │   └── session/wake.js                    # 不改工厂签名
 └── demo/
     ├── index.html                         # 「下一个」、正在读、没有下一处
@@ -92,11 +92,11 @@ tests/
 └── page-lesson.test.js
 ```
 
-**Structure Decision**: 沿用 `extension/` 与根目录 `tests/`。不建立 `backend/`。不把第二支验收片子打进仓库地址说明以外的密钥配置。001 的 `demo-parabola` 只在退回后的那支片子上作为它自己的单点结果。
+**Structure Decision**: 沿用 `extension/` 与根目录 `tests/`。不建立 `backend/`。不把第二支验收片子打进仓库地址说明以外的密钥配置。001 的 `demo-parabola` 只在明确选择的示例片上作为它自己的单点结果。
 
 ## Post-Design Constitution Check
 
-Phase 1 没有新增工厂、错误码或 WASM。尺寸不符的点在进入 `createWake` 之前丢掉。[lesson-reading.md](./contracts/lesson-reading.md) 把退回片子限定为 `breakglass-demo-9s.mp4`，并禁止该曲线替换其他帧。
+Phase 1 没有新增工厂、错误码或 WASM。尺寸不符的点在进入 `createWake` 之前丢掉。[lesson-reading.md](./contracts/lesson-reading.md) 把示例片限定为 `breakglass-demo-9s.mp4`，只允许主动选择，并禁止该曲线替换其他帧。合并后的取消信号覆盖抽帧、模型调用及 JPEG 解码；双 rAF 只作为绘制机会估计，不能替代真实像素验收。
 
 `lesson-wake-visible` 的 20 次与 `maxRatio` 被 quickstart 标成未通过。实现任务不得在记录写出之前把 SC-003、SC-004、SC-005 勾成完成。
 

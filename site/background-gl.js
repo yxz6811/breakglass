@@ -22,10 +22,10 @@ var CELL_H = 15;
 var MAX_RIPPLES = 4;
 var RIPPLE_SPEED = 320;
 var RIPPLE_WIDTH = 92;
-// 不设帧率上限：每帧都渲染，跟随浏览器 rAF（通常 60fps）。
-// 保留 setFpsCap() 以便需要省电时手动降档，例如 setFpsCap(30)。
-var FRAME_INTERVAL_MS = 0;
+// 慢动效默认 30fps；演算使用实际帧间隔，不随显示器刷新率加速。
+var FRAME_INTERVAL_MS = 1000 / 30;
 var FRAME_SLACK_MS = 4;
+var MAX_FRAME_SECONDS = 0.05;
 var CURVE_COUNT = 6;
 var MAX_TRAIL = 12;
 var TRAIL_INTERVAL_MS = 35;
@@ -273,6 +273,7 @@ export function createAsciiRippleGL(options) {
   var startedAt = performance.now();
   var lastRenderAt = -1;
   var frameIntervalMs = FRAME_INTERVAL_MS;
+  var initialRippleTimer = 0;
   var active = [];
 
   function resize() {
@@ -371,6 +372,7 @@ export function createAsciiRippleGL(options) {
       frameId = window.requestAnimationFrame(frame);
       return;
     }
+    var frameSeconds = lastRenderAt < 0 ? 0 : Math.min(MAX_FRAME_SECONDS, Math.max(0, (stamp - lastRenderAt) / 1000));
     lastRenderAt = stamp;
     frames += 1;
     var now = (stamp - startTime) / 1000;
@@ -381,16 +383,16 @@ export function createAsciiRippleGL(options) {
     var eased = progress * progress * (3 - 2 * progress);
     currentAngle = flowAngleFrom + (flowAngleTo - flowAngleFrom) * eased;
     uniforms.uFlowDir.value.set(Math.cos(currentAngle), Math.sin(currentAngle));
-    var frameSeconds = (frameIntervalMs > 0 ? frameIntervalMs : 1000 / 60) / 1000;
     uniforms.uFlowPhase.value += frameSeconds * 0.35;
     if (curveStart === 0) curveStart = now - curveHold;
     if (now - curveStart > curveHold + curveFade) pickCurve(now);
     var fade = Math.min(1, Math.max(0, (now - curveStart - curveHold) / curveFade));
     uniforms.uCurveMix.value = fade * fade * (3 - 2 * fade);
-    pointerSmooth.lerp(pointerTarget, 0.09);
+    function blend(amount) { return 1 - Math.pow(1 - amount, frameSeconds * 60); }
+    pointerSmooth.lerp(pointerTarget, blend(0.09));
     uniforms.uPointer.value.copy(pointerSmooth);
     pointerToPlot(pointerSmooth);
-    uniforms.uPointerPlot.value.lerp(pointerPlotTarget, 0.2);
+    uniforms.uPointerPlot.value.lerp(pointerPlotTarget, blend(0.2));
     // 鼠标停止约 2.5 秒后本地曲线淡出，动起来立刻回来。
     // 采样：按固定间隔记录指针位置，最多保留 MAX_TRAIL 个点。
     var plotNow = (stamp - startTime) / 1000;
@@ -418,14 +420,18 @@ export function createAsciiRippleGL(options) {
     var gap = (uniforms.uPointerPlot.value.y / 1.35) - curveY;
     var proximity = Math.exp(-(gap * gap) / (2 * LIFT_SIGMA * LIFT_SIGMA));
     var liftTarget = proximity * LIFT_MAX * pointerFade;
-    var dt = frameSeconds;
-    liftVelocity += (-SPRING_K * (lift - liftTarget) - SPRING_C * liftVelocity) * dt;
-    lift += liftVelocity * dt;
+    // 弹簧在小步长内积分，掉帧或降帧率时也不发散。
+    var steps = Math.max(1, Math.ceil(frameSeconds * 120));
+    var dt = frameSeconds / steps;
+    for (var step = 0; step < steps; step += 1) {
+      liftVelocity += (-SPRING_K * (lift - liftTarget) - SPRING_C * liftVelocity) * dt;
+      lift += liftVelocity * dt;
+    }
     uniforms.uLift.value = lift;
-    liftX += (uniforms.uPointerPlot.value.x - liftX) * 0.15;
+    liftX += (uniforms.uPointerPlot.value.x - liftX) * blend(0.15);
     uniforms.uLiftX.value = liftX;
     var moving = performance.now() - pointerMovedAt < 2500;
-    pointerFade += ((moving ? 1 : 0) - pointerFade) * (moving ? 0.12 : 0.045);
+    pointerFade += ((moving ? 1 : 0) - pointerFade) * blend(moving ? 0.12 : 0.045);
     uniforms.uPointerFade.value = pointerFade;
     var used = 0;
     for (var i = 0; i < MAX_RIPPLES; i += 1) {
@@ -457,30 +463,46 @@ export function createAsciiRippleGL(options) {
   var resizeTimer = 0;
   function onResize() {
     if (resizeTimer) window.clearTimeout(resizeTimer);
-    resizeTimer = window.setTimeout(resize, 160);
+    resizeTimer = window.setTimeout(function () {
+      resizeTimer = 0;
+      resize();
+      if (reduceMotion) renderer.render(scene, camera);
+    }, 160);
   }
   function onVisibility() {
-    if (document.hidden) { window.cancelAnimationFrame(frameId); frameId = 0; }
-    else if (!frameId && !reduceMotion) frameId = window.requestAnimationFrame(frame);
+    if (document.hidden) { window.cancelAnimationFrame(frameId); frameId = 0; lastRenderAt = -1; }
+    else if (!frameId && !reduceMotion) { lastRenderAt = -1; frameId = window.requestAnimationFrame(frame); }
   }
 
   resize();
   renderer.render(scene, camera);
+  window.addEventListener('resize', onResize);
   if (!reduceMotion) {
     window.addEventListener('pointermove', onPointerMove, { passive: true });
     window.addEventListener('pointerdown', onPointerDown, { passive: true });
-    window.addEventListener('resize', onResize);
     document.addEventListener('visibilitychange', onVisibility);
-    window.setTimeout(function () { pushRipple(width * 0.32, height * 0.42, 0.9); }, 500);
+    initialRippleTimer = window.setTimeout(function () { pushRipple(width * 0.32, height * 0.42, 0.9); }, 500);
     frameId = window.requestAnimationFrame(frame);
   }
   canvas.dataset.renderer = 'webgl';
   return {
     renderer: renderer,
-    dispose: function () { window.cancelAnimationFrame(frameId); renderer.dispose(); },
+    dispose: function () {
+      window.cancelAnimationFrame(frameId);
+      window.clearTimeout(initialRippleTimer);
+      window.clearTimeout(resizeTimer);
+      window.removeEventListener('pointermove', onPointerMove);
+      window.removeEventListener('pointerdown', onPointerDown);
+      window.removeEventListener('resize', onResize);
+      document.removeEventListener('visibilitychange', onVisibility);
+      scene.children.forEach(function (mesh) { mesh.geometry.dispose(); });
+      material.dispose();
+      uniforms.uAtlas.value.dispose();
+      renderer.dispose();
+    },
     rippleAt: pushRipple,
     // 0 表示不设上限，用于实测真实渲染能力。
-    setFpsCap: function (fps) { frameIntervalMs = fps > 0 ? 1000 / fps : 0; },
+    setFpsCap: function (fps) { if (Number.isFinite(fps) && fps >= 0) frameIntervalMs = fps > 0 ? 1000 / Math.min(fps, 60) : 0; },
     forceCurve: function (index) { curveA = index; curveB = (index + 1) % CURVE_COUNT; uniforms.uCurveA.value = curveA; uniforms.uCurveB.value = curveB; uniforms.uCurveMix.value = 0; curveStart = (performance.now() - startTime) / 1000; },
     info: function () {
       var elapsed = (performance.now() - startedAt) / 1000;

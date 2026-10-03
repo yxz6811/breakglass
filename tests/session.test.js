@@ -173,3 +173,15 @@ test('setParameter 支持任意已声明参数，并做有限性与范围校验'
   assert.equal(session.updateParameter('a', 1).code, 'parameter_not_draggable', '拖动仍只允许 dragParameter');
   assert.equal(session.reset().session.currentParameters.a, 1, '重置回到初值');
 });
+
+test('rejects non-finite drag and slider updates without changing the current curve', () => {
+  const session = controller();
+  const pending = session.beginWait({ paused: true, currentTime: 12.5 });
+  assert.equal(session.resolve(result(pending.requestId)).ok, true);
+  for (const value of [Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY, Number.NaN]) {
+    assert.equal(session.updateParameter('h', value).code, 'invalid_parameter_value');
+    assert.equal(session.setParameter('a', value).code, 'invalid_parameter_value');
+    assert.deepEqual(session.getState().currentParameters, { a: 1, h: 0, k: 0 });
+  }
+  assert.equal(session.updateParameter('h', 99).session.currentParameters.h, 2, 'finite out-of-range drag still clamps');
+});
