@@ -1162,6 +1162,94 @@ button:disabled, input:disabled, select:disabled { opacity: .45; cursor: default
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
 </style>
+<style data-showcase-source="showcase-effects.css">
+/* Effects adapted from breakglass-apple, around the approved brand identity. */
+body { isolation: isolate; }
+.bg-core {
+  background: radial-gradient(110% 60% at 50% 114%, rgb(43 150 189 / .12), transparent 72%),
+    radial-gradient(70% 42% at 50% -12%, rgb(113 221 255 / .055), transparent 75%), var(--bg);
+}
+.grid-overlay {
+  display: block;
+  background-size: 88px 88px;
+  opacity: .4;
+}
+#fx { display: block; opacity: .62; }
+.topline {
+  display: block;
+  background: linear-gradient(90deg, transparent, rgb(113 221 255 / .55), transparent);
+}
+.progress { box-shadow: 0 0 9px rgb(113 221 255 / .28); }
+.nav { background: rgb(8 11 13 / .79); }
+
+/* Content stays visible without JS. Reveal each element rather than a tall section. */
+.effects-ready .reveal {
+  transition: opacity 640ms var(--ease), transform 640ms var(--ease);
+  transition-delay: calc(min(var(--i, 0), 4) * 55ms);
+}
+.effects-ready .reveal:not(.is-revealed) { opacity: 0; transform: translateY(22px); }
+.effects-ready .reveal.is-revealed { opacity: 1; transform: none; }
+.brand-stage { transform-origin: 50% 50%; }
+.brand-focus { position: relative; transform: translateY(0); transition: transform 720ms var(--ease); }
+.intro-entering .brand-focus { transform: translate(var(--intro-x, 0px), var(--intro-y, 0px)); transition: none; }
+.hero-copy { opacity: 1; transform: none; transition: opacity 600ms var(--ease) 320ms, transform 600ms var(--ease) 320ms; }
+.intro-entering .hero-copy { opacity: 0; transform: translateY(18px); visibility: hidden; transition: none; }
+.btn { transition: transform 220ms var(--ease), background 220ms, filter 220ms; }
+.curve-panel { transition: background 240ms var(--ease); }
+.chart-surface { position: relative; isolation: isolate; }
+.chart-surface svg { position: relative; z-index: 1; }
+.watch-panel .chart-surface {
+  border: 1px dashed rgb(113 221 255 / .2);
+  margin-block: 15px;
+  background: radial-gradient(ellipse at 50% 100%, rgb(113 221 255 / .04), transparent 70%);
+}
+.watch-panel .chart-surface svg { margin: 0; }
+.live-panel .chart-surface::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background: linear-gradient(180deg, transparent 28%, rgb(113 221 255 / .12) 50%, transparent 72%);
+  opacity: 0;
+  pointer-events: none;
+}
+.plot-entered .live-panel .chart-surface::before { animation: plot-scan 1800ms var(--ease) 1; }
+.plot-entered .small-curve { animation: curve-draw 1100ms var(--ease) 1; }
+.small-curve { filter: drop-shadow(0 0 3px rgb(113 221 255 / .24)); }
+.demo-active .small-node { animation: node-light 1800ms ease-in-out infinite; }
+.demo-motion-control { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin-top: 10px; }
+.demo-motion-status { color: var(--text-dim); font-size: 12px; line-height: 1.6; }
+.demo-autoplay { flex: none; min-height: 44px; padding: 6px 10px; border: 1px solid var(--edge); border-radius: 6px; background: transparent; color: var(--text); font-size: 12px; cursor: pointer; transition: border-color 200ms, background 200ms; }
+.demo-autoplay[aria-pressed=true] { border-color: rgb(113 221 255 / .6); color: var(--accent); }
+.ls-item:focus-visible .ls-label { opacity: 1; transform: none; }
+@keyframes plot-scan {
+  0% { transform: translateY(-45%); opacity: 0; }
+  22% { opacity: 1; }
+  100% { transform: translateY(45%); opacity: 0; }
+}
+@keyframes curve-draw { from { stroke-dasharray: 1; stroke-dashoffset: 1; } to { stroke-dasharray: 1; stroke-dashoffset: 0; } }
+@keyframes node-light { 0%,100% { filter: drop-shadow(0 0 3px rgb(113 221 255 / .35)); } 50% { filter: drop-shadow(0 0 7px rgb(113 221 255 / .85)); } }
+@media (hover: hover) and (pointer: fine) {
+  .btn:hover { transform: translateY(-2px); }
+  .curve-panel:hover { background: rgb(113 221 255 / .025); }
+  .demo-autoplay:hover { border-color: var(--accent); background: rgb(113 221 255 / .06); }
+}
+@media (max-width: 600px) {
+  #fx { opacity: .42; }
+  .grid-overlay { opacity: .24; }
+  .watch-panel .chart-surface { margin-block: 18px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  #fx { display: none; }
+  .effects-ready .reveal:not(.is-revealed) { opacity: 1; transform: none; }
+  .brand-stage { transform: none !important; opacity: 1 !important; }
+  .brand-focus { transform: none !important; }
+  .intro-entering .hero-copy { opacity: 1; transform: none; visibility: visible; }
+  .live-panel .chart-surface::before { display: none; }
+  .small-curve, .small-node { filter: none; }
+}
+body.effects-paused *, body.effects-paused *::before, body.effects-paused *::after { animation-play-state: paused !important; }
+</style>
 </head>
 <body>
 
@@ -1231,6 +1319,7 @@ button:disabled, input:disabled, select:disabled { opacity: .45; cursor: default
        ===================================================== -->
   <section class="page hero brand-intro" id="p1" aria-labelledby="mission">
   <div class="page-inner" id="heroInner">
+    <div class="brand-focus">
     <div class="brand-stage">
       <svg class="story" viewBox="0 0 960 380" fill="none" aria-hidden="true">
         <defs>
@@ -1316,6 +1405,8 @@ button:disabled, input:disabled, select:disabled { opacity: .45; cursor: default
         </div></div>
       <p class="story-caption" aria-hidden="true">画面停住。知识，不必停住。</p>
     </div>
+    </div>
+    <div class="hero-copy">
     <h1 class="mission" id="mission">从观看，到<span>亲手验证。</span></h1>
     <p class="ambition">从一条曲线开始，让屏幕里的知识成为可以探索的世界。</p>
     <div class="hero-actions">
@@ -1338,6 +1429,7 @@ button:disabled, input:disabled, select:disabled { opacity: .45; cursor: default
     </div>
     <p class="scope-note">当前体验：预制抛物线场景。真实视觉识别与代码执行属于后续目标。</p>
     <p class="motion-note" role="status" hidden>已遵循减少动态效果偏好，直接呈现 Logo，曲线仍可操作。</p>
+    </div>
   </div>
 </section>
 
@@ -1412,7 +1504,7 @@ x = np.linspace(-10, 10, 300)
 y = np.sin(x)
 plt.plot(x, y)
 plt.show()</pre>
-          <div class="mt-run">▸ [WASM] Running… 输出已渲染至原位图层</div>
+          <div class="mt-run">▸ P1 方案示意 · WASM 执行尚未接入本页</div>
         </div>
 
       </div>
@@ -1473,11 +1565,12 @@ plt.show()</pre>
        ===================================================== -->
   <section class="page" id="p5" aria-labelledby="demo-title">
   <div class="page-inner">
-    <h2 class="page-title" id="demo-title">同一条曲线，<br><em>换一种学习方式。</em></h2>
-    <p class="page-lead">看见变化，更要亲手验证。拖动一个参数，观察抛物线的开口如何改变。</p>
+    <h2 class="page-title reveal" style="--i:0" id="demo-title">同一条曲线，<br><em>换一种学习方式。</em></h2>
+    <p class="page-lead reveal" style="--i:1">看见变化，更要亲手验证。拖动一个参数，观察抛物线的开口如何改变。</p>
     <div class="curve-comparison hands-on">
-      <div class="curve-panel">
+      <div class="curve-panel watch-panel">
         <div class="curve-panel-head"><h3>看见</h3><span>y = 0.65x²</span></div>
+        <div class="chart-surface">
         <svg class="watch-chart" viewBox="0 0 480 280" fill="none" role="img" aria-labelledby="watch-chart-title watch-chart-description">
     <title id="watch-chart-title">预制抛物线画面</title>
     <desc id="watch-chart-description">灰色曲线表示 y 等于 0.65 乘 x 平方的静止画面。</desc>
@@ -1487,23 +1580,30 @@ plt.show()</pre>
     <g clip-path="url(#watch-plot-clip)"><path class="watch-curve"/></g>
     <text class="plot-label" x="454" y="245">x</text><text class="plot-label" x="250" y="21">y</text><text class="plot-label" x="227" y="246">0</text>
   </svg>
+        </div>
         <p class="curve-frozen-note">画面中的曲线保持静止。<br>它告诉你结果，还没有邀请你参与。</p>
       </div>
-      <div class="curve-panel">
+      <div class="curve-panel live-panel">
         <div class="curve-panel-head"><h3>亲手验证</h3><span>y = ax²</span></div>
+        <div class="chart-surface">
         <svg class="hands-on-chart" viewBox="0 0 480 280" fill="none" role="img" aria-labelledby="live-chart-title live-chart-description">
     <title id="live-chart-title">可调整的抛物线</title>
     <desc id="live-chart-description">调整参数 a，蓝色曲线就地变化；灰色虚线是 a 等于 0.65 的参考。</desc>
     <defs><clipPath id="live-plot-clip"><rect x="16" y="10" width="448" height="248"/></clipPath></defs>
     <path class="plot-grid" d="M36 48H444M36 108H444M36 168H444M104 14V248M172 14V248M308 14V248M376 14V248"/>
     <path class="plot-axis" d="M24 228H456M240 14V252"/>
-    <g clip-path="url(#live-plot-clip)"><path class="small-reference"/><path class="small-curve"/><circle class="small-node" cx="342" cy="140.25" r="5"/></g>
+    <g clip-path="url(#live-plot-clip)"><path class="small-reference"/><path class="small-curve" pathLength="1"/><circle class="small-node" cx="342" cy="140.25" r="5"/></g>
     <text class="plot-label" x="454" y="245">x</text><text class="plot-label" x="250" y="21">y</text><text class="plot-label" x="227" y="246">0</text>
   </svg>
+        </div>
         <div class="parameter-control">
           <label for="coefficient">调整开口<span class="parameter-readout">a = <output id="coefficient-value" for="coefficient">0.65</output></span></label>
           <input id="coefficient" type="range" min="0.25" max="1.4" step="0.01" value="0.65" aria-label="调整抛物线开口参数 a">
           <div class="parameter-caption"><p>灰色虚线保留原曲线，方便比较。</p><button type="button" class="curve-reset">恢复原曲线</button></div>
+        </div>
+        <div class="demo-motion-control">
+          <p class="demo-motion-status" id="demo-motion-status">拖动参数，亲手验证。</p>
+          <button class="demo-autoplay" type="button" aria-pressed="false" aria-describedby="demo-motion-status" hidden>播放变化</button>
         </div>
       </div>
     </div>
@@ -2459,21 +2559,14 @@ plt.show()</pre>
     return t * t;
   }
 
-  var reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  var noHover = window.matchMedia('(hover: none)').matches;
+  var motionPreference = window.matchMedia('(prefers-reduced-motion: reduce)');
+  var hoverPreference = window.matchMedia('(hover: none)');
+  var reduced = motionPreference.matches;
+  var noHover = hoverPreference.matches;
   var mouse = { x: -1e5, y: -1e5, on: false };
   var active = CFG.defaultActive;
   var markerY = 0, markerReady = false;
-
-  if (!noHover) {
-    window.addEventListener('mousemove', function (e) {
-      mouse.x = e.clientX; mouse.y = e.clientY; mouse.on = true;
-    }, { passive: true });
-    window.addEventListener('mouseout', function (e) {
-      if (!e.relatedTarget) mouse.on = false;
-    });
-    document.addEventListener('mouseleave', function () { mouse.on = false; });
-  }
+  var frameId = 0, suspended = false, needsMeasure = true;
 
   function computeActive() {
     var mid = window.innerHeight * 0.5;
@@ -2488,10 +2581,26 @@ plt.show()</pre>
 
   var last = -1, lastScroll = -1;
 
-  function frame(now) {
-    requestAnimationFrame(frame);
+  function stop() {
+    if (frameId) cancelAnimationFrame(frameId);
+    frameId = 0;
+    last = -1;
+  }
 
-    if (host.offsetWidth === 0) return;
+  function canRender() {
+    return !suspended && !document.hidden && host.offsetWidth !== 0;
+  }
+
+  function requestUpdate(remeasure) {
+    if (remeasure) { needsMeasure = true; lastScroll = -1; }
+    if (!canRender()) { stop(); return; }
+    if (!frameId) frameId = requestAnimationFrame(frame);
+  }
+
+  function frame(now) {
+    frameId = 0;
+    if (!canRender()) { stop(); return; }
+    if (needsMeasure) { measure(); needsMeasure = false; }
 
     if (last < 0) last = now - 16.7;
     var dt = Math.min(now - last, 64);
@@ -2508,6 +2617,7 @@ plt.show()</pre>
     var i, en, s, dx, dy;
     var strengths = [];
     var maxS = 0, peak = -1;
+    var settling = false;
 
     for (i = 0; i < entries.length; i++) {
       en = entries[i];
@@ -2529,6 +2639,12 @@ plt.show()</pre>
 
       en.shift += (tShift - en.shift) * k;
       en.scale += (tScale - en.scale) * k;
+      if (Math.abs(tShift - en.shift) > 0.01 || Math.abs(tScale - en.scale) > 0.001) {
+        settling = true;
+      } else {
+        en.shift = tShift;
+        en.scale = tScale;
+      }
 
       en.el.style.transform = 'translateX(' + en.shift.toFixed(2) + 'px)';
       en.tick.style.transform = 'translateY(-50%) scaleX(' + en.scale.toFixed(3) + ')';
@@ -2542,28 +2658,63 @@ plt.show()</pre>
         en.peak = isPeak;
         en.el.classList.toggle('is-hot', hot);
         en.el.classList.toggle('is-peak', isPeak);
-        en.el.classList.toggle('is-active', i === active);
       }
+      en.el.classList.toggle('is-active', i === active);
+      if (i === active) en.el.setAttribute('aria-current', 'location');
+      else en.el.removeAttribute('aria-current');
     }
 
     if (marker) {
       var tY = entries[active].cy - CFG.markerLength / 2;
       if (!markerReady) { markerY = tY; markerReady = true; }
       markerY += (tY - markerY) * k;
+      if (Math.abs(tY - markerY) > 0.02) settling = true;
+      else markerY = tY;
       marker.style.transform = 'translateY(' + markerY.toFixed(2) + 'px)';
       marker.style.background = mix(C_MARKER, C_ACCENT, maxS);
     }
+    // Continue only while proximity or the active marker is still settling.
+    if (settling) frameId = requestAnimationFrame(frame);
+    else last = -1;
   }
 
-  function boot() { measure(); requestAnimationFrame(frame); }
-  if (document.readyState === 'complete') boot();
-  else window.addEventListener('load', boot);
+  function clearMouse() {
+    mouse.on = false;
+    requestUpdate(false);
+  }
 
-  window.addEventListener('resize', function () {
-    measure();
-    lastScroll = -1;
+  window.addEventListener('mousemove', function (e) {
+    if (noHover || reduced) return;
+    mouse.x = e.clientX; mouse.y = e.clientY; mouse.on = true;
+    requestUpdate(false);
+  }, { passive: true });
+  window.addEventListener('mouseout', function (e) {
+    if (!e.relatedTarget) clearMouse();
   });
-  if (document.fonts && document.fonts.ready) document.fonts.ready.then(measure);
+  document.addEventListener('mouseleave', clearMouse);
+
+  function boot() { requestUpdate(true); }
+  if (document.readyState === 'complete') boot();
+  else window.addEventListener('load', boot, { once: true });
+
+  window.addEventListener('scroll', function () { requestUpdate(false); }, { passive: true });
+  window.addEventListener('resize', function () { requestUpdate(true); });
+  document.addEventListener('visibilitychange', function () {
+    if (document.hidden) { mouse.on = false; stop(); }
+    else requestUpdate(true);
+  });
+  window.addEventListener('pagehide', function () { suspended = true; stop(); });
+  window.addEventListener('pageshow', function () { suspended = false; requestUpdate(true); });
+  motionPreference.addEventListener('change', function (event) {
+    reduced = event.matches;
+    mouse.on = false;
+    requestUpdate(true);
+  });
+  hoverPreference.addEventListener('change', function (event) {
+    noHover = event.matches;
+    clearMouse();
+  });
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { requestUpdate(true); });
 })();
 </script>
 <script data-showcase-source="showcase-motion.js">
@@ -2618,6 +2769,11 @@ plt.show()</pre>
   var chapters = Array.from(brandIntro.querySelectorAll('[data-chapter]'));
   var motionNote = find('.motion-note');
   var motion = window.matchMedia('(prefers-reduced-motion: reduce)');
+  var brandFocus = find('.brand-focus');
+  var heroCopy = find('.hero-copy');
+  var entranceComplete = false;
+  var introCenter = { x: 0, y: 0, lockupY: 0 };
+  var restoreReplayFocus = false;
   var events = new AbortController();
   var cuts = {
     logo: { duration: 2200, from: 4050 },
@@ -2636,6 +2792,32 @@ plt.show()</pre>
   var target = { x: 240, y: 118 };
   var lastCaption = '';
   var lastPhase = '';
+
+  function centerIntro() {
+    if (!brandFocus || entranceComplete) return;
+    brandFocus.style.setProperty('--intro-x', '0px');
+    brandFocus.style.setProperty('--intro-y', '0px');
+    var rect = find('.brand-stage').getBoundingClientRect();
+    var logoBounds = symbol.getBoundingClientRect();
+    introCenter.x = window.innerWidth / 2 - (logoBounds.left + logoBounds.width / 2);
+    introCenter.y = window.innerHeight / 2 - (logoBounds.top + logoBounds.height / 2);
+    introCenter.lockupY = window.innerHeight / 2 - (rect.top + rect.height / 2);
+  }
+  function completeEntrance() {
+    if (entranceComplete) return;
+    entranceComplete = true;
+    body.classList.remove('intro-entering');
+    body.classList.add('intro-ready');
+    if (heroCopy) heroCopy.removeAttribute('inert');
+    if (restoreReplayFocus) { restoreReplayFocus = false; replay.focus({ preventScroll: true }); }
+  }
+  function beginEntrance() {
+    entranceComplete = false;
+    body.classList.remove('intro-ready');
+    body.classList.add('intro-entering');
+    if (heroCopy) heroCopy.setAttribute('inert', '');
+    centerIntro();
+  }
 
   function clamp(value, low, high) { return Math.min(high, Math.max(low, value)); }
   function progress(time, start, length) { return clamp((time - start) / length, 0, 1); }
@@ -2721,6 +2903,12 @@ plt.show()</pre>
     var fadeScene = 1 - smooth(progress(t, 3880, 540));
     var markReveal = out(progress(t, 4050, 90));
     var wordReveal = out(progress(t, 4800, 700));
+    if (brandFocus && !entranceComplete) {
+      // The symbol starts at the viewport center; its wordmark grows into a centered lockup.
+      var symbolFocus = (logoCut ? 1 : out(progress(t, 3970, 80))) * (1 - wordReveal);
+      brandFocus.style.setProperty('--intro-x', (introCenter.x * symbolFocus).toFixed(2) + 'px');
+      brandFocus.style.setProperty('--intro-y', (introCenter.lockupY + (introCenter.y - introCenter.lockupY) * symbolFocus).toFixed(2) + 'px');
+    }
     var a = .65;
     if (exploration < .35) a += .6 * smooth(exploration / .35);
     else if (exploration < .72) a = 1.25 - .92 * smooth((exploration - .35) / .37);
@@ -2796,12 +2984,12 @@ plt.show()</pre>
     if (!running || disposed) return;
     render(current + Math.max(0, now - lastFrame) * rate);
     lastFrame = now;
-    if (current >= cut.duration) { pause(); return; }
+    if (current >= cut.duration) { pause(); completeEntrance(); return; }
     frame = window.requestAnimationFrame(tick);
   }
   function play(restart) {
     pause();
-    if (motion.matches || disposed) { render(cut.duration); return; }
+    if (motion.matches || disposed) { render(cut.duration); completeEntrance(); return; }
     measureTarget();
     if (restart || current >= cut.duration) render(0);
     running = true;
@@ -2815,10 +3003,14 @@ plt.show()</pre>
     chapters.forEach(function (element) { element.disabled = reduced || chapterTime[element.dataset.chapter] < cut.from; });
     motionNote.hidden = !reduced;
     body.dataset.reducedMotion = String(reduced);
-    if (reduced) { pause(); render(cut.duration); syncPlayback(); }
+    if (reduced) { pause(); render(cut.duration); syncPlayback(); completeEntrance(); }
   }
 
-  replay.addEventListener('click', function () { play(true); }, { signal: events.signal });
+  replay.addEventListener('click', function () {
+    restoreReplayFocus = true;
+    beginEntrance();
+    play(true);
+  }, { signal: events.signal });
   playback.addEventListener('click', function () { if (running) pause(); else play(false); }, { signal: events.signal });
   timeline.addEventListener('input', function () { pause(); render(Number(timeline.value)); syncPlayback(); }, { signal: events.signal });
   speed.addEventListener('change', function () { rate = Number(speed.value) === .5 ? .5 : 1; }, { signal: events.signal });
@@ -2838,16 +3030,22 @@ plt.show()</pre>
     coefficient.value = '.65';
     renderSmallGraph(coefficient.value);
   }, { signal: events.signal });
-  document.addEventListener('visibilitychange', function () { if (document.hidden) pause(); }, { signal: events.signal });
+  document.addEventListener('visibilitychange', function () {
+    if (document.hidden) {
+      pause();
+      if (!entranceComplete) { render(cut.duration); syncPlayback(); completeEntrance(); }
+    }
+  }, { signal: events.signal });
   var visibility = 'IntersectionObserver' in window ? new IntersectionObserver(function (entries) {
     if (!entries[0].isIntersecting && running) {
       pause();
       render(cut.duration);
       syncPlayback();
+      completeEntrance();
     }
   }) : null;
   if (visibility) visibility.observe(brandIntro);
-  window.addEventListener('resize', function () { measureTarget(); render(current); }, { signal: events.signal });
+  window.addEventListener('resize', function () { centerIntro(); measureTarget(); render(current); }, { signal: events.signal });
   motion.addEventListener('change', applyMotionPreference, { signal: events.signal });
   window.addEventListener('pagehide', function (event) {
     pause();
@@ -2857,13 +3055,363 @@ plt.show()</pre>
     events.abort();
   }, { signal: events.signal });
   window.addEventListener('pageshow', function (event) {
-    if (event.persisted) { measureTarget(); render(current); syncPlayback(); }
+    if (event.persisted) { measureTarget(); render(entranceComplete ? current : cut.duration); syncPlayback(); completeEntrance(); }
   }, { signal: events.signal });
   body.dataset.cut = 'logo';
+  beginEntrance();
   renderSmallGraph(coefficient.value);
   measureTarget();
   applyMotionPreference();
   if (!motion.matches) play(true);
+})();
+</script>
+<script data-showcase-source="showcase-effects.js">
+/* Frontend visual effects adapted from breakglass-apple.zip.
+   Product scope: docs/BreakGlass-constitution.md (1.6.0).
+   Particles and depth are decorative; they do not represent recognition work. */
+(function () {
+  'use strict';
+
+  const root = document.documentElement;
+  const events = new AbortController();
+  const motion = window.matchMedia('(prefers-reduced-motion: reduce)');
+  const depthScreen = window.matchMedia('(min-width: 901px) and (hover: hover) and (pointer: fine)');
+  const coarseScreen = window.matchMedia('(pointer: coarse)');
+  const canvas = document.getElementById('fx');
+  const context = canvas && canvas.getContext('2d');
+  const hero = document.querySelector('.brand-intro');
+  const stage = hero && hero.querySelector('.brand-stage');
+  const pendingReveals = new Set(document.querySelectorAll('.reveal'));
+  let revealObserver = null;
+  let particles = [];
+  let width = 0;
+  let height = 0;
+  let particleFrame = 0;
+  let depthFrame = 0;
+  let lastPaint = 0;
+  let elapsed = 0;
+  let suspended = document.hidden;
+  let disposed = false;
+  let sprite = null;
+
+  function reveal(element) {
+    element.classList.add('is-revealed');
+    pendingReveals.delete(element);
+    if (revealObserver) revealObserver.unobserve(element);
+  }
+
+  function revealAll() {
+    pendingReveals.forEach(reveal);
+    if (revealObserver) revealObserver.disconnect();
+  }
+
+  function observeReveals() {
+    if (motion.matches || !('IntersectionObserver' in window)) {
+      revealAll();
+      return;
+    }
+    revealObserver = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        // Observe each element, so tall mobile sections do not need to fit the viewport.
+        if (entry.isIntersecting) reveal(entry.target);
+      });
+    }, { threshold: 0, rootMargin: '0px 0px -24px 0px' });
+    pendingReveals.forEach(function (element) {
+      const bounds = element.getBoundingClientRect();
+      if (bounds.top < window.innerHeight && bounds.bottom > 0) reveal(element);
+      else revealObserver.observe(element);
+    });
+  }
+
+  function makeParticle(fromBottom) {
+    return {
+      x: Math.random() * width,
+      y: fromBottom ? height + Math.random() * 70 : Math.random() * height,
+      radius: .75 + Math.random() * 1.25,
+      speed: 5 + Math.random() * 8,
+      drift: (Math.random() - .5) * 3,
+      phase: Math.random() * Math.PI * 2,
+      frequency: .45 + Math.random() * .65,
+      alpha: .12 + Math.random() * .16
+    };
+  }
+
+  function makeSprite() {
+    const bitmap = document.createElement('canvas');
+    bitmap.width = bitmap.height = 64;
+    const bitmapContext = bitmap.getContext('2d');
+    if (!bitmapContext) return null;
+    const light = bitmapContext.createRadialGradient(32, 32, 0, 32, 32, 32);
+    light.addColorStop(0, 'rgba(222,248,255,1)');
+    light.addColorStop(.16, 'rgba(113,221,255,.9)');
+    light.addColorStop(.42, 'rgba(64,165,208,.22)');
+    light.addColorStop(1, 'rgba(35,105,140,0)');
+    bitmapContext.fillStyle = light;
+    bitmapContext.fillRect(0, 0, 64, 64);
+    return bitmap;
+  }
+
+  function paintParticles(delta) {
+    if (!context || !sprite) return;
+    context.clearRect(0, 0, width, height);
+    context.globalCompositeOperation = 'lighter';
+    particles.forEach(function (particle, index) {
+      if (delta) {
+        particle.y -= particle.speed * delta;
+        particle.x += (particle.drift + Math.sin(elapsed * particle.frequency + particle.phase) * 1.3) * delta;
+        if (particle.y < -30 || particle.x < -30 || particle.x > width + 30) {
+          particles[index] = makeParticle(true);
+          return;
+        }
+      }
+      const size = particle.radius * 6;
+      const shimmer = motion.matches ? .78 : .7 + .3 * Math.sin(elapsed * particle.frequency + particle.phase);
+      context.globalAlpha = particle.alpha * shimmer;
+      context.drawImage(sprite, particle.x - size, particle.y - size, size * 2, size * 2);
+    });
+    context.globalAlpha = 1;
+    context.globalCompositeOperation = 'source-over';
+  }
+
+  function resizeParticles() {
+    if (!context) return;
+    const previousWidth = width;
+    const previousHeight = height;
+    width = Math.max(1, window.innerWidth);
+    height = Math.max(1, window.innerHeight);
+    const compact = width < 720 || coarseScreen.matches;
+    const dpr = Math.min(window.devicePixelRatio || 1, compact ? 1.25 : 1.5);
+    canvas.width = Math.round(width * dpr);
+    canvas.height = Math.round(height * dpr);
+    canvas.style.width = width + 'px';
+    canvas.style.height = height + 'px';
+    context.setTransform(dpr, 0, 0, dpr, 0, 0);
+    particles.forEach(function (particle) {
+      particle.x *= width / Math.max(1, previousWidth);
+      particle.y *= height / Math.max(1, previousHeight);
+    });
+    const count = compact ? 14 : 30;
+    particles.length = Math.min(particles.length, count);
+    while (particles.length < count) particles.push(makeParticle(false));
+    paintParticles(0);
+  }
+
+  function tickParticles(time) {
+    particleFrame = 0;
+    if (disposed || suspended || motion.matches) return;
+    if (!lastPaint || time - lastPaint >= 1000 / 30) {
+      // Timestamp velocity stays stable on displays with different refresh rates.
+      const delta = lastPaint ? Math.min((time - lastPaint) / 1000, .064) : 0;
+      elapsed += delta;
+      lastPaint = time;
+      paintParticles(delta);
+    }
+    particleFrame = requestAnimationFrame(tickParticles);
+  }
+
+  function startParticles() {
+    if (!context || !sprite || disposed || suspended || motion.matches || particleFrame) return;
+    lastPaint = 0;
+    particleFrame = requestAnimationFrame(tickParticles);
+  }
+
+  function updateDepth() {
+    depthFrame = 0;
+    if (!stage || !hero) return;
+    if (motion.matches || !depthScreen.matches) {
+      stage.style.removeProperty('transform');
+      stage.style.removeProperty('opacity');
+      return;
+    }
+    const bounds = hero.getBoundingClientRect();
+    const progress = Math.min(1, Math.max(0, -bounds.top / Math.max(1, bounds.height)));
+    stage.style.transform = 'translateY(' + (progress * 24).toFixed(2) + 'px)';
+    stage.style.opacity = (1 - progress * .18).toFixed(3);
+  }
+
+  function scheduleDepth() {
+    if (!disposed && !suspended && !depthFrame) depthFrame = requestAnimationFrame(updateDepth);
+  }
+
+  function stopFrames() {
+    cancelAnimationFrame(particleFrame);
+    cancelAnimationFrame(depthFrame);
+    particleFrame = depthFrame = 0;
+    lastPaint = 0;
+  }
+
+  function onMotionChange() {
+    stopFrames();
+    if (motion.matches) revealAll();
+    paintParticles(0);
+    updateDepth();
+    startParticles();
+  }
+
+  function onVisibilityChange() {
+    suspended = document.hidden;
+    document.body.classList.toggle('effects-paused', suspended);
+    if (suspended) stopFrames();
+    else {
+      startParticles();
+      scheduleDepth();
+    }
+  }
+
+  observeReveals();
+  // The default CSS stays readable when JavaScript is unavailable.
+  root.classList.add('effects-ready');
+  document.body.classList.toggle('effects-paused', suspended);
+  if (context) {
+    sprite = makeSprite();
+    resizeParticles();
+    startParticles();
+  }
+  updateDepth();
+
+  document.addEventListener('focusin', function (event) {
+    pendingReveals.forEach(function (element) {
+      if (element.contains(event.target)) reveal(element);
+    });
+  }, { signal: events.signal });
+  window.addEventListener('scroll', scheduleDepth, { passive: true, signal: events.signal });
+  window.addEventListener('resize', function () {
+    resizeParticles();
+    scheduleDepth();
+  }, { passive: true, signal: events.signal });
+  motion.addEventListener('change', onMotionChange, { signal: events.signal });
+  depthScreen.addEventListener('change', scheduleDepth, { signal: events.signal });
+  coarseScreen.addEventListener('change', resizeParticles, { signal: events.signal });
+  document.addEventListener('visibilitychange', onVisibilityChange, { signal: events.signal });
+  window.addEventListener('pagehide', function (event) {
+    suspended = true;
+    document.body.classList.add('effects-paused');
+    stopFrames();
+    if (!event.persisted) {
+      disposed = true;
+      if (revealObserver) revealObserver.disconnect();
+      events.abort();
+    }
+  }, { signal: events.signal });
+  window.addEventListener('pageshow', function () {
+    suspended = document.hidden;
+    document.body.classList.toggle('effects-paused', suspended);
+    resizeParticles();
+    startParticles();
+    scheduleDepth();
+  }, { signal: events.signal });
+}());
+</script>
+<script data-showcase-source="showcase-demo.js">
+/* Archive demo-live choreography, adapted to the P0 preset parabola.
+   docs/BreakGlass-constitution.md: no vision or WASM execution is implied. */
+(function () {
+  'use strict';
+  var section = document.querySelector('#p5');
+  if (!section) return;
+  var chart = section.querySelector('.hands-on-chart');
+  var livePanel = section.querySelector('.live-panel');
+  var slider = section.querySelector('#coefficient');
+  var toggle = section.querySelector('.demo-autoplay');
+  var status = section.querySelector('.demo-motion-status');
+  var reset = section.querySelector('.curve-reset');
+  if (!chart || !slider || !toggle || !status || !reset) return;
+  var motion = window.matchMedia('(prefers-reduced-motion: reduce)');
+  var events = new AbortController();
+  var duration = 6000;
+  var elapsed = 0, last = 0, painted = 0, frame = 0;
+  var running = false, visible = false, started = false, ownInput = false, disposed = false;
+  var state = 'idle';
+
+  function setState(next, message) {
+    state = next;
+    section.dataset.demoPlayback = next;
+    section.classList.toggle('demo-active', running && visible && !document.hidden);
+    toggle.setAttribute('aria-pressed', String(running));
+    toggle.textContent = running ? '暂停变化' : elapsed > 0 && elapsed < duration ? '继续变化' : '播放变化';
+    status.textContent = message;
+  }
+  function stop(next, message) {
+    running = false;
+    window.cancelAnimationFrame(frame);
+    frame = 0;
+    setState(next, message);
+  }
+  function draw(value) {
+    // Reuse the existing deterministic drawing/number formatter, with one input owner.
+    ownInput = true;
+    slider.value = value.toFixed(2);
+    slider.dispatchEvent(new Event('input', { bubbles: true }));
+    ownInput = false;
+  }
+  function valueAt(t) {
+    var stops = [.65, .30, 1.15, .65];
+    var position = Math.min(t / duration * 3, 3);
+    var i = Math.min(Math.floor(position), 2);
+    var u = position - i;
+    var eased = u * u * (3 - 2 * u);
+    return stops[i] + (stops[i + 1] - stops[i]) * eased;
+  }
+  function tick(now) {
+    if (!running || disposed) return;
+    elapsed = Math.min(duration, elapsed + Math.min(now - last, 100));
+    last = now;
+    if (now - painted >= 33 || elapsed >= duration) { draw(valueAt(elapsed)); painted = now; }
+    if (elapsed >= duration) { stop('complete', '自动演示已结束 · 现在由你调节。'); return; }
+    frame = window.requestAnimationFrame(tick);
+  }
+  function play() {
+    if (disposed || motion.matches || document.hidden || !visible) return;
+    if (elapsed >= duration) elapsed = 0;
+    started = true;
+    running = true;
+    last = performance.now();
+    painted = 0;
+    setState('playing', '自动演示 · 调参即可接管。');
+    frame = window.requestAnimationFrame(tick);
+  }
+  function manual() {
+    if (ownInput) return;
+    started = true;
+    elapsed = 0;
+    stop('manual', '手动控制 · 参数保持你的选择。');
+  }
+  toggle.hidden = false;
+  toggle.addEventListener('click', function () {
+    if (running) stop('paused', '变化已暂停 · 可继续或亲手调节。'); else play();
+  }, { signal: events.signal });
+  slider.addEventListener('input', manual, { signal: events.signal });
+  // Stop before a keyboard/pointer edit; reset never restarts autoplay.
+  slider.addEventListener('pointerdown', manual, { signal: events.signal });
+  reset.addEventListener('click', function () {
+    started = true; elapsed = 0;
+    stop('manual', '已恢复原曲线 · a = 0.65。');
+  }, { signal: events.signal });
+  function preference() {
+    toggle.disabled = motion.matches;
+    if (motion.matches) stop('reduced', '已减少动态效果 · 曲线仍可手动调节。');
+    else if (state === 'reduced') setState('idle', '拖动参数，亲手验证。');
+  }
+  var observer = 'IntersectionObserver' in window ? new IntersectionObserver(function (entries) {
+    visible = entries[0].isIntersecting && entries[0].intersectionRatio >= .05;
+    section.dataset.demoVisible = String(visible);
+    if (visible) {
+      section.classList.add('plot-entered');
+      if (!started && !motion.matches) play();
+    } else if (running) stop('paused', '变化已暂停 · 回来后可继续。');
+  }, { threshold: [0, .05] }) : null;
+  if (observer) observer.observe(livePanel || chart);
+  else { visible = true; started = true; section.classList.add('plot-entered'); }
+  document.addEventListener('visibilitychange', function () {
+    if (document.hidden && running) stop('paused', '变化已暂停 · 可继续或亲手调节。');
+  }, { signal: events.signal });
+  motion.addEventListener('change', preference, { signal: events.signal });
+  window.addEventListener('pagehide', function (event) {
+    stop('paused', '变化已暂停 · 可继续或亲手调节。');
+    if (!event.persisted) { disposed = true; if (observer) observer.disconnect(); events.abort(); }
+  }, { signal: events.signal });
+  window.addEventListener('pageshow', function (event) { if (event.persisted) preference(); }, { signal: events.signal });
+  preference();
 })();
 </script>
 </body>

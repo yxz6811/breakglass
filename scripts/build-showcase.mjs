@@ -38,7 +38,7 @@ function inlineSvg(source, attributes, prefix = '') {
 }
 
 let html = await read('site/showcase.html');
-for (const name of ['showcase-base', 'showcase']) {
+for (const name of ['showcase-base', 'showcase', 'showcase-effects']) {
   const css = await read(`site/${name}.css`);
   if (/<\/style\b/i.test(css)) throw new Error(`${name}.css contains a closing style tag`);
   html = replaceOnce(
@@ -48,7 +48,7 @@ for (const name of ['showcase-base', 'showcase']) {
     `${name}.css link`,
   );
 }
-for (const name of ['showcase-base', 'showcase-motion']) {
+for (const name of ['showcase-base', 'showcase-motion', 'showcase-effects', 'showcase-demo']) {
   const script = await read(`site/${name}.js`);
   new vm.Script(script, { filename: `site/${name}.js` });
   if (/<\/script\b/i.test(script)) throw new Error(`${name}.js contains a closing script tag`);
@@ -79,7 +79,7 @@ if (/<link\b[^>]*\brel=["']stylesheet["']/i.test(html)) throw new Error('Externa
 if (/<script\b[^>]*\bsrc\s*=/i.test(html)) throw new Error('External script remains');
 if (/<img\b/i.test(html)) throw new Error('External image remains');
 const scripts = [...html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script\s*>/gi)];
-if (scripts.length !== 2) throw new Error(`Expected two inline scripts, got ${scripts.length}`);
+if (scripts.length !== 4) throw new Error(`Expected four inline scripts, got ${scripts.length}`);
 scripts.forEach((script, index) => new vm.Script(script[1], { filename: `展示网站:inline-${index + 1}` }));
 
 const original = path.join(root, '展示网站');
@@ -88,4 +88,4 @@ await writeFile(original, html, 'utf8');
 await writeFile(alias, html, 'utf8');
 const [originalBytes, aliasBytes] = await Promise.all([readFile(original), readFile(alias)]);
 if (!originalBytes.equals(aliasBytes)) throw new Error('Standalone entries differ');
-console.log(`Built 展示网站 and 展示网站.html (${originalBytes.length} bytes each; inline CSS, SVG and 2 syntax-checked scripts).`);
+console.log(`Built 展示网站 and 展示网站.html (${originalBytes.length} bytes each; inline CSS, SVG and 4 syntax-checked scripts).`);

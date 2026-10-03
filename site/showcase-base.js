@@ -410,21 +410,14 @@
     return t * t;
   }
 
-  var reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  var noHover = window.matchMedia('(hover: none)').matches;
+  var motionPreference = window.matchMedia('(prefers-reduced-motion: reduce)');
+  var hoverPreference = window.matchMedia('(hover: none)');
+  var reduced = motionPreference.matches;
+  var noHover = hoverPreference.matches;
   var mouse = { x: -1e5, y: -1e5, on: false };
   var active = CFG.defaultActive;
   var markerY = 0, markerReady = false;
-
-  if (!noHover) {
-    window.addEventListener('mousemove', function (e) {
-      mouse.x = e.clientX; mouse.y = e.clientY; mouse.on = true;
-    }, { passive: true });
-    window.addEventListener('mouseout', function (e) {
-      if (!e.relatedTarget) mouse.on = false;
-    });
-    document.addEventListener('mouseleave', function () { mouse.on = false; });
-  }
+  var frameId = 0, suspended = false, needsMeasure = true;
 
   function computeActive() {
     var mid = window.innerHeight * 0.5;
@@ -439,10 +432,26 @@
 
   var last = -1, lastScroll = -1;
 
-  function frame(now) {
-    requestAnimationFrame(frame);
+  function stop() {
+    if (frameId) cancelAnimationFrame(frameId);
+    frameId = 0;
+    last = -1;
+  }
 
-    if (host.offsetWidth === 0) return;
+  function canRender() {
+    return !suspended && !document.hidden && host.offsetWidth !== 0;
+  }
+
+  function requestUpdate(remeasure) {
+    if (remeasure) { needsMeasure = true; lastScroll = -1; }
+    if (!canRender()) { stop(); return; }
+    if (!frameId) frameId = requestAnimationFrame(frame);
+  }
+
+  function frame(now) {
+    frameId = 0;
+    if (!canRender()) { stop(); return; }
+    if (needsMeasure) { measure(); needsMeasure = false; }
 
     if (last < 0) last = now - 16.7;
     var dt = Math.min(now - last, 64);
@@ -459,6 +468,7 @@
     var i, en, s, dx, dy;
     var strengths = [];
     var maxS = 0, peak = -1;
+    var settling = false;
 
     for (i = 0; i < entries.length; i++) {
       en = entries[i];
@@ -480,6 +490,12 @@
 
       en.shift += (tShift - en.shift) * k;
       en.scale += (tScale - en.scale) * k;
+      if (Math.abs(tShift - en.shift) > 0.01 || Math.abs(tScale - en.scale) > 0.001) {
+        settling = true;
+      } else {
+        en.shift = tShift;
+        en.scale = tScale;
+      }
 
       en.el.style.transform = 'translateX(' + en.shift.toFixed(2) + 'px)';
       en.tick.style.transform = 'translateY(-50%) scaleX(' + en.scale.toFixed(3) + ')';
@@ -493,26 +509,61 @@
         en.peak = isPeak;
         en.el.classList.toggle('is-hot', hot);
         en.el.classList.toggle('is-peak', isPeak);
-        en.el.classList.toggle('is-active', i === active);
       }
+      en.el.classList.toggle('is-active', i === active);
+      if (i === active) en.el.setAttribute('aria-current', 'location');
+      else en.el.removeAttribute('aria-current');
     }
 
     if (marker) {
       var tY = entries[active].cy - CFG.markerLength / 2;
       if (!markerReady) { markerY = tY; markerReady = true; }
       markerY += (tY - markerY) * k;
+      if (Math.abs(tY - markerY) > 0.02) settling = true;
+      else markerY = tY;
       marker.style.transform = 'translateY(' + markerY.toFixed(2) + 'px)';
       marker.style.background = mix(C_MARKER, C_ACCENT, maxS);
     }
+    // Continue only while proximity or the active marker is still settling.
+    if (settling) frameId = requestAnimationFrame(frame);
+    else last = -1;
   }
 
-  function boot() { measure(); requestAnimationFrame(frame); }
-  if (document.readyState === 'complete') boot();
-  else window.addEventListener('load', boot);
+  function clearMouse() {
+    mouse.on = false;
+    requestUpdate(false);
+  }
 
-  window.addEventListener('resize', function () {
-    measure();
-    lastScroll = -1;
+  window.addEventListener('mousemove', function (e) {
+    if (noHover || reduced) return;
+    mouse.x = e.clientX; mouse.y = e.clientY; mouse.on = true;
+    requestUpdate(false);
+  }, { passive: true });
+  window.addEventListener('mouseout', function (e) {
+    if (!e.relatedTarget) clearMouse();
   });
-  if (document.fonts && document.fonts.ready) document.fonts.ready.then(measure);
+  document.addEventListener('mouseleave', clearMouse);
+
+  function boot() { requestUpdate(true); }
+  if (document.readyState === 'complete') boot();
+  else window.addEventListener('load', boot, { once: true });
+
+  window.addEventListener('scroll', function () { requestUpdate(false); }, { passive: true });
+  window.addEventListener('resize', function () { requestUpdate(true); });
+  document.addEventListener('visibilitychange', function () {
+    if (document.hidden) { mouse.on = false; stop(); }
+    else requestUpdate(true);
+  });
+  window.addEventListener('pagehide', function () { suspended = true; stop(); });
+  window.addEventListener('pageshow', function () { suspended = false; requestUpdate(true); });
+  motionPreference.addEventListener('change', function (event) {
+    reduced = event.matches;
+    mouse.on = false;
+    requestUpdate(true);
+  });
+  hoverPreference.addEventListener('change', function (event) {
+    noHover = event.matches;
+    clearMouse();
+  });
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { requestUpdate(true); });
 })();

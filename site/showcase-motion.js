@@ -49,6 +49,11 @@
   var chapters = Array.from(brandIntro.querySelectorAll('[data-chapter]'));
   var motionNote = find('.motion-note');
   var motion = window.matchMedia('(prefers-reduced-motion: reduce)');
+  var brandFocus = find('.brand-focus');
+  var heroCopy = find('.hero-copy');
+  var entranceComplete = false;
+  var introCenter = { x: 0, y: 0, lockupY: 0 };
+  var restoreReplayFocus = false;
   var events = new AbortController();
   var cuts = {
     logo: { duration: 2200, from: 4050 },
@@ -67,6 +72,32 @@
   var target = { x: 240, y: 118 };
   var lastCaption = '';
   var lastPhase = '';
+
+  function centerIntro() {
+    if (!brandFocus || entranceComplete) return;
+    brandFocus.style.setProperty('--intro-x', '0px');
+    brandFocus.style.setProperty('--intro-y', '0px');
+    var rect = find('.brand-stage').getBoundingClientRect();
+    var logoBounds = symbol.getBoundingClientRect();
+    introCenter.x = window.innerWidth / 2 - (logoBounds.left + logoBounds.width / 2);
+    introCenter.y = window.innerHeight / 2 - (logoBounds.top + logoBounds.height / 2);
+    introCenter.lockupY = window.innerHeight / 2 - (rect.top + rect.height / 2);
+  }
+  function completeEntrance() {
+    if (entranceComplete) return;
+    entranceComplete = true;
+    body.classList.remove('intro-entering');
+    body.classList.add('intro-ready');
+    if (heroCopy) heroCopy.removeAttribute('inert');
+    if (restoreReplayFocus) { restoreReplayFocus = false; replay.focus({ preventScroll: true }); }
+  }
+  function beginEntrance() {
+    entranceComplete = false;
+    body.classList.remove('intro-ready');
+    body.classList.add('intro-entering');
+    if (heroCopy) heroCopy.setAttribute('inert', '');
+    centerIntro();
+  }
 
   function clamp(value, low, high) { return Math.min(high, Math.max(low, value)); }
   function progress(time, start, length) { return clamp((time - start) / length, 0, 1); }
@@ -152,6 +183,12 @@
     var fadeScene = 1 - smooth(progress(t, 3880, 540));
     var markReveal = out(progress(t, 4050, 90));
     var wordReveal = out(progress(t, 4800, 700));
+    if (brandFocus && !entranceComplete) {
+      // The symbol starts at the viewport center; its wordmark grows into a centered lockup.
+      var symbolFocus = (logoCut ? 1 : out(progress(t, 3970, 80))) * (1 - wordReveal);
+      brandFocus.style.setProperty('--intro-x', (introCenter.x * symbolFocus).toFixed(2) + 'px');
+      brandFocus.style.setProperty('--intro-y', (introCenter.lockupY + (introCenter.y - introCenter.lockupY) * symbolFocus).toFixed(2) + 'px');
+    }
     var a = .65;
     if (exploration < .35) a += .6 * smooth(exploration / .35);
     else if (exploration < .72) a = 1.25 - .92 * smooth((exploration - .35) / .37);
@@ -227,12 +264,12 @@
     if (!running || disposed) return;
     render(current + Math.max(0, now - lastFrame) * rate);
     lastFrame = now;
-    if (current >= cut.duration) { pause(); return; }
+    if (current >= cut.duration) { pause(); completeEntrance(); return; }
     frame = window.requestAnimationFrame(tick);
   }
   function play(restart) {
     pause();
-    if (motion.matches || disposed) { render(cut.duration); return; }
+    if (motion.matches || disposed) { render(cut.duration); completeEntrance(); return; }
     measureTarget();
     if (restart || current >= cut.duration) render(0);
     running = true;
@@ -246,10 +283,14 @@
     chapters.forEach(function (element) { element.disabled = reduced || chapterTime[element.dataset.chapter] < cut.from; });
     motionNote.hidden = !reduced;
     body.dataset.reducedMotion = String(reduced);
-    if (reduced) { pause(); render(cut.duration); syncPlayback(); }
+    if (reduced) { pause(); render(cut.duration); syncPlayback(); completeEntrance(); }
   }
 
-  replay.addEventListener('click', function () { play(true); }, { signal: events.signal });
+  replay.addEventListener('click', function () {
+    restoreReplayFocus = true;
+    beginEntrance();
+    play(true);
+  }, { signal: events.signal });
   playback.addEventListener('click', function () { if (running) pause(); else play(false); }, { signal: events.signal });
   timeline.addEventListener('input', function () { pause(); render(Number(timeline.value)); syncPlayback(); }, { signal: events.signal });
   speed.addEventListener('change', function () { rate = Number(speed.value) === .5 ? .5 : 1; }, { signal: events.signal });
@@ -269,16 +310,22 @@
     coefficient.value = '.65';
     renderSmallGraph(coefficient.value);
   }, { signal: events.signal });
-  document.addEventListener('visibilitychange', function () { if (document.hidden) pause(); }, { signal: events.signal });
+  document.addEventListener('visibilitychange', function () {
+    if (document.hidden) {
+      pause();
+      if (!entranceComplete) { render(cut.duration); syncPlayback(); completeEntrance(); }
+    }
+  }, { signal: events.signal });
   var visibility = 'IntersectionObserver' in window ? new IntersectionObserver(function (entries) {
     if (!entries[0].isIntersecting && running) {
       pause();
       render(cut.duration);
       syncPlayback();
+      completeEntrance();
     }
   }) : null;
   if (visibility) visibility.observe(brandIntro);
-  window.addEventListener('resize', function () { measureTarget(); render(current); }, { signal: events.signal });
+  window.addEventListener('resize', function () { centerIntro(); measureTarget(); render(current); }, { signal: events.signal });
   motion.addEventListener('change', applyMotionPreference, { signal: events.signal });
   window.addEventListener('pagehide', function (event) {
     pause();
@@ -288,9 +335,10 @@
     events.abort();
   }, { signal: events.signal });
   window.addEventListener('pageshow', function (event) {
-    if (event.persisted) { measureTarget(); render(current); syncPlayback(); }
+    if (event.persisted) { measureTarget(); render(entranceComplete ? current : cut.duration); syncPlayback(); completeEntrance(); }
   }, { signal: events.signal });
   body.dataset.cut = 'logo';
+  beginEntrance();
   renderSmallGraph(coefficient.value);
   measureTarget();
   applyMotionPreference();

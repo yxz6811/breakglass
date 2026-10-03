@@ -10,6 +10,7 @@
 <meta name="description" content="BreakGlass 破壁：从观看到亲手验证，从一条可操作曲线开始，让屏幕里的知识成为可以探索的世界。"/>
 <link rel="stylesheet" href="./showcase-base.css"/>
 <link rel="stylesheet" href="./showcase.css"/>
+<link rel="stylesheet" href="./showcase-effects.css"/>
 </head>
 <body>
 
@@ -55,6 +56,7 @@
        ===================================================== -->
   <section class="page hero brand-intro" id="p1" aria-labelledby="mission">
   <div class="page-inner" id="heroInner">
+    <div class="brand-focus">
     <div class="brand-stage">
       <svg class="story" viewBox="0 0 960 380" fill="none" aria-hidden="true">
         <defs>
@@ -123,6 +125,8 @@
         </div></div>
       <p class="story-caption" aria-hidden="true">画面停住。知识，不必停住。</p>
     </div>
+    </div>
+    <div class="hero-copy">
     <h1 class="mission" id="mission">从观看，到<span>亲手验证。</span></h1>
     <p class="ambition">从一条曲线开始，让屏幕里的知识成为可以探索的世界。</p>
     <div class="hero-actions">
@@ -145,6 +149,7 @@
     </div>
     <p class="scope-note">当前体验：预制抛物线场景。真实视觉识别与代码执行属于后续目标。</p>
     <p class="motion-note" role="status" hidden>已遵循减少动态效果偏好，直接呈现 Logo，曲线仍可操作。</p>
+    </div>
   </div>
 </section>
 
@@ -219,7 +224,7 @@ x = np.linspace(-10, 10, 300)
 y = np.sin(x)
 plt.plot(x, y)
 plt.show()</pre>
-          <div class="mt-run">▸ [WASM] Running… 输出已渲染至原位图层</div>
+          <div class="mt-run">▸ P1 方案示意 · WASM 执行尚未接入本页</div>
         </div>
 
       </div>
@@ -280,11 +285,12 @@ plt.show()</pre>
        ===================================================== -->
   <section class="page" id="p5" aria-labelledby="demo-title">
   <div class="page-inner">
-    <h2 class="page-title" id="demo-title">同一条曲线，<br><em>换一种学习方式。</em></h2>
-    <p class="page-lead">看见变化，更要亲手验证。拖动一个参数，观察抛物线的开口如何改变。</p>
+    <h2 class="page-title reveal" style="--i:0" id="demo-title">同一条曲线，<br><em>换一种学习方式。</em></h2>
+    <p class="page-lead reveal" style="--i:1">看见变化，更要亲手验证。拖动一个参数，观察抛物线的开口如何改变。</p>
     <div class="curve-comparison hands-on">
-      <div class="curve-panel">
+      <div class="curve-panel watch-panel">
         <div class="curve-panel-head"><h3>看见</h3><span>y = 0.65x²</span></div>
+        <div class="chart-surface">
         <svg class="watch-chart" viewBox="0 0 480 280" fill="none" role="img" aria-labelledby="watch-chart-title watch-chart-description">
     <title id="watch-chart-title">预制抛物线画面</title>
     <desc id="watch-chart-description">灰色曲线表示 y 等于 0.65 乘 x 平方的静止画面。</desc>
@@ -294,23 +300,30 @@ plt.show()</pre>
     <g clip-path="url(#watch-plot-clip)"><path class="watch-curve"/></g>
     <text class="plot-label" x="454" y="245">x</text><text class="plot-label" x="250" y="21">y</text><text class="plot-label" x="227" y="246">0</text>
   </svg>
+        </div>
         <p class="curve-frozen-note">画面中的曲线保持静止。<br>它告诉你结果，还没有邀请你参与。</p>
       </div>
-      <div class="curve-panel">
+      <div class="curve-panel live-panel">
         <div class="curve-panel-head"><h3>亲手验证</h3><span>y = ax²</span></div>
+        <div class="chart-surface">
         <svg class="hands-on-chart" viewBox="0 0 480 280" fill="none" role="img" aria-labelledby="live-chart-title live-chart-description">
     <title id="live-chart-title">可调整的抛物线</title>
     <desc id="live-chart-description">调整参数 a，蓝色曲线就地变化；灰色虚线是 a 等于 0.65 的参考。</desc>
     <defs><clipPath id="live-plot-clip"><rect x="16" y="10" width="448" height="248"/></clipPath></defs>
     <path class="plot-grid" d="M36 48H444M36 108H444M36 168H444M104 14V248M172 14V248M308 14V248M376 14V248"/>
     <path class="plot-axis" d="M24 228H456M240 14V252"/>
-    <g clip-path="url(#live-plot-clip)"><path class="small-reference"/><path class="small-curve"/><circle class="small-node" cx="342" cy="140.25" r="5"/></g>
+    <g clip-path="url(#live-plot-clip)"><path class="small-reference"/><path class="small-curve" pathLength="1"/><circle class="small-node" cx="342" cy="140.25" r="5"/></g>
     <text class="plot-label" x="454" y="245">x</text><text class="plot-label" x="250" y="21">y</text><text class="plot-label" x="227" y="246">0</text>
   </svg>
+        </div>
         <div class="parameter-control">
           <label for="coefficient">调整开口<span class="parameter-readout">a = <output id="coefficient-value" for="coefficient">0.65</output></span></label>
           <input id="coefficient" type="range" min="0.25" max="1.4" step="0.01" value="0.65" aria-label="调整抛物线开口参数 a">
           <div class="parameter-caption"><p>灰色虚线保留原曲线，方便比较。</p><button type="button" class="curve-reset">恢复原曲线</button></div>
+        </div>
+        <div class="demo-motion-control">
+          <p class="demo-motion-status" id="demo-motion-status">拖动参数，亲手验证。</p>
+          <button class="demo-autoplay" type="button" aria-pressed="false" aria-describedby="demo-motion-status" hidden>播放变化</button>
         </div>
       </div>
     </div>
@@ -855,5 +868,7 @@ plt.show()</pre>
 
 <script src="./showcase-base.js" defer></script>
 <script src="./showcase-motion.js" defer></script>
+<script src="./showcase-effects.js" defer></script>
+<script src="./showcase-demo.js" defer></script>
 </body>
 </html>
