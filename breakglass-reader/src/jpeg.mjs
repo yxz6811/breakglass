@@ -1,3 +1,5 @@
+import { spawn } from 'node:child_process';
+
 const PREFIX = 'data:image/jpeg;base64,';
 
 /**
@@ -51,9 +53,45 @@ export function jpegSize(bytes) {
 }
 
 /**
- * 页面按源宽高等比缩小截帧，两个方向的比例应当一致；
- * 截帧时高度取整，所以允许 1 像素的差。
+ * 用本机 ffmpeg 把 JPEG 解成 RGB。没有 ffmpeg 或解码失败时返回 null，调用方改走锚点。
  *
+ * @param {Buffer} bytes
+ * @param {{ width: number, height: number }} image
+ * @param {{ signal?: AbortSignal, spawnImpl?: typeof spawn }} [options] 取消解码或提供测试替身
+ * @returns {Promise<Buffer | null>}
+ */
+export function decodeJpegRgb(bytes, image, { signal, spawnImpl = spawn } = {}) {
+  if (signal?.aborted) return Promise.resolve(null);
+  const expected = image.width * image.height * 3;
+  return new Promise((resolve) => {
+    const child = spawnImpl('ffmpeg', ['-nostdin', '-v', 'error', '-i', 'pipe:0', '-f', 'rawvideo', '-pix_fmt', 'rgb24', 'pipe:1'], { windowsHide: true });
+    const out = [];
+    let settled = false;
+    const finish = (value) => {
+      if (settled) return;
+      settled = true;
+      signal?.removeEventListener('abort', cancel);
+      resolve(value);
+    };
+    const cancel = () => {
+      child.kill();
+      finish(null);
+    };
+    child.stdout.on('data', (chunk) => out.push(chunk));
+    child.on('error', () => finish(null));
+    child.on('close', (code) => {
+      const rgb = Buffer.concat(out);
+      finish(code === 0 && rgb.length === expected ? rgb : null);
+    });
+    child.stdin.on('error', () => {});
+    signal?.addEventListener('abort', cancel, { once: true });
+    if (signal?.aborted) { cancel(); return; }
+    child.stdin.end(bytes);
+  });
+}
+
+/**
+ * 页面按源宽高等比缩小截帧；高度取整允许 1 像素的差。
  * @param {{ width: number, height: number }} image JPEG 宽高
  * @param {{ width: number, height: number }} frameSize 源尺寸
  * @returns {boolean}

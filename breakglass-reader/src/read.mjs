@@ -1,4 +1,5 @@
-import { decodeJpegDataUrl, jpegSize, sameAspect } from './jpeg.mjs';
+import { decodeJpegDataUrl, decodeJpegRgb, jpegSize, sameAspect } from './jpeg.mjs';
+import { locateCurve } from './locate.mjs';
 import { askModel } from './model.mjs';
 import { fitAxes, placeCurve, sliderRanges } from './geometry.mjs';
 
@@ -153,16 +154,26 @@ async function readFrame(frame, context) {
   if (!finite(params.a) || !finite(params.h) || !finite(params.k) || Math.abs(params.a) < 1e-6) {
     return { ok: false, reason: 'equation_invalid' };
   }
-  const axes = fitAxes(answer.anchors, image);
-  if (!axes.ok) return axes;
-  const placement = placeCurve(
-    params,
-    { min: answer.curveXMin, max: answer.curveXMax },
-    axes.map,
-    image,
-    request.frameSize
-  );
-  if (!placement.ok) return placement;
+  const workSignal = AbortSignal.any([budget, ...(signal ? [signal] : [])]);
+  const rgb = await decodeJpegRgb(bytes, image, { signal: workSignal });
+  signal?.throwIfAborted();
+  if (budget.aborted) return { ok: false, reason: 'budget_spent', transport: true };
+  const located = rgb ? locateCurve(rgb, image, params) : null;
+  let placement = located
+    ? placeCurve(params, located.drawn, located.map, image, request.frameSize)
+    : null;
+  if (!placement?.ok) {
+    const axes = fitAxes(answer.anchors, image);
+    if (!axes.ok) return axes;
+    placement = placeCurve(
+      params,
+      { min: answer.curveXMin, max: answer.curveXMax },
+      axes.map,
+      image,
+      request.frameSize
+    );
+    if (!placement.ok) return placement;
+  }
 
   const line = typeof answer.lessonLine === 'string' ? answer.lessonLine.trim() : '';
   return {

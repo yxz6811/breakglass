@@ -8,7 +8,7 @@
 
 `yxz6811/breakglass` 当前是前端项目。P0 的交付物是一个 Chrome MV3 扩展和扩展内的离线演示页：使用 HTML5 Video API 播放受控视频，用原生 SVG 显示可调节的抛物线，并用随扩展打包的预制 JSON 完成可重复演示。
 
-本仓库不新增业务后端、数据库、账号系统、云端 Python 执行容器或自建识别服务。扩展没有 Node.js 运行时依赖。根据前端 Constitution 1.5.0 及 Spec Constitution 1.7.0，既有 `breakglass-reader/` 是开播前阅读的独立例外：源码在仓库、不进入扩展包、不部署云端后台；全仓库测试与该服务需要 Node.js ≥22.9。
+本仓库不新增业务后端、数据库、账号系统、云端 Python 执行容器或自建识别服务。扩展没有 Node.js 运行时依赖。根据前端 Constitution 1.6.0 及 Spec Constitution 1.8.0，既有 `breakglass-reader/` 是开播前阅读的独立例外：源码在仓库、不进入扩展包、不部署云端后台；全仓库测试与该服务需要 Node.js ≥22.9。
 
 Python/Pyodide、本地 Web Worker 和真实视觉识别属于独立 P1 vertical slice。它们只有在单独的开关、契约、安全预算和验收证据齐备后才能进入实现，不得阻塞或抬高 P0 的验收门槛。
 
@@ -111,7 +111,7 @@ P1 立项至少要同时记录精确依赖版本、资源来源与完整性校�
 
 - `source: "vision"` 在本切片**只**表示 `evidence: "packaged-sample"` 的打包样例；它不表示外部接口已返回，不表示单帧已离开浏览器，也不表示识别服务已接通。
 - 不新增上传地址、主机权限、内容脚本、远程脚本或后端进程；样例读取路径只有扩展包内的 `extension/assets/vision/fixture-parabola.json`。
-- 此处描述的是 002 打包识别样例，不上传画面。后续 003 开播前阅读按 Constitution 1.7.0 的独立例外发送稀疏帧，不能用其例外声称 002 已接通真实识别。
+- 此处描述的是 002 打包识别样例，不上传画面。后续 003 开播前阅读按 Constitution 1.8.0 的独立例外发送稀疏帧，不能用其例外声称 002 已接通真实识别。
 - 识别适配的开关、样例、校验与会话规则属于本仓库的「结果规则」侧；页面只消费 `createWake` 的 `onChange` 状态并显示来源文案。
 - `.specify/memory/constitution.md` 已由 1.3.0 修订为 1.4.0：默认关闭时 `interactive` 的 `result.source` 仍只能是 `preset`，只有 `visionAdapter: "fixture"` + `externalAttempt: "off"` 时才允许 `source: "vision"` + `fallback: null` + `evidence: "packaged-sample"`。
 

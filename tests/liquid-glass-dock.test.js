@@ -149,4 +149,51 @@ test('devices without hover keep the dock visible after the pointer leaves', () 
     global.window.setTimeout = originalTimer;
   }
 });
+
+test('reading-state hold keeps the dock and expanded state until released', () => {
+  const originalObserver = global.MutationObserver;
+  const originalQuery = global.document.querySelector;
+  const originalTimer = global.window.setTimeout;
+  const originalClear = global.window.clearTimeout;
+  const pending = [];
+  const attributes = {};
+  let onHoldChange;
+  let disconnected = false;
+  const control = {
+    addEventListener() {}, removeEventListener() {},
+    setAttribute(name, value) { attributes[name] = value; }
+  };
+  global.document.querySelector = () => control;
+  global.window.setTimeout = (fn) => { pending.push(fn); return pending.length; };
+  global.window.clearTimeout = (id) => { pending[id - 1] = null; };
+  global.MutationObserver = class {
+    constructor(fn) { onHoldChange = fn; }
+    observe(root, options) { assert.deepEqual(options.attributeFilter, ['data-hold']); }
+    disconnect() { disconnected = true; }
+  };
+  try {
+    const { dock, root } = createDock({ id: 'demo-toolbar' });
+    dock.reveal();
+    dock.scheduleHide();
+    root.dataset.hold = 'true';
+    onHoldChange();
+    assert.equal(pending[0], null, 'a hold cancels an earlier hide timer');
+    dock.onWindowPointer({ clientX: 900, clientY: 900 });
+    assert.equal(pending.length, 1, 'pointer departure cannot dismiss a held dock');
+    assert.equal(root.dataset.revealed, 'true');
+    assert.equal(attributes['aria-expanded'], 'true');
+    delete root.dataset.hold;
+    onHoldChange();
+    pending[1]();
+    assert.equal(root.dataset.revealed, undefined);
+    assert.equal(attributes['aria-expanded'], 'false');
+    dock.destroy();
+    assert.equal(disconnected, true);
+  } finally {
+    global.MutationObserver = originalObserver;
+    global.document.querySelector = originalQuery;
+    global.window.setTimeout = originalTimer;
+    global.window.clearTimeout = originalClear;
+  }
+});
 });

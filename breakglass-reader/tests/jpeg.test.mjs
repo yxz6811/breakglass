@@ -1,6 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { decodeJpegDataUrl, jpegSize, sameAspect } from '../src/jpeg.mjs';
+import { EventEmitter } from 'node:events';
+import { PassThrough } from 'node:stream';
+import { decodeJpegDataUrl, decodeJpegRgb, jpegSize, sameAspect } from '../src/jpeg.mjs';
 import { FRAME_DATA_URL, JPEG_SIZE, SOURCE_SIZE } from './helpers/fixtures.mjs';
 
 test('从页面那样的 data URL 读出 JPEG 宽高', () => {
@@ -33,4 +35,40 @@ test('宽高比例和源尺寸一致才算同一帧', () => {
   assert.equal(sameAspect(JPEG_SIZE, SOURCE_SIZE), true);
   assert.equal(sameAspect({ width: 640, height: 360 }, SOURCE_SIZE), false);
   assert.equal(sameAspect({ width: 640, height: 360 }, { width: 1920, height: 1080 }), true);
+});
+test('JPEG 解码取消会终止子进程并忽略迟到输出', async () => {
+  const controller = new AbortController();
+  const child = new EventEmitter();
+  child.stdout = new PassThrough();
+  child.stdin = new PassThrough();
+  let killed = 0;
+  child.kill = () => { killed += 1; return true; };
+  const pending = decodeJpegRgb(Buffer.from([0xff, 0xd8]), { width: 1, height: 1 }, {
+    signal: controller.signal,
+    spawnImpl: (name, args, options) => {
+      assert.equal(name, 'ffmpeg');
+      assert.equal(options.windowsHide, true);
+      return child;
+    }
+  });
+  controller.abort();
+  assert.equal(await pending, null);
+  assert.equal(killed, 1);
+  child.stdout.write(Buffer.from([1, 2, 3]));
+  child.emit('close', 0);
+  assert.equal(await pending, null);
+  child.stdout.destroy();
+  child.stdin.destroy();
+});
+
+test('已经取消的 JPEG 解码不启动 ffmpeg', async () => {
+  const controller = new AbortController();
+  controller.abort();
+  let spawned = false;
+  const rgb = await decodeJpegRgb(Buffer.alloc(0), { width: 1, height: 1 }, {
+    signal: controller.signal,
+    spawnImpl: () => { spawned = true; }
+  });
+  assert.equal(rgb, null);
+  assert.equal(spawned, false);
 });

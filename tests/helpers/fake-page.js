@@ -27,8 +27,9 @@ const ELEMENT_IDS = [
   'parameter-k', 'parameter-k-value', 'source-label', 'source-note',
   'state-label', 'time-label', 'asset-empty', 'runtime-note',
   'waiting-bar', 'waiting-progress', 'fullscreen-button',
-  'wake-reason', 'reset-reason', 'local-video',
-  'lesson-status', 'lesson-cancel', 'lesson-next', 'lesson-endpoint', 'lesson-note'
+  'wake-reason', 'reset-reason', 'local-video', 'preset-video',
+  'lesson-status', 'lesson-cancel', 'lesson-next', 'lesson-endpoint', 'lesson-note',
+  'stage-banner', 'stage-banner-title', 'stage-banner-detail'
 ];
 
 // 忠实一点的 style 替身：main.js 会同时用 style.left = ... 和 style.setProperty。
@@ -274,7 +275,9 @@ function flush() { return new Promise((resolve) => setImmediate(resolve)); }
 async function createHarness(options = {}) {
   const elements = {};
   for (const id of ELEMENT_IDS) {
-    const tag = id === 'demo-video' ? 'video' : (id === 'parameter-h' || id === 'local-video' || id === 'lesson-endpoint' || id === 'lesson-note' ? 'input' : 'div');
+    const tag = id === 'demo-video' ? 'video'
+      : (id === 'preset-video' ? 'button'
+        : (id === 'parameter-h' || id === 'local-video' || id === 'lesson-endpoint' || id === 'lesson-note' ? 'input' : 'div'));
     elements[id] = element(tag);
   }
   applyMarkupState(elements);

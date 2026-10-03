@@ -112,7 +112,14 @@
         else this.scheduleHide();
       };
       if (this.noHover && this.noHover.addEventListener) this.noHover.addEventListener('change', this.onHoverChange);
-      if (this.noHover && this.noHover.matches) this.reveal();
+      if ((this.noHover && this.noHover.matches) || this.root.dataset.hold === 'true') this.reveal();
+      if (typeof MutationObserver === 'function') {
+        this.holdObserver = new MutationObserver(() => {
+          if (this.root.dataset.hold === 'true') this.reveal();
+          else this.scheduleHide();
+        });
+        this.holdObserver.observe(this.root, { attributes: true, attributeFilter: ['data-hold'] });
+      }
       /** @type {{ clientX: number, clientY: number } | null} */
       this.lastPointer = null;
       this.onWindowPointer = (event) => {
@@ -154,11 +161,11 @@
      * 焦点还在栏内时不收。到点后再看一次指针：滑出动画结束前指针可能已经停在栏的落点上。
      */
     scheduleHide() {
-      if ((this.noHover && this.noHover.matches) || this.focusIndex >= 0
+      if (this.root.dataset.hold === 'true' || (this.noHover && this.noHover.matches) || this.focusIndex >= 0
           || (this.revealControl && document.activeElement === this.revealControl) || this.hideTimer !== null) return;
       this.hideTimer = window.setTimeout(() => {
         this.hideTimer = null;
-        if ((this.noHover && this.noHover.matches) || this.focusIndex >= 0
+        if (this.root.dataset.hold === 'true' || (this.noHover && this.noHover.matches) || this.focusIndex >= 0
             || (this.revealControl && document.activeElement === this.revealControl)) return;
         if (this.pointerWantsDock(this.lastPointer)) return;
         delete this.root.dataset.revealed;
@@ -248,6 +255,7 @@
       this.root.removeEventListener('focusin', this.onFocusIn);
       this.root.removeEventListener('focusout', this.onFocusOut);
       if (this.observer) this.observer.disconnect();
+      if (this.holdObserver) this.holdObserver.disconnect();
       this.items.forEach((item) => { item.style.transform = ''; });
     }
   }

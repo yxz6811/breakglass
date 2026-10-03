@@ -1,6 +1,6 @@
 # BreakGlass 优化与验证
 
-2026 年 10 月 3 日完成本轮优化。基于 GitHub `main` 的提交 `644a53575a5a1bac4ebb56b6d3b22af4c36524fc`，修改保存在独立目录 `D:\前端\breakglass-optimized`，原工作目录保留。本轮没有提交或推送到 GitHub。
+2026 年 10 月 3 日完成本轮优化，最初基于 GitHub `main` 的提交 `644a53575a5a1bac4ebb56b6d3b22af4c36524fc`，修改保存在独立目录 `D:\前端\breakglass-optimized`，原工作目录保留。根据用户的推送要求，在 `D:\前端\breakglass-publish` 建立分支 `codex/optimize-breakglass`，并合入远程新增提交 `632969a910d7b638d81f93191fa41b055e3af3a7`。初始验证与合并后的验证分别记录，不覆盖远程 `main`。
 
 本轮修复曲线校验、阅读取消、响应归属、滑块精度和界面入口问题，并补充检查脚本与 CI。遵循 [BreakGlass Constitution](BreakGlass-constitution.md) 与 [仓库原则](../.specify/memory/constitution.md)：数学抛物线 P0 范围不变，阅读服务仅修改已有 `breakglass-reader/`，没有新增云端服务、数据库、账号或代码执行能力。
 
@@ -21,7 +21,7 @@
 
 新增无依赖 `scripts/check.mjs` 和 GitHub Actions 配置。CI 使用 Node.js 24，执行语法、资源引用和全仓库测试；远程 CI 本轮未运行。
 
-## 实际验证结果
+## 初始优化副本的验证结果
 
 本机 Node.js 为 v24.21.0。在优化副本根目录执行：
 
@@ -57,12 +57,20 @@ node --test
 - 四画幅、窗口变化和全屏下的实际像素对齐仍需独立测量，不能由数学映射测试替代。
 - 阅读与问答测试使用模型替身，没有调用真实供应商；SC-003、SC-004、SC-005 仍未通过。
 - 原生屏幕阅读器未运行，当前结论来自浏览器可访问文本与自动化断言。
-- 包内视频仍为 45,789,460 字节，未完成压缩；本机没有 ffmpeg。本轮没有修改视频资源。
+- 包内视频仍为 45,789,460 字节，未完成压缩。初始优化时本机 PATH 没有 ffmpeg；合并验证另用了临时测试二进制，没有修改视频资源。
 
 ## 运行优化副本
 
-使用 Chrome 在 `chrome://extensions` 加载 `D:\前端\breakglass-optimized\extension`，点击扩展图标打开演示页，然后用“显示工具栏”定位第 6 秒并破壁。该路径使用明确标记的预制示例。
+待推送分支使用远程新增的显式视频选择流程。使用 Chrome 在 `chrome://extensions` 加载仓库的 `extension` 目录，点击扩展图标打开演示页，先点击“选择预设”，然后用“显示工具栏”定位第 6 秒并破壁。阅读失败时保留用户选中的视频，不自动换回示例；该行为遵循 Spec Constitution 1.8.0。上面的截图和 355 项测试属于合并前的初始优化副本。
 
 网页方式需要支持 HTTP Range 的静态服务器，才能可靠定位视频；普通不支持 Range 的服务器不能用于定位验收。选择本地视频不上传整段文件；配置阅读地址后会向该地址发送最多 8 张 JPEG 帧及课程说明，详见 [README](../README.md) 和 [reader 配置](../breakglass-reader/README.md)。
 
-补丁按上述 GitHub 提交生成。应用前应在对应版本执行 `git apply --check`，再执行 `git apply`；若目标分支已变化，应先审查差异。完整前端验证历史见 [验证记录](BreakGlass-frontend-validation.md)。
+初始补丁按 `644a535` 生成，已经通过该版本上的 `git apply --check`。最新代码以 `codex/optimize-breakglass` 分支为准；不要用初始补丁覆盖更新后的 `main`。完整前端验证历史见 [验证记录](BreakGlass-frontend-validation.md)。
+
+## 合入远程更新后的验证
+
+合入 `main@632969a`，保留显式选择预设、阅读失败保留视频、状态提示、地址记忆和既有 JPEG 像素定位功能。合并补齐页面离开时的抽帧与地址计时器取消、ffmpeg 子进程取消，以及巨大有限 h 的定位采样防死循环。
+
+推送前全仓库 **368 项测试通过，无失败或跳过**；静态检查 **77 个脚本、147 处本地引用和内联脚本通过**。[测试日志](test-evidence/publish-2026-10-03/node-test.log)与[静态日志](test-evidence/publish-2026-10-03/static-check.log)单独保存。图像定位测试使用 [PyPI imageio-ffmpeg 0.6.0](https://pypi.org/project/imageio-ffmpeg/0.6.0/) Windows wheel 的临时 ffmpeg，SHA256 已核对，仅加入本次命令 PATH，没有系统安装。CI 显式安装 ffmpeg 后执行同样检查。
+
+对应分支：[codex/optimize-breakglass](https://github.com/yxz6811/breakglass/tree/codex/optimize-breakglass)。远程 `main` 保留，进入 `main` 需要后续合并。真实像素、模型和四画幅验收限制继续适用。

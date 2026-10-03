@@ -50,6 +50,10 @@
   const lessonNext = $('#lesson-next');
   const lessonEndpoint = $('#lesson-endpoint');
   const lessonNote = $('#lesson-note');
+  const stageBanner = $('#stage-banner');
+  const stageBannerTitle = $('#stage-banner-title');
+  const stageBannerDetail = $('#stage-banner-detail');
+  const wakeTip = wakeButton ? wakeButton.querySelector('.lg-tip') : null;
 
   /**
    * 相对演示页的扩展包视频。仓库落盘路径只写在 extension/assets/video/README.md。
@@ -110,6 +114,11 @@
   let lessonProbe = null;
   /** 当前会话挂的是这次阅读的点，而不是包内的 demo-parabola。 */
   let usingLessonCurve = false;
+  /**
+   * 阅读采样进行到哪一张。只给画面上的「正在看」用。
+   * @type {{ phase: 'frame' | 'waiting', index: number, total: number, time: number } | null}
+   */
+  let lessonLook = null;
   /** 阅读点破壁的起点。只在点已经存好并落定时置位。 */
   let lessonWakeStartedAt = null;
   let wakeStartedAt = null;
@@ -117,6 +126,10 @@
   let presentationFrame = null;
   /** 刚退回 9 秒片时的原因。那支片子加载失败时要改口，不能说已经回去了。 */
   let lessonFallbackReason = '';
+  /** 用户片子已在画面上，但阅读地址还空着。 */
+  let awaitingEndpoint = false;
+  /** 地址栏连续输入时，等停手再决定要不要开始看。 */
+  let endpointWait = null;
   let wakeMounts = 0;
 
   function createClock() {
@@ -131,9 +144,33 @@
   }
 
   /**
+   * 点「选择预设」才挂上包内 9 秒片。进入页面时不自动选中。
+   * @returns {Promise<void>}
+   */
+  async function choosePackagedVideo() {
+    if (bootFailure || !video) return;
+    resetLesson();
+    if (overlay) removeOverlay({ pauseVideo: false });
+    if (localVideoUrl) {
+      URL.revokeObjectURL(localVideoUrl);
+      localVideoUrl = '';
+    }
+    videoBroken = false;
+    mediaPending = true;
+    if (video.setAttribute && packagedPreset) video.setAttribute('data-video-id', packagedPreset.videoId);
+    const attached = await attachPackagedVideo();
+    if (!attached) {
+      mediaPending = false;
+      if (!bootFailure) setStatus('预先准备的片子没有加载出来。');
+    }
+    syncControls();
+  }
+
+  /**
    * 文件明确不存在时才不挂 src。
    * 不用 Range 探测：只取 1 个字节会写进缓存，断网重载后 video 可能只拿到残缺尺寸。
    * fetch 在断网时会失败，这时仍把地址交给 video，扩展包内的文件可以由播放器自己读。
+   * 只在用户点「选择预设」，或阅读失败退回时调用。
    * @returns {Promise<boolean>} 是否已把地址交给演示 video
    */
   async function attachPackagedVideo() {
@@ -235,6 +272,7 @@
    */
   function videoMatches() {
     if (!presetResult) return false;
+    if (localVideoUrl && !usingLessonCurve) return false;
     if (!video || typeof video.getAttribute !== 'function') return true;
     const marked = video.getAttribute('data-video-id');
     if (!marked) return true;
@@ -374,6 +412,101 @@
     }
     if (jumpTip && Number.isFinite(dest)) jumpTip.textContent = '定位到第 ' + formatSecond(dest) + ' 秒';
     if (readout && Number.isFinite(authored)) readout.textContent = '停在第 ' + formatSecond(authored) + ' 秒';
+    syncStageBanner();
+  }
+
+  /**
+   * 记下正在看的那一帧，并刷新画面上的提示。
+   * @param {{ phase: 'frame' | 'waiting', index: number, total: number, time: number }} next
+   */
+  function noteLessonLook(next) {
+    lessonLook = next;
+    syncStageBanner();
+  }
+
+  /**
+   * 在画面上分开说明两件事：正在看，以及破壁开了没有。
+   * 有片子时把顶栏留在屏幕上，破壁按钮不用等指针移到最顶端。
+   */
+  function syncStageBanner() {
+    if (!stageBanner) return;
+    const state = sessionState();
+    const waiting = Boolean(state && state.status === 'waiting');
+    const failed = Boolean(state && state.status === 'recoverable-error');
+    const open = Boolean(overlay);
+    let mode = '';
+    let title = '';
+    let detail = '';
+    if (videoBroken) {
+      mode = '';
+    } else if (mediaPending) {
+      mode = 'idle';
+      title = '正在读取片子';
+      detail = '还没开始看，也还没破壁。';
+    } else if (waiting) {
+      mode = 'waking';
+      title = '正在破壁';
+      detail = '正在等结果。超过 1.5 秒会改用预先准备的示例。';
+    } else if (failed) {
+      mode = 'idle';
+      title = '破壁没有打开';
+      detail = (state && state.message) || '结果不可用，可以重试或退出。';
+    } else if (open) {
+      mode = 'open';
+      title = '破壁已打开';
+      detail = usingLessonCurve
+        ? '这是这次阅读找到的曲线。拖画面上的点，或拖右边的滑块。'
+        : '曲线已经盖在画面上。拖画面上的点，或拖右边的滑块。';
+    } else if (lesson && lesson.seeking) {
+      mode = 'seeking';
+      title = '正在停到这一帧';
+      detail = '停稳之后才能破壁。';
+    } else if (lesson && lesson.phase === 'reading' && !usingLessonCurve) {
+      mode = 'looking';
+      title = 'AI 正在看这段画面';
+      if (lessonLook && lessonLook.phase === 'waiting') {
+        detail = '画面已经交出去，正在等结果。破壁还没开始。';
+      } else if (lessonLook && lessonLook.phase === 'frame' && Number.isFinite(lessonLook.time)) {
+        detail = '正在看第 ' + formatSecond(lessonLook.time) + ' 秒（' + lessonLook.index + '/' + lessonLook.total + '）。破壁还没开始。';
+      } else if (lesson.points.length > 0) {
+        detail = '已找到 ' + lesson.points.length + ' 处，还在继续看。破壁还没开始。';
+      } else {
+        detail = '正在抽出画面。破壁还没开始。';
+      }
+    } else if (wakeButton && !wakeButton.disabled) {
+      mode = 'ready';
+      title = '可以破壁';
+      detail = '点顶栏的破壁，或按 Alt+B。曲线还没出现。';
+      if (lesson && lesson.phase === 'reading') detail += '画面还在继续看。';
+    } else if (awaitingEndpoint) {
+      mode = 'need-address';
+      title = '还没开始看';
+      detail = '阅读地址是空的。填上下方的地址，就会开始看这支片子。';
+    } else if (hasFrameSize() && !videoMatches()) {
+      mode = 'idle';
+      title = '这是你选的片子';
+      detail = '画面不会换回示例片。预设曲线对不上这支片子。';
+    } else if (hasFrameSize()) {
+      mode = 'idle';
+      title = '还没破壁';
+      const authored = authoredTime();
+      detail = Number.isFinite(authored)
+        ? '先停在第 ' + formatSecond(authored) + ' 秒，再破壁。'
+        : '先暂停在目标时间，再破壁。';
+    }
+    stageBanner.hidden = !mode;
+    if (stageBanner.dataset) stageBanner.dataset.mode = mode;
+    if (stage && stage.classList) stage.classList.toggle('is-looking', mode === 'looking');
+    if (stageBannerTitle) stageBannerTitle.textContent = title;
+    if (stageBannerDetail) stageBannerDetail.textContent = detail;
+    if (lessonEndpoint && lessonEndpoint.classList) {
+      lessonEndpoint.classList.toggle('is-needed', mode === 'need-address');
+    }
+    const dock = document.querySelector('.lg-dock');
+    if (dock && dock.dataset) {
+      if (mode) dock.dataset.hold = 'true';
+      else delete dock.dataset.hold;
+    }
   }
 
   /**
@@ -796,7 +929,7 @@
       }
     }
     const waiting = Boolean(sessionState() && sessionState().status === 'waiting');
-    const ready = atTarget() && Boolean(presetResult);
+    const ready = atTarget() && Boolean(presetResult) && videoMatches();
     wakeButton.disabled = waiting || !ready || Boolean(overlay) || lessonBlocksWake();
     const playLabel = video.paused ? '播放' : '暂停';
     playToggle.setAttribute('aria-label', playLabel + '视频');
@@ -839,6 +972,7 @@
         else reason = '当前还不能破壁。';
       }
       wakeReason.textContent = reason;
+      if (wakeTip) wakeTip.textContent = reason || '破壁 Alt+B';
     }
     markGuide();
     if (resetReason) {
@@ -1097,7 +1231,9 @@
   function resetLesson() {
     stopLessonWork();
     lesson = null;
+    lessonLook = null;
     lessonFallbackReason = '';
+    awaitingEndpoint = false;
     if (lessonStatus) lessonStatus.textContent = '';
     if (usingLessonCurve && packagedPreset) {
       if (overlay) removeOverlay({ pauseVideo: false });
@@ -1107,7 +1243,45 @@
   }
 
   /**
-   * 片子有时长、且不是 9 秒片时开始阅读。空白地址直接退回。
+   * 读用户这次浏览里填过的阅读地址。地址不写进页面；没有存储时返回空串。
+   * @returns {string}
+   */
+  function readStoredEndpoint() {
+    try {
+      if (typeof sessionStorage === 'undefined' || !sessionStorage || typeof sessionStorage.getItem !== 'function') return '';
+      return String(sessionStorage.getItem('breakglass.lessonEndpoint') || '').trim();
+    } catch {
+      return '';
+    }
+  }
+
+  /**
+   * 记住这一栏里的地址，刷新后还能接着看。空字符串会清掉上次的记录。
+   */
+  function rememberEndpoint() {
+    if (!lessonEndpoint) return;
+    const url = String(lessonEndpoint.value || '').trim();
+    try {
+      if (typeof sessionStorage === 'undefined' || !sessionStorage) return;
+      if (url) sessionStorage.setItem('breakglass.lessonEndpoint', url);
+      else sessionStorage.removeItem('breakglass.lessonEndpoint');
+    } catch {
+      // 无痕窗口写不进去时，这一页仍使用输入框里的值。
+    }
+  }
+
+  /**
+   * 输入框还是空的时候，用这次浏览里填过的地址补上。
+   */
+  function restoreEndpoint() {
+    if (!lessonEndpoint || String(lessonEndpoint.value || '').trim()) return;
+    const saved = readStoredEndpoint();
+    if (saved) lessonEndpoint.value = saved;
+  }
+
+  /**
+   * 片子有时长、且不是 9 秒片时开始阅读。空白地址不发请求，并在画面上说明。
+   * 同一支片子、同一个地址已经在看时，不重新开始。
    */
   function maybeStartLesson() {
     if (!lessonApi || !localClock || !packagedPreset || !video) return;
@@ -1115,7 +1289,8 @@
     if (!src || isPreparedSource(src)) return;
     const duration = Number(video.duration);
     if (!Number.isFinite(duration) || duration <= 0) return;
-    if (lesson && lesson.src === src) return;
+    const url = lessonEndpoint ? String(lessonEndpoint.value || '').trim() : '';
+    if (lesson && lesson.src === src && lesson.endpoint === url) return;
     resetLesson();
     lessonSerial += 1;
     const course = askApi ? askApi.prepareCourse(lessonNote ? lessonNote.value : '') : { message: '' };
@@ -1134,6 +1309,7 @@
       first: null,
       shown: null,
       seeking: false,
+      endpoint: url,
       startedAt: localClock.now(),
       timer: null,
       pendingJump: null,
@@ -1143,7 +1319,6 @@
     renderLesson();
     setStatus(idleStatus());
     syncControls();
-    const url = lessonEndpoint ? String(lessonEndpoint.value || '').trim() : '';
     if (!url || !askApi) {
       fallbackToPrepared('empty');
       return;
@@ -1161,6 +1336,7 @@
         lessonFailed(owner, 'unavailable');
         return;
       }
+      noteLessonLook({ phase: 'waiting', index: frames.length, total: frames.length, time: Number.NaN });
       const body = askApi.requestBody({
           readingId: owner.readingId,
           videoId: owner.videoId,
@@ -1204,6 +1380,7 @@
     }
     if (!lesson || times.length === 0 || typeof document.createElement !== 'function') return Promise.resolve([]);
     const src = lesson.src;
+    noteLessonLook({ phase: 'frame', index: 1, total: times.length, time: times[0] });
     return new Promise((resolve) => {
       const probe = document.createElement('video');
       const canvas = document.createElement('canvas');
@@ -1229,6 +1406,7 @@
       }
       probe.addEventListener('seeked', () => {
         if (done) return;
+        noteLessonLook({ phase: 'frame', index: index + 1, total: times.length, time: times[index] });
         const image = snapshotFrame(probe, canvas);
         if (image) frames.push({ time: times[index], image });
         index += 1;
@@ -1381,7 +1559,7 @@
   }
 
   /**
-   * 请求失败。已有存点就只结束阅读；一处都没有才退回。
+   * 请求失败。已有存点就只结束阅读；一处都没有时保留用户视频并给出说明。
    * @param {object} owner 发起请求时的那次阅读
    * @param {string} code
    */
@@ -1406,14 +1584,31 @@
   }
 
   /**
-   * 读不出来就回到预先准备的 9 秒片，清空这支片子的点，挂回 demo-parabola。
+   * 阅读没有可用的点。用户选中的片子留在画面上，不换回 9 秒片。
+   * 只有画面本来就空着时，才挂上包内示例。
    * @param {string} code empty / timeout / unavailable
    */
   function fallbackToPrepared(code) {
     const reason = code === 'timeout' ? '这次没读完。' : '外部阅读没有返回可用结果。';
+    const kept = code === 'empty'
+      ? '还没开始看。填上阅读地址后，这支片子会被看。'
+      : reason + '这支片子留在画面上。';
     stopLessonWork();
     lesson = null;
+    lessonLook = null;
     if (overlay) removeOverlay({ pauseVideo: false });
+    const chosen = Boolean(localVideoUrl) || (video && String(video.src || '') && !isPreparedSource(video.src));
+    if (chosen) {
+      awaitingEndpoint = code === 'empty';
+      if (usingLessonCurve && packagedPreset) mountWake(packagedPreset, false);
+      renderLesson();
+      lessonFallbackReason = '';
+      if (lessonStatus) lessonStatus.textContent = kept;
+      setSource(null);
+      setStatus(kept);
+      syncControls();
+      return;
+    }
     if (localVideoUrl) {
       URL.revokeObjectURL(localVideoUrl);
       localVideoUrl = '';
@@ -1475,7 +1670,6 @@
   };
 
   async function boot() {
-    const packagedPromise = attachPackagedVideo();
     try {
       const loaded = await preset.loadPreset();
       if (!loaded.ok) throw new Error(loaded.message);
@@ -1492,19 +1686,12 @@
       watchDevicePixelRatio();
       watchVideoSize();
       runtimeNote.textContent = `配置：${config.externalAttempt} · 本地预制已预热 · 回退 ${config.fallbackAfterMs}ms`;
-      const packaged = await packagedPromise;
-      if (!packaged && !video.error && !localVideoUrl) {
-        setStatus(pickStatus());
-      }
       setSource(null);
+      if (!localVideoUrl && !String(video.src || '')) setStatus(pickStatus());
+      restoreEndpoint();
       maybeStartLesson();
     } catch (error) {
       bootFailure = error.message || '配置加载失败。';
-      try {
-        await packagedPromise;
-      } catch {
-        // 挂片失败不再额外覆盖配置错误。
-      }
       if (video && !localVideoUrl) {
         if (video.removeAttribute) video.removeAttribute('src');
         video.src = '';
@@ -1542,6 +1729,7 @@
     assetEmpty.hidden = false;
     removeOverlay();
     setStatus('视频无法加载，未挂载交互层。', 'error');
+    syncStageBanner();
   });
   const localVideoInput = $('#local-video');
   if (localVideoInput) {
@@ -1550,6 +1738,32 @@
       if (file) useLocalVideo(file);
     });
   }
+  const pickVideoButton = $('#pick-video');
+  if (pickVideoButton && localVideoInput) {
+    pickVideoButton.addEventListener('click', () => { localVideoInput.click(); });
+  }
+  if (lessonEndpoint) {
+    lessonEndpoint.addEventListener('input', () => {
+      rememberEndpoint();
+      if (endpointWait != null) window.clearTimeout(endpointWait);
+      endpointWait = window.setTimeout(() => {
+        endpointWait = null;
+        maybeStartLesson();
+      }, 300);
+    });
+    lessonEndpoint.addEventListener('change', () => {
+      rememberEndpoint();
+      if (endpointWait != null) {
+        window.clearTimeout(endpointWait);
+        endpointWait = null;
+      }
+      maybeStartLesson();
+    });
+  }
+  const presetVideoButton = $('#preset-video');
+  if (presetVideoButton) presetVideoButton.addEventListener('click', () => { choosePackagedVideo(); });
+  const presetAgain = document.querySelector('[data-choose-preset]');
+  if (presetAgain) presetAgain.addEventListener('click', () => { choosePackagedVideo(); });
   window.addEventListener('resize', drawCurve);
   document.addEventListener('fullscreenchange', drawCurve);
   document.addEventListener('visibilitychange', () => {
@@ -1557,7 +1771,16 @@
   });
   window.addEventListener('orientationchange', drawCurve);
   window.addEventListener('pagehide', () => {
+    if (endpointWait != null) {
+      window.clearTimeout(endpointWait);
+      endpointWait = null;
+    }
     stopLessonWork();
+    // 隐藏采样的 Promise 可能稍后才落定；结束本轮，不能在页面离开后再发阅读请求。
+    if (lesson) {
+      lesson.phase = 'ready';
+      lesson.cancelled = true;
+    }
     removeOverlay({ pauseVideo: false });
     if (localVideoUrl) {
       URL.revokeObjectURL(localVideoUrl);

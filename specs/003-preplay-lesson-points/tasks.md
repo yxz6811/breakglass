@@ -6,7 +6,7 @@
 
 **Tests**: 规格 FR-019 要求固定夹具先于实现。先写会失败的测试，再写实现。SC-003、SC-004、SC-005 在记录存在之前不得勾成通过。
 
-**Organization**: 故事 1 是第一处暂停与破壁。故事 2 是「下一个」。故事 3 是退回、分计时和尚未测得的 2%。
+**Organization**: 故事 1 是第一处暂停与破壁。故事 2 是「下一个」。故事 3 按 Constitution 1.8.0 保留用户视频，分开计时，2% 测量仍待完成。双 rAF 是绘制机会估计，不等于像素呈现。
 
 ## Format: `[ID] [P?] [Story] Description`
 
@@ -72,31 +72,31 @@
 
 ---
 
-## Phase 5: User Story 3 - 失败退回，两段时间分开记 (Priority: P3)
+## Phase 5: User Story 3 - 失败保留用户视频，两段时间分开记 (Priority: P3)
 
-**Goal**: 失败、断网或 5 分钟内没有通过点时回到 `breakglass-demo-9s.mp4`。两段耗时分开。2% 与 20 次样本未测得前，验收保持未通过。
+**Goal**: 失败、断网或 5 分钟内没有通过点时保留用户视频并清空失败结果。示例只通过「选择预设」加载。两段耗时分开。2% 与真实像素呈现的 20 次样本未测得前，验收保持未通过。
 
 **Independent Test**: 假的 `fetch` 失败后视频地址变为预先准备片子，前一绑定的点为空。`lesson-first-point` 与 `lesson-wake-visible` 分别存在。在样本不足 20 或 `maxRatio` 仍为 `null` 时，测试必须断言验收未通过，而不是改写成通过。
 
 ### Tests for User Story 3
 
-- [x] T012 [US3] 先写会失败的 `tests/lesson-ask.test.js`。请求体有 `readingId`、`videoId`、`duration`、`frameSize`、`courseText`、`frames`；`frameSize` 是源像素宽高，无效时为 `null`；`frames` 长度不超过 8；没有整段视频、密钥或固定地址；`courseText` 超过 8000 字时不发送正文；截止为 300000ms；失败结果要求退回，且不调用会话 `fail`。测试不得访问网络
+- [x] T012 [US3] `tests/lesson-ask.test.js` 覆盖请求体的 `readingId`、`videoId`、`duration`、`frameSize`、`courseText`、`frames`；`frameSize` 是源像素宽高，无效时为 `null`；`frames` 长度不超过 8；没有整段视频、密钥或固定地址；`courseText` 超过 8000 字时不发送正文；截止为 300000ms；失败由页面保持用户视频，不调用会话 `fail`。响应标识和时长不匹配时拒绝。测试不得访问网络
 - [x] T013 [P] [US3] 在 `tests/page-lesson.test.js` 增加断言：阅读失败后视频地址以 `breakglass-demo-9s.mp4` 结尾，且前一 `videoId` 的点被清空；验收片子地址等于该文件时不得开始作为阅读目标
 
 ### Implementation for User Story 3
 
 - [x] T014 [US3] 实现 `extension/src/lesson/ask.js`。只在当次地址非空时发送 T003 给出的采样。用调用方的 `fetch` 与时钟 `schedule(300000, handler)`。取消时中止未完成请求，保留已存点。新函数使用 JSDoc。地址不写入 `extension/assets/config.json`
-- [x] T015 [US3] 在 `extension/src/page/main.js` 把失败、断网、空地址和 5 分钟内零通过点转成退回 `../assets/video/breakglass-demo-9s.mp4`。清空失败片子的点。退回后的单点文案仍是「预先准备的示例」。用 `lesson-first-point` 与 `lesson-wake-visible` 分开 `record`，禁止写入 `fallback-visible`、`network-wait`、`vision-decision`。`lesson-wake-visible` 只在点已存好时记录
+- [x] T015 [US3] `extension/src/page/main.js` 在失败、断网、空地址和 5 分钟内零通过点时保持所选视频并清空失败结果。「选择预设」显式加载包内示例。用 `lesson-first-point`、`lesson-wake-dom-ready` 与 `lesson-wake-frame-ready` 分开记录，不将双 rAF 估计写成真实可见时刻。退出、隐藏和页面离开会取消待记样本、地址计时器和抽帧请求
 - [x] T016 [US3] 在 `extension/src/page/main.js` 的破壁成功路径保留 `contentRect`。在已有测量能够写出有限 `maxRatio` 之前，保持 `measured: false`，并不得把 SC-005 标成通过。不把 `maxRatio: null` 当作 ≤ 0.02
 
-**Checkpoint**: quickstart 第 3 节可以核对退回。第 4 节保持未通过，直到至少 20 次 `lesson-wake-visible` 且 `maxRatio` ≤ 0.02 被实际记下来
+**Checkpoint**: quickstart 第 3 节可以核对保留视频。第 4 节保持未通过，直到至少 20 次真实像素呈现记录及 `maxRatio` ≤ 0.02 的独立测量被实际记下来
 
 ---
 
 ## Phase 6: Polish
 
-- [x] T017 [P] 更新 `docs/BreakGlass-ui-inventory.md`：自动开始、还在读、没有下一处、这次阅读、退回预先准备的片子，以及 SC-003 至 SC-005 尚未通过
-- [x] T018 [P] 更新 `README.md`：阅读在片子可播放时开始；验收片子不得使用 `breakglass-demo-9s.mp4`；失败才回到该文件
+- [x] T017 [P] 更新 `docs/BreakGlass-ui-inventory.md`：自动开始、还在读、没有下一处、这次阅读、失败保留用户视频、显式选择预设，以及 SC-003 至 SC-005 尚未通过
+- [x] T018 [P] 更新 `README.md`：阅读在片子可播放且有地址时开始；验收片子不得使用 `breakglass-demo-9s.mp4`；示例只通过「选择预设」加载
 - [x] T019 按 `specs/003-preplay-lesson-points/quickstart.md` 执行 `node --test`。第 4 节若记录仍缺，在结果里写明 SC-003、SC-004、SC-005 未通过
 
 ---
@@ -109,8 +109,8 @@
 - **Foundational**: 依赖 T001，阻塞全部故事
 - **User Story 1**: 依赖 Phase 2
 - **User Story 2**: 依赖故事 1 的暂停与破壁
-- **User Story 3**: `ask.js` 可在 Phase 2 之后单独测试；退回接线依赖故事 1 的页面状态
-- **Polish**: 依赖要交付的故事。只交付故事 1 时，说明里必须写明退回和 2% 记录还未做
+- **User Story 3**: `ask.js` 可在 Phase 2 之后单独测试；失败保留视频的接线依赖故事 1 的页面状态
+- **Polish**: 依赖要交付的故事。说明里必须明确实际验证范围和仍未完成的 2% 记录
 
 ### Parallel Opportunities
 
@@ -142,7 +142,7 @@ Task: "在 extension/demo/demo.css 增加阅读状态样式"
 
 1. 故事 1：第一处暂停，破壁只取已存结果
 2. 故事 2：「下一个」的三种状态
-3. 故事 3：退回与分计时。记录未齐则验收保持未通过
+3. 故事 3：保留视频与分计时。真实像素与对齐记录未齐则验收保持未通过
 
 ---
 
