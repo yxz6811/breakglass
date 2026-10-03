@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" role="img" aria-labelledby="logo-title logo-description">
+  <title id="logo-title">BreakGlass — open frame and white fracture</title>
+  <desc id="logo-description">An open frame and grey-to-blue curve are crossed by a pointed white fracture, traced from the diagonal shape marked by the user. The background is transparent.</desc>
+  <defs>
+    <g id="fracture-shape">
+      <path d="M40.5 175L105.5 113L109 106.25L111 115.75L104 120L99 121.5L105.5 121Z"/>
+      <path d="M110.25 105L114.75 97L119.75 100L113 113.75Z"/>
+      <path d="M114.5 96.75L189 37.5L130.75 95.25L119.5 100Z"/>
+    </g>
+    <mask id="fracture-separation" maskUnits="userSpaceOnUse" x="0" y="0" width="200" height="200">
+      <rect width="200" height="200" fill="white"/>
+      <use href="#fracture-shape" fill="black" stroke="black" stroke-width="3" stroke-linejoin="miter"/>
+    </mask>
+  </defs>
+  <g mask="url(#fracture-separation)">
+    <g fill="none" stroke-width="10" stroke-linecap="butt" stroke-linejoin="miter">
+      <path class="aperture-left" d="M88 32H38V168H88" stroke="#f2f5f7"/>
+      <path class="aperture-right" d="M112 32H164V100M164 152V168H112" stroke="#f2f5f7"/>
+    </g>
+    <g fill="none" stroke-width="10" stroke-linecap="round" stroke-linejoin="round">
+      <path class="curve-before" d="M52 112C61 78 72 57 83 57C94 57 102 76 110 97" stroke="#849096"/>
+      <path class="curve-after" d="M118 113C128 137 136 146 148 146C164 146 178 108 188 82" stroke="#71ddff"/>
+    </g>
+    <circle class="control-node" cx="148" cy="146" r="9" fill="#f2f5f7" stroke="#080b0d" stroke-width="3"/>
+  </g>
+  <use class="fracture" href="#fracture-shape" fill="#f2f5f7"/>
+</svg>

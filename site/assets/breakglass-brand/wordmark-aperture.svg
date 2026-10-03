@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 104" role="img" aria-labelledby="wordmark-title wordmark-description">
+  <title id="wordmark-title">breakglass</title>
+  <desc id="wordmark-description">Custom geometric lowercase lettering with a measured opening between break and glass.</desc>
+  <g transform="translate(-8 0)" fill="none" stroke="var(--brand-type, #f2f5f7)" stroke-width="10" stroke-linecap="round" stroke-linejoin="round">
+    <g class="word-break">
+      <path class="letter-b" d="M22 14V82M22 60C22 47 31 38 44 38C57 38 67 47 67 60C67 73 57 83 44 83C31 83 22 73 22 60"/>
+      <path class="letter-r" d="M90 82V39M90 60C90 46 101 38 117 38"/>
+      <path class="letter-e" d="M181 75C175 81 168 84 160 84C146 84 136 74 136 61C136 48 146 38 160 38C174 38 184 48 184 61H137"/>
+      <path class="letter-a" d="M254 39V82M254 60C254 47 244 38 231 38C218 38 208 47 208 60C208 73 218 83 231 83C244 83 254 73 254 60"/>
+      <path class="letter-k" d="M277 14V82M310 39L278 63L311 82"/>
+    </g>
+    <g class="word-glass">
+      <path class="letter-g" d="M391 39V81C391 92 383 98 369 98C360 98 352 94 347 89M391 60C391 47 381 38 368 38C355 38 345 47 345 60C345 73 355 83 368 83C381 83 391 73 391 60"/>
+      <path class="letter-l" d="M417 14V73Q417 83 428 83"/>
+      <path class="letter-a" d="M497 39V82M497 60C497 47 487 38 474 38C461 38 451 47 451 60C451 73 461 83 474 83C487 83 497 73 497 60"/>
+      <path class="letter-s" d="M565 43C558 38 549 37 540 39C530 40 524 45 524 51C524 58 532 61 545 63L548 64C559 66 566 69 566 75C566 82 559 86 547 86C537 86 529 84 523 79"/>
+      <path class="letter-s" d="M632 43C625 38 616 37 607 39C597 40 591 45 591 51C591 58 599 61 612 63L615 64C626 66 633 69 633 75C633 82 626 86 614 86C604 86 596 84 590 79"/>
+    </g>
+  </g>
+</svg>

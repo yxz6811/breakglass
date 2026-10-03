@@ -1,0 +1,874 @@
+<!DOCTYPE html>
+<!-- Source: github.com/yxz6811/breakglass, yanghan2026-patch-1, e46bed00291c262effa7982dc3f67f2701f36191, root file 展示网站.
+     Frontend constraints: ../docs/BreakGlass-constitution.md (1.6.0); P0 preset parabola only. This extraction preserves original showcase content and does not implement or validate its P1 claims. -->
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>破壁 BreakGlass — 让知识可以被触碰</title>
+<meta name="theme-color" content="#080b0d" />
+<meta name="description" content="BreakGlass 破壁：从观看到亲手验证，从一条可操作曲线开始，让屏幕里的知识成为可以探索的世界。"/>
+<link rel="stylesheet" href="./showcase-base.css"/>
+<link rel="stylesheet" href="./showcase.css"/>
+<link rel="stylesheet" href="./showcase-effects.css"/>
+</head>
+<body>
+
+<!-- ===== 导航 ===== -->
+<nav class="nav" aria-label="全局导航">
+  <a class="nav-brand" href="#p1" aria-label="BreakGlass 破壁首页"><img src="./assets/breakglass-brand/logo-aperture-fracture.svg" width="32" height="32" alt=""/><span>BreakGlass 破壁</span></a>
+  <div class="nav-links">
+    <a href="#p2">痛点</a>
+    <a href="#p3">方案</a>
+    <a href="#p4">价值</a>
+    <a href="#p5">演示</a>
+    <a href="#p6">架构</a>
+    <a href="#p7">场景</a>
+  </div>
+  <a class="nav-cta" href="#p5">亲手试试</a>
+</nav>
+
+<aside class="line-sidebar" id="lineSidebar" aria-label="章节导航"></aside>
+
+<!-- ===== 固定背景层 ===== -->
+<div class="bg-core" aria-hidden="true"></div>
+<div class="grid-overlay" aria-hidden="true"></div>
+<canvas id="fx" aria-hidden="true"></canvas>
+<div class="topline" aria-hidden="true"></div>
+<div class="progress" id="progress" aria-hidden="true"></div>
+
+<!-- ===== 右侧分页指示器 ===== -->
+<nav class="pager" aria-label="分页导航">
+  <a href="#p1" data-label="概览"></a>
+  <a href="#p2" data-label="痛点"></a>
+  <a href="#p3" data-label="方案"></a>
+  <a href="#p4" data-label="价值"></a>
+  <a href="#p5" data-label="演示"></a>
+  <a href="#p6" data-label="架构"></a>
+  <a href="#p7" data-label="场景"></a>
+  <a href="#p8" data-label="结语"></a>
+</nav>
+
+<main>
+
+  <!-- =====================================================
+       Page 1 · Hero
+       ===================================================== -->
+  <section class="page hero brand-intro" id="p1" aria-labelledby="mission">
+  <div class="page-inner" id="heroInner">
+    <div class="brand-focus">
+    <div class="brand-stage">
+      <svg class="story" viewBox="0 0 960 380" fill="none" aria-hidden="true">
+        <defs>
+          <clipPath id="frame-content"><rect x="217" y="68" width="526" height="248" rx="1"/></clipPath>
+          <clipPath id="field-content"><rect x="50" y="15" width="860" height="350"/></clipPath>
+          <linearGradient id="opening-color"><stop stop-color="#71ddff" stop-opacity="0"/><stop offset=".5" stop-color="#71ddff"/><stop offset="1" stop-color="#71ddff" stop-opacity="0"/></linearGradient>
+        </defs>
+        <g class="possibility-field" clip-path="url(#field-content)"></g>
+        <g class="frame-scene">
+          <g class="frame-left">
+            <path d="M456 46H202V330H452" class="pane-outline"/>
+            <path d="M202 47H456V330H202Z" class="pane-fill"/>
+            <path d="M456 48V330" class="pane-seam"/>
+          </g>
+          <g class="frame-right">
+            <path d="M504 46H758V330H508" class="pane-outline"/>
+            <path d="M504 47H758V330H504Z" class="pane-fill"/>
+            <path d="M504 48V330" class="pane-seam"/>
+          </g>
+          <g clip-path="url(#frame-content)">
+            <g class="chart-grid"><path d="M217 128H743M217 190H743M217 252H743M287 68V316M357 68V316M427 68V316M497 68V316M567 68V316M637 68V316M707 68V316"/></g>
+            <path class="chart-axis" d="M238 270H726M480 87V306"/>
+            <path class="frozen-curve"/>
+            <path class="living-curve" pathLength="1"/>
+            <path class="vertex-guide"/>
+            <circle class="node-ring" r="12"/>
+            <circle class="model-node" r="5"/>
+          </g>
+          <text class="frame-note" x="222" y="35">一帧画面</text>
+          <text class="formula" x="624" y="305">y = ax²</text>
+          <text class="a-value" x="221" y="306">a = 0.65</text>
+          <path class="opening-light" d="M438 189H522" stroke="url(#opening-color)"/>
+        </g>
+      </svg>
+      <div class="identity"><div class="brand-lockup" role="img" aria-label="breakglass 破壁">
+          <svg class="brand-symbol" viewBox="0 0 200 200" width="200" height="200" aria-hidden="true">
+            <defs>
+              <g id="brand-fracture-shape">
+                <path d="M40.5 175L105.5 113L109 106.25L111 115.75L104 120L99 121.5L105.5 121Z"/>
+                <path d="M110.25 105L114.75 97L119.75 100L113 113.75Z"/>
+                <path d="M114.5 96.75L189 37.5L130.75 95.25L119.5 100Z"/>
+              </g>
+              <mask id="brand-fracture-reveal" maskUnits="userSpaceOnUse" x="0" y="0" width="200" height="200">
+                <path class="fracture-sweep" d="M40.5 175L189 37.5" pathLength="1" fill="none" stroke="white" stroke-width="40"/>
+              </mask>
+              <mask id="brand-fracture-separation" maskUnits="userSpaceOnUse" x="0" y="0" width="200" height="200">
+                <rect width="200" height="200" fill="white"/>
+                <g mask="url(#brand-fracture-reveal)"><use href="#brand-fracture-shape" fill="black" stroke="black" stroke-width="3" stroke-linejoin="miter"/></g>
+              </mask>
+            </defs>
+            <g mask="url(#brand-fracture-separation)">
+              <g fill="none" stroke="#f2f5f7" stroke-width="10" stroke-linecap="butt" stroke-linejoin="miter">
+                <path class="aperture-left" d="M88 32H38V168H88" pathLength="1"/>
+                <path class="aperture-right-top" d="M112 32H164V100" pathLength="1"/>
+                <path class="aperture-right-bottom" d="M164 152V168H112" pathLength="1"/>
+              </g>
+              <g fill="none" stroke-width="10" stroke-linecap="round" stroke-linejoin="round">
+                <path class="curve-before" d="M52 112C61 78 72 57 83 57C94 57 102 76 110 97" pathLength="1" stroke="#849096"/>
+                <path class="curve-after" d="M118 113C128 137 136 146 148 146C164 146 178 108 188 82" pathLength="1" stroke="#71ddff"/>
+              </g>
+              <circle class="control-node" cx="148" cy="146" r="9" fill="#f2f5f7" stroke="#080b0d" stroke-width="3"/>
+            </g>
+            <use class="fracture" href="#brand-fracture-shape" fill="#f2f5f7" mask="url(#brand-fracture-reveal)"/>
+          </svg>
+          <span class="wordmark-window"><img class="brand-wordmark" src="./assets/breakglass-brand/wordmark-aperture.svg" alt="" width="640" height="104"></span>
+        </div></div>
+      <p class="story-caption" aria-hidden="true">画面停住。知识，不必停住。</p>
+    </div>
+    </div>
+    <div class="hero-copy">
+    <h1 class="mission" id="mission">从观看，到<span>亲手验证。</span></h1>
+    <p class="ambition">从一条曲线开始，让屏幕里的知识成为可以探索的世界。</p>
+    <div class="hero-actions">
+      <a class="btn primary" href="#p5">体验破壁 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-5-5 5 5-5 5"/></svg></a>
+      <a class="btn ghost" href="#p3">了解如何实现</a>
+    </div>
+    <div class="motion-tools" aria-label="品牌动画控制">
+      <button class="control-button replay" type="button" aria-label="重新播放品牌动画"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10a8 8 0 1 1 2 8M4 4v6h6"/></svg><span>重播入场</span></button>
+      <details class="tweaks">
+        <summary>动效设置</summary>
+        <div class="tweaks-panel">
+          <label for="cut">观看版本</label>
+          <select id="cut"><option value="logo" selected>Logo 入场 · 2.2 秒</option><option value="story">完整品牌故事 · 5.6 秒</option><option value="entrance">破壁入场 · 2.4 秒</option><option value="signature">标志速览 · 1.2 秒</option></select>
+          <label for="speed">播放速度</label><select id="speed"><option value="1">1× 正常</option><option value="0.5">0.5× 慢放</option></select>
+          <div class="chapter-controls" aria-label="故事阶段"><button type="button" data-chapter="watch">看见</button><button type="button" data-chapter="open">破壁</button><button type="button" data-chapter="explore">探索</button><button type="button" data-chapter="complete" aria-current="step">理解</button></div>
+          <div class="timeline-controls"><input class="timeline" type="range" min="0" max="2200" step="10" value="2200" aria-label="动画进度"><output class="time-display">2.20 <span>/ 2.20s</span></output></div>
+          <button class="control-button playback" type="button" aria-label="播放品牌动画"><svg class="pause-icon" viewBox="0 0 24 24" aria-hidden="true" hidden><path d="M9 6v12M15 6v12"/></svg><svg class="play-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m8 5 11 7-11 7Z"/></svg><span>播放</span></button>
+        </div>
+      </details>
+    </div>
+    <p class="scope-note">当前体验：预制抛物线场景。真实视觉识别与代码执行属于后续目标。</p>
+    <p class="motion-note" role="status" hidden>已遵循减少动态效果偏好，直接呈现 Logo，曲线仍可操作。</p>
+    </div>
+  </div>
+</section>
+
+
+  <!-- =====================================================
+       Page 2 · 核心痛点
+       ===================================================== -->
+  <section class="page" id="p2">
+    <div class="page-inner center">
+
+      <div class="eyebrow reveal" style="--i:0">01 / 核心痛点</div>
+
+      <h2 class="page-title reveal" style="--i:1">
+        视频里的代码，<em>只是像素</em>
+      </h2>
+
+      <p class="page-lead reveal" style="--i:2">
+        教学视频中的代码和函数图像只是画面像素，<strong>无法复制、无法局部微调参数观察变化、无法直接运行。</strong>
+      </p>
+
+      <div class="flow reveal" style="--i:3">
+        <div class="flow-item">观看视频</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-item">抄录代码 / 公式</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-item">搭建运行环境 · 手动模拟画图</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-item bad">操作繁杂，容易放弃</div>
+      </div>
+
+    </div>
+  </section>
+
+
+  <!-- =====================================================
+       Page 3 · 解决方案
+       ===================================================== -->
+  <section class="page" id="p3" aria-label="解决方案愿景">
+    <div class="page-inner">
+
+      <div class="eyebrow reveal" style="--i:0">02 / 解决方案</div>
+
+      <h2 class="page-title reveal" style="--i:1">
+        AI 视觉识别 · <em>原位注入图层</em>
+      </h2>
+
+      <div class="sol-split">
+
+        <div class="sol-point reveal" style="--i:2">
+          <h3><span class="dot"></span>定位代码 / 图像，提取结构信息</h3><p class="capability-note">以下为技术方案愿景。真实视觉识别与 Python/Pyodide 属于 P1，当前体验采用本地预制抛物线。</p>
+          <p>
+            在原视频位置覆盖可交互组件 —— 不跳转、不拆分，
+            直接在画面上"唤醒"操作入口。
+          </p>
+          <ul>
+            <li>显示代码控制台</li>
+            <li>生成可拖拽手柄</li>
+            <li>坐标与文本结构化提取</li>
+            <li>透明悬浮层，高 z-index 挂载</li>
+          </ul>
+        </div>
+
+        <div class="mini-term reveal" style="--i:3">
+          <div class="mt-bar">
+            <i></i><i></i><i></i>
+            <span>endpoint · wasm-sandbox / overlay-layer</span>
+          </div>
+<pre><span class="c1">import</span> numpy <span class="c1">as</span> np
+<span class="c1">import</span> matplotlib.pyplot <span class="c1">as</span> plt
+
+x = np.linspace(-10, 10, 300)
+y = np.sin(x)
+plt.plot(x, y)
+plt.show()</pre>
+          <div class="mt-run">▸ P1 方案示意 · WASM 执行尚未接入本页</div>
+        </div>
+
+      </div>
+
+    </div>
+  </section>
+
+
+  <!-- =====================================================
+       Page 4 · 核心价值
+       ===================================================== -->
+  <section class="page" id="p4">
+    <div class="page-inner">
+
+      <div class="eyebrow reveal" style="--i:0">03 / 核心价值</div>
+
+      <h2 class="page-title reveal" style="--i:1">
+        三个让体验成立的<em>支点</em>
+      </h2>
+
+      <div class="values">
+
+        <div class="value reveal" style="--i:2">
+          <span class="v-ico">🛡️</span>
+          <div>
+            <h3>零侵入性</h3>
+            <p>以标准 HTML5 视频为基础，支持范围按实测确认。</p>
+            <span class="en">ZERO-INTRUSION</span>
+          </div>
+        </div>
+
+        <div class="value reveal" style="--i:3">
+          <span class="v-ico">🎯</span>
+          <div>
+            <h3>原位活化</h3>
+            <p>不跳转、不拆分，直接在视频画面上"唤醒"交互组件。</p>
+            <span class="en">IN-SITU OVERLAY</span>
+          </div>
+        </div>
+
+        <div class="value reveal" style="--i:4">
+          <span class="v-ico">⚡</span>
+          <div>
+            <h3>确定性执行</h3>
+            <p>结构提取与确定性执行分别验证，当前曲线由前端数学函数绘制。</p>
+            <span class="en">DETERMINISTIC RESULTS</span>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </section>
+
+
+  <!-- =====================================================
+       Page 5 · 实时展示
+       ===================================================== -->
+  <section class="page" id="p5" aria-labelledby="demo-title">
+  <div class="page-inner">
+    <h2 class="page-title reveal" style="--i:0" id="demo-title">同一条曲线，<br><em>换一种学习方式。</em></h2>
+    <p class="page-lead reveal" style="--i:1">看见变化，更要亲手验证。拖动一个参数，观察抛物线的开口如何改变。</p>
+    <div class="curve-comparison hands-on">
+      <div class="curve-panel watch-panel">
+        <div class="curve-panel-head"><h3>看见</h3><span>y = 0.65x²</span></div>
+        <div class="chart-surface">
+        <svg class="watch-chart" viewBox="0 0 480 280" fill="none" role="img" aria-labelledby="watch-chart-title watch-chart-description">
+    <title id="watch-chart-title">预制抛物线画面</title>
+    <desc id="watch-chart-description">灰色曲线表示 y 等于 0.65 乘 x 平方的静止画面。</desc>
+    <defs><clipPath id="watch-plot-clip"><rect x="16" y="10" width="448" height="248"/></clipPath></defs>
+    <path class="plot-grid" d="M36 48H444M36 108H444M36 168H444M104 14V248M172 14V248M308 14V248M376 14V248"/>
+    <path class="plot-axis" d="M24 228H456M240 14V252"/>
+    <g clip-path="url(#watch-plot-clip)"><path class="watch-curve"/></g>
+    <text class="plot-label" x="454" y="245">x</text><text class="plot-label" x="250" y="21">y</text><text class="plot-label" x="227" y="246">0</text>
+  </svg>
+        </div>
+        <p class="curve-frozen-note">画面中的曲线保持静止。<br>它告诉你结果，还没有邀请你参与。</p>
+      </div>
+      <div class="curve-panel live-panel">
+        <div class="curve-panel-head"><h3>亲手验证</h3><span>y = ax²</span></div>
+        <div class="chart-surface">
+        <svg class="hands-on-chart" viewBox="0 0 480 280" fill="none" role="img" aria-labelledby="live-chart-title live-chart-description">
+    <title id="live-chart-title">可调整的抛物线</title>
+    <desc id="live-chart-description">调整参数 a，蓝色曲线就地变化；灰色虚线是 a 等于 0.65 的参考。</desc>
+    <defs><clipPath id="live-plot-clip"><rect x="16" y="10" width="448" height="248"/></clipPath></defs>
+    <path class="plot-grid" d="M36 48H444M36 108H444M36 168H444M104 14V248M172 14V248M308 14V248M376 14V248"/>
+    <path class="plot-axis" d="M24 228H456M240 14V252"/>
+    <g clip-path="url(#live-plot-clip)"><path class="small-reference"/><path class="small-curve" pathLength="1"/><circle class="small-node" cx="342" cy="140.25" r="5"/></g>
+    <text class="plot-label" x="454" y="245">x</text><text class="plot-label" x="250" y="21">y</text><text class="plot-label" x="227" y="246">0</text>
+  </svg>
+        </div>
+        <div class="parameter-control">
+          <label for="coefficient">调整开口<span class="parameter-readout">a = <output id="coefficient-value" for="coefficient">0.65</output></span></label>
+          <input id="coefficient" type="range" min="0.25" max="1.4" step="0.01" value="0.65" aria-label="调整抛物线开口参数 a">
+          <div class="parameter-caption"><p>灰色虚线保留原曲线，方便比较。</p><button type="button" class="curve-reset">恢复原曲线</button></div>
+        </div>
+        <div class="demo-motion-control">
+          <p class="demo-motion-status" id="demo-motion-status">拖动参数，亲手验证。</p>
+          <button class="demo-autoplay" type="button" aria-pressed="false" aria-describedby="demo-motion-status" hidden>播放变化</button>
+        </div>
+      </div>
+    </div>
+    <p class="demo-footnote">本地预制数学示意 · 曲线由前端函数绘制。<a href="../extension/demo/index.html">打开视频破壁演示 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-5-5 5 5-5 5"/></svg></a></p>
+  </div>
+</section>
+
+
+  <!-- =====================================================
+       Page 6 · 系统技术架构 —— 卡片可点击放大
+       ===================================================== -->
+  <section class="page" id="p6" aria-label="技术架构规划">
+    <div class="page-inner">
+
+      <div class="eyebrow reveal" style="--i:0">05 / 系统技术架构</div>
+
+      <h2 class="page-title reveal" style="--i:1">
+        从触发到分流，<em>五层链路</em>
+      </h2>
+
+      <div class="steps">
+
+        <div class="step reveal" style="--i:2"
+             data-arch="1" tabindex="0" role="button"
+             aria-label="点击展开：用户触发">
+          <span class="num">01</span>
+          <h4>用户触发</h4>
+        </div>
+
+        <div class="step reveal" style="--i:3"
+             data-arch="2" tabindex="0" role="button"
+             aria-label="点击展开：内容几何探测层">
+          <span class="num">02</span>
+          <h4>内容几何探测层</h4>
+        </div>
+
+        <div class="step reveal" style="--i:4"
+             data-arch="3" tabindex="0" role="button"
+             aria-label="点击展开：多模态感知层">
+          <span class="num">03</span>
+          <h4>多模态感知层</h4>
+        </div>
+
+        <div class="step reveal" style="--i:5"
+             data-arch="4" tabindex="0" role="button"
+             aria-label="点击展开：原位图层挂载层">
+          <span class="num">04</span>
+          <h4>原位图层挂载层</h4>
+        </div>
+
+        <div class="step reveal" style="--i:6"
+             data-arch="5" tabindex="0" role="button"
+             aria-label="点击展开：双分支业务分流">
+          <span class="num">05</span>
+          <h4>双分支业务分流</h4>
+        </div>
+
+      </div>
+
+      <p class="arch-note reveal" style="--i:7">
+        架构示意 · 各层能力按 P0 / P1 分阶段实现与验证。
+      </p>
+
+    </div>
+  </section>
+
+
+  <!-- =====================================================
+       Page 7 · 技术栈 / 场景与用户
+       ===================================================== -->
+  <section class="page" id="p7">
+    <div class="page-inner">
+
+      <div class="eyebrow reveal" style="--i:0">06 / 技术栈 · 场景与用户</div>
+
+      <h2 class="page-title reveal" style="--i:1">
+        轻量接入，面向<em>真实学习者</em>
+      </h2>
+
+      <div class="split">
+
+        <div class="card reveal" style="--i:2">
+          <div class="card-head">
+            <span class="ico">🔧</span>
+            <h2>技术栈与规划</h2><p class="capability-note">下列为架构规划，不代表所有能力已经实现。</p>
+          </div>
+          <ul class="stack-list">
+            <li><span>🧩</span>Chrome Extension Manifest V3</li>
+            <li><span>🎞️</span>Canvas 视频帧处理</li>
+            <li><span>🐍</span>Pyodide WASM</li>
+            <li><span>👁️</span>Vision API 结构化识别</li>
+            <li><span>⌨️</span>CodeMirror 编辑器</li>
+            <li><span>📈</span>SVG 函数图形渲染</li>
+          </ul>
+        </div>
+
+        <div class="reveal" style="--i:3">
+          <div class="card" style="margin-bottom:18px">
+            <div class="card-head">
+              <span class="ico">🎓</span>
+              <h2>应用场景</h2>
+            </div>
+            <ul class="scene-list">
+              <li>B 站 / 网课 / MOOC 自学</li>
+              <li>编程与理科教学视频</li>
+              <li>学生与开发者自学实践</li>
+              <li>让知识从观看走向创造</li>
+            </ul>
+          </div>
+
+          <div class="card">
+            <div class="card-head">
+              <span class="ico">👥</span>
+              <h2>目标用户</h2>
+            </div>
+            <p class="user-note" style="border-top:none;padding-top:0;margin-top:0">
+              依靠 <strong>Bilibili、网课平台、高校 MOOC</strong> 自学编程与理科高阶知识的
+              学生与开发者 —— 希望把视频里的代码和公式，随时"上手改一改"。
+            </p>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </section>
+
+
+  <!-- =====================================================
+       Page 8 · 收尾
+       ===================================================== -->
+  <section class="page" id="p8">
+    <div class="page-inner center">
+
+      <div class="eyebrow reveal" style="--i:0">07 / 结语</div>
+
+      <p class="quote-main reveal" style="--i:1">
+        视频不该只是被观看，<br><span>知识应该可以被触碰。</span>
+      </p>
+
+      <p class="quote-en reveal" style="--i:2">
+        Videos are made to be explored, not just watched.
+      </p>
+
+      <p class="quote-foot reveal" style="--i:3">
+        <b>破壁 BreakGlass</b> · 只读视频原位像素逆向活化系统
+      </p>
+
+    </div>
+  </section>
+
+</main>
+
+
+<!-- =====================================================
+     Page 6 · 弹层
+     ===================================================== -->
+<div class="arch-modal" id="archModal" role="dialog" aria-modal="true"
+     aria-hidden="true" aria-labelledby="archTitle">
+  <div class="arch-modal__backdrop" data-arch-close></div>
+  <div class="arch-modal__card" id="archCard">
+    <button class="arch-modal__close" type="button"
+            aria-label="关闭详情" data-arch-close>✕</button>
+    <div class="arch-modal__visual" id="archVisual"></div>
+    <div class="arch-modal__info">
+      <div class="arch-modal__eyebrow arch-modal__anim d1" id="archEyebrow">LAYER</div>
+      <h3 class="arch-modal__title arch-modal__anim d1" id="archTitle"></h3>
+      <p  class="arch-modal__desc  arch-modal__anim d2" id="archDesc"></p>
+      <p class="capability-note">技术方案示意，尚未全部实现。当前体验使用本地预制抛物线；真实视觉识别与代码执行属于后续 P1 目标。</p>
+    </div>
+  </div>
+</div>
+
+
+<!-- =====================================================
+     模板 01 · 用户触发
+     ===================================================== -->
+<template id="tpl-arch-1">
+  <svg viewBox="0 0 720 405" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
+    <defs>
+      <linearGradient id="a1-bg" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#0d1422"/><stop offset="1" stop-color="#06090f"/>
+      </linearGradient>
+      <radialGradient id="a1-ring" cx="0.5" cy="0.5" r="0.5">
+        <stop offset="0" stop-color="#2997ff" stop-opacity="0.55"/>
+        <stop offset="1" stop-color="#2997ff" stop-opacity="0"/>
+      </radialGradient>
+    </defs>
+    <rect width="720" height="405" fill="url(#a1-bg)"/>
+    <g transform="translate(42,36)">
+      <rect width="8" height="8" rx="2" fill="#2997ff"/>
+      <text x="18" y="8" font-family="ui-monospace,monospace" font-size="11"
+            font-weight="600" fill="#cfd8e6" letter-spacing="1.6">LAYER 01 / USER TRIGGER</text>
+    </g>
+    <g transform="translate(60,74)">
+      <rect width="480" height="272" rx="14" fill="#0a0e16" stroke="rgba(255,255,255,.08)"/>
+      <rect width="480" height="30" rx="14" fill="rgba(255,255,255,.04)"/>
+      <rect y="20" width="480" height="10" fill="rgba(255,255,255,.04)"/>
+      <circle cx="18" cy="15" r="4" fill="#ff5f57"/>
+      <circle cx="32" cy="15" r="4" fill="#febc2e"/>
+      <circle cx="46" cy="15" r="4" fill="#28c840"/>
+      <rect x="70" y="8" width="320" height="16" rx="4" fill="rgba(255,255,255,.05)"/>
+      <text x="80" y="20" font-family="monospace" font-size="10" fill="#6e7681">bilibili.com/video/BV1xx</text>
+      <rect x="20" y="48" width="440" height="188" rx="10" fill="#050810"/>
+      <text x="38" y="76" font-family="monospace" font-size="11" fill="#5a6478">lecture_07.mp4</text>
+      <circle cx="240" cy="142" r="26" fill="rgba(41,151,255,.15)" stroke="#2997ff" stroke-width="1.4"/>
+      <path d="M 232 130 L 250 142 L 232 154 Z" fill="#64d2ff"/>
+      <rect x="20" y="246" width="440" height="4" rx="2" fill="rgba(255,255,255,.08)"/>
+      <rect x="20" y="246" width="170" height="4" rx="2" fill="#2997ff"/>
+    </g>
+    <g transform="translate(586,210)">
+      <circle r="52" fill="url(#a1-ring)"/>
+      <circle r="42" fill="none" stroke="#2997ff" stroke-width="1" opacity=".18"/>
+      <circle r="30" fill="none" stroke="#2997ff" stroke-width="1" opacity=".32"/>
+      <circle r="20" fill="rgba(41,151,255,.2)" stroke="#64d2ff" stroke-width="1.4"/>
+      <circle r="11" fill="#2997ff"/>
+      <text x="0" y="4" text-anchor="middle"
+            font-family="-apple-system,PingFang SC,sans-serif"
+            font-size="12" font-weight="700" fill="#fff">破</text>
+    </g>
+    <g transform="translate(60,376)">
+      <text font-family="monospace" font-size="12" fill="#8b96a8">快捷键 </text>
+      <text x="52" font-family="monospace" font-size="12" fill="#cfd8e6" font-weight="600">⌘ ⇧ B</text>
+      <text x="126" font-family="monospace" font-size="12" fill="#8b96a8"> 或点击扩展图标</text>
+    </g>
+  </svg>
+</template>
+
+
+<!-- =====================================================
+     模板 02 · 内容几何探测层
+     ===================================================== -->
+<template id="tpl-arch-2">
+  <svg viewBox="0 0 720 405" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
+    <defs>
+      <linearGradient id="a2-bg" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#0d1422"/><stop offset="1" stop-color="#06090f"/>
+      </linearGradient>
+    </defs>
+    <rect width="720" height="405" fill="url(#a2-bg)"/>
+    <g transform="translate(42,36)">
+      <rect width="8" height="8" rx="2" fill="#2997ff"/>
+      <text x="18" y="8" font-family="ui-monospace,monospace" font-size="11"
+            font-weight="600" fill="#cfd8e6" letter-spacing="1.6">LAYER 02 / GEOMETRY PROBE</text>
+    </g>
+    <g transform="translate(60,96)">
+      <rect width="240" height="200" rx="12" fill="#0a0e16" stroke="rgba(255,255,255,.1)"/>
+      <text x="18" y="28" font-family="monospace" font-size="11" fill="#8b96a8">&lt;video&gt;</text>
+      <rect x="16" y="42" width="208" height="128" rx="8" fill="#050810"/>
+      <rect x="28" y="60" width="80" height="6" rx="3" fill="rgba(255,255,255,.2)"/>
+      <rect x="28" y="76" width="120" height="6" rx="3" fill="rgba(255,255,255,.14)"/>
+      <path d="M 40 150 Q 80 96 120 130 Q 160 108 200 118"
+            stroke="#5a9fd8" stroke-width="1.6" fill="none"/>
+      <rect x="24" y="54" width="96" height="34" rx="4"
+            fill="none" stroke="#2997ff" stroke-width="1.2" stroke-dasharray="4 3"/>
+      <rect x="24" y="98" width="188" height="64" rx="4"
+            fill="none" stroke="#a78bfa" stroke-width="1.2" stroke-dasharray="4 3"/>
+      <text x="18" y="192" font-family="monospace" font-size="11" fill="#64d2ff">z-index: 0 · 保持在底层</text>
+    </g>
+    <g transform="translate(322,188)">
+      <line x1="0" y1="0" x2="60" y2="0" stroke="#2997ff" stroke-width="1.8"/>
+      <path d="M 54,-6 L 66,0 L 54,6 Z" fill="#2997ff"/>
+      <text x="30" y="-14" text-anchor="middle"
+            font-family="monospace" font-size="10" fill="#8b96a8">drawImage()</text>
+      <text x="30" y="24" text-anchor="middle"
+            font-family="monospace" font-size="10" fill="#8b96a8">截取当前帧</text>
+    </g>
+    <g transform="translate(404,96)">
+      <rect width="256" height="200" rx="12" fill="#0a0e16"
+            stroke="rgba(41,151,255,.42)" stroke-dasharray="5 4"/>
+      <text x="18" y="28" font-family="monospace" font-size="11" fill="#64d2ff">&lt;canvas&gt;</text>
+      <rect x="16" y="42" width="224" height="128" rx="8"
+            fill="rgba(41,151,255,.04)" stroke="rgba(41,151,255,.24)"/>
+      <g stroke="rgba(41,151,255,.15)" stroke-width="1">
+        <line x1="72" y1="42" x2="72" y2="170"/>
+        <line x1="128" y1="42" x2="128" y2="170"/>
+        <line x1="184" y1="42" x2="184" y2="170"/>
+        <line x1="16" y1="88" x2="240" y2="88"/>
+        <line x1="16" y1="128" x2="240" y2="128"/>
+      </g>
+      <path d="M 40 150 Q 80 96 120 130 Q 160 108 200 118"
+            stroke="#64d2ff" stroke-width="1.6" fill="none"/>
+      <text x="18" y="192" font-family="monospace" font-size="11" fill="#64d2ff">
+        像素数据 · [W, H, 4]
+      </text>
+    </g>
+  </svg>
+</template>
+
+
+<!-- =====================================================
+     模板 03 · 多模态感知层
+     ===================================================== -->
+<template id="tpl-arch-3">
+  <svg viewBox="0 0 720 405" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
+    <defs>
+      <linearGradient id="a3-bg" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#0d1422"/><stop offset="1" stop-color="#06090f"/>
+      </linearGradient>
+    </defs>
+    <rect width="720" height="405" fill="url(#a3-bg)"/>
+    <g transform="translate(42,36)">
+      <rect width="8" height="8" rx="2" fill="#2997ff"/>
+      <text x="18" y="8" font-family="ui-monospace,monospace" font-size="11"
+            font-weight="600" fill="#cfd8e6" letter-spacing="1.6">LAYER 03 / MULTIMODAL PERCEPTION</text>
+    </g>
+
+    <g transform="translate(44,96)">
+      <rect width="164" height="210" rx="12" fill="#0a0e16" stroke="rgba(255,255,255,.1)"/>
+      <text x="16" y="24" font-family="monospace" font-size="11" fill="#8b96a8">INPUT FRAME</text>
+      <rect x="14" y="38" width="136" height="156" rx="6" fill="#050810"/>
+      <rect x="26" y="54" width="68" height="6" rx="3" fill="rgba(255,255,255,.22)"/>
+      <rect x="26" y="68" width="100" height="6" rx="3" fill="rgba(255,255,255,.14)"/>
+      <path d="M 26 168 Q 56 108 86 146 Q 116 118 144 132"
+            stroke="#64d2ff" stroke-width="1.6" fill="none"/>
+      <rect x="22" y="48" width="106" height="50" rx="4"
+            fill="none" stroke="#2997ff" stroke-width="1.4" stroke-dasharray="4 3"/>
+      <rect x="22" y="106" width="128" height="84" rx="4"
+            fill="none" stroke="#a78bfa" stroke-width="1.4" stroke-dasharray="4 3"/>
+    </g>
+
+    <g transform="translate(214,194)">
+      <line x1="0" y1="0" x2="34" y2="0" stroke="#2997ff" stroke-width="1.8"/>
+      <path d="M 28,-6 L 40,0 L 28,6 Z" fill="#2997ff"/>
+    </g>
+
+    <g transform="translate(272,116)">
+      <circle cx="80" cy="80" r="78" fill="none" stroke="rgba(41,151,255,.22)" stroke-width="1"/>
+      <circle cx="80" cy="80" r="58" fill="rgba(41,151,255,.08)" stroke="#2997ff" stroke-width="1.6"/>
+      <circle cx="80" cy="80" r="36" fill="rgba(41,151,255,.14)"/>
+      <g fill="#64d2ff">
+        <circle cx="62" cy="62" r="3.6"/>
+        <circle cx="98" cy="64" r="3.6"/>
+        <circle cx="80" cy="98" r="3.6"/>
+        <circle cx="65" cy="92" r="2.8"/>
+        <circle cx="96" cy="94" r="2.8"/>
+      </g>
+      <g stroke="#2997ff" stroke-width="1" opacity=".7">
+        <line x1="62" y1="62" x2="80" y2="98"/>
+        <line x1="98" y1="64" x2="80" y2="98"/>
+        <line x1="62" y1="62" x2="65" y2="92"/>
+        <line x1="98" y1="64" x2="96" y2="94"/>
+        <line x1="65" y1="92" x2="96" y2="94"/>
+      </g>
+      <text x="80" y="186" text-anchor="middle"
+            font-family="ui-monospace,monospace" font-size="11"
+            fill="#64d2ff" letter-spacing="1.8">VISION AI</text>
+    </g>
+
+    <g transform="translate(452,194)">
+      <line x1="0" y1="0" x2="34" y2="0" stroke="#a78bfa" stroke-width="1.8"/>
+      <path d="M 28,-6 L 40,0 L 28,6 Z" fill="#a78bfa"/>
+    </g>
+
+    <g transform="translate(500,96)">
+      <rect width="176" height="210" rx="12" fill="#0a0e16"
+            stroke="rgba(167,139,250,.42)"/>
+      <text x="16" y="24" font-family="monospace" font-size="11" fill="#a78bfa">STRUCTURED OUTPUT</text>
+      <g font-family="monospace" font-size="10">
+        <text x="16" y="52" fill="#cfd8e6">{</text>
+        <text x="26" y="70" fill="#64d2ff">"type":</text>
+        <text x="76" y="70" fill="#a78bfa">"code"</text>
+        <text x="26" y="88" fill="#64d2ff">"bbox":</text>
+        <text x="76" y="88" fill="#cfd8e6">[24,48,106,50]</text>
+        <text x="16" y="106" fill="#cfd8e6">}</text>
+        <text x="16" y="130" fill="#cfd8e6">{</text>
+        <text x="26" y="148" fill="#64d2ff">"type":</text>
+        <text x="76" y="148" fill="#a78bfa">"graph"</text>
+        <text x="26" y="166" fill="#64d2ff">"bbox":</text>
+        <text x="76" y="166" fill="#cfd8e6">[22,106,128,84]</text>
+        <text x="16" y="184" fill="#cfd8e6">}</text>
+      </g>
+    </g>
+  </svg>
+</template>
+
+
+<!-- =====================================================
+     模板 04 · 原位图层挂载层
+     ===================================================== -->
+<template id="tpl-arch-4">
+  <svg viewBox="0 0 720 405" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
+    <defs>
+      <linearGradient id="a4-bg" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#0d1422"/><stop offset="1" stop-color="#06090f"/>
+      </linearGradient>
+      <linearGradient id="a4-layer" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="rgba(41,151,255,.26)"/>
+        <stop offset="1" stop-color="rgba(41,151,255,.05)"/>
+      </linearGradient>
+      <linearGradient id="a4-fill" x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0" stop-color="#64d2ff"/><stop offset="1" stop-color="#2997ff"/>
+      </linearGradient>
+    </defs>
+    <rect width="720" height="405" fill="url(#a4-bg)"/>
+    <g transform="translate(42,36)">
+      <rect width="8" height="8" rx="2" fill="#2997ff"/>
+      <text x="18" y="8" font-family="ui-monospace,monospace" font-size="11"
+            font-weight="600" fill="#cfd8e6" letter-spacing="1.6">LAYER 04 / IN-SITU OVERLAY</text>
+    </g>
+
+    <g transform="translate(70,108)">
+      <rect width="540" height="210" rx="14" fill="#050810" stroke="rgba(255,255,255,.08)"/>
+      <text x="18" y="28" font-family="monospace" font-size="11" fill="#8b96a8">
+        VIDEO ELEMENT · z-index: 0
+      </text>
+      <g opacity="0.55">
+        <rect x="36" y="60" width="90" height="6" rx="3" fill="rgba(255,255,255,.35)"/>
+        <rect x="36" y="76" width="130" height="6" rx="3" fill="rgba(255,255,255,.2)"/>
+        <path d="M 200 176 Q 250 106 300 142 Q 350 112 400 128 Q 450 118 500 126"
+              stroke="#5a9fd8" stroke-width="1.6" fill="none"/>
+      </g>
+
+      <g transform="translate(50,-38)">
+        <rect width="440" height="196" rx="12"
+              fill="url(#a4-layer)"
+              stroke="rgba(41,151,255,.55)" stroke-dasharray="6 4"/>
+        <text x="16" y="26" font-family="monospace" font-size="11"
+              fill="#64d2ff" font-weight="600">OVERLAY · z-index: 9999</text>
+        <text x="16" y="46" font-family="monospace" font-size="10" fill="#8b96a8">
+          pointer-events: auto · backdrop-filter
+        </text>
+        <g transform="translate(24,66)">
+          <rect width="180" height="10" rx="3" fill="rgba(41,151,255,.42)"/>
+          <rect y="20" width="230" height="8" rx="3" fill="rgba(255,255,255,.2)"/>
+          <rect y="36" width="190" height="8" rx="3" fill="rgba(255,255,255,.12)"/>
+          <g transform="translate(320,26)">
+            <circle r="20" fill="none" stroke="#2997ff" stroke-width="1" opacity=".5"/>
+            <circle r="12" fill="rgba(41,151,255,.28)"/>
+            <circle r="6" fill="#64d2ff"/>
+          </g>
+        </g>
+        <g transform="translate(24,146)">
+          <rect width="380" height="4" rx="2" fill="rgba(255,255,255,.1)"/>
+          <rect width="250" height="4" rx="2" fill="url(#a4-fill)"/>
+          <text y="26" font-family="monospace" font-size="10" fill="#8b96a8">
+            ◈ glass-fill · 240ms
+          </text>
+        </g>
+      </g>
+    </g>
+
+    <g transform="translate(620,108)">
+      <rect width="70" height="210" rx="12" fill="#0a0e16" stroke="rgba(255,255,255,.08)"/>
+      <text x="35" y="24" text-anchor="middle" font-family="monospace" font-size="10" fill="#8b96a8">layer</text>
+      <text x="35" y="80" text-anchor="middle" font-family="monospace"
+            font-size="22" font-weight="700" fill="#64d2ff">9999</text>
+      <text x="35" y="98" text-anchor="middle" font-family="monospace" font-size="10" fill="#8b96a8">overlay</text>
+      <line x1="14" y1="122" x2="56" y2="122" stroke="rgba(255,255,255,.1)"/>
+      <text x="35" y="160" text-anchor="middle" font-family="monospace"
+            font-size="22" font-weight="700" fill="#7d8a9c">0</text>
+      <text x="35" y="178" text-anchor="middle" font-family="monospace" font-size="10" fill="#8b96a8">video</text>
+    </g>
+  </svg>
+</template>
+
+
+<!-- =====================================================
+     模板 05 · 双分支业务分流
+     ===================================================== -->
+<template id="tpl-arch-5">
+  <svg viewBox="0 0 720 405" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
+    <defs>
+      <linearGradient id="a5-bg" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#0d1422"/><stop offset="1" stop-color="#06090f"/>
+      </linearGradient>
+    </defs>
+    <rect width="720" height="405" fill="url(#a5-bg)"/>
+    <g transform="translate(42,36)">
+      <rect width="8" height="8" rx="2" fill="#2997ff"/>
+      <text x="18" y="8" font-family="ui-monospace,monospace" font-size="11"
+            font-weight="600" fill="#cfd8e6" letter-spacing="1.6">LAYER 05 / DUAL-BRANCH ROUTING</text>
+    </g>
+
+    <g transform="translate(80,200)">
+      <circle r="30" fill="rgba(41,151,255,.14)"/>
+      <circle r="22" fill="#2997ff"/>
+      <text x="0" y="5" text-anchor="middle"
+            font-family="monospace" font-size="11" font-weight="700" fill="#fff">AI</text>
+    </g>
+
+    <path d="M 106,200 Q 146,200 158,150 Q 174,100 214,94"
+          stroke="#2997ff" stroke-width="1.6" fill="none" opacity=".72"/>
+    <path d="M 106,200 Q 146,200 158,250 Q 174,300 214,306"
+          stroke="#a78bfa" stroke-width="1.6" fill="none" opacity=".72"/>
+
+    <g transform="translate(214,32)">
+      <rect width="440" height="128" rx="12" fill="#0a0e16"
+            stroke="rgba(41,151,255,.42)"/>
+      <text x="20" y="26" font-family="monospace" font-size="11"
+            fill="#64d2ff" font-weight="600" letter-spacing="1.2">CODE BRANCH</text>
+      <rect x="20" y="42" width="196" height="72" rx="6"
+            fill="rgba(41,151,255,.08)" stroke="rgba(41,151,255,.28)"/>
+      <text x="30" y="62" font-family="monospace" font-size="10" fill="#8b96a8">import numpy as np</text>
+      <text x="30" y="78" font-family="monospace" font-size="10" fill="#8b96a8">plt.plot(np.sin(x))</text>
+      <text x="30" y="94" font-family="monospace" font-size="10" fill="#8b96a8">plt.show()</text>
+      <text x="30" y="108" font-family="monospace" font-size="9.5" fill="#64d2ff">→ CodeMirror</text>
+      <text x="238" y="82" font-family="monospace" font-size="12" fill="#8b96a8">→</text>
+      <rect x="256" y="42" width="164" height="72" rx="6"
+            fill="rgba(167,139,250,.08)" stroke="rgba(167,139,250,.36)"/>
+      <text x="270" y="62" font-family="monospace" font-size="11"
+            fill="#a78bfa" font-weight="600">Pyodide</text>
+      <text x="270" y="80" font-family="monospace" font-size="10" fill="#8b96a8">WASM runtime</text>
+      <text x="270" y="96" font-family="monospace" font-size="10" fill="#64d2ff">✓ sandboxed</text>
+    </g>
+
+    <g transform="translate(214,244)">
+      <rect width="440" height="128" rx="12" fill="#0a0e16"
+            stroke="rgba(167,139,250,.42)"/>
+      <text x="20" y="26" font-family="monospace" font-size="11"
+            fill="#a78bfa" font-weight="600" letter-spacing="1.2">GRAPH BRANCH</text>
+      <rect x="20" y="42" width="196" height="72" rx="6"
+            fill="rgba(41,151,255,.05)" stroke="rgba(41,151,255,.24)"/>
+      <g transform="translate(30,50)">
+        <line x1="0" y1="32" x2="176" y2="32" stroke="rgba(255,255,255,.14)"/>
+        <line x1="88" y1="0" x2="88" y2="60" stroke="rgba(255,255,255,.14)"/>
+        <path d="M 8,50 Q 48,4 88,32 Q 128,58 168,14"
+              stroke="#a78bfa" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+        <circle cx="88" cy="32" r="3.2" fill="#d8f4ff"/>
+      </g>
+      <text x="30" y="108" font-family="monospace" font-size="9.5" fill="#64d2ff">
+        → 参数可拖动
+      </text>
+      <text x="238" y="82" font-family="monospace" font-size="12" fill="#8b96a8">→</text>
+      <rect x="256" y="42" width="164" height="72" rx="6"
+            fill="rgba(41,151,255,.08)" stroke="rgba(41,151,255,.36)"/>
+      <text x="270" y="62" font-family="-apple-system,PingFang SC,sans-serif"
+            font-size="12" fill="#64d2ff" font-weight="600">SVG 渲染引擎</text>
+      <text x="270" y="80" font-family="monospace" font-size="10" fill="#8b96a8">矢量路径重绘</text>
+      <text x="270" y="96" font-family="monospace" font-size="10" fill="#64d2ff">✓ 实时反馈</text>
+    </g>
+  </svg>
+</template>
+
+
+<noscript>
+  <style>
+    .reveal{ opacity:1 !important; transform:none !important; filter:none !important }
+  </style>
+</noscript>
+
+
+<script src="./showcase-base.js" defer></script>
+<script src="./showcase-motion.js" defer></script>
+<script src="./showcase-effects.js" defer></script>
+<script src="./showcase-demo.js" defer></script>
+</body>
+</html>
