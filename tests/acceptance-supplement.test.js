@@ -151,7 +151,7 @@ test('17 识别适配（需先改 config）来源为「识别结果」且不显�
   }
 });
 
-test('18 全程无远程请求，扩展权限仍为空', async () => {
+test('18 P0 全程仅包内请求，005 本机 reader 例外不扩大权限', async () => {
   const manifest = require('../extension/manifest.json');
   assert.deepEqual(manifest.permissions, []);
   assert.deepEqual(manifest.host_permissions, []);
@@ -181,8 +181,21 @@ test('18 全程无远程请求，扩展权限仍为空', async () => {
     };
     walk(extensionDir);
     for (const file of files) {
-      const text = fs.readFileSync(file, 'utf8').replace(/http:\/\/www\.w3\.org\/2000\/svg/g, '');
+      let text = fs.readFileSync(file, 'utf8').replace(/http:\/\/www\.w3\.org\/2000\/svg/g, '');
+      const relative = path.relative(extensionDir, file).split(path.sep).join('/');
+      // 005 显式上传只授权本机 reader；精确排除两处文本示例，不允许资源 src/href 或其他文件出现 URL。
+      if (relative === 'demo/geometry.html') {
+        text = text.replaceAll('placeholder="http://127.0.0.1:8787"', 'placeholder="本机地址示例"');
+      } else if (relative === 'src/geometry-scene/request.js') {
+        text = text.replaceAll('例如 http://127.0.0.1:8787。', '例如本机地址。');
+      }
       assert.doesNotMatch(text, /https?:\/\//, '不得出现远程地址：' + file);
+    }
+    const { buildUrl } = require('../extension/src/geometry-scene/request.js');
+    assert.equal(buildUrl('http://127.0.0.1:8787', 'ask'), 'http://127.0.0.1:8787/geometry/ask');
+    for (const url of ['https://example.com', 'http://user:secret@localhost:8787',
+      'http://localhost.example.com:8787', 'http://127.0.0.1:8787@elsewhere.example']) {
+      assert.throws(() => buildUrl(url, 'ask'), '005 不允许远程、凭据或伪装本机地址：' + url);
     }
   } finally {
     global.fetch = original;

@@ -84,17 +84,28 @@ test('manifest 仍然没有主机权限、内容脚本与远程脚本', () => {
   assert.equal(manifest.content_security_policy.extension_pages, "script-src 'self'; object-src 'self'");
 });
 
-test('扩展源码不发请求、不含密钥或远程地址', () => {
+test('扩展不含远程地址或动态代码，005 仅保留本机 reader 文本示例', () => {
   const files = listFiles(path.join(extensionDir, 'src'), (file) => file.endsWith('.js'));
   assert.equal(files.length >= 9, true);
   for (const file of files) {
     const text = fs.readFileSync(file, 'utf8');
-    const withoutSvgNamespace = text.replace(/http:\/\/www\.w3\.org\/2000\/svg/g, '');
+    let withoutSvgNamespace = text.replace(/http:\/\/www\.w3\.org\/2000\/svg/g, '');
+    // 005 契约授权显式的本地 reader；仅排除这个文件的错误提示示例，实际 URL/网络代码仍被检查。
+    const relative = path.relative(extensionDir, file).split(path.sep).join('/');
+    if (relative === 'src/geometry-scene/request.js') {
+      withoutSvgNamespace = withoutSvgNamespace.replaceAll('例如 http://127.0.0.1:8787。', '例如本机地址。');
+    }
     assert.doesNotMatch(withoutSvgNamespace, /https?:\/\//, '远程地址：' + file);
     assert.doesNotMatch(text, /\bXMLHttpRequest\b|WebSocket|EventSource|importScripts|\beval\s*\(|new\s+Function/, '动态或网络代码：' + file);
   }
   const attemptSource = readText('src/attempt/simulator.js');
   assert.doesNotMatch(attemptSource, /api[_-]?key|secret|token|authorization|model/i);
+  const { buildUrl } = require('../extension/src/geometry-scene/request.js');
+  assert.equal(buildUrl('http://127.0.0.1:8787', 'read'), 'http://127.0.0.1:8787/geometry/read');
+  for (const url of ['https://example.com', 'http://user:secret@127.0.0.1:8787',
+    'http://localhost.example.com:8787', 'http://127.0.0.1.example.com:8787']) {
+    assert.throws(() => buildUrl(url, 'read'), '005 不得把远程或带凭据的地址当成本机：' + url);
+  }
 });
 
 test('页面只调用 createWake，不维护第二套唤醒或替身', () => {

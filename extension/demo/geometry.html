@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>BreakGlass · 当前帧几何工作台</title>
+  <link rel="stylesheet" href="./geometry.css">
+  <script defer src="../src/geometry-scene/validate.js"></script>
+  <script defer src="../src/geometry-scene/solve.js"></script>
+  <script defer src="../src/geometry-scene/actions.js"></script>
+  <script defer src="../src/geometry-session/session.js"></script>
+  <script defer src="../src/geometry-scene/frame.js"></script>
+  <script defer src="../src/geometry-scene/request.js"></script>
+  <script defer src="../src/geometry-scene/view.js"></script>
+  <script defer src="../src/page/geometry.js"></script>
+</head>
+<body>
+  <main class="geometry-shell">
+    <header class="page-header">
+      <div><p class="eyebrow">BREAKGLASS · 几何实验</p><h1>把这一帧，变成一次实验。</h1>
+      <p class="lede">校对直角三角形的条件，改变一条边，看懂答案为什么变。</p></div>
+      <a class="back-link" href="./index.html">返回抛物线演示</a>
+    </header>
+
+    <section class="panel video-panel" aria-labelledby="video-heading">
+      <div class="section-heading"><div><p class="eyebrow">01 · 选择与暂停</p><h2 id="video-heading">正在看的那道题</h2></div><span id="video-name" class="muted">尚未选择视频</span></div>
+      <div class="video-layout">
+        <video id="geometry-video" controls playsinline preload="metadata" aria-label="本地几何讲解视频"></video>
+        <div class="video-tools">
+          <label class="field" for="local-video">选择本地录屏或固定机位视频<input id="local-video" type="file" accept="video/*"></label>
+          <p class="hint">支持一张清晰的直角三角形题面。视频留在本机；点击识别时才发送当前一帧。</p>
+          <div class="button-row"><button id="capture-frame" type="button" disabled>暂停并保存当前帧</button><button id="recognize-frame" type="button" class="primary" disabled>识别当前暂停帧</button><button id="read-cancel" type="button" hidden>取消识别</button></div>
+          <label class="field" for="reader-url">本地 reader 地址<input id="reader-url" type="url" placeholder="http://127.0.0.1:8787" autocomplete="off" aria-describedby="reader-hint reader-error"></label>
+          <p id="reader-hint" class="hint">识别会将这一帧交给此服务及其配置的模型。这里填写服务地址，不填写模型密钥。</p>
+          <p id="reader-error" class="field-error" role="alert"></p>
+          <div class="button-row"><button id="preset-button" type="button">使用 3–4–5 预设</button><button id="manual-button" type="button">手工填写条件</button></div>
+          <p class="hint">预设与手工输入可独立完成实验，不代表模型已识别视频。</p>
+        </div>
+      </div>
+      <p id="page-status" class="status" role="status" aria-live="polite">选择视频，或从明确标注的预设和手工条件开始。</p>
+    </section>
+
+    <div class="scene-layout">
+      <section class="panel" aria-labelledby="frame-heading">
+        <div class="section-heading"><div><p class="eyebrow">02 · 对照原帧</p><h2 id="frame-heading">原题与条件</h2></div><span id="source-label" class="source-chip">尚无题目</span></div>
+        <figure class="frame-figure"><div id="frame-surface" class="frame-surface"><img id="frame-preview" alt="此次暂停时保存的原视频帧" hidden><svg id="frame-markers" aria-label="候选顶点位置" hidden></svg><p id="frame-placeholder">保存当前帧后，在这里对照题目。<br>预设或手工场景可不关联视频。</p></div><figcaption id="frame-note">截图只用于核对，不用像素长度计算答案。</figcaption></figure>
+        <div id="review-panel" hidden>
+          <h3>先校对，再开始</h3><p class="hint">A 是直角顶点。AB 与 AC 是两条已知直角边，BC 是斜边。</p>
+          <form id="review-form" novalidate>
+            <p id="review-error" class="form-error" role="alert" tabindex="-1" hidden></p>
+            <div class="label-fields">
+              <label class="field" for="label-a">A 的显示标签<input id="label-a" type="text" maxlength="32" value="A" aria-describedby="labels-error"></label>
+              <label class="field" for="label-b">B 的显示标签<input id="label-b" type="text" maxlength="32" value="B" aria-describedby="labels-error"></label>
+              <label class="field" for="label-c">C 的显示标签<input id="label-c" type="text" maxlength="32" value="C" aria-describedby="labels-error"></label>
+            </div><p id="labels-error" class="field-error" role="alert"></p>
+            <div class="value-fields">
+              <label class="field" for="candidate-ab">直角边 AB<input id="candidate-ab" type="number" step="any" inputmode="decimal" aria-describedby="candidate-ab-error"></label>
+              <label class="field" for="candidate-ac">直角边 AC<input id="candidate-ac" type="number" step="any" inputmode="decimal" aria-describedby="candidate-ac-error"></label>
+              <label class="field" for="candidate-unit">共同单位<select id="candidate-unit"><option value="unit">单位长度</option><option value="cm">厘米</option><option value="m">米</option></select></label>
+            </div><p id="candidate-ab-error" class="field-error" role="alert"></p><p id="candidate-ac-error" class="field-error" role="alert"></p>
+            <details id="position-panel" hidden><summary>校正原帧中的顶点位置（像素）</summary><p class="hint">位置仅用于高亮核对，不用于测量题目长度。坐标需在原帧宽高内。</p><div class="position-fields">
+              <label class="field" for="candidate-a-x">A · x<input id="candidate-a-x" type="number" step="any" aria-describedby="position-error"></label><label class="field" for="candidate-a-y">A · y<input id="candidate-a-y" type="number" step="any" aria-describedby="position-error"></label>
+              <label class="field" for="candidate-b-x">B · x<input id="candidate-b-x" type="number" step="any" aria-describedby="position-error"></label><label class="field" for="candidate-b-y">B · y<input id="candidate-b-y" type="number" step="any" aria-describedby="position-error"></label>
+              <label class="field" for="candidate-c-x">C · x<input id="candidate-c-x" type="number" step="any" aria-describedby="position-error"></label><label class="field" for="candidate-c-y">C · y<input id="candidate-c-y" type="number" step="any" aria-describedby="position-error"></label>
+            </div><p id="position-error" class="field-error" role="alert"></p></details>
+            <label class="check-label" for="right-angle-check"><input id="right-angle-check" type="checkbox" aria-describedby="right-angle-error">我已核对 A 为直角，AB、AC 的数值与单位正确</label>
+            <p id="right-angle-error" class="field-error" role="alert"></p>
+            <button id="confirm-scene" class="primary" type="submit">确认条件，建立画板</button>
+          </form>
+        </div>
+        <div id="original-panel" hidden><h3>已确认的原题</h3><p id="original-summary" class="original-summary"></p><p class="hint">“恢复原题”恢复这份确认值，不恢复未经校对的识别候选。</p></div>
+      </section>
+
+      <section class="panel model-panel" aria-labelledby="model-heading">
+        <div class="section-heading"><div><p class="eyebrow">03 · 改变与理解</p><h2 id="model-heading">按题目条件重建</h2></div><span id="revision-label" class="muted">待确认</span></div>
+        <div class="triangle-surface"><svg id="triangle-board" viewBox="0 0 420 300" role="img" aria-label="确认条件后显示直角三角形"></svg><p id="model-placeholder">确认条件后才能实验。</p></div>
+        <dl id="label-map" class="label-map" aria-label="完整顶点标签" hidden></dl>
+        <p class="hint">画板等比绘制，可能与“不按比例绘制”的原图外观不同。拖动 B / C 或输入边长，直角始终保持。</p>
+        <div id="experiment-panel" hidden>
+          <div class="answer-line"><span>斜边 BC</span><output id="bc-value"></output><span id="result-unit" class="muted"></span></div>
+          <p id="constraint-note" class="constraint"></p>
+          <div class="experiment-fields">
+            <form id="ab-form" novalidate><label class="field" for="experiment-ab">改变 AB，固定 AC<input id="experiment-ab" type="number" step="any" inputmode="decimal" aria-describedby="ab-error"></label><p id="ab-error" class="field-error" role="alert"></p><button id="apply-ab" type="submit">应用 AB</button></form>
+            <form id="ac-form" novalidate><label class="field" for="experiment-ac">改变 AC，固定 AB<input id="experiment-ac" type="number" step="any" inputmode="decimal" aria-describedby="ac-error"></label><p id="ac-error" class="field-error" role="alert"></p><button id="apply-ac" type="submit">应用 AC</button></form>
+          </div>
+          <p id="explanation" class="explanation" role="status" aria-live="polite"></p>
+          <button id="restore-original" type="button">恢复原题</button>
+        </div>
+      </section>
+    </div>
+
+    <div id="learning-workspace" class="learning-layout" hidden>
+      <section class="panel" aria-labelledby="ask-heading">
+        <div class="section-heading"><div><p class="eyebrow">04 · 向当前题目提问</p><h2 id="ask-heading">如果这条边变了呢？</h2></div></div>
+        <form id="ask-form" novalidate>
+          <label class="field" for="ask-mode">问题处理方式<select id="ask-mode"><option value="local">本地受限指令 · 不调用模型</option><option value="model">本地 reader 模型 · 提议动作</option></select></label>
+          <label class="field" for="question">你的问题<textarea id="question" rows="3" maxlength="2000" placeholder="把 AB 改成 6，AC 不变，BC 是多少？" aria-describedby="ask-hint ask-feedback"></textarea></label>
+          <p id="ask-hint" class="hint">支持修改一条直角边、查询 BC、解释变化、恢复原题。答案由本地计算产生。</p>
+          <div class="button-row"><button id="ask-submit" type="submit" class="primary">提交问题</button><button id="ask-cancel" type="button" hidden>取消提问</button></div>
+          <p id="ask-feedback" class="status" role="status" aria-live="polite"></p>
+        </form>
+      </section>
+      <section class="panel" aria-labelledby="learning-heading">
+        <div class="section-heading"><div><p class="eyebrow">05 · 检查这次理解</p><h2 id="learning-heading">说清楚，什么没变</h2></div></div>
+        <p id="quiz-question">把 AB 改大，并固定 AC 时，哪些条件保持不变？</p>
+        <label class="field" for="quiz-answer">选择一个答案<select id="quiz-answer"><option value="">请选择</option><option value="fixed">AC 和 A 处的直角</option><option value="hypotenuse">BC 和 A 处的直角</option><option value="all">三条边长都不变</option></select></label>
+        <div class="button-row"><button id="quiz-check" type="button">检查答案</button><button id="quiz-retry" type="button" hidden>重新作答</button><button id="quiz-skip" type="button">跳过本次检查</button></div>
+        <p id="quiz-feedback" class="status" role="status" aria-live="polite">尚未验证本次理解。</p>
+        <p class="hint">这道题只检查本次理解，不代表长期记忆或已掌握所有同类题。</p>
+      </section>
+    </div>
+    <div class="return-bar"><p id="return-note" class="muted">随时可以退出，无需先答对理解题。</p><div class="button-row"><button id="exit-scene" type="button" disabled>退出实验</button><button id="return-video" type="button" class="primary" disabled>回到原暂停时间，继续视频</button></div></div>
+    <footer>005 独立几何场景 · 预设、手工与真实识别分别验收 · Esc 退出实验</footer>
+  </main>
+</body>
+</html>

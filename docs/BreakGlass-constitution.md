@@ -1,8 +1,8 @@
 # BreakGlass（破壁）执行 Constitution
 
-> 版本：1.7.0　日期：2026-10-03　状态：既有前端基线与 005 系统范围，规划中的功能须单独验收
+> 版本：1.7.1　日期：2026-10-03　状态：既有前端基线与 005 系统范围，实施和验收状态以各自记录为准
 >
-> 本文件保留 BreakGlass 的前端与 Chrome 扩展基线，并记录用户于 2026-10-03 解除 005 单场景闭环的仅前端限制。005 按 `AGENTS.md` 第 0 节和 `.specify/memory/constitution.md` 1.9.0 原则 VIII 覆盖本地 reader、几何计算与模型接入；其他功能沿用既有范围。本文不代表功能已经实现，未完成增强不能反向抬高原抛物线 P0 的验收门槛。
+> 本文件保留 BreakGlass 的前端与 Chrome 扩展基线，并记录用户于 2026-10-03 解除 005 单场景闭环的仅前端限制。005 按 `AGENTS.md` 第 0 节和 `.specify/memory/constitution.md` 1.9.1 原则 VIII 覆盖本地 reader、几何计算与模型接入；其他功能沿用既有范围。本文不代表功能已经实现，未完成增强不能反向抬高原抛物线 P0 的验收门槛。
 
 ## 1. 优先级与交付范围
 
@@ -26,13 +26,13 @@ Python/Pyodide、本地 Web Worker、真实视觉识别适配属于独立 P1。�
 
 点破壁到覆盖层出现，仍要求热缓存至少 20 次、P95 ≤ 100ms，并与第一处出现的耗时分开记。破壁后要有 `contentRect`，且 `maxRatio` ≤ 0.02。这些记录目前没有，该验收保持未通过。
 
-模型密钥不进入扩展包，也不提交到仓库。阅读服务的源码在 `breakglass-reader/`，不打进扩展包，不部署成云端后台。完整约束以 `.specify/memory/constitution.md` 1.8.0 原则 VII 为准。本切片未实现前，不得声称评委或用户已经能用自己的视频完成阅读。
+模型密钥不进入扩展包，也不提交到仓库。阅读服务的源码在 `breakglass-reader/`，不打进扩展包，不部署成云端后台。完整约束以 `.specify/memory/constitution.md` 1.9.1 原则 VII 为准。本切片未实现前，不得声称评委或用户已经能用自己的视频完成阅读。
 
 以下内容不属于当前交付范围：用户注册或登录、云端同步、历史记录数据库、点赞分享、多语言、多对象识别、C++/Java/Go 等语言支持，以及其他不直接服务核心演示的 SaaS 功能。
 
 ### 当前帧直角三角形闭环：005 独立切片
 
-以 [`specs/005-insitu-right-triangle/spec.md`](../specs/005-insitu-right-triangle/spec.md)、[实施计划](../specs/005-insitu-right-triangle/plan.md)、[任务](../specs/005-insitu-right-triangle/tasks.md) 和 [场景/动作契约](../specs/005-insitu-right-triangle/contracts/scene-actions.md) 记录。本次目标为暂停当前帧、提取并校对题目条件、受约束改边、确定性计算、对话动作、恢复原题、理解问题及返回视频；当前只有规划，不得计为功能完成。
+以 [`specs/005-insitu-right-triangle/spec.md`](../specs/005-insitu-right-triangle/spec.md)、[实施计划](../specs/005-insitu-right-triangle/plan.md)、[任务](../specs/005-insitu-right-triangle/tasks.md) 和 [场景/动作契约](../specs/005-insitu-right-triangle/contracts/scene-actions.md) 记录。本次目标为暂停当前帧、提取并校对题目条件、受约束改边、确定性计算、对话动作、恢复原题、理解问题及返回视频；实际实施和验收状态以任务清单和 [几何验证记录](./BreakGlass-geometry-validation.md) 为准。部分实施不得计为完整验收通过。
 
 - 首版一份直角三角形题：规范化 ∠A=90°、AB/AC 直角边、BC 斜边。数学条件来自题目标记、文字及用户确认，不从图片比例猜边长。原帧用于追溯，独立画板按条件重建。
 - 显式触发后可向本地 reader 发送当前单帧 JPEG 与必要元数据；用途及供应商调用必须可见。问答只提交结构化题目和文字。接口及 `SceneResult` 独立，代理/浏览器双重校验，模型只产候选条件与受限动作，BC 用 `Math.hypot` 计算。
@@ -133,3 +133,4 @@ P1 只有在开关、契约、安全预算、精确依赖版本和测试证据�
 | 1.5.0 | 2026-10-03 | 阅读服务源码改放在本仓库 `breakglass-reader/`。仍不打进扩展包，密钥不入库，不部署成云端后台。完整约束指向 Spec Constitution 1.7.0。 |
 | 1.6.0 | 2026-10-03 | 阅读失败、断网或地址为空时，用户选中的片子留在画面上，不再自动换回 9 秒片。示例片只在点「选择预设」时播放。完整约束指向 Spec Constitution 1.8.0。 |
 | 1.7.0 | 2026-10-03 | 记录用户解除 005 仅前端范围并选择可验证的直角三角形闭环；同步当前帧、本地 reader、校对、确定性动作、独立预算与验收。完整约束指向 Spec Constitution 1.9.0 原则 VIII；保留原抛物线及 003/004 范围。 |
+| 1.7.1 | 2026-10-03 | PATCH：将 005 实施状态指向任务清单与几何验证记录，同步 Spec Constitution 1.9.1、需求分析与实施计划。未改变范围、原则或准入门槛；保留真实模型与完整产品的未通过项。 |

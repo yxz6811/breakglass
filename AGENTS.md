@@ -8,7 +8,7 @@
 
 - 修订日期：2026-10-03。依据：用户要求结合 GitHub 与四张产品讨论图片规划，并选择“可验证的单场景闭环”，随后要求推送到 `123456` 并开始执行任务。
 - 本次 `specs/005-insitu-right-triangle/` 及其实现覆盖扩展页面、当前帧采集、几何题数据与确定性计算、条件校对、对话动作、理解验证，以及既有 `breakglass-reader/` 中的无状态识别与问答接口。第 2、9、15、18 节的“仅前端 / 服务作为外部依赖”不限制该切片的这些明确任务。
-- 产品与工程约束以 `.specify/memory/constitution.md` 1.9.0 原则 VIII、`docs/BreakGlass-constitution.md` 1.7.0，以及 005 的 Spec/Plan/Tasks 为准。模型仅产生候选或受限动作，数学结果由程序计算。
+- 产品与工程约束以 `.specify/memory/constitution.md` 1.9.1 原则 VIII、`docs/BreakGlass-constitution.md` 1.7.1，以及 005 的 Spec/Plan/Tasks 为准。模型仅产生候选或受限动作，数学结果由程序计算；实施与验收状态以任务清单及 `docs/BreakGlass-geometry-validation.md` 为据。
 - 保留 001 抛物线、003 开播前阅读和 004 更多图形与旁边提问的独立范围。005 不继承 004 的“不识别新图形”条件，也不修改既有 `CurveResult`、`createWake` 或 1500ms 保底。
 - 模型密钥只存于本地 reader 环境；新能力以独立入口启用。单帧上传需由用户在产品中明确触发并看到用途说明；失败保留当前视频，不伪装预设为识别成功。
 - 该修订不引入账号、数据库、云端执行容器或通用实验平台。其他任务继续适用下文；真实识别与学习效果必须以各自的验证记录为据。

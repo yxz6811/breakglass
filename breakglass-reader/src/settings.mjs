@@ -29,12 +29,20 @@ function intInRange(value, fallback, min, max) {
   return Math.min(max, Math.max(min, parsed));
 }
 
+// 几何预算不接受部分数字（如“10s”），不复用旧/read的宽松配置规则。
+function geometryBudget(value, fallback) {
+  if (typeof value !== 'string' || !/^\d+$/.test(value.trim())) return fallback;
+  const parsed = Number(value.trim());
+  return Number.isSafeInteger(parsed) && parsed >= 1000 && parsed <= 120000 ? parsed : fallback;
+}
+
 /**
  * 从环境变量读配置。密钥只在这里进入进程，不写进任何文件或响应。
  *
  * @param {Record<string, string | undefined>} env
  * @returns {{ host: string, port: number, baseUrl: string, apiKey: string, model: string,
  *   jsonMode: boolean, timeoutMs: number, budgetMs: number, concurrency: number,
+ *   geometryReadBudgetMs: number, geometryAskBudgetMs: number,
  *   allowOrigin: (origin: string) => boolean, extensionDir: string }}
  */
 export function loadSettings(env) {
@@ -52,6 +60,8 @@ export function loadSettings(env) {
     timeoutMs: intInRange(env.READER_MODEL_TIMEOUT_MS, 60000, 1000, PAGE_DEADLINE_MS),
     budgetMs: intInRange(env.READER_BUDGET_MS, 240000, 1000, PAGE_DEADLINE_MS - 20000),
     concurrency: intInRange(env.READER_CONCURRENCY, 2, 1, 8),
+    geometryReadBudgetMs: geometryBudget(env.READER_GEOMETRY_READ_BUDGET_MS, 30000),
+    geometryAskBudgetMs: geometryBudget(env.READER_GEOMETRY_ASK_BUDGET_MS, 10000),
     allowOrigin: listed.length > 0
       ? (origin) => listed.includes(origin)
       : (origin) => DEFAULT_ORIGINS.some((pattern) => pattern.test(origin)),

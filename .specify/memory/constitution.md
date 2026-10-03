@@ -1,10 +1,9 @@
 <!--
 Sync Impact Report
-- Version change: 1.8.0 → 1.9.0
+- Version change: 1.9.0 → 1.9.1
 - Modified principles:
-  - II. 服务端只允许无状态感知代理：开播前阅读在片子可播放时自行开始，稀疏画面上限改为 8 张
-  - VIII. 为 005 单场景闭环明确系统范围、当前帧识别、条件校对、确定性动作和独立验收；保留 VII 既有阅读流程
-- Added sections: VIII. 当前帧直角三角形学习闭环（005）
+  - 无原则变化；仅澄清 005 实施状态以任务清单和验证记录为准
+- Added sections: 无
 - Removed sections: 无
 - Templates status: 依赖模板在运行时读取本文件，本次未改模板
 - Deferred TODOs:
@@ -13,7 +12,7 @@ Sync Impact Report
   - TODO(FRAME_UPLOAD): 001/003 仍不允许破壁补送单帧。005 按原则 VIII 独立入口允许显式触发的当前帧；整段原视频上传仍不在范围。
   - TODO(VISION_FIXTURE): `visionAdapter` 只允许 `fixture`（随扩展打包的识别样例）；它不等于外部识别已接通，也不授权破壁时上传
   - TODO(PROXY_RUNTIME): 感知代理的语言、框架和部署形态未冻结
-  - TODO(DOC_SYNC): docs/BreakGlass-constitution.md 已同步为 1.7.0；005 的系统范围以原则 VIII 为准。
+  - TODO(DOC_SYNC): docs/BreakGlass-constitution.md 已同步为 1.7.1；005 的系统范围以原则 VIII 为准，实施状态以任务与验证记录为据。
   - TODO(REPO_BOUNDARY): 2026-10-03 起，阅读服务源码放在 `breakglass-reader/`。不打进扩展包，密钥不入库，不部署成云端后台。扩展与演示页仍只做前端
   - TODO(RESET_EXIT): 重置是否保留交互层、退出后是否保持暂停，执行计划仍标为未确认
   - TODO(CURVE_FORM): 抛物线参数形式、初值、范围和步长必须来自最终演示素材，本文件不预设公式
@@ -310,7 +309,9 @@ Spec、Plan、Tasks 和代码审查必须能指出：当前能力属于 P0 预�
 
 本文件是 BreakGlass 已定产品约束的单一治理源，也是 Spec Kit 的治理源。优先级为：本文件 > 已确认的需求和接口契约 > Plan 与 Tasks > 实现偏好。根目录 `AGENTS.md` 继续规定本仓库的前端工程做法；产品范围与本文件冲突时，以本文件为准。
 
-`docs/BreakGlass-constitution.md` 1.7.0 已指向本文件。既有服务端角色以原则 II 为准，开播前阅读以原则 VII 为准，005 的系统范围以原则 VIII 与 `AGENTS.md` 第 0 节为准。阅读服务源码可以放在 `breakglass-reader/`，不打进扩展包。005 可扩展该本地无状态 reader，其独立接口与预算必须有契约和验证。
+`docs/BreakGlass-constitution.md` 1.7.1 已指向本文件。既有服务端角色以原则 II 为准，开播前阅读以原则 VII 为准，005 的系统范围以原则 VIII 与 `AGENTS.md` 第 0 节为准。阅读服务源码可以放在 `breakglass-reader/`，不打进扩展包。005 可扩展该本地无状态 reader，其独立接口与预算必须有契约和验证。
+
+005 的实施与验收状态以 [任务清单](../../specs/005-insitu-right-triangle/tasks.md) 和 [几何验证记录](../../docs/BreakGlass-geometry-validation.md) 为准。治理文本批准范围，不能替代真实模型与完整产品证据；部分实施不得标记为完整验收通过。
 
 用户的最新明确决定可以启动修订，但不能形成未写入本文件的例外。发现任务、需求、计划或代码违反本文件时，必须在进入实现或合并前标记，并说明影响。需求与本文件冲突时，先修订并递增版本号，再回写 Plan 与 Tasks。低层文档不得静默覆盖本文件。
 
@@ -320,7 +321,7 @@ Spec、Plan、Tasks 和代码审查必须能指出：当前能力属于 P0 预�
 
 本文件不授权在 `AGENTS.md` 修订前再新建别的后端，也不把未实现的 P1 视为已经完成。`breakglass-reader/` 是原则 VII 允许的那一份阅读服务源码。
 
-**Version**: 1.9.0 | **Ratified**: 2026-10-02 | **Last Amended**: 2026-10-03
+**Version**: 1.9.1 | **Ratified**: 2026-10-02 | **Last Amended**: 2026-10-03
 
 ## 变更记录
 
@@ -336,3 +337,4 @@ Spec、Plan、Tasks 和代码审查必须能指出：当前能力属于 P0 预�
 | 1.8.0 | 2026-10-03 | MINOR：原则 VII。阅读失败、断网、地址为空或 5 分钟内没有通过点时，不再把画面换回 `breakglass-demo-9s.mp4`。用户选中的片子留下，失败片子上的点丢掉。示例片只在点「选择预设」时播放。 |
 | 1.9.0 | 2026-10-03 | MINOR：新增原则 VIII，按用户最新范围记录 005 当前帧直角三角形学习闭环。允许本地 reader 的独立单帧识别与受限问答，补充校对、确定性解算、来源、帧/修订号绑定和独立预算；同步 AGENTS、前端基线、需求分析和执行计划。保留 001/003/004 与既有交接面；规划不等于实现。 |
 | 1.3.0 | 2026-10-02 | 冻结页面与结果规则的唯一交接接口：一个时钟、一个会话状态、一个 `createWake`，以及替身和内存计时的调用形状。禁止并行的唤醒工厂和别名字段。 |
+| 1.9.1 | 2026-10-03 | PATCH：澄清 005 的实施状态以任务清单与验证记录为准，同步产品 Constitution 1.7.1 和受影响文档。未改变范围、原则或准入门槛；真实模型及完整产品证据不足时仍保持部分完成。 |

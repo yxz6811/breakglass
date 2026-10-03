@@ -1,10 +1,12 @@
 # BreakGlass（破壁）前端执行计划
 
-> 2026-10-03 范围补充：本文件主体保留原抛物线前端基线；005 的完整执行顺序以 [当前帧直角三角形实施计划](../specs/005-insitu-right-triangle/plan.md) 与 [任务清单](../specs/005-insitu-right-triangle/tasks.md) 为准，覆盖扩展、本地 reader、几何计算及模型接入。依据 `AGENTS.md` 第 0 节、[Constitution 1.7.0](BreakGlass-constitution.md) 与 Spec Constitution 1.9.0 原则 VIII，不再套用仅前端限制。
+> 2026-10-03 范围补充：本文件主体保留原抛物线前端基线；005 的完整执行顺序以 [当前帧直角三角形实施计划](../specs/005-insitu-right-triangle/plan.md) 与 [任务清单](../specs/005-insitu-right-triangle/tasks.md) 为准，覆盖扩展、本地 reader、几何计算及模型接入。依据 `AGENTS.md` 第 0 节、[Constitution 1.7.1](BreakGlass-constitution.md) 与 Spec Constitution 1.9.1 原则 VIII，不再套用仅前端限制。
 
 ## 2026-10-03 新切片执行补充
 
 005 依次完成契约、确定性算法与画板、当前帧与校对、真实识别、对话动作、理解与返回视频；每阶段有独立门槛。先用明确标注的预设/人工数据验证算法与交互，再验收真实模型。识别等待与本地更新分别计时；开发预算需真实预跑后冻结。原 001 的 1500ms、003 的开播前阅读及 004 的多图形提问范围不改。阶段任务未执行时保持未勾选，真实识别与学习效果单独记录。
+
+本轮已完成 19/25 项可独立验证的实现与检查，剩余项保留真实模型、完整 Chrome/四画幅及实际像素证据门槛。实际命令、网页结果与未通过项见 [几何验证记录](./BreakGlass-geometry-validation.md)；本计划不将部分实施记为完整验收。
 
 > 本计划基于 2026-10-01 飞书资料整理，服务于前端实现与协作。需求文档、流程图和原型仍有“讨论中 / 待确认”标记，计划中的建议项必须在团队确认后冻结。
 >

@@ -1,0 +1,17 @@
+{
+  "schemaVersion": "1.0.0",
+  "kind": "right-triangle",
+  "requestId": "geometry-manual-1",
+  "videoId": "local-video-1",
+  "frameTime": 6,
+  "frameSize": { "width": 1920, "height": 1080 },
+  "sceneRevision": 0,
+  "rightAngleAt": "A",
+  "labels": { "A": "A", "B": "B", "C": "C" },
+  "vertices": null,
+  "lengths": { "AB": 3, "AC": 4 },
+  "unit": "unit",
+  "source": "manual",
+  "originSource": "manual",
+  "editedByUser": true
+}
