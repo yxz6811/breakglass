@@ -1,0 +1,10 @@
+{
+  "command": "node docs/test-evidence/repository-audit-2026-10-03/bfcache-reproduction.cjs",
+  "startedAt": "2026-10-03T10:38:43.6350407Z",
+  "finishedAt": "2026-10-03T10:38:44.2882169Z",
+  "exitCode": 0,
+  "result": "defect-reproduced",
+  "isPassingRegressionTest": false,
+  "passingTestCountContribution": 0,
+  "limitations": "Existing fake DOM/media/URL harness; no real browser BFCache claim."
+}

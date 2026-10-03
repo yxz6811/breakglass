@@ -1,0 +1,108 @@
+{
+  "sourceCommit": "08e84da67e7d2315c0045c54abcb18e300d19838",
+  "node": "v24.21.0",
+  "platform": "win32",
+  "arch": "x64",
+  "isolationRoot": "C:\\Users\\27736\\AppData\\Local\\Temp\\breakglass-repository-build-wEXhmj",
+  "copiedInputs": [
+    "scripts/build-showcase.mjs",
+    "site/"
+  ],
+  "runtimeWrites": "Only the isolated temporary copy; workspace product files were not written.",
+  "run": {
+    "executable": "C:\\Program Files\\nodejs\\node.exe",
+    "args": [
+      "scripts/build-showcase.mjs"
+    ],
+    "cwd": "C:\\Users\\27736\\AppData\\Local\\Temp\\breakglass-repository-build-wEXhmj",
+    "startedAt": "2026-10-03T10:39:30.208Z",
+    "finishedAt": "2026-10-03T10:39:31.215Z",
+    "elapsedMs": 1005.055,
+    "exitCode": 0,
+    "signal": null,
+    "error": null,
+    "stdoutLog": "showcase-build.stdout.log",
+    "stderrLog": "showcase-build.stderr.log"
+  },
+  "comparisons": [
+    {
+      "name": "展示网站",
+      "generatedPath": "C:\\Users\\27736\\AppData\\Local\\Temp\\breakglass-repository-build-wEXhmj\\展示网站",
+      "workspacePath": "D:\\前端\\breakglass-geometry-plan\\展示网站",
+      "generatedExists": true,
+      "workspaceExists": true,
+      "generatedBytes": 157334,
+      "workspaceBytes": 157352,
+      "generatedSha256": "5322044e8b0cd85f4fa05772aa4e171822dbf779ee5e4091739d1344e512cf29",
+      "workspaceSha256": "57a254bec3956ca63fe9b4809fe50991e893c64a20e543fb49f2d29da42c8ad3",
+      "byteEqual": false,
+      "htmlNewlineNormalizedEqual": true,
+      "normalizedGeneratedSha256": "1082092168b7d2ec4c0e71376a0106a0439a0457516a4b828d7e67c507dd9132",
+      "normalizedWorkspaceSha256": "1082092168b7d2ec4c0e71376a0106a0439a0457516a4b828d7e67c507dd9132",
+      "generatedNewlines": {
+        "crlf": 3622,
+        "loneLf": 18,
+        "loneCr": 0
+      },
+      "workspaceNewlines": {
+        "crlf": 3640,
+        "loneLf": 0,
+        "loneCr": 0
+      },
+      "differenceExplanation": "The HTML differs only in CRLF/CR/LF line endings. The Windows working copy has CRLF checkout normalization; the build inserts LF around inlined sources. No source or generated workspace entry was modified."
+    },
+    {
+      "name": "展示网站.html",
+      "generatedPath": "C:\\Users\\27736\\AppData\\Local\\Temp\\breakglass-repository-build-wEXhmj\\展示网站.html",
+      "workspacePath": "D:\\前端\\breakglass-geometry-plan\\展示网站.html",
+      "generatedExists": true,
+      "workspaceExists": true,
+      "generatedBytes": 157334,
+      "workspaceBytes": 157352,
+      "generatedSha256": "5322044e8b0cd85f4fa05772aa4e171822dbf779ee5e4091739d1344e512cf29",
+      "workspaceSha256": "57a254bec3956ca63fe9b4809fe50991e893c64a20e543fb49f2d29da42c8ad3",
+      "byteEqual": false,
+      "htmlNewlineNormalizedEqual": true,
+      "normalizedGeneratedSha256": "1082092168b7d2ec4c0e71376a0106a0439a0457516a4b828d7e67c507dd9132",
+      "normalizedWorkspaceSha256": "1082092168b7d2ec4c0e71376a0106a0439a0457516a4b828d7e67c507dd9132",
+      "generatedNewlines": {
+        "crlf": 3622,
+        "loneLf": 18,
+        "loneCr": 0
+      },
+      "workspaceNewlines": {
+        "crlf": 3640,
+        "loneLf": 0,
+        "loneCr": 0
+      },
+      "differenceExplanation": "The HTML differs only in CRLF/CR/LF line endings. The Windows working copy has CRLF checkout normalization; the build inserts LF around inlined sources. No source or generated workspace entry was modified."
+    },
+    {
+      "name": "index.html",
+      "generatedPath": "C:\\Users\\27736\\AppData\\Local\\Temp\\breakglass-repository-build-wEXhmj\\index.html",
+      "workspacePath": "D:\\前端\\breakglass-geometry-plan\\index.html",
+      "generatedExists": true,
+      "workspaceExists": true,
+      "generatedBytes": 157334,
+      "workspaceBytes": 157352,
+      "generatedSha256": "5322044e8b0cd85f4fa05772aa4e171822dbf779ee5e4091739d1344e512cf29",
+      "workspaceSha256": "57a254bec3956ca63fe9b4809fe50991e893c64a20e543fb49f2d29da42c8ad3",
+      "byteEqual": false,
+      "htmlNewlineNormalizedEqual": true,
+      "normalizedGeneratedSha256": "1082092168b7d2ec4c0e71376a0106a0439a0457516a4b828d7e67c507dd9132",
+      "normalizedWorkspaceSha256": "1082092168b7d2ec4c0e71376a0106a0439a0457516a4b828d7e67c507dd9132",
+      "generatedNewlines": {
+        "crlf": 3622,
+        "loneLf": 18,
+        "loneCr": 0
+      },
+      "workspaceNewlines": {
+        "crlf": 3640,
+        "loneLf": 0,
+        "loneCr": 0
+      },
+      "differenceExplanation": "The HTML differs only in CRLF/CR/LF line endings. The Windows working copy has CRLF checkout normalization; the build inserts LF around inlined sources. No source or generated workspace entry was modified."
+    }
+  ],
+  "allGeneratedEntriesEqual": true
+}

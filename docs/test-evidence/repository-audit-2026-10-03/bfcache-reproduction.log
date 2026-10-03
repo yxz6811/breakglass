@@ -1,0 +1,55 @@
+{
+  "kind": "diagnostic-defect-reproduction",
+  "startedAt": "2026-10-03T10:38:43.958Z",
+  "finishedAt": "2026-10-03T10:38:44.014Z",
+  "sourceCommit": "08e84da67e7d2315c0045c54abcb18e300d19838",
+  "runtime": {
+    "node": "v24.21.0",
+    "platform": "win32",
+    "release": "10.0.26200"
+  },
+  "events": [
+    {
+      "type": "pagehide",
+      "persisted": true
+    },
+    {
+      "type": "pageshow",
+      "persisted": true
+    },
+    {
+      "type": "click",
+      "target": "preset-button"
+    }
+  ],
+  "before": {
+    "phase": "confirmed",
+    "abSubmitListeners": 1,
+    "presetClickListeners": 1,
+    "videoSrc": "blob:local-test-1",
+    "revokedUrls": []
+  },
+  "expected": {
+    "controllerUsableAfterPersistedReturn": true,
+    "phaseAfterPresetClick": "review",
+    "abSubmitListeners": 1,
+    "presetClickListeners": 1,
+    "cachedLocalVideoUrlRetained": true
+  },
+  "actual": {
+    "phaseAfterReturnAndPresetClick": "empty",
+    "abSubmitListeners": 0,
+    "presetClickListeners": 0,
+    "videoSrc": "blob:local-test-1",
+    "revokedUrls": [
+      "blob:local-test-1"
+    ]
+  },
+  "reproduced": true,
+  "conclusion": "The cached controller is permanently disposed and cannot handle the preset click after return.",
+  "limitations": [
+    "Uses the existing fake DOM, media and URL boundary; no browser or actual navigation was driven.",
+    "Real-browser BFCache eligibility, event delivery and restored rendering remain unverified.",
+    "This diagnostic is separate from the existing 621 passing tests; no product or test source was changed."
+  ]
+}

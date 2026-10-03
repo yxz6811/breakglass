@@ -1,0 +1,59 @@
+{
+  "recordedAt": "2026-10-03T10:58:33.013Z",
+  "tabId": "19",
+  "url": "http://127.0.0.1:8765/demo/geometry.html",
+  "observations": [
+    {
+      "id": "PF-B01",
+      "recordedAt": "2026-10-03T10:57:37.686Z",
+      "action": "加载 3–4–5，校对确认，AB=6，保留数值/问题草稿，然后点击曲线页链接并后退",
+      "before": {
+        "abDraft": "123.4",
+        "bc": "7.211",
+        "original": "∠A = 90° · AB = 3 · AC = 4 · BC = 5 cm",
+        "paused": true,
+        "question": "尚未提交的返回草稿",
+        "revision": "修订 2",
+        "source": "http://127.0.0.1:8765/assets/video/geometry/triangle-3-4-5.mp4",
+        "time": 4
+      },
+      "returned": {
+        "abDraft": "123.4",
+        "bc": "",
+        "experimentVisible": false,
+        "original": "",
+        "paused": true,
+        "question": "尚未提交的返回草稿",
+        "revision": "待确认",
+        "source": "",
+        "time": 0
+      },
+      "result": "返回时页面重新初始化，没有视频和场景；表单草稿由浏览器保留。此轮未获得 BFCache 命中的直接证据，不能计为缓存恢复通过。"
+    },
+    {
+      "id": "PF-B02",
+      "recordedAt": "2026-10-03T10:58:00.875Z",
+      "action": "重新加载教学示例，显式确认，AB 3→6，AC 固定4",
+      "result": {
+        "ab": "6",
+        "ac": "4",
+        "bc": "7.211",
+        "original": "∠A = 90° · AB = 3 · AC = 4 · BC = 5 cm",
+        "paused": true,
+        "time": 4
+      }
+    },
+    {
+      "id": "PF-B03",
+      "recordedAt": "2026-10-03T10:58:32.933Z",
+      "action": "恢复原题后提交本地指令，把AB改成8",
+      "result": {
+        "ab": "8",
+        "ac": "4",
+        "bc": "8.944",
+        "feedback": "本地受限指令 · AB 从 3 变为 8，AC 保持不变；BC 从 5 变为 8.944 cm。A 处仍为直角，BC 由勾股关系计算。",
+        "original": "∠A = 90° · AB = 3 · AC = 4 · BC = 5 cm"
+      }
+    }
+  ]
+}

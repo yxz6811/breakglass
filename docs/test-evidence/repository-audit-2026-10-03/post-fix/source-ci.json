@@ -1,0 +1,18 @@
+{
+  "queriedAt": "2026-10-03T11:04:12.880Z",
+  "sourceCommit": "42c33fd78e2ca4824faed0d1e3194879673876dc",
+  "url": "https://api.github.com/repos/yxz6811/breakglass/commits/42c33fd78e2ca4824faed0d1e3194879673876dc/check-runs",
+  "httpStatus": 200,
+  "totalCount": 1,
+  "checks": [
+    {
+      "name": "test",
+      "status": "completed",
+      "conclusion": "success",
+      "startedAt": "2026-10-03T11:01:03Z",
+      "completedAt": "2026-10-03T11:01:39Z",
+      "headSha": "42c33fd78e2ca4824faed0d1e3194879673876dc",
+      "url": "https://github.com/yxz6811/breakglass/actions/runs/37118287209/job/111189231850"
+    }
+  ]
+}

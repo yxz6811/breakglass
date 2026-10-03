@@ -76,12 +76,12 @@
 
 **Goal**: 失败、断网或 5 分钟内没有通过点时保留用户视频并清空失败结果。示例只通过「选择预设」加载。两段耗时分开。2% 与真实像素呈现的 20 次样本未测得前，验收保持未通过。
 
-**Independent Test**: 假的 `fetch` 失败后视频地址变为预先准备片子，前一绑定的点为空。`lesson-first-point` 与 `lesson-wake-visible` 分别存在。在样本不足 20 或 `maxRatio` 仍为 `null` 时，测试必须断言验收未通过，而不是改写成通过。
+**Independent Test**: 假的 `fetch` 失败后保留所选用户视频，清空无效结果和旧绑定的点，当前视频已通过校验的点仍保留。预设只通过「选择预设」显式加载。`lesson-first-point` 与 `lesson-wake-visible` 分别存在。在样本不足 20 或 `maxRatio` 仍为 `null` 时，测试必须断言验收未通过，而不是改写成通过。
 
 ### Tests for User Story 3
 
 - [x] T012 [US3] `tests/lesson-ask.test.js` 覆盖请求体的 `readingId`、`videoId`、`duration`、`frameSize`、`courseText`、`frames`；`frameSize` 是源像素宽高，无效时为 `null`；`frames` 长度不超过 8；没有整段视频、密钥或固定地址；`courseText` 超过 8000 字时不发送正文；截止为 300000ms；失败由页面保持用户视频，不调用会话 `fail`。响应标识和时长不匹配时拒绝。测试不得访问网络
-- [x] T013 [P] [US3] 在 `tests/page-lesson.test.js` 增加断言：阅读失败后视频地址以 `breakglass-demo-9s.mp4` 结尾，且前一 `videoId` 的点被清空；验收片子地址等于该文件时不得开始作为阅读目标
+- [x] T013 [P] [US3] 在 `tests/page-lesson.test.js` 增加断言：阅读失败后保留用户所选视频，清空无效结果及旧 `videoId` 的点，保留当前视频已通过校验的点；预设只通过「选择预设」显式加载；验收片子地址等于 `breakglass-demo-9s.mp4` 时不得开始作为阅读目标
 
 ### Implementation for User Story 3
 
