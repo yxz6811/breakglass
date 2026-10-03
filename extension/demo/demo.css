@@ -82,6 +82,8 @@ video { display: block; width: 100%; height: 100%; min-height: 540px; object-fit
 .asset-empty p { margin: 0; color: var(--screen-warn); font-size: var(--text-sm); text-align: center; }
 .stage-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; }
 .stage-actions--bar { justify-content: flex-start; }
+/* 空画面中央已经有一组选择按钮，下面这组先藏起来，避免同一屏出现两次。 */
+.video-column:has(#asset-empty:not([hidden])) .stage-actions--bar { display: none; }
 .stage-actions--bar .stage-pick { min-width: 0; }
 .stage-pick { position: relative; display: inline-flex; align-items: center; justify-content: center; min-width: 148px; min-height: 44px; padding: 10px 16px; border: 1px solid transparent; border-radius: var(--radius-sm); background: var(--primary-bg); color: var(--primary-ink); font-size: var(--text-sm); font-weight: 600; pointer-events: auto; cursor: pointer; }
 .stage-pick:hover:not(:disabled) { background: var(--primary-bg); filter: brightness(1.06); }
