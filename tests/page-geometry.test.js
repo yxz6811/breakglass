@@ -198,8 +198,13 @@ test('HTML keeps local script order, visible labels and standalone narrow-screen
   assert.deepEqual(order.map((item) => path.basename(item)), ['validate.js', 'solve.js', 'actions.js', 'session.js', 'frame.js', 'request.js', 'view.js', 'geometry.js']);
   assert.equal(/<script[^>]*>(?!\s*<\/script>)/.test(html), false);
   assert.match(html, /for="candidate-b-y"/);
+  const stylesheets = [...html.matchAll(/<link rel="stylesheet" href="([^"]+)"/g)].map((match) => match[1]);
+  assert.deepEqual(stylesheets, ['../src/ui/theme.css', './geometry.css']);
+  assert.match(html, /class="workspace-nav" aria-label="工作台切换"/);
+  assert.match(html, /href="\.\/geometry\.html" aria-current="page"/);
   const css = fs.readFileSync(path.join(__dirname, '../extension/demo/geometry.css'), 'utf8');
-  assert.match(css, /min-height:44px/); assert.match(css, /prefers-reduced-motion/); assert.match(css, /max-width:720px/);
+  const shared = fs.readFileSync(path.join(__dirname, '../extension/src/ui/theme.css'), 'utf8');
+  assert.match(shared, /min-height:\s*44px/); assert.match(shared, /prefers-reduced-motion/); assert.match(css, /max-width:\s*720px/);
 });
 
 test('SVG keyboard adjustment preserves focus on the same side after every render', () => {

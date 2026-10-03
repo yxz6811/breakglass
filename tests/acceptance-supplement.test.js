@@ -11,6 +11,20 @@ const { createHarness, flush } = require('./helpers/fake-page.js');
 
 const extensionDir = path.join(__dirname, '..', 'extension');
 const readText = (rel) => fs.readFileSync(path.join(extensionDir, rel), 'utf8');
+function pageStyles(rel) {
+  return [...readText(rel).matchAll(/<link\b[^>]*>/gi)]
+    .filter((match) => /\brel\s*=\s*["']stylesheet["']/i.test(match[0]))
+    .map((match) => {
+      const href = /\bhref\s*=\s*["']([^"']+)["']/i.exec(match[0]);
+      assert.ok(href, '样式链接缺少 href：' + rel);
+      assert.doesNotMatch(href[1], /^(?:[a-z][a-z\d+.-]*:|\/\/)/i, '样式必须来自扩展包：' + rel);
+      const file = path.resolve(extensionDir, path.dirname(rel), href[1].split(/[?#]/)[0]);
+      const relative = path.relative(extensionDir, file);
+      assert.equal(relative === '..' || relative.startsWith('..' + path.sep) || path.isAbsolute(relative), false,
+        '样式不能越出扩展包：' + href[1]);
+      return fs.readFileSync(file, 'utf8');
+    }).join('\n');
+}
 const preset = require('../extension/assets/presets/demo-parabola.json');
 const config = require('../extension/assets/config.json');
 
@@ -204,9 +218,9 @@ test('18 P0 全程仅包内请求，005 本机 reader 例外不扩大权限', as
 });
 
 test('19 键盘焦点可见，禁用按钮说明原因', async () => {
-  const css = readText('demo/demo.css');
+  const css = pageStyles('demo/index.html');
   const html = readText('demo/index.html');
-  assert.match(css, /:focus-visible[^{]*\{[^}]*outline:\s*2px solid var\(--accent\)/);
+  assert.match(css, /:focus-visible[^{]*\{[^}]*outline\s*:\s*2px\s+solid\s+var\(\s*--accent\s*\)/);
   assert.match(html, /id="wake-button"[^>]*aria-describedby="wake-reason"/);
   assert.match(html, /class="sr-only" id="wake-reason"/);
   const harness = await createHarness();

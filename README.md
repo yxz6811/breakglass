@@ -91,6 +91,7 @@ node --test
 - [005 场景与动作契约](specs/005-insitu-right-triangle/contracts/scene-actions.md)
 - [005 验收步骤](specs/005-insitu-right-triangle/quickstart.md)
 - [视觉规范](docs/BreakGlass-visual-spec.md)
+- [工作台视觉对齐与验证（2026-10-03）](docs/BreakGlass-ui-alignment-2026-10-03.md)
 - [UI 设计建议](docs/BreakGlass-ui-design-guide.md)
 - [UI 现状清单](docs/BreakGlass-ui-inventory.md)
 - [UI 待实现清单](docs/BreakGlass-ui-todo.md)

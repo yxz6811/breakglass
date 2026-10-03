@@ -2,70 +2,70 @@
 
 | 项 | 值 |
 | --- | --- |
-| 版本 | 1.4.0 |
-| 日期 | 2026-10-02 |
-| 状态 | 设计基线 v1.1.0，已落地到 `extension/demo/` 与 `extension/src/ui/` |
-| 适用范围 | `extension/demo/` 演示页的全部视觉与动效；不含 P1（识别/Pyodide） |
-| 依据 | `AGENTS.md` §6（视觉、响应式与可访问性）、`docs/BreakGlass-constitution.md`（§4 来源标识、§6 超时保底、§7 对齐、§10 验收）、`specs/001-insitu-parabola/spec.md`（FR-001~019、SC-001~006）、`docs/BreakGlass-frontend-execution-plan.md`（P-01~P-05、§10） |
+| 版本 | 1.5.0 |
+| 日期 | 2026-10-03 |
+| 状态 | 两个产品工作台统一采用浅色冰面；共享视觉源为 `extension/src/ui/theme.css`，浏览器验收另记，不由本文判定通过 |
+| 适用范围 | `extension/demo/index.html` 与 `extension/demo/geometry.html` 的共享主题和组件视觉；`site/` 介绍站及根目录样稿不在本轮范围 |
+| 依据 | `AGENTS.md` §6、产品 Constitution 1.7.1、Spec Constitution 1.9.1、001/003 既有工作台及 `specs/005-insitu-right-triangle/` 当前帧闭环 |
 | 配套 | 令牌与组件说明见本文；逐交互的设计理由见 [`BreakGlass-ui-design-guide.md`](./BreakGlass-ui-design-guide.md)；现状清单见 [`BreakGlass-ui-inventory.md`](./BreakGlass-ui-inventory.md)；待实现项见 [`BreakGlass-ui-todo.md`](./BreakGlass-ui-todo.md)；液态玻璃原型见 [`../prototypes/liquid-glass-toolbar/README.md`](../prototypes/liquid-glass-toolbar/README.md) |
-| 边界 | v1.1.0 起文中 `【新】` 的条目已实现（含液态玻璃顶栏、等待条、三参数滑块、焦点与动效）；**浏览器手工验收（T030/T038）仍未执行**，不得记为通过 |
+| 边界 | 本轮只统一视觉，不改变业务状态、接口、来源、准入或计时预算。此前浏览器手工验收（T030/T038）仍未执行；003 四画幅/真实像素计时、005 真实模型验收仍保留未通过事实。历史版本中的自动检查不代表本轮浏览器验收 |
 
 ## 1. 设计原则
 
 1. **玻璃是容器，不是装饰**：模糊与高光只用来承载控件和指示焦点，不遮挡视频画面与曲线。
-2. **状态永远可见**：来源（预先准备 / 超时回退）、等待、失败、取消都要有持续可见的视觉，不靠一次性提示。
+2. **状态永远可见**：来源（预先准备 / 超时回退 / 005 候选、手工与用户校正）、等待、失败、取消都要有持续可见的视觉，不靠一次性提示。
 3. **动效服务于状态变化**：每个动画都必须对应一次状态迁移或一次操作反馈；没有状态含义的装饰动画不加（AGENTS §6）。
-4. **对齐优先于炫技**：覆盖层必须贴合视频内容区域，任何视觉手段都不能影响 2% 对齐与 ≤100ms 的回退预算。
+4. **对齐优先于炫技**：001/003 覆盖层必须贴合视频内容区域，视觉不能影响 2% 对齐与 ≤100ms 的回退预算；005 保持原帧与独立数学画板并列，不套用原位叠加的像素指标。
 5. **可达性不打折**：焦点可见、对比度可读、`prefers-reduced-motion` 有完整降级、禁用态必须给原因。
 
 ## 2. 设计令牌（唯一事实来源）
 
-> 代码中现有的令牌来自 `extension/demo/demo.css`；标注 `【新】` 的需要在实现时补进 `:root`。
+> 共享令牌和基础组件统一维护在 `extension/src/ui/theme.css`。两个工作台先加载共享主题，再加载自己的 `demo.css` / `geometry.css`；页面 CSS 只保留布局与场景差异，不能再定义互相冲突的全局主题。本文记录已确认的视觉基线；实际测试与浏览器证据另记。
 
 ### 2.1 颜色
 
-| 令牌 | 值 | 用途 | 状态 |
-| --- | --- | --- | --- |
-| `--bg-base` | `#05080f` | 页面底色 | 【新】 |
-| `--bg-stage` | `#02070e` | 视频舞台底色（现有说明见 demo.css） | 现有 |
-| `--panel` | `rgba(14, 29, 49, 0.92)` | 面板/读数底色 | 现有 |
-| `--line` | `rgba(157, 190, 226, 0.22)` | 边框、分隔线 | 现有 |
-| `--muted` | `#9fb4cc` | 次级文字 | 现有 |
-| `--ink` | `#eef5ff` | 主文字 | 现有 |
-| `--accent` | `#71ddff` | 主强调色：来源、焦点、数值、曲线描边 | 现有 |
-| `--accent-strong` | `#1bb6e8` | 主按钮渐变暗端 | 现有 |
-| `--warn` | `#ffd08a` | 回退/失败/素材缺失的警示（**不引入纯红**，避免破坏暗色主题一致性与色觉可辨性） | 【新】 |
-| `--glass-tint-top` | `rgba(255,255,255,0.22)` | 玻璃染色（上） | 【新】 |
-| `--glass-tint-mid` | `rgba(255,255,255,0.10)` | 玻璃染色（中） | 【新】 |
-| `--glass-tint-low` | `rgba(255,255,255,0.06)` | 玻璃染色（下） | 【新】 |
-| `--glass-edge` | `rgba(255,255,255,0.45)` | 玻璃顶部高光边 | 【新】 |
-| `--glass-edge-soft` | `rgba(255,255,255,0.14)` | 玻璃内描边 | 【新】 |
-| `--glass-shadow` | `rgba(3, 8, 18, 0.55)` | 玻璃外部投影 | 【新】 |
+| 令牌 / 角色 | 值 | 用途 |
+| --- | --- | --- |
+| `--bg-base` | `#F7FAFC` | 页面底色 |
+| `--ice-hi` / `--ice-lo` | `#EEF4F8` / `#C8DCE6` | 半透明冰面渐变 |
+| `--panel` | `linear-gradient(150deg, rgba(255,255,255,.94), rgba(200,220,230,.82))` | 两个工作台的面板表面 |
+| `--line` | `rgba(90,116,138,.3)` | 浅色表面的边框、分隔线 |
+| `--ink` / `--muted` | `#14232F` / `#4E6474` | 主文字 / 次级文字 |
+| `--accent` | `#0B6F91` | 浅色表面的来源、焦点、数值和链接 |
+| `--primary-bg` / `--primary-ink` | `linear-gradient(135deg, #0B6F91, #1755BD)` / `#FFFFFF` | 主操作采用深青蓝渐变与白字 |
+| `--control-bg` / `--control-hover` | `rgba(255,255,255,.86)` / `#FFFFFF` | 普通按钮和表单共用浅色表面 |
+| `--warn` | `#8A5A00` | 浅色表面的错误、回退和素材缺失；同时给出文字原因 |
+| `--ice-deep` / `--bg-stage` / `--stage` | `#0E1720`（后两者为别名） | 视频舞台、005 原帧占位和独立数学画板 |
+| `--screen-ink` / `--screen-muted` / `--screen-accent` | `#eef5ff` / `#9fb4cc` / `#71ddff` | 深屏文字 / 辅助文字 / 图形与高亮，不误用浅色表面的深青强调色 |
+| `--screen-warn` | `#ffd08a` | 深屏上的警示文字，与浅色表面警示色分开 |
+| `--glass-tint-top/mid/low` | `rgba(255,255,255,.85)` / `rgba(238,244,248,.55)` / `rgba(200,220,230,.45)` | 冰面玻璃染色 |
+| `--glass-edge` / `--glass-edge-soft` | `rgba(255,255,255,.95)` / `rgba(255,255,255,.7)` | 玻璃高光 / 内描边 |
+| `--glass-shadow` | `rgba(96,124,146,.38)` | 冰面玻璃外部投影 |
 
 ### 2.2 排版
 
 | 角色 | 规格 | 用途 |
 | --- | --- | --- |
 | 字体栈 | `Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif` | 全局（现有） |
-| H1 | `clamp(32px, 4vw, 58px)` / `line-height 1.04` / `letter-spacing -0.04em` | 页面标题（现有） |
+| H1 | `clamp(32px, 4vw, 58px)` / `line-height 1.12` / `letter-spacing -0.04em` | 两个工作台的页面标题 |
 | H2 | 24px | 面板标题（现有） |
-| 正文 | 14px / `line-height 1.6` | 说明文字 |
+| 正文 | 16px / `line-height 1.6` | 共享页面正文；按钮与表单14px，辅助文字12–14px |
 | 辅助 | 12–13px / `line-height 1.5` | 状态区、来源说明、页脚（现有） |
-| 眉标 | 11px / `letter-spacing .18em` / 700 | `BREAKGLASS · P0 DEMO`、`INTERACTION`（现有） |
+| 眉标 | 12px / `letter-spacing .18em` / 700 | `BREAKGLASS · 曲线实验`、`BREAKGLASS · 几何实验`、`INTERACTION` |
 | 数值 | `font-variant-numeric: tabular-nums` | 参数值、时间、读数（现有） |
-| 玻璃上的文字 | 必须叠加 `text-shadow: 0 1px 2px rgba(0,0,0,.45)` | 背景是动态模糊图，保证可读 |
+| 冰面玻璃上的文字 | 使用深色 `--ink` / `--accent`，不叠加暗色主题的黑色文字阴影 | 深屏内容使用独立 `--screen-*`；文字与底色须在浏览器中验证 |
 
 ### 2.3 间距与尺寸
 
 | 项 | 值 |
 | --- | --- |
 | 间距基线 | 4px；序列 `4 / 8 / 12 / 16 / 20 / 24 / 28 / 36` |
-| 页面容器 | `width: min(1320px, 100% - 64px)`；窄屏 `min(720px, 100% - 32px)`（现有） |
-| 面板宽 | 310px（现有） |
-| 按钮高 | **40px**（现有内边距 9/12 约 36px，偏小） |
-| 圆形按键 | 48px（顶栏内） |
+| 页面容器 | 最大宽 1320px；桌面左右各 32px，移动左右各 16px |
+| 面板宽 | 001/003 参数面板保留 310px；005 保留其原帧/画板任务布局，不套用此宽度 |
+| 普通按钮与表单 | `min-height: 44px`；input（含 URL）、select、textarea 共用浅色表面、描边与焦点规则 |
+| 圆形按键 | 桌面 48px；1050px 及以下 44px（顶栏内） |
 | 顶栏高 | 72px（含 12px 内边距） |
-| 触控目标 | ≥ 40×40px |
+| 触控目标 | 普通控件至少 44px 高；dock 圆形按键桌面 48×48px、窄屏 44×44px |
 | 视频舞台 | `min-height: 540px`；窄屏 420px（现有） |
 | 状态区 | `min-height: 48px`（现有，防止文案切换跳动） |
 
@@ -74,7 +74,7 @@
 | 令牌 | 值 | 用途 |
 | --- | --- | --- |
 | `--radius-sm` | 9px | 按钮 |
-| `--radius-chip` | 10px | 提示条、标签 |
+| `--radius-chip` | 10px | 既有提示条与非来源标签；来源统一使用胶囊圆角 |
 | `--radius-card` | 14px | 读数卡片 |
 | `--radius-stage` | 13px | 视频舞台（现有） |
 | `--radius-panel` | 20px | 面板（现有） |
@@ -84,10 +84,10 @@
 
 | 层级 | 阴影 | 用途 |
 | --- | --- | --- |
-| E1 | `0 4px 12px rgba(3,8,18,.35)` | tooltip、chip |
-| E2 | `0 6px 14px rgba(4,10,22,.35)` | 圆形按键 |
-| E3 | `0 18px 48px rgba(3,8,18,.55)` | 液态玻璃顶栏 |
-| E4 | `0 20px 70px rgba(0,0,0,.25)` | 面板（现有） |
+| E1 | `0 4px 12px rgba(96,124,146,.2)` | tooltip、chip |
+| E2 | `0 6px 14px rgba(96,124,146,.3)` | 圆形按键 |
+| E3 | `0 16px 38px var(--glass-shadow)` | 液态玻璃顶栏，配合内高光 |
+| E4 / `--panel-shadow` | `0 18px 46px rgba(96,124,146,.18), inset 0 1px 0 rgba(255,255,255,.9)` | 两个工作台的面板 |
 
 ### 2.6 玻璃材质令牌
 
@@ -95,9 +95,9 @@
 | --- | --- | --- |
 | `--glass-blur-bar` | 18px | 顶栏底座模糊 |
 | `--glass-blur-item` | 6px | 圆形按键（面积小，不必大半径） |
-| `--glass-sat-bar` | 190% | 顶栏饱和度 |
-| `--glass-sat-item` | 150% | 按键饱和度 |
-| `--glass-lift` | 10px | 放大时向上抬升 |
+| 顶栏饱和度 | 190% | 顶栏材质 |
+| 按键饱和度 | 150% | 按键材质 |
+| 放大抬升 | 10px | 顶栏交互参数，见 §5.3 |
 
 ## 3. 组件规范
 
@@ -121,7 +121,7 @@
 | 安全边距 | 容器下内边距 ≥ 24px，保证放大后的按键不被裁切 |
 | 形状 | `border-radius: 999px`；高度 72px |
 | 材质 | 四层叠加：① `backdrop-filter: blur(18px) saturate(190%)` ② 白色染色渐变 ③ `::before` 顶部镜面条带（高 54%，`mask-image` 渐隐） ④ `::after` 跟随指针的柔光（`radial-gradient` at `--lg-px`） |
-| 厚度 | `inset 0 1px 0 var(--glass-edge)` + `inset 0 -1px 0 rgba(255,255,255,.22)` + `inset 0 0 0 1px var(--glass-edge-soft)` + `inset 0 -16px 28px rgba(255,255,255,.06)` |
+| 厚度 | `inset 0 1px 0 var(--glass-edge)` + `inset 0 -1px 0 rgba(255,255,255,.6)` + `inset 0 0 0 1px var(--glass-edge-soft)` + `inset 0 -16px 28px rgba(255,255,255,.35)` |
 | 投影 | E3 |
 | 折射（可选） | SVG `feTurbulence → feGaussianBlur → feDisplacementMap` + `backdrop-filter: url(#lg-refract)`；`CSS.supports` 通过才启用，默认关闭 |
 
@@ -130,10 +130,10 @@
 | 属性 | 规格 |
 | --- | --- |
 | 尺寸 | 48×48px，`border-radius: 50%`，间距 10px |
-| 材质 | 偏心高光 `radial-gradient(120% 120% at 30% 18%, rgba(255,255,255,.42), …)` + `blur(6px)` + E2 投影 |
+| 材质 | 偏心高光从白色 `.95` 过渡到冰面 `.7/.55` + `blur(6px)` + E2 投影 |
 | 图标 | 内联 SVG 20×20，`stroke: currentColor`，`aria-hidden="true"` |
-| 主操作变体 | `data-variant="primary"`：浅色底 + accent 渐变、深色图标（全局唯一，默认给「破壁」，失败态让位给「重试」） |
-| 状态 | hover：`color: #fff`；active：内环 `::after` 出现；focus-visible：`outline: 2px solid var(--accent); outline-offset: 3px`；disabled：`opacity: .4` + 原因提示；hidden：`display: none !important`（`.lg-item` 设了 `display:grid` 会盖掉 UA 的 `[hidden]`） |
+| 主操作变体 | `data-variant="primary"`：深青蓝渐变 + 白色图标（001/003 默认给「破壁」，失败态让位给「重试」）；005 普通主按钮使用同一渐变 |
+| 状态 | hover：保持冰面深色图标，主操作保持白色图标；active：内环 `::after` 出现；focus-visible：`outline: 2px solid var(--accent); outline-offset: 3px`；disabled：共享禁用透明度 + 原因提示；hidden：`display: none !important`（`.lg-item` 设了 `display:grid` 会盖掉 UA 的 `[hidden]`） |
 | 放大 | `transform-origin: center bottom`，hover/focus 时 `translate3d(0,-lift,0) scale(s)`；由 §5.3 的算法驱动 |
 | Tooltip | `.lg-tip`：按钮下方 6px，E1 阴影，hover/focus 时淡入上移 120ms |
 | 分隔线 | `.lg-sep`：1×26px，垂直渐变（透明→白 35%→透明） |
@@ -159,17 +159,19 @@
 | 色彩 | 常态 `--muted`；错误态在左侧加 4px `--warn` 竖条 |
 | 动效 | 文案切换 160ms 交叉淡入；错误态 160ms 上移淡入；**禁止抖动** |
 
-### 3.4 来源芯片（`#source-label`）
+### 3.4 来源芯片（两页各自的 `#source-label`）
 
 | 状态 | 视觉 |
 | --- | --- |
 | 等待素材 | `--muted` 文字 + `--line` 描边 |
-| 预先准备的示例 | `--accent` 文字 + `rgba(113,221,255,.35)` 描边（现有） |
+| 预先准备的示例 | `--accent` 文字 + 深青描边 + 浅色半透明表面；胶囊圆角 |
 | 预先准备的示例 · 超时回退 | 同上 + **虚线描边** + 出现时闪一次（accent 12% → 透明，300ms） |
 | 来源不可用 | `--warn` 文字 + warn 描边 |
-| **识别结果**（已实现） | `--accent` 文字 + `rgba(113,221,255,.35)` 描边（**不是 warn 态**）；说明区「随演示打包的识别样例，尚未接通外部识别。」；**不显示可信程度百分比**。判定条件是 `source === 'vision' && evidence === 'packaged-sample'` |
+| **识别结果**（002 打包样例） | 与预设共用 accent 表面，但用文字说明「随演示打包的识别样例，尚未接通外部识别。」；**不显示可信程度百分比**。判定条件是 `source === 'vision' && evidence === 'packaged-sample'`；不是 005 真实识别候选 |
 
 芯片不加 `aria-live`（避免与状态区重复朗读）。
+
+005 保留 `source / originSource / editedByUser` 的既有来源含义：模型返回后显示待核对候选；预设标明 3–4–5 示例；手工输入和用户校正标明手工/已校正，并保留最初来源。结构合法或点击确认均不能改成“模型识别正确”。来源说明持续可见，不因统一胶囊样式而消失；完整状态见 §3.9。
 
 ### 3.5 等待条（加载反馈）【新】
 
@@ -178,7 +180,7 @@
 | 结构 | 左 16px 环形 spinner ｜ 中间文案 ｜ 右侧「取消等待」次按钮 |
 | 位置 | 视频舞台下方的传输条内（等待与当前帧强相关）；控制面板状态区下方为备选 |
 | 视觉 | `--panel` 底 + `--line` 描边；spinner 为 accent 2px 圆弧，1s 旋转 |
-| 进度 | **1.5 秒线性进度条**（accent 20% → 100%），与 `fallbackAfterMs` 严格对齐 |
+| 进度 | 001/003 的 **1.5 秒线性进度条**（accent 20% → 100%），与 `fallbackAfterMs` 严格对齐；005 识别/问答使用独立等待状态，不继承此回退或自动换成预设 |
 | 语义 | `aria-busy="true"`；进入等待时焦点移到「取消等待」 |
 | 降级 | `prefers-reduced-motion` 下 spinner/进度条改为静态文案 |
 
@@ -187,29 +189,38 @@
 | 属性 | 规格 |
 | --- | --- |
 | 覆盖层 | 绝对定位、与 `contentRect` 绑定、`viewBox = 0 0 contentRect.width contentRect.height`；不使用位移过渡 |
-| 曲线 | 81 采样点，`stroke: var(--accent)`、`stroke-width: 3`、`stroke-linecap: round`、`fill: none` |
-| 控制点 | 视觉 `r=10`（`fill #08111f` / `stroke #fff` / `stroke-width 3`）+ **透明 `r=18` 热区**；hover/focus `scale(1.2)`，不改几何 |
+| 曲线 | 81 采样点，深屏使用 `stroke: var(--screen-accent)`、`stroke-width: 3`、`stroke-linecap: round`、`fill: none` |
+| 控制点 | 视觉 `r=10`（深屏底色 / `--screen-ink` 描边 / `stroke-width 3`）+ **透明 `r=18` 热区**；hover/focus `scale(1.2)`，不改几何 |
 | 光标 | `cursor: grab` / 拖动中 `grabbing` |
-| 聚焦 | 外发光 8px accent 30% + 描边加粗 |
+| 聚焦 | 深屏强调色外发光 + 描边加粗；表单控件仍用共享浅色表面焦点环 |
 
 ### 3.7 空态与错误提示（`#asset-empty`）
 
 | 属性 | 规格 |
 | --- | --- |
 | 位置 | 舞台底部内嵌条（现有 `inset: auto 20px 18px`） |
-| 视觉 | `--warn` 文字 + warn 30% 描边 + `rgba(38,24,8,.9)` 底 + `border-radius: 10px`（现有） |
+| 视觉 | 浅色提示表面 + `--warn` 文字和描边 + 卡片圆角；深屏占位文字用 `--screen-muted`，不能直接套用深青/棕色字 |
 | 区分 | 「素材未提供」（常驻）与「视频加载失败」（事件）用不同图标与文案 |
 
 ### 3.8 通用状态
 
 | 状态 | 规格 |
 | --- | --- |
-| 焦点环 | `outline: 2px solid var(--accent); outline-offset: 2px`（按键 3px）；**不得只用颜色变化表达焦点** |
-| 禁用 | `opacity: .4~.45` + `cursor: not-allowed` + **必须给出原因**（`aria-describedby` 或 tooltip） |
-| 提示 tooltip | 12px、`rgba(8,17,31,.82)` 底、E1 阴影、120ms 淡入 + 上移 4px |
+| 焦点环 | button、链接、input（含 URL）、select、textarea、summary、可聚焦控件统一 `outline: 2px solid var(--accent); outline-offset: 3px`；深屏控制点用深屏强调描边；**不得只用颜色变化表达焦点** |
+| 禁用 | `opacity: .45` + `cursor: not-allowed` + **必须给出原因**（`aria-describedby` 或 tooltip）；不改变既有禁用条件 |
+| 提示 tooltip | 12px、浅色表面与深色文字、E1 阴影、120ms 淡入 + 上移 4px |
 | 加载 | 见 §3.5；禁止使用会改变布局尺寸的加载骨架 |
 
+### 3.9 005 当前帧几何工作台
+
+- 原帧与独立数学画板保留并列布局；原帧定位只用于核对，画板按确认后的题目条件重建。两个区域使用深屏表面和 `--screen-*`，外围面板与表单使用共享冰面主题。
+- “尚无题目”“识别候选，待核对”“预设”“手工填写”“用户已校正/修改”保留各自文字，不将颜色或样式统一当成来源统一。`sceneRevision: 0` 仍是候选，确认后才可实验或问答。
+- 校对、修改一条边、恢复原题、理解问题和返回视频的既有操作与可用条件不变；恢复的是首次用户确认值，不是未经核对的模型候选。
+- 不支持、需补充条件、超时、模型未配置、迟到结果等失败保留视频和可恢复入口，不能呈现为成功，也不自动切换预设。真实模型效果以 [几何验证记录](./BreakGlass-geometry-validation.md) 为准。
+
 ## 4. 状态 → 视觉映射
+
+下表对应 001/003 曲线会话；005 使用 §3.9 的独立候选、确认与来源规则，主题共享不合并状态机。
 
 | 会话状态 | 顶栏 | 主操作 | 状态区 | 来源芯片 | 覆盖层 |
 | --- | --- | --- | --- | --- | --- |
@@ -233,7 +244,7 @@
 | `--motion-base` | 120ms（tooltip、控制点、图标交叉淡入） |
 | `--motion-state` | 160ms（状态文案、来源芯片、错误出现） |
 | `--motion-enter` | 200ms（曲线出现强调） |
-| `--motion-wait` | 1500ms linear（等待进度，与 `fallbackAfterMs` 对齐） |
+| `--wait-ms` | 1500ms linear（仅 001/003 等待进度，与 `fallbackAfterMs` 对齐） |
 | `--ease-out` | `cubic-bezier(0.2, 0.8, 0.2, 1)` |
 
 ### 5.2 逐交互动效
@@ -285,7 +296,9 @@
 | rAF | 收敛即停；指针静止时零开销 |
 | `will-change` | 只给 `.lg-item` |
 
-## 6. 融入项目的方式（描述，不实现）
+## 6. 共享主题与页面布局
+
+`index.html` 与 `geometry.html` 先引用 `../src/ui/theme.css`，然后分别引用 `demo.css` 与 `geometry.css`。共享文件负责色板、文字、按钮、表单、面板、来源胶囊、焦点及基础动效；页面文件负责各自网格、舞台、工具栏与场景图形。不把整份 `demo.css` 复用到 geometry，也不向 `site/` 介绍站或根目录样稿扩散本轮改动。下面的曲线布局与接线约束仅适用于 001/003。
 
 ### 6.1 演示页最终布局
 
@@ -339,8 +352,8 @@
 | 断点 | 行为 |
 | --- | --- |
 | ≥ 1050px | 行列两栏：视频 + 310px 参数面板；顶栏单行 |
-| < 1050px | 单列；顶栏按键缩到 44px、间距 8px；来源芯片换行到第二行或收进 tooltip |
-| < 720px | 顶栏可横向滚动（保持不换行），参数面板全宽 |
+| < 1050px | 曲线工作台改单列；dock 按键保持 48px，通过换行和容器调整留出空间；来源文字持续可见 |
+| < 720px | 两个工作台左右各 16px；参数面板全宽；005 原帧/画板及学习区域按既有断点改单列 |
 
 ## 7. 验收清单（视觉与动效）
 
@@ -351,6 +364,8 @@
 
 **状态可见性**
 - [ ] 来源在曲线出现到退出期间持续可见；超时回退与正常预制视觉可区分。
+- [ ] 两个工作台的冰面、文字、按钮、面板和表单统一；视频及数学画板使用可读的深屏令牌。
+- [ ] 005 识别候选、预设、手工和用户校正来源持续可辨，未确认候选不能进入实验或问答。
 - [ ] 等待态有加载反馈与取消入口。
 - [ ] 错误态有原因、重试（主）与退出（次）。
 
@@ -372,13 +387,14 @@
 | --- | --- |
 | `docs/BreakGlass-frontend-execution-plan.md` | §2「高保真视觉实现」从「等待设计输入」改为「已有视觉规范，见本文」；§3.1 P-01~P-05 的视觉对应本文 §4 |
 | `AGENTS.md` §6 | 本文是其原则的具体化，无需修订 |
-| `docs/BreakGlass-constitution.md` | 本文不新增交付范围；来源标识、超时保底、对齐与性能口径与 §4/§6/§7/§8 一致 |
+| `docs/BreakGlass-constitution.md` | 本文不新增交付范围；001/003 保持来源、超时、对齐和性能口径，005 保持独立原帧/画板、候选校对和来源规则 |
 | `specs/001-insitu-parabola/spec.md` | **若要动效进入验收**，需按 Constitution §9 修订 spec，新增 SC（例如「等待态必须有加载反馈」），否则动效保持增强项定位 |
 
 ## 9. 变更记录
 
 | 版本 | 日期 | 变更 |
 | --- | --- | --- |
+| 1.5.0 | 2026-10-03 | 两个产品工作台统一浅色冰面，共享视觉源改为 `extension/src/ui/theme.css`；明确深屏独立令牌、44px 普通控件、48px dock、深青蓝白字主按钮、排版/面板/焦点及 005 候选来源规则。介绍站与根目录样稿不在范围；保留历史未验收项，不宣称本轮浏览器验收通过 |
 | 1.4.0 | 2026-10-02 | 规范里的可访问性条款全部落地：错误态 `aria-live="assertive"`、禁用态原因（`aria-describedby` + `.sr-only`）、滑块 `aria-valuetext`、控制点 `r=18` 热区与 `grab/grabbing` 光标；顺带修复等待与可恢复错误态下退出按钮不可用的问题。自动基线 189 项通过 |
 | 1.3.0 | 2026-10-02 | 识别结果适配（002）落地：来源芯片「识别结果」为 accent 态、说明区「尚未接通外部识别」、不显示可信程度百分比；状态映射按实现补齐。自动基线 `node --test` 182 项通过，手工验收未执行 |
 | 1.2.0 | 2026-10-02 | 预置 P1（`specs/002-vision-result-adapter`）的视觉规则：来源芯片新增「识别结果」为 accent 态而非警示态，说明区文案为「随演示打包的识别样例，尚未接通外部识别。」，**不显示 `confidence` 百分比**；顶栏与参数控件的现状同步到 `main@0c1cafb`（8 个圆形按键、三参数滑块、等待条、全屏）。 |

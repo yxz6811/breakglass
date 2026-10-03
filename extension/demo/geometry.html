@@ -4,6 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>BreakGlass · 当前帧几何工作台</title>
+  <link rel="stylesheet" href="../src/ui/theme.css">
   <link rel="stylesheet" href="./geometry.css">
   <script defer src="../src/geometry-scene/validate.js"></script>
   <script defer src="../src/geometry-scene/solve.js"></script>
@@ -16,10 +17,13 @@
 </head>
 <body>
   <main class="geometry-shell">
+    <nav class="workspace-nav" aria-label="工作台切换">
+      <a href="./index.html">曲线演示</a>
+      <a href="./geometry.html" aria-current="page">几何实验</a>
+    </nav>
     <header class="page-header">
       <div><p class="eyebrow">BREAKGLASS · 几何实验</p><h1>把这一帧，变成一次实验。</h1>
       <p class="lede">校对直角三角形的条件，改变一条边，看懂答案为什么变。</p></div>
-      <a class="back-link" href="./index.html">返回抛物线演示</a>
     </header>
 
     <section class="panel video-panel" aria-labelledby="video-heading">
