@@ -9,6 +9,7 @@
     <script defer src="../src/curve/evaluate.js"></script>
     <script defer src="../src/geometry/content-rect.js"></script>
     <script defer src="../src/geometry/alignment.js"></script>
+    <script defer src="../src/geometry/figures.js"></script>
     <script defer src="../src/session/session.js"></script>
     <script defer src="../src/attempt/simulator.js"></script>
     <script defer src="../src/session/wake.js"></script>
@@ -134,11 +135,23 @@
 
         <aside class="control-panel" aria-label="交互控制">
           <p class="panel-kicker">INTERACTION</p>
-          <h2>抛物线参数</h2>
+          <h2 id="figure-title">抛物线参数</h2>
+          <div class="figure-picker">
+            <label for="figure-kind">当前图形</label>
+            <select id="figure-kind" disabled aria-describedby="figure-note">
+              <option value="parabola">抛物线</option>
+              <option value="line">直线</option>
+              <option value="circle">圆</option>
+              <option value="sine">正弦</option>
+            </select>
+          </div>
+          <p id="figure-note" class="source-note">破壁后可切换图形。新图形由本地公式绘制。</p>
+          <p id="figure-formula" class="figure-formula" hidden></p>
           <p id="state-label" role="status" aria-live="polite">先选择一个视频。文件留在这台浏览器里。</p>
           <!-- 禁用原因：视觉隐藏，只在对应按钮不可用时填字，供读屏说明为什么不能点。 -->
           <p class="sr-only" id="wake-reason"></p>
           <p class="sr-only" id="reset-reason"></p>
+          <div id="parabola-parameters">
           <div class="parameter-row">
             <label for="parameter-a">开口宽窄 a</label>
             <output id="parameter-a-value">—</output>
@@ -153,6 +166,24 @@
             <label for="parameter-k">顶点高度 k</label>
             <output id="parameter-k-value">—</output>
             <input id="parameter-k" type="range" min="-2" max="2" step="0.1" value="1" disabled>
+          </div>
+          </div>
+          <div id="local-parameters" hidden>
+            <div class="parameter-row" id="figure-row-1">
+              <label id="figure-label-1" for="parameter-figure-1">系数 1</label>
+              <output id="parameter-figure-1-value" for="parameter-figure-1">—</output>
+              <input id="parameter-figure-1" type="range" disabled>
+            </div>
+            <div class="parameter-row" id="figure-row-2">
+              <label id="figure-label-2" for="parameter-figure-2">系数 2</label>
+              <output id="parameter-figure-2-value" for="parameter-figure-2">—</output>
+              <input id="parameter-figure-2" type="range" disabled>
+            </div>
+            <div class="parameter-row" id="figure-row-3">
+              <label id="figure-label-3" for="parameter-figure-3">系数 3</label>
+              <output id="parameter-figure-3-value" for="parameter-figure-3">—</output>
+              <input id="parameter-figure-3" type="range" disabled>
+            </div>
           </div>
           <p class="source-note" id="source-note">数据来源将在交互出现后显示。</p>
         </aside>

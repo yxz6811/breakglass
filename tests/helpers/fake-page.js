@@ -11,6 +11,7 @@ require('../../extension/src/curve/validate');
 require('../../extension/src/curve/evaluate');
 require('../../extension/src/geometry/content-rect');
 require('../../extension/src/geometry/alignment');
+require('../../extension/src/geometry/figures');
 require('../../extension/src/session/session');
 require('../../extension/src/attempt/simulator');
 require('../../extension/src/session/wake');
@@ -29,7 +30,13 @@ const ELEMENT_IDS = [
   'waiting-bar', 'waiting-progress', 'fullscreen-button',
   'wake-reason', 'reset-reason', 'local-video', 'preset-video',
   'lesson-status', 'lesson-cancel', 'lesson-next', 'lesson-endpoint', 'lesson-note',
-  'stage-banner', 'stage-banner-title', 'stage-banner-detail'
+  'stage-banner', 'stage-banner-title', 'stage-banner-detail',
+  'figure-kind', 'figure-title', 'figure-formula', 'figure-note',
+  'parabola-parameters', 'local-parameters',
+  'figure-row-1', 'figure-row-2', 'figure-row-3',
+  'figure-label-1', 'figure-label-2', 'figure-label-3',
+  'parameter-figure-1', 'parameter-figure-2', 'parameter-figure-3',
+  'parameter-figure-1-value', 'parameter-figure-2-value', 'parameter-figure-3-value'
 ];
 
 // 忠实一点的 style 替身：main.js 会同时用 style.left = ... 和 style.setProperty。
@@ -276,8 +283,9 @@ async function createHarness(options = {}) {
   const elements = {};
   for (const id of ELEMENT_IDS) {
     const tag = id === 'demo-video' ? 'video'
-      : (id === 'preset-video' ? 'button'
-        : (id === 'parameter-h' || id === 'local-video' || id === 'lesson-endpoint' || id === 'lesson-note' ? 'input' : 'div'));
+      : (id === 'figure-kind' ? 'select'
+        : (id === 'preset-video' ? 'button'
+          : (/^parameter-(?:a|h|k|figure-[123])$/.test(id) || id === 'local-video' || id === 'lesson-endpoint' || id === 'lesson-note' ? 'input' : 'div')));
     elements[id] = element(tag);
   }
   applyMarkupState(elements);

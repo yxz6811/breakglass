@@ -32,6 +32,7 @@ test('演示页按依赖顺序加载本地脚本', () => {
     '../src/curve/evaluate.js',
     '../src/geometry/content-rect.js',
     '../src/geometry/alignment.js',
+    '../src/geometry/figures.js',
     '../src/session/session.js',
     '../src/attempt/simulator.js',
     '../src/session/wake.js',

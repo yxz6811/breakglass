@@ -84,6 +84,7 @@ node --test
 - [快速验收](specs/001-insitu-parabola/quickstart.md)
 - [开播前阅读](specs/003-preplay-lesson-points/spec.md)
 - [更多图形与旁边提问（004 规格）](specs/004-figures-and-tutor/spec.md)
+- [四种图形与提问接口交接（故事 1）](specs/004-figures-and-tutor/geometry-handoff.md)
 - [当前帧直角三角形学习闭环（005）](specs/005-insitu-right-triangle/spec.md)
 - [005 实施计划](specs/005-insitu-right-triangle/plan.md)
 - [005 任务清单](specs/005-insitu-right-triangle/tasks.md)
