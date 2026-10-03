@@ -51,6 +51,13 @@
   var motion = window.matchMedia('(prefers-reduced-motion: reduce)');
   var brandFocus = find('.brand-focus');
   var heroCopy = find('.hero-copy');
+  var chromeRoot = document.documentElement;
+  var chromeParts = Array.from(document.querySelectorAll('.nav, .line-sidebar'));
+  var chromeInert = new Map();
+  var chromePending = false;
+  document.querySelectorAll('.nav-links a').forEach(function (link, index) {
+    link.style.setProperty('--chapter-delay', (index * 45) + 'ms');
+  });
   var entranceComplete = false;
   var introCenter = { x: 0, y: 0, lockupY: 0 };
   var restoreReplayFocus = false;
@@ -73,6 +80,23 @@
   var lastCaption = '';
   var lastPhase = '';
 
+  function showChrome(visible) {
+    if (chromePending === !visible) return;
+    chromePending = !visible;
+    chromeRoot.classList.toggle('chrome-pending', chromePending);
+    chromeRoot.classList.toggle('chrome-revealed', visible);
+    body.dataset.introChrome = visible ? 'visible' : 'pending';
+    chromeParts.forEach(function (element) {
+      if (!visible) {
+        chromeInert.set(element, element.hasAttribute('inert'));
+        element.setAttribute('inert', '');
+      } else {
+        if (!chromeInert.get(element)) element.removeAttribute('inert');
+        chromeInert.delete(element);
+      }
+    });
+  }
+
   function centerIntro() {
     if (!brandFocus || entranceComplete) return;
     brandFocus.style.setProperty('--intro-x', '0px');
@@ -86,15 +110,21 @@
   function completeEntrance() {
     if (entranceComplete) return;
     entranceComplete = true;
+    showChrome(true);
     body.classList.remove('intro-entering');
     body.classList.add('intro-ready');
     if (heroCopy) heroCopy.removeAttribute('inert');
-    if (restoreReplayFocus) { restoreReplayFocus = false; replay.focus({ preventScroll: true }); }
+    if (restoreReplayFocus) {
+      restoreReplayFocus = false;
+      var focus = document.activeElement;
+      if (focus === document.body || focus === chromeRoot || (heroCopy && heroCopy.contains(focus))) replay.focus({ preventScroll: true });
+    }
   }
   function beginEntrance() {
     entranceComplete = false;
     body.classList.remove('intro-ready');
     body.classList.add('intro-entering');
+    showChrome(false);
     if (heroCopy) heroCopy.setAttribute('inert', '');
     centerIntro();
   }

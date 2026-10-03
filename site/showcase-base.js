@@ -343,6 +343,7 @@
   var entries = src.map(function (a, i) {
     var el = document.createElement('a');
     el.className = 'ls-item';
+    el.style.setProperty('--chapter-delay', (i * 45) + 'ms');
     el.href = a.getAttribute('href') || ('#p' + (i + 1));
     var text = a.getAttribute('data-label') || ('Section ' + (i + 1));
     el.setAttribute('aria-label', ((i + 1 < 10 ? '0' : '') + (i + 1)) + ' ' + text);
@@ -543,6 +544,9 @@
     if (!e.relatedTarget) clearMouse();
   });
   document.addEventListener('mouseleave', clearMouse);
+  host.addEventListener('animationend', function (event) {
+    if (event.animationName === 'nav-chapter-arrive' && event.target.classList.contains('ls-item')) requestUpdate(true);
+  });
 
   function boot() { requestUpdate(true); }
   if (document.readyState === 'complete') boot();

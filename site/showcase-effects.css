@@ -15,9 +15,17 @@ body { isolation: isolate; }
   background: linear-gradient(90deg, transparent, rgb(113 221 255 / .55), transparent);
 }
 .progress { box-shadow: 0 0 9px rgb(113 221 255 / .28); }
-.nav { background: rgb(8 11 13 / .79); }
+.nav { background: rgb(8 11 13 / .79); transition: opacity 520ms var(--ease), transform 520ms var(--ease); }
+.line-sidebar { transition: opacity 260ms var(--ease); }
+.ls-item { --chapter-from-x: -18px; --chapter-from-y: 0px; --chapter-over-x: 3px; --chapter-over-y: 0px; --chapter-rebound-x: -1px; --chapter-rebound-y: 0px; }
+.nav-links a { --chapter-from-x: 0px; --chapter-from-y: -10px; --chapter-over-x: 0px; --chapter-over-y: 2px; --chapter-rebound-x: 0px; --chapter-rebound-y: -.5px; }
+.chrome-revealed .line-sidebar .ls-item, .chrome-revealed .nav-links a { animation: nav-chapter-arrive 620ms var(--ease) var(--chapter-delay, 0ms) both; }
+.chrome-revealed .line-sidebar .ls-item:focus-visible, .chrome-revealed .nav-links a:focus-visible { opacity: 1 !important; translate: 0 0 !important; }
+.chrome-pending .nav { opacity: 0; transform: translateY(-12px); visibility: hidden; pointer-events: none; transition: none; }
+.chrome-pending .line-sidebar { opacity: 0; visibility: hidden; pointer-events: none; transition: none; }
+.chrome-pending .topline, .chrome-pending .progress { opacity: 0; }
 
-/* Content stays visible without JS. Reveal each element rather than a tall section. */
+/* Content stays visible without JS. Each element enters only on its first visit. */
 .effects-ready .reveal {
   transition: opacity 640ms var(--ease), transform 640ms var(--ease);
   transition-delay: calc(min(var(--i, 0), 4) * 55ms);
@@ -57,6 +65,12 @@ body { isolation: isolate; }
 .demo-autoplay { flex: none; min-height: 44px; padding: 6px 10px; border: 1px solid var(--edge); border-radius: 6px; background: transparent; color: var(--text); font-size: 12px; cursor: pointer; transition: border-color 200ms, background 200ms; }
 .demo-autoplay[aria-pressed=true] { border-color: rgb(113 221 255 / .6); color: var(--accent); }
 .ls-item:focus-visible .ls-label { opacity: 1; transform: none; }
+@keyframes nav-chapter-arrive {
+  0% { opacity: 0; translate: var(--chapter-from-x) var(--chapter-from-y); }
+  64% { opacity: 1; translate: var(--chapter-over-x) var(--chapter-over-y); }
+  84% { opacity: 1; translate: var(--chapter-rebound-x) var(--chapter-rebound-y); }
+  100% { opacity: 1; translate: 0 0; }
+}
 @keyframes plot-scan {
   0% { transform: translateY(-45%); opacity: 0; }
   22% { opacity: 1; }
