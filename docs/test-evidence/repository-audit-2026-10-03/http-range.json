@@ -1,0 +1,10 @@
+{
+  "time": "2026-10-03T18:36:49.8600950+08:00",
+  "url": "http://127.0.0.1:8765/assets/video/geometry/triangle-3-4-5.mp4",
+  "requestRange": "bytes=0-1",
+  "status": 206,
+  "contentRange": "bytes 0-1/151733",
+  "acceptRanges": "bytes",
+  "contentLength": "2",
+  "serverRoot": "D:\\前端\\breakglass-geometry-plan\\extension"
+}

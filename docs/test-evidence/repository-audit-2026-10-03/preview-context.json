@@ -1,0 +1,32 @@
+{
+  "recordedAt": "2026-10-03T10:39:32.158Z",
+  "repository": "D:\\前端\\breakglass-geometry-plan",
+  "head": "08e84da67e7d2315c0045c54abcb18e300d19838",
+  "rootPreview": {
+    "baseUrl": "http://127.0.0.1:8776",
+    "urls": [
+      "http://127.0.0.1:8776/index.html",
+      "http://127.0.0.1:8776/site/index.html"
+    ],
+    "reused": true,
+    "pid": 11108,
+    "script": "C:/Users/27736/AppData/Local/Temp/breakglass-ui-repo-preview.cjs",
+    "staticRoot": "D:\\前端\\breakglass-geometry-plan"
+  },
+  "extensionPreview": {
+    "baseUrl": "http://127.0.0.1:8765",
+    "pid": 23280,
+    "script": "C:/Users/27736/AppData/Local/Temp/breakglass-005-preview.cjs",
+    "staticRoot": "D:\\前端\\breakglass-geometry-plan\\extension"
+  },
+  "unusableRequestedPort": {
+    "port": 8766,
+    "pid": 1436,
+    "script": "C:/Users/27736/AppData/Local/Temp/breakglass-figures-preview.cjs",
+    "reason": "Occupied by existing preview for D:/前端/breakglass-figures/extension; repository-root pages return 404; left untouched"
+  },
+  "createdProcess": null,
+  "stopCommand": null,
+  "cleanupNote": "No process was created in this task. Existing PIDs were reused or inspected only; none may be stopped as a self-created process under this task. No repository service, dependency or product source was added.",
+  "limitations": "Byte identity verifies current files served by these local HTTP endpoints; it does not establish browser rendering, extension-runtime behavior, visual alignment or model accuracy."
+}

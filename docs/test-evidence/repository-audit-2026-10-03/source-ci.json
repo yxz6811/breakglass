@@ -1,0 +1,22 @@
+{
+  "queriedAt": "2026-10-03T18:36:50.1468855+08:00",
+  "sourceCommit": "08e84da67e7d2315c0045c54abcb18e300d19838",
+  "checks": [
+    {
+      "name": "test",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2026-10-03T10:16:49Z",
+      "completed_at": "2026-10-03T10:17:26Z",
+      "html_url": "https://github.com/yxz6811/breakglass/actions/runs/37115881101/job/111182491816"
+    },
+    {
+      "name": "test",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2026-10-03T10:16:41Z",
+      "completed_at": "2026-10-03T10:17:15Z",
+      "html_url": "https://github.com/yxz6811/breakglass/actions/runs/37115878099/job/111182483714"
+    }
+  ]
+}

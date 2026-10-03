@@ -1,0 +1,300 @@
+{
+  "browser": "Codex In-app Browser",
+  "kernelVersion": "not reliably obtained",
+  "sourceCommit": "08e84da67e7d2315c0045c54abcb18e300d19838",
+  "mode": "HTTP webpage, not installed MV3 extension; local/preset, no real provider",
+  "viewports": [
+    {
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "width": 390,
+      "height": 844
+    }
+  ],
+  "checks": [
+    {
+      "id": "G01",
+      "at": "2026-10-03T10:37:29.043Z",
+      "note": "初始无视频，播放/保存/识别/恢复禁用；点击加载3–4–5后第4秒暂停，无自动候选",
+      "observation": {
+        "duration": 12,
+        "height": 720,
+        "paused": true,
+        "reviewHidden": true,
+        "status": "示例题面已停在第 4 秒。可载入示例条件并校对，或主动识别当前帧。",
+        "time": 4,
+        "width": 1280
+      }
+    },
+    {
+      "id": "G02",
+      "at": "2026-10-03T10:37:42.511Z",
+      "note": "未勾选人工核对时确认被拒绝，错误反馈出现",
+      "observation": "条件尚未确认，请检查下面标明的问题。"
+    },
+    {
+      "id": "G03",
+      "at": "2026-10-03T10:38:03.001Z",
+      "note": "3–4–5校对确认后BC=5cm，来源预设",
+      "observation": "∠A = 90° · AB = 3 · AC = 4 · BC = 5 cm"
+    },
+    {
+      "id": "G04",
+      "at": "2026-10-03T10:38:13.887Z",
+      "note": "AB改6，AC保持4，BC显示7.211；原题快照保持3/4/5",
+      "observation": {
+        "ab": "6",
+        "ac": "4",
+        "bc": "7.211",
+        "original": "∠A = 90° · AB = 3 · AC = 4 · BC = 5 cm"
+      }
+    },
+    {
+      "id": "G05",
+      "at": "2026-10-03T10:38:21.462Z",
+      "note": "AB=0拒绝，BC仍7.211，有字段错误",
+      "observation": {
+        "bc": "7.211",
+        "error": "改边动作须指定一条直角边和正的有限数值。",
+        "invalid": "true"
+      }
+    },
+    {
+      "id": "G06",
+      "at": "2026-10-03T10:38:34.954Z",
+      "note": "恢复3/4/5清除非法状态；示例问句仅草稿，未改变BC",
+      "observation": {
+        "bc": "5",
+        "error": "",
+        "focused": "question",
+        "invalid": null,
+        "question": "把 AB 改成 6，AC 不变，BC 是多少？"
+      }
+    },
+    {
+      "id": "G07",
+      "at": "2026-10-03T10:38:42.815Z",
+      "note": "显式提交本地受限指令后AB6/AC4/BC7.211；理解题正确反馈",
+      "observation": {
+        "answer": "本地受限指令 · AB 从 3 变为 6，AC 保持不变；BC 从 5 变为 7.211 cm。A 处仍为直角，BC 由勾股关系计算。",
+        "quiz": "本次回答正确：AC 与 A 处直角不变，BC 随 AB 变化；BC² = AB² + AC²。"
+      }
+    },
+    {
+      "id": "G08",
+      "at": "2026-10-03T10:38:54.947Z",
+      "note": "目标100秒超出12秒素材，定位拒绝且播放头仍4秒",
+      "observation": {
+        "error": "请输入 0–12 秒内的有限时间。",
+        "time": 4
+      }
+    },
+    {
+      "id": "G09",
+      "at": "2026-10-03T10:39:03.361Z",
+      "note": "闭端口连接失败保留AB6/AC4/BC7.211及视频4秒，重试可用",
+      "observation": {
+        "bc": "7.211",
+        "retryDisabled": false,
+        "status": "识别未完成：无法连接本地 reader，视频和已确认的条件仍保留。视频与有效条件保留，可重试或手工填写。",
+        "time": 4
+      }
+    },
+    {
+      "id": "G10",
+      "at": "2026-10-03T10:39:11.819Z",
+      "note": "忘记地址后为空；定位9秒使旧场景清空且题面预设入口禁用",
+      "observation": {
+        "experimentHidden": true,
+        "presetDisabled": true,
+        "reader": "",
+        "time": 9
+      }
+    },
+    {
+      "id": "G11",
+      "at": "2026-10-03T10:39:38.251Z",
+      "note": "5–12–13显式加载/校对后BC13cm，视频4秒暂停",
+      "observation": "∠A = 90° · AB = 5 · AC = 12 · BC = 13 cm"
+    },
+    {
+      "id": "G12",
+      "at": "2026-10-03T10:39:51.794Z",
+      "note": "8–15–17显式加载/校对后BC17cm，视频4秒暂停",
+      "observation": "∠A = 90° · AB = 8 · AC = 15 · BC = 17 cm"
+    },
+    {
+      "id": "G13",
+      "at": "2026-10-03T10:40:00.059Z",
+      "note": "390×844下ArrowRight滑块改AB8→8.14，AC仍15，BC17.066；无水平溢出",
+      "observation": {
+        "ab": "8.14",
+        "ac": "15",
+        "bc": "17.066",
+        "clientWidth": 375,
+        "innerWidth": 390,
+        "range": "8.14",
+        "scrollWidth": 375
+      }
+    },
+    {
+      "id": "G14",
+      "at": "2026-10-03T10:40:18.202Z",
+      "note": "问题框Esc清空草稿，保留几何场景",
+      "observation": {
+        "bc": "17.066",
+        "experimentHidden": false,
+        "question": ""
+      }
+    },
+    {
+      "id": "G15",
+      "at": "2026-10-03T10:40:33.875Z",
+      "note": "返回按钮后AX显示已返回4秒继续视频、当前4.002/12秒播放中，场景清空；单次观察不作为≤0.1秒性能验收"
+    },
+    {
+      "id": "C01",
+      "at": "2026-10-03T10:41:05.769Z",
+      "note": "曲线初始无视频与破壁禁用；选择预设并定位后6秒暂停，破壁可用",
+      "observation": {
+        "clientWidth": 1265,
+        "duration": 9.383333,
+        "paused": true,
+        "scrollWidth": 1265,
+        "time": 6,
+        "wakeDisabled": false
+      }
+    },
+    {
+      "id": "C02",
+      "at": "2026-10-03T10:41:14.858Z",
+      "note": "破壁出现曲线，来源明确预先准备示例、非实时识别",
+      "observation": "这是扩展包内预先准备的示例，不代表实时识别成功。"
+    },
+    {
+      "id": "C03",
+      "at": "2026-10-03T10:41:21.041Z",
+      "note": "本地导师将k从1写为-1，回答与画面一致",
+      "observation": "你：把顶点高度改成 -1\n\n答：顶点高度 k 从 1.0 改为 -1.0，抛物线向下平移 2.0。顶点现在是 (0.0, -1.0)。"
+    },
+    {
+      "id": "C04",
+      "at": "2026-10-03T10:41:38.709Z",
+      "note": "切圆并提问r=2，画面和回答同步，来源本地公式非视频识别；当时为桌面视口",
+      "observation": {
+        "answer": "你：把半径改成 2答：半径 r 从 1.0 改为 2.0，圆变大。",
+        "clientWidth": 1265,
+        "radius": "2",
+        "scrollWidth": 1265
+      }
+    },
+    {
+      "id": "C05",
+      "at": "2026-10-03T10:41:50.601Z",
+      "note": "直线模式显示y=x+1及其参数",
+      "observation": "直线参数"
+    },
+    {
+      "id": "C06",
+      "at": "2026-10-03T10:41:57.136Z",
+      "note": "正弦模式显示y=sin(x)+1及三个参数",
+      "observation": "正弦参数"
+    },
+    {
+      "id": "C07",
+      "at": "2026-10-03T10:42:17.778Z",
+      "note": "切回抛物线并重置后a1/h0/k1，桌面无水平溢出",
+      "observation": {
+        "a": "1",
+        "clientWidth": 1265,
+        "h": "0",
+        "k": "1",
+        "scrollWidth": 1265
+      }
+    },
+    {
+      "id": "C08",
+      "at": "2026-10-03T10:42:33.728Z",
+      "note": "退出曲线后交互层移除、参数/提问禁用，6秒视频保留"
+    },
+    {
+      "id": "S01",
+      "at": "2026-10-03T10:42:44.764Z",
+      "note": "架构详情可展开，焦点在关闭按钮；Tab保持弹窗范围",
+      "observation": {
+        "focused": "✕",
+        "modalVisible": "false",
+        "role": "dialog"
+      }
+    },
+    {
+      "id": "S02",
+      "at": "2026-10-03T10:42:54.369Z",
+      "note": "Shift+Tab保持关闭按钮；Escape关闭动画结束后aria-hidden=true且焦点回到原架构入口",
+      "observation": {
+        "focused": "02\n          内容几何探测层",
+        "modalHidden": "true"
+      },
+      "transitionObservation": {
+        "focused": "✕",
+        "modalHidden": "false"
+      }
+    },
+    {
+      "id": "S03",
+      "at": "2026-10-03T10:44:37.900Z",
+      "note": "展示页Home/ArrowRight将a调到0.26，显示手动控制；数学示意来源可见",
+      "observation": {
+        "a": "0.26",
+        "clientWidth": 1270,
+        "scrollWidth": 1270
+      }
+    },
+    {
+      "id": "S04",
+      "at": "2026-10-03T10:44:53.223Z",
+      "note": "重置a恢复0.65；390×844布局宽度检查",
+      "observation": {
+        "a": "0.65",
+        "clientWidth": 381,
+        "innerWidth": 390,
+        "scrollWidth": 381
+      }
+    },
+    {
+      "id": "S05",
+      "at": "2026-10-03T10:45:20.284Z",
+      "note": "site封面入口进入education内容页，1280×720导航与页尾可读，说明预制来源",
+      "observation": {
+        "clientWidth": 1265,
+        "innerWidth": 1280,
+        "scrollWidth": 1265,
+        "title": "课被录成了视频，但视频只能看 · BreakGlass 破壁"
+      }
+    },
+    {
+      "id": "S06",
+      "at": "2026-10-03T10:46:06.106Z",
+      "note": "education内容页390×844视口无水平溢出",
+      "observation": {
+        "clientWidth": 375,
+        "innerWidth": 390,
+        "scrollWidth": 375
+      }
+    },
+    {
+      "id": "C09",
+      "at": "2026-10-03T10:46:47.010Z",
+      "note": "独立390×844曲线页完成破壁并用键盘改变a；无水平溢出",
+      "observation": {
+        "a": "1.1",
+        "clientWidth": 375,
+        "innerWidth": 390,
+        "scrollWidth": 375,
+        "time": 6
+      }
+    }
+  ]
+}

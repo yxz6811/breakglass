@@ -1,0 +1,7 @@
+{
+  "command": "node scripts/check.mjs",
+  "startedAt": "2026-10-03T18:34:51.4859100+08:00",
+  "finishedAt": "2026-10-03T18:35:04.3473059+08:00",
+  "elapsedMs": 12861.3959,
+  "exitCode": 0
+}

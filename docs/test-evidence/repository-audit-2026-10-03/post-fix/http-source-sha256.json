@@ -1,0 +1,67 @@
+{
+  "recordedAt": "2026-10-03T11:03:12.337Z",
+  "sourceCommit": "42c33fd78e2ca4824faed0d1e3194879673876dc",
+  "results": [
+    {
+      "url": "http://127.0.0.1:8765/src/page/geometry.js",
+      "path": "extension/src/page/geometry.js",
+      "status": 200,
+      "localBytes": 51909,
+      "httpBytes": 51909,
+      "localSha256": "4290456a9f8dd2175f1993952498fac71300a2c81d4d168274ef0d329b2a0c8d",
+      "httpSha256": "4290456a9f8dd2175f1993952498fac71300a2c81d4d168274ef0d329b2a0c8d",
+      "identical": true
+    },
+    {
+      "url": "http://127.0.0.1:8765/src/page/main.js",
+      "path": "extension/src/page/main.js",
+      "status": 200,
+      "localBytes": 98918,
+      "httpBytes": 98918,
+      "localSha256": "785e3da5f049d8c522713c30a4dd0dce15048f012ed5cdc50863e4f6b11e0e18",
+      "httpSha256": "785e3da5f049d8c522713c30a4dd0dce15048f012ed5cdc50863e4f6b11e0e18",
+      "identical": true
+    },
+    {
+      "url": "http://127.0.0.1:8765/demo/geometry.html",
+      "path": "extension/demo/geometry.html",
+      "status": 200,
+      "localBytes": 21800,
+      "httpBytes": 21800,
+      "localSha256": "9986c83b70db58731bde5d2cbc73e14065426616a148b8d05ce4577de5f4e0cf",
+      "httpSha256": "9986c83b70db58731bde5d2cbc73e14065426616a148b8d05ce4577de5f4e0cf",
+      "identical": true
+    },
+    {
+      "url": "http://127.0.0.1:8765/demo/index.html",
+      "path": "extension/demo/index.html",
+      "status": 200,
+      "localBytes": 14252,
+      "httpBytes": 14252,
+      "localSha256": "7459602e8cda285d5e5f3e2cec1b4ba175f2fcb145ef51339035d69c336917f9",
+      "httpSha256": "7459602e8cda285d5e5f3e2cec1b4ba175f2fcb145ef51339035d69c336917f9",
+      "identical": true
+    },
+    {
+      "url": "http://127.0.0.1:8776/index.html",
+      "path": "index.html",
+      "status": 200,
+      "localBytes": 157352,
+      "httpBytes": 157352,
+      "localSha256": "57a254bec3956ca63fe9b4809fe50991e893c64a20e543fb49f2d29da42c8ad3",
+      "httpSha256": "57a254bec3956ca63fe9b4809fe50991e893c64a20e543fb49f2d29da42c8ad3",
+      "identical": true
+    },
+    {
+      "url": "http://127.0.0.1:8776/site/index.html",
+      "path": "site/index.html",
+      "status": 200,
+      "localBytes": 1024,
+      "httpBytes": 1024,
+      "localSha256": "185b6168e099c37fc121fe9fdbe4c6be709f13592b0fc507e4af8e33f7141b56",
+      "httpSha256": "185b6168e099c37fc121fe9fdbe4c6be709f13592b0fc507e4af8e33f7141b56",
+      "identical": true
+    }
+  ],
+  "allIdentical": true
+}
