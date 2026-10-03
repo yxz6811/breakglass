@@ -51,9 +51,9 @@ button, select { color: inherit; }
 .reveal { opacity: 1; transform: none; transition: none; }
 
 /* One focal sequence, inside the page rather than over it. */
-.brand-intro { padding-top: 100px; padding-bottom: 62px; min-height: 100svh; }
+.brand-intro { padding-top: 100px; padding-bottom: 62px; min-height: 100vh; min-height: 100svh; }
 .brand-intro .page-inner { text-align: center; }
-.brand-stage { position: relative; isolation: isolate; width: min(780px,100%); height: 210px; margin: 0 auto 28px; display: grid; align-items: center; overflow: clip; }
+.brand-stage { position: relative; isolation: isolate; width: min(780px,100%); height: 210px; margin: 0 auto 28px; display: grid; align-items: center; overflow: hidden; overflow: clip; }
 .brand-intro .story { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; pointer-events: none; }
 .brand-intro .pane-outline { stroke: #8e9da5; stroke-width: 1; }
 .brand-intro .pane-fill { fill: #0d1419; fill-opacity: .76; }
@@ -149,7 +149,7 @@ button:disabled, input:disabled, select:disabled { opacity: .45; cursor: default
   .nav-brand span { font-size: 12px; }
   .nav-cta { font-size: 12px; padding-inline: 12px; }
   .page { min-height: auto; padding: 90px 22px 68px; }
-  .brand-intro { min-height: 100svh; padding-top: 108px; padding-bottom: 46px; }
+  .brand-intro { min-height: 100vh; min-height: 100svh; padding-top: 108px; padding-bottom: 46px; }
   .brand-stage { height: 214px; margin-bottom: 28px; }
   .brand-intro .brand-lockup { flex-direction: column; width: min(350px,100%); gap: 13px; }
   .brand-intro .brand-symbol { width: 120px; height: 120px; }

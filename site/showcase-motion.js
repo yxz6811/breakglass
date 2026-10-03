@@ -51,10 +51,19 @@
   var motion = window.matchMedia('(prefers-reduced-motion: reduce)');
   var brandFocus = find('.brand-focus');
   var heroCopy = find('.hero-copy');
+  var chromeRoot = document.documentElement;
+  var chromeParts = Array.from(document.querySelectorAll('.nav, .line-sidebar'));
+  var chromeInert = new Map();
+  var chromePending = false;
+  document.querySelectorAll('.nav-links a').forEach(function (link, index) {
+    link.style.setProperty('--chapter-delay', (index * 45) + 'ms');
+  });
   var entranceComplete = false;
   var introCenter = { x: 0, y: 0, lockupY: 0 };
   var restoreReplayFocus = false;
-  var events = new AbortController();
+  var events = window.BreakGlassMotion.createListeners();
+  var scrollLock = window.BreakGlassMotion.createScrollLock();
+  var unlockTimer = 0;
   var cuts = {
     logo: { duration: 2200, from: 4050 },
     story: { duration: 5600, from: 0 },
@@ -73,6 +82,23 @@
   var lastCaption = '';
   var lastPhase = '';
 
+  function showChrome(visible) {
+    if (chromePending === !visible) return;
+    chromePending = !visible;
+    chromeRoot.classList.toggle('chrome-pending', chromePending);
+    chromeRoot.classList.toggle('chrome-revealed', visible);
+    body.dataset.introChrome = visible ? 'visible' : 'pending';
+    chromeParts.forEach(function (element) {
+      if (!visible) {
+        chromeInert.set(element, element.hasAttribute('inert'));
+        element.setAttribute('inert', '');
+      } else {
+        if (!chromeInert.get(element)) element.removeAttribute('inert');
+        chromeInert.delete(element);
+      }
+    });
+  }
+
   function centerIntro() {
     if (!brandFocus || entranceComplete) return;
     brandFocus.style.setProperty('--intro-x', '0px');
@@ -83,18 +109,37 @@
     introCenter.y = window.innerHeight / 2 - (logoBounds.top + logoBounds.height / 2);
     introCenter.lockupY = window.innerHeight / 2 - (rect.top + rect.height / 2);
   }
-  function completeEntrance() {
-    if (entranceComplete) return;
+  function releaseScroll() {
+    window.clearTimeout(unlockTimer);
+    unlockTimer = 0;
+    scrollLock.unlock();
+  }
+  function completeEntrance(immediate) {
+    if (entranceComplete) { if (immediate) releaseScroll(); return; }
     entranceComplete = true;
+    showChrome(true);
     body.classList.remove('intro-entering');
     body.classList.add('intro-ready');
     if (heroCopy) heroCopy.removeAttribute('inert');
-    if (restoreReplayFocus) { restoreReplayFocus = false; replay.focus({ preventScroll: true }); }
+    if (restoreReplayFocus) {
+      restoreReplayFocus = false;
+      var focus = document.activeElement;
+      if (focus === document.body || focus === chromeRoot || (heroCopy && heroCopy.contains(focus))) replay.focus({ preventScroll: true });
+    }
+    if (immediate || motion.matches || document.hidden) releaseScroll();
+    else {
+      // Cover the 720ms lift, 920ms copy reveal and 935ms last navigation item.
+      unlockTimer = window.setTimeout(releaseScroll, 960);
+    }
   }
   function beginEntrance() {
+    window.clearTimeout(unlockTimer);
+    unlockTimer = 0;
+    scrollLock.lock();
     entranceComplete = false;
     body.classList.remove('intro-ready');
     body.classList.add('intro-entering');
+    showChrome(false);
     if (heroCopy) heroCopy.setAttribute('inert', '');
     centerIntro();
   }
@@ -269,7 +314,7 @@
   }
   function play(restart) {
     pause();
-    if (motion.matches || disposed) { render(cut.duration); completeEntrance(); return; }
+    if (motion.matches || disposed) { render(cut.duration); completeEntrance(true); return; }
     measureTarget();
     if (restart || current >= cut.duration) render(0);
     running = true;
@@ -283,64 +328,84 @@
     chapters.forEach(function (element) { element.disabled = reduced || chapterTime[element.dataset.chapter] < cut.from; });
     motionNote.hidden = !reduced;
     body.dataset.reducedMotion = String(reduced);
-    if (reduced) { pause(); render(cut.duration); syncPlayback(); completeEntrance(); }
+    if (reduced) { pause(); render(cut.duration); syncPlayback(); completeEntrance(true); }
   }
 
-  replay.addEventListener('click', function () {
+  events.listen(replay, 'click', function () {
     restoreReplayFocus = true;
     beginEntrance();
     play(true);
-  }, { signal: events.signal });
-  playback.addEventListener('click', function () { if (running) pause(); else play(false); }, { signal: events.signal });
-  timeline.addEventListener('input', function () { pause(); render(Number(timeline.value)); syncPlayback(); }, { signal: events.signal });
-  speed.addEventListener('change', function () { rate = Number(speed.value) === .5 ? .5 : 1; }, { signal: events.signal });
-  chapters.forEach(function (button) {
-    button.addEventListener('click', function () { pause(); render(localTime(chapterTime[button.dataset.chapter])); syncPlayback(); }, { signal: events.signal });
   });
-  cutSelect.addEventListener('change', function () {
+  events.listen(playback, 'click', function () { if (running) pause(); else play(false); });
+  events.listen(timeline, 'input', function () { pause(); render(Number(timeline.value)); syncPlayback(); });
+  events.listen(speed, 'change', function () { rate = Number(speed.value) === .5 ? .5 : 1; });
+  chapters.forEach(function (button) {
+    events.listen(button, 'click', function () { pause(); render(localTime(chapterTime[button.dataset.chapter])); syncPlayback(); });
+  });
+  events.listen(cutSelect, 'change', function () {
     pause();
     cut = cuts[cutSelect.value] || cuts.logo;
     timeline.max = String(cut.duration);
     body.dataset.cut = cutSelect.value;
     applyMotionPreference();
     if (motion.matches) { render(cut.duration); syncPlayback(); } else play(true);
-  }, { signal: events.signal });
-  coefficient.addEventListener('input', function () { renderSmallGraph(coefficient.value); }, { signal: events.signal });
-  playground.querySelector('.curve-reset').addEventListener('click', function () {
+  });
+  events.listen(coefficient, 'input', function () { renderSmallGraph(coefficient.value); });
+  events.listen(playground.querySelector('.curve-reset'), 'click', function () {
     coefficient.value = '.65';
     renderSmallGraph(coefficient.value);
-  }, { signal: events.signal });
-  document.addEventListener('visibilitychange', function () {
+  });
+  events.listen(document, 'visibilitychange', function () {
     if (document.hidden) {
       pause();
-      if (!entranceComplete) { render(cut.duration); syncPlayback(); completeEntrance(); }
+      if (!entranceComplete) { render(cut.duration); syncPlayback(); }
+      completeEntrance(true);
     }
-  }, { signal: events.signal });
+  });
   var visibility = 'IntersectionObserver' in window ? new IntersectionObserver(function (entries) {
     if (!entries[0].isIntersecting && running) {
       pause();
       render(cut.duration);
       syncPlayback();
-      completeEntrance();
+      completeEntrance(true);
     }
   }) : null;
   if (visibility) visibility.observe(brandIntro);
-  window.addEventListener('resize', function () { centerIntro(); measureTarget(); render(current); }, { signal: events.signal });
-  motion.addEventListener('change', applyMotionPreference, { signal: events.signal });
-  window.addEventListener('pagehide', function (event) {
+  events.listen(window, 'resize', function () { centerIntro(); measureTarget(); render(current); });
+  events.listen(motion, 'change', applyMotionPreference);
+  events.listen(window, 'pagehide', function (event) {
     pause();
+    releaseScroll();
     if (event.persisted) return;
     disposed = true;
+    scrollLock.dispose();
     if (visibility) visibility.disconnect();
     events.abort();
-  }, { signal: events.signal });
-  window.addEventListener('pageshow', function (event) {
-    if (event.persisted) { measureTarget(); render(entranceComplete ? current : cut.duration); syncPlayback(); completeEntrance(); }
-  }, { signal: events.signal });
+  });
+  events.listen(window, 'pageshow', function (event) {
+    if (event.persisted) { measureTarget(); render(entranceComplete ? current : cut.duration); syncPlayback(); completeEntrance(true); }
+  });
   body.dataset.cut = 'logo';
-  beginEntrance();
-  renderSmallGraph(coefficient.value);
-  measureTarget();
-  applyMotionPreference();
-  if (!motion.matches) play(true);
+  try {
+    renderSmallGraph(coefficient.value);
+    measureTarget();
+    var initialTarget = window.location.hash && document.getElementById(window.location.hash.slice(1));
+    // Let valid chapter links retain native fragment positioning before locking the body.
+    if (initialTarget && !brandIntro.contains(initialTarget)) {
+      render(cut.duration);
+      syncPlayback();
+      applyMotionPreference();
+      completeEntrance(true);
+    } else {
+      beginEntrance();
+      applyMotionPreference();
+      if (!motion.matches) play(true);
+    }
+  } catch (error) {
+    releaseScroll();
+    showChrome(true);
+    body.classList.remove('intro-entering');
+    if (heroCopy) heroCopy.removeAttribute('inert');
+    throw error;
+  }
 })();

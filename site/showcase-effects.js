@@ -5,7 +5,7 @@
   'use strict';
 
   const root = document.documentElement;
-  const events = new AbortController();
+  const events = window.BreakGlassMotion.createListeners();
   const motion = window.matchMedia('(prefers-reduced-motion: reduce)');
   const depthScreen = window.matchMedia('(min-width: 901px) and (hover: hover) and (pointer: fine)');
   const coarseScreen = window.matchMedia('(pointer: coarse)');
@@ -201,21 +201,21 @@
   }
   updateDepth();
 
-  document.addEventListener('focusin', function (event) {
+  events.listen(document, 'focusin', function (event) {
     pendingReveals.forEach(function (element) {
       if (element.contains(event.target)) reveal(element);
     });
-  }, { signal: events.signal });
-  window.addEventListener('scroll', scheduleDepth, { passive: true, signal: events.signal });
-  window.addEventListener('resize', function () {
+  });
+  events.listen(window, 'scroll', scheduleDepth, { passive: true });
+  events.listen(window, 'resize', function () {
     resizeParticles();
     scheduleDepth();
-  }, { passive: true, signal: events.signal });
-  motion.addEventListener('change', onMotionChange, { signal: events.signal });
-  depthScreen.addEventListener('change', scheduleDepth, { signal: events.signal });
-  coarseScreen.addEventListener('change', resizeParticles, { signal: events.signal });
-  document.addEventListener('visibilitychange', onVisibilityChange, { signal: events.signal });
-  window.addEventListener('pagehide', function (event) {
+  }, { passive: true });
+  events.listen(motion, 'change', onMotionChange);
+  events.listen(depthScreen, 'change', scheduleDepth);
+  events.listen(coarseScreen, 'change', resizeParticles);
+  events.listen(document, 'visibilitychange', onVisibilityChange);
+  events.listen(window, 'pagehide', function (event) {
     suspended = true;
     document.body.classList.add('effects-paused');
     stopFrames();
@@ -224,12 +224,12 @@
       if (revealObserver) revealObserver.disconnect();
       events.abort();
     }
-  }, { signal: events.signal });
-  window.addEventListener('pageshow', function () {
+  });
+  events.listen(window, 'pageshow', function () {
     suspended = document.hidden;
     document.body.classList.toggle('effects-paused', suspended);
     resizeParticles();
     startParticles();
     scheduleDepth();
-  }, { signal: events.signal });
+  });
 }());

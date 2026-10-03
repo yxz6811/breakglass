@@ -4,6 +4,8 @@
 <html lang="zh-CN">
 <head>
 <meta charset="utf-8"/>
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-HT22BS7B4ShkpKDRWMIvM3knDbvCZPAgblnapcXaA/g=' 'sha256-WS4210ZXVnUklxDt8og1eAqjENksHM56aIsoa+AyuOM=' 'sha256-6EplBBjNCg7Y9Fi0ht/+7EESc+v4oIqh43R8UGW8Ttc=' 'sha256-BI23YMuzvX39odaTjUgcIEG/2fhCtkmlTXTxOWErp4o=' 'sha256-hQC4QNH9vtbePilbF5maD5rvV+5Yoe4Za7uZpnwvxE4=' 'sha256-eEjMey5X/4MD8eYMUt2xUBgaoNXv2ASg0ng5pYUCd1s='; script-src-attr 'none'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-src 'none'; worker-src 'none'; media-src 'none'" data-showcase-csp/>
+<meta name="referrer" content="no-referrer"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
 <title>破壁 BreakGlass — 让知识可以被触碰</title>
 <meta name="theme-color" content="#080b0d" />
@@ -1041,9 +1043,9 @@ button, select { color: inherit; }
 .reveal { opacity: 1; transform: none; transition: none; }
 
 /* One focal sequence, inside the page rather than over it. */
-.brand-intro { padding-top: 100px; padding-bottom: 62px; min-height: 100svh; }
+.brand-intro { padding-top: 100px; padding-bottom: 62px; min-height: 100vh; min-height: 100svh; }
 .brand-intro .page-inner { text-align: center; }
-.brand-stage { position: relative; isolation: isolate; width: min(780px,100%); height: 210px; margin: 0 auto 28px; display: grid; align-items: center; overflow: clip; }
+.brand-stage { position: relative; isolation: isolate; width: min(780px,100%); height: 210px; margin: 0 auto 28px; display: grid; align-items: center; overflow: hidden; overflow: clip; }
 .brand-intro .story { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; pointer-events: none; }
 .brand-intro .pane-outline { stroke: #8e9da5; stroke-width: 1; }
 .brand-intro .pane-fill { fill: #0d1419; fill-opacity: .76; }
@@ -1139,7 +1141,7 @@ button:disabled, input:disabled, select:disabled { opacity: .45; cursor: default
   .nav-brand span { font-size: 12px; }
   .nav-cta { font-size: 12px; padding-inline: 12px; }
   .page { min-height: auto; padding: 90px 22px 68px; }
-  .brand-intro { min-height: 100svh; padding-top: 108px; padding-bottom: 46px; }
+  .brand-intro { min-height: 100vh; min-height: 100svh; padding-top: 108px; padding-bottom: 46px; }
   .brand-stage { height: 214px; margin-bottom: 28px; }
   .brand-intro .brand-lockup { flex-direction: column; width: min(350px,100%); gap: 13px; }
   .brand-intro .brand-symbol { width: 120px; height: 120px; }
@@ -1165,6 +1167,8 @@ button:disabled, input:disabled, select:disabled { opacity: .45; cursor: default
 <style data-showcase-source="showcase-effects.css">
 /* Effects adapted from breakglass-apple, around the approved brand identity. */
 body { isolation: isolate; }
+html.intro-scroll-locked { overflow: hidden; overscroll-behavior: none; }
+html.intro-scroll-locked body { position: fixed; top: var(--intro-scroll-y); left: var(--intro-scroll-x); width: 100%; padding-right: var(--intro-scroll-padding); overflow: hidden; }
 .bg-core {
   background: radial-gradient(110% 60% at 50% 114%, rgb(43 150 189 / .12), transparent 72%),
     radial-gradient(70% 42% at 50% -12%, rgb(113 221 255 / .055), transparent 75%), var(--bg);
@@ -1180,9 +1184,17 @@ body { isolation: isolate; }
   background: linear-gradient(90deg, transparent, rgb(113 221 255 / .55), transparent);
 }
 .progress { box-shadow: 0 0 9px rgb(113 221 255 / .28); }
-.nav { background: rgb(8 11 13 / .79); }
+.nav { background: rgb(8 11 13 / .79); transition: opacity 520ms var(--ease), transform 520ms var(--ease); }
+.line-sidebar { transition: opacity 260ms var(--ease); }
+.ls-item { --chapter-from-x: -18px; --chapter-from-y: 0px; --chapter-over-x: 3px; --chapter-over-y: 0px; --chapter-rebound-x: -1px; --chapter-rebound-y: 0px; }
+.nav-links a { --chapter-from-x: 0px; --chapter-from-y: -10px; --chapter-over-x: 0px; --chapter-over-y: 2px; --chapter-rebound-x: 0px; --chapter-rebound-y: -.5px; }
+.chrome-revealed .line-sidebar .ls-item, .chrome-revealed .nav-links a { animation: nav-chapter-arrive 620ms var(--ease) var(--chapter-delay, 0ms) both; }
+.chrome-revealed .line-sidebar .ls-item:focus-visible, .chrome-revealed .nav-links a:focus-visible { opacity: 1 !important; translate: 0 0 !important; }
+.chrome-pending .nav { opacity: 0; transform: translateY(-12px); visibility: hidden; pointer-events: none; transition: none; }
+.chrome-pending .line-sidebar { opacity: 0; visibility: hidden; pointer-events: none; transition: none; }
+.chrome-pending .topline, .chrome-pending .progress { opacity: 0; }
 
-/* Content stays visible without JS. Reveal each element rather than a tall section. */
+/* Content stays visible without JS. Each element enters only on its first visit. */
 .effects-ready .reveal {
   transition: opacity 640ms var(--ease), transform 640ms var(--ease);
   transition-delay: calc(min(var(--i, 0), 4) * 55ms);
@@ -1222,6 +1234,23 @@ body { isolation: isolate; }
 .demo-autoplay { flex: none; min-height: 44px; padding: 6px 10px; border: 1px solid var(--edge); border-radius: 6px; background: transparent; color: var(--text); font-size: 12px; cursor: pointer; transition: border-color 200ms, background 200ms; }
 .demo-autoplay[aria-pressed=true] { border-color: rgb(113 221 255 / .6); color: var(--accent); }
 .ls-item:focus-visible .ls-label { opacity: 1; transform: none; }
+@keyframes nav-chapter-arrive {
+  0% { opacity: 0; translate: var(--chapter-from-x) var(--chapter-from-y); }
+  64% { opacity: 1; translate: var(--chapter-over-x) var(--chapter-over-y); }
+  84% { opacity: 1; translate: var(--chapter-rebound-x) var(--chapter-rebound-y); }
+  100% { opacity: 1; translate: 0 0; }
+}
+/* Release transform after arrival so legacy Safari retains proximity feedback. */
+@supports not (translate: 0px) {
+  .chrome-revealed .line-sidebar .ls-item, .chrome-revealed .nav-links a { animation-name: nav-chapter-arrive-legacy; animation-fill-mode: backwards; }
+  .chrome-revealed .line-sidebar .ls-item:focus, .chrome-revealed .nav-links a:focus { opacity: 1 !important; transform: none !important; }
+}
+@keyframes nav-chapter-arrive-legacy {
+  0% { opacity: 0; transform: translate(var(--chapter-from-x), var(--chapter-from-y)); }
+  64% { opacity: 1; transform: translate(var(--chapter-over-x), var(--chapter-over-y)); }
+  84% { opacity: 1; transform: translate(var(--chapter-rebound-x), var(--chapter-rebound-y)); }
+  100% { opacity: 1; transform: translate(0, 0); }
+}
 @keyframes plot-scan {
   0% { transform: translateY(-45%); opacity: 0; }
   22% { opacity: 1; }
@@ -2146,6 +2175,116 @@ plt.show()</pre>
 </noscript>
 
 
+<script data-showcase-source="showcase-compat.js">
+/* Showcase event ownership, within docs/BreakGlass-constitution.md.
+   Older WebKit exposes MediaQueryList.addListener and ignores listener signals. */
+(function () {
+  'use strict';
+  window.BreakGlassMotion = {
+    createListeners: function () {
+      var removers = [];
+      var disposed = false;
+      return {
+        listen: function (target, type, callback, options) {
+          if (disposed) return;
+          if (typeof target.addEventListener === 'function') {
+            target.addEventListener(type, callback, options);
+            removers.push(function () { target.removeEventListener(type, callback, options); });
+          } else if (type === 'change' && typeof target.addListener === 'function') {
+            target.addListener(callback);
+            removers.push(function () { target.removeListener(callback); });
+          }
+        },
+        abort: function () {
+          if (disposed) return;
+          disposed = true;
+          removers.forEach(function (remove) { remove(); });
+          removers = [];
+        }
+      };
+    }
+  };
+}());
+</script>
+<script data-showcase-source="showcase-scroll-lock.js">
+/* Entrance scrolling only; docs/BreakGlass-constitution.md frontend scope. */
+(function () {
+  'use strict';
+  window.BreakGlassMotion.createScrollLock = function () {
+    var root = document.documentElement;
+    var locked = false, disposed = false, listeners = null;
+    var position = { x: 0, y: 0 };
+    var saved = [];
+    var properties = ['--intro-scroll-x', '--intro-scroll-y', '--intro-scroll-padding'];
+    var scrollKeys = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'PageUp', 'PageDown', 'Home', 'End', ' ', 'Spacebar'];
+
+    function prevent(event) {
+      if (event.ctrlKey || (event.touches && event.touches.length > 1)) return;
+      event.preventDefault();
+    }
+    function blockKey(event) {
+      var target = event.target;
+      if (target && (target.isContentEditable || (target.closest && target.closest('input, textarea, select, [contenteditable], [role="textbox"]')))) return;
+      if (scrollKeys.indexOf(event.key) !== -1) event.preventDefault();
+    }
+    function blockAnchor(event) {
+      var target = event.target;
+      var link = target && target.closest && target.closest('a[href]');
+      if (!link) return;
+      var url = new URL(link.getAttribute('href'), window.location.href);
+      var current = window.location;
+      if (url.hash && url.origin === current.origin && url.pathname === current.pathname && url.search === current.search) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
+    }
+    function lock() {
+      if (locked || disposed) return;
+      position = { x: window.scrollX || 0, y: window.scrollY || 0 };
+      var gap = Math.max(0, window.innerWidth - root.clientWidth);
+      var padding = parseFloat(window.getComputedStyle(document.body).paddingRight) || 0;
+      saved = properties.map(function (name) {
+        return { name: name, value: root.style.getPropertyValue(name), priority: root.style.getPropertyPriority(name) };
+      });
+      root.style.setProperty(properties[0], -position.x + 'px');
+      root.style.setProperty(properties[1], -position.y + 'px');
+      root.style.setProperty(properties[2], padding + gap + 'px');
+      root.classList.add('intro-scroll-locked');
+      root.dataset.introScroll = 'locked';
+      locked = true;
+      listeners = window.BreakGlassMotion.createListeners();
+      listeners.listen(document, 'wheel', prevent, { passive: false, capture: true });
+      listeners.listen(document, 'touchmove', prevent, { passive: false, capture: true });
+      listeners.listen(document, 'keydown', blockKey, { capture: true });
+      listeners.listen(document, 'click', blockAnchor, { capture: true });
+    }
+    function unlock() {
+      if (!locked) return;
+      locked = false;
+      listeners.abort();
+      listeners = null;
+      root.classList.remove('intro-scroll-locked');
+      root.dataset.introScroll = 'unlocked';
+      saved.forEach(function (property) {
+        if (property.value) root.style.setProperty(property.name, property.value, property.priority);
+        else root.style.removeProperty(property.name);
+      });
+      var behavior = root.style.getPropertyValue('scroll-behavior');
+      var priority = root.style.getPropertyPriority('scroll-behavior');
+      root.style.setProperty('scroll-behavior', 'auto', 'important');
+      window.scrollTo(position.x, position.y);
+      if (behavior) root.style.setProperty('scroll-behavior', behavior, priority);
+      else root.style.removeProperty('scroll-behavior');
+    }
+    return {
+      lock: lock,
+      unlock: unlock,
+      isLocked: function () { return locked; },
+      dispose: function () { unlock(); disposed = true; }
+    };
+  };
+}());
+</script>
 <script data-showcase-source="showcase-base.js">
 /* Source: github.com/yxz6811/breakglass, yanghan2026-patch-1, e46bed00291c262effa7982dc3f67f2701f36191, root file 展示网站.
    Frontend constraints: docs/BreakGlass-constitution.md (1.6.0); P0 preset parabola only. This extraction preserves original showcase content and does not implement or validate its P1 claims. */
@@ -2277,17 +2416,27 @@ plt.show()</pre>
   };
 
   function setContent(key) {
+    if (!Object.prototype.hasOwnProperty.call(DATA, key)) return false;
     var d = DATA[key];
     if (!d) return false;
 
     var tpl = document.getElementById(d.tplId);
-    visual.innerHTML = '';
+    while (visual.firstChild) visual.removeChild(visual.firstChild);
     if (tpl && tpl.content) {
       visual.appendChild(tpl.content.cloneNode(true));
     }
     eyebrow.textContent = d.eyebrow;
     titleEl.textContent = d.title;
-    descEl.innerHTML = d.desc;
+    descEl.textContent = '';
+    // Keep the authored emphasis without interpreting descriptions as HTML.
+    var description = d.desc.match(/^(.*?)<em>(.*?)<\/em>(.*?)$/);
+    if (description) {
+      descEl.appendChild(document.createTextNode(description[1]));
+      var emphasis = document.createElement('em');
+      emphasis.textContent = description[2];
+      descEl.appendChild(emphasis);
+      descEl.appendChild(document.createTextNode(description[3]));
+    } else descEl.textContent = d.desc;
 
     var info = modal.querySelector('.arch-modal__info');
     if (info) info.scrollTop = 0;
@@ -2492,6 +2641,7 @@ plt.show()</pre>
   var entries = src.map(function (a, i) {
     var el = document.createElement('a');
     el.className = 'ls-item';
+    el.style.setProperty('--chapter-delay', (i * 45) + 'ms');
     el.href = a.getAttribute('href') || ('#p' + (i + 1));
     var text = a.getAttribute('data-label') || ('Section ' + (i + 1));
     el.setAttribute('aria-label', ((i + 1 < 10 ? '0' : '') + (i + 1)) + ' ' + text);
@@ -2561,6 +2711,7 @@ plt.show()</pre>
 
   var motionPreference = window.matchMedia('(prefers-reduced-motion: reduce)');
   var hoverPreference = window.matchMedia('(hover: none)');
+  var mediaEvents = window.BreakGlassMotion.createListeners();
   var reduced = motionPreference.matches;
   var noHover = hoverPreference.matches;
   var mouse = { x: -1e5, y: -1e5, on: false };
@@ -2692,6 +2843,9 @@ plt.show()</pre>
     if (!e.relatedTarget) clearMouse();
   });
   document.addEventListener('mouseleave', clearMouse);
+  host.addEventListener('animationend', function (event) {
+    if (event.animationName.indexOf('nav-chapter-arrive') === 0 && event.target.classList.contains('ls-item')) requestUpdate(true);
+  });
 
   function boot() { requestUpdate(true); }
   if (document.readyState === 'complete') boot();
@@ -2703,14 +2857,17 @@ plt.show()</pre>
     if (document.hidden) { mouse.on = false; stop(); }
     else requestUpdate(true);
   });
-  window.addEventListener('pagehide', function () { suspended = true; stop(); });
+  window.addEventListener('pagehide', function (event) {
+    suspended = true; stop();
+    if (!event.persisted) mediaEvents.abort();
+  });
   window.addEventListener('pageshow', function () { suspended = false; requestUpdate(true); });
-  motionPreference.addEventListener('change', function (event) {
+  mediaEvents.listen(motionPreference, 'change', function (event) {
     reduced = event.matches;
     mouse.on = false;
     requestUpdate(true);
   });
-  hoverPreference.addEventListener('change', function (event) {
+  mediaEvents.listen(hoverPreference, 'change', function (event) {
     noHover = event.matches;
     clearMouse();
   });
@@ -2771,10 +2928,19 @@ plt.show()</pre>
   var motion = window.matchMedia('(prefers-reduced-motion: reduce)');
   var brandFocus = find('.brand-focus');
   var heroCopy = find('.hero-copy');
+  var chromeRoot = document.documentElement;
+  var chromeParts = Array.from(document.querySelectorAll('.nav, .line-sidebar'));
+  var chromeInert = new Map();
+  var chromePending = false;
+  document.querySelectorAll('.nav-links a').forEach(function (link, index) {
+    link.style.setProperty('--chapter-delay', (index * 45) + 'ms');
+  });
   var entranceComplete = false;
   var introCenter = { x: 0, y: 0, lockupY: 0 };
   var restoreReplayFocus = false;
-  var events = new AbortController();
+  var events = window.BreakGlassMotion.createListeners();
+  var scrollLock = window.BreakGlassMotion.createScrollLock();
+  var unlockTimer = 0;
   var cuts = {
     logo: { duration: 2200, from: 4050 },
     story: { duration: 5600, from: 0 },
@@ -2793,6 +2959,23 @@ plt.show()</pre>
   var lastCaption = '';
   var lastPhase = '';
 
+  function showChrome(visible) {
+    if (chromePending === !visible) return;
+    chromePending = !visible;
+    chromeRoot.classList.toggle('chrome-pending', chromePending);
+    chromeRoot.classList.toggle('chrome-revealed', visible);
+    body.dataset.introChrome = visible ? 'visible' : 'pending';
+    chromeParts.forEach(function (element) {
+      if (!visible) {
+        chromeInert.set(element, element.hasAttribute('inert'));
+        element.setAttribute('inert', '');
+      } else {
+        if (!chromeInert.get(element)) element.removeAttribute('inert');
+        chromeInert.delete(element);
+      }
+    });
+  }
+
   function centerIntro() {
     if (!brandFocus || entranceComplete) return;
     brandFocus.style.setProperty('--intro-x', '0px');
@@ -2803,18 +2986,37 @@ plt.show()</pre>
     introCenter.y = window.innerHeight / 2 - (logoBounds.top + logoBounds.height / 2);
     introCenter.lockupY = window.innerHeight / 2 - (rect.top + rect.height / 2);
   }
-  function completeEntrance() {
-    if (entranceComplete) return;
+  function releaseScroll() {
+    window.clearTimeout(unlockTimer);
+    unlockTimer = 0;
+    scrollLock.unlock();
+  }
+  function completeEntrance(immediate) {
+    if (entranceComplete) { if (immediate) releaseScroll(); return; }
     entranceComplete = true;
+    showChrome(true);
     body.classList.remove('intro-entering');
     body.classList.add('intro-ready');
     if (heroCopy) heroCopy.removeAttribute('inert');
-    if (restoreReplayFocus) { restoreReplayFocus = false; replay.focus({ preventScroll: true }); }
+    if (restoreReplayFocus) {
+      restoreReplayFocus = false;
+      var focus = document.activeElement;
+      if (focus === document.body || focus === chromeRoot || (heroCopy && heroCopy.contains(focus))) replay.focus({ preventScroll: true });
+    }
+    if (immediate || motion.matches || document.hidden) releaseScroll();
+    else {
+      // Cover the 720ms lift, 920ms copy reveal and 935ms last navigation item.
+      unlockTimer = window.setTimeout(releaseScroll, 960);
+    }
   }
   function beginEntrance() {
+    window.clearTimeout(unlockTimer);
+    unlockTimer = 0;
+    scrollLock.lock();
     entranceComplete = false;
     body.classList.remove('intro-ready');
     body.classList.add('intro-entering');
+    showChrome(false);
     if (heroCopy) heroCopy.setAttribute('inert', '');
     centerIntro();
   }
@@ -2989,7 +3191,7 @@ plt.show()</pre>
   }
   function play(restart) {
     pause();
-    if (motion.matches || disposed) { render(cut.duration); completeEntrance(); return; }
+    if (motion.matches || disposed) { render(cut.duration); completeEntrance(true); return; }
     measureTarget();
     if (restart || current >= cut.duration) render(0);
     running = true;
@@ -3003,66 +3205,86 @@ plt.show()</pre>
     chapters.forEach(function (element) { element.disabled = reduced || chapterTime[element.dataset.chapter] < cut.from; });
     motionNote.hidden = !reduced;
     body.dataset.reducedMotion = String(reduced);
-    if (reduced) { pause(); render(cut.duration); syncPlayback(); completeEntrance(); }
+    if (reduced) { pause(); render(cut.duration); syncPlayback(); completeEntrance(true); }
   }
 
-  replay.addEventListener('click', function () {
+  events.listen(replay, 'click', function () {
     restoreReplayFocus = true;
     beginEntrance();
     play(true);
-  }, { signal: events.signal });
-  playback.addEventListener('click', function () { if (running) pause(); else play(false); }, { signal: events.signal });
-  timeline.addEventListener('input', function () { pause(); render(Number(timeline.value)); syncPlayback(); }, { signal: events.signal });
-  speed.addEventListener('change', function () { rate = Number(speed.value) === .5 ? .5 : 1; }, { signal: events.signal });
-  chapters.forEach(function (button) {
-    button.addEventListener('click', function () { pause(); render(localTime(chapterTime[button.dataset.chapter])); syncPlayback(); }, { signal: events.signal });
   });
-  cutSelect.addEventListener('change', function () {
+  events.listen(playback, 'click', function () { if (running) pause(); else play(false); });
+  events.listen(timeline, 'input', function () { pause(); render(Number(timeline.value)); syncPlayback(); });
+  events.listen(speed, 'change', function () { rate = Number(speed.value) === .5 ? .5 : 1; });
+  chapters.forEach(function (button) {
+    events.listen(button, 'click', function () { pause(); render(localTime(chapterTime[button.dataset.chapter])); syncPlayback(); });
+  });
+  events.listen(cutSelect, 'change', function () {
     pause();
     cut = cuts[cutSelect.value] || cuts.logo;
     timeline.max = String(cut.duration);
     body.dataset.cut = cutSelect.value;
     applyMotionPreference();
     if (motion.matches) { render(cut.duration); syncPlayback(); } else play(true);
-  }, { signal: events.signal });
-  coefficient.addEventListener('input', function () { renderSmallGraph(coefficient.value); }, { signal: events.signal });
-  playground.querySelector('.curve-reset').addEventListener('click', function () {
+  });
+  events.listen(coefficient, 'input', function () { renderSmallGraph(coefficient.value); });
+  events.listen(playground.querySelector('.curve-reset'), 'click', function () {
     coefficient.value = '.65';
     renderSmallGraph(coefficient.value);
-  }, { signal: events.signal });
-  document.addEventListener('visibilitychange', function () {
+  });
+  events.listen(document, 'visibilitychange', function () {
     if (document.hidden) {
       pause();
-      if (!entranceComplete) { render(cut.duration); syncPlayback(); completeEntrance(); }
+      if (!entranceComplete) { render(cut.duration); syncPlayback(); }
+      completeEntrance(true);
     }
-  }, { signal: events.signal });
+  });
   var visibility = 'IntersectionObserver' in window ? new IntersectionObserver(function (entries) {
     if (!entries[0].isIntersecting && running) {
       pause();
       render(cut.duration);
       syncPlayback();
-      completeEntrance();
+      completeEntrance(true);
     }
   }) : null;
   if (visibility) visibility.observe(brandIntro);
-  window.addEventListener('resize', function () { centerIntro(); measureTarget(); render(current); }, { signal: events.signal });
-  motion.addEventListener('change', applyMotionPreference, { signal: events.signal });
-  window.addEventListener('pagehide', function (event) {
+  events.listen(window, 'resize', function () { centerIntro(); measureTarget(); render(current); });
+  events.listen(motion, 'change', applyMotionPreference);
+  events.listen(window, 'pagehide', function (event) {
     pause();
+    releaseScroll();
     if (event.persisted) return;
     disposed = true;
+    scrollLock.dispose();
     if (visibility) visibility.disconnect();
     events.abort();
-  }, { signal: events.signal });
-  window.addEventListener('pageshow', function (event) {
-    if (event.persisted) { measureTarget(); render(entranceComplete ? current : cut.duration); syncPlayback(); completeEntrance(); }
-  }, { signal: events.signal });
+  });
+  events.listen(window, 'pageshow', function (event) {
+    if (event.persisted) { measureTarget(); render(entranceComplete ? current : cut.duration); syncPlayback(); completeEntrance(true); }
+  });
   body.dataset.cut = 'logo';
-  beginEntrance();
-  renderSmallGraph(coefficient.value);
-  measureTarget();
-  applyMotionPreference();
-  if (!motion.matches) play(true);
+  try {
+    renderSmallGraph(coefficient.value);
+    measureTarget();
+    var initialTarget = window.location.hash && document.getElementById(window.location.hash.slice(1));
+    // Let valid chapter links retain native fragment positioning before locking the body.
+    if (initialTarget && !brandIntro.contains(initialTarget)) {
+      render(cut.duration);
+      syncPlayback();
+      applyMotionPreference();
+      completeEntrance(true);
+    } else {
+      beginEntrance();
+      applyMotionPreference();
+      if (!motion.matches) play(true);
+    }
+  } catch (error) {
+    releaseScroll();
+    showChrome(true);
+    body.classList.remove('intro-entering');
+    if (heroCopy) heroCopy.removeAttribute('inert');
+    throw error;
+  }
 })();
 </script>
 <script data-showcase-source="showcase-effects.js">
@@ -3073,7 +3295,7 @@ plt.show()</pre>
   'use strict';
 
   const root = document.documentElement;
-  const events = new AbortController();
+  const events = window.BreakGlassMotion.createListeners();
   const motion = window.matchMedia('(prefers-reduced-motion: reduce)');
   const depthScreen = window.matchMedia('(min-width: 901px) and (hover: hover) and (pointer: fine)');
   const coarseScreen = window.matchMedia('(pointer: coarse)');
@@ -3269,21 +3491,21 @@ plt.show()</pre>
   }
   updateDepth();
 
-  document.addEventListener('focusin', function (event) {
+  events.listen(document, 'focusin', function (event) {
     pendingReveals.forEach(function (element) {
       if (element.contains(event.target)) reveal(element);
     });
-  }, { signal: events.signal });
-  window.addEventListener('scroll', scheduleDepth, { passive: true, signal: events.signal });
-  window.addEventListener('resize', function () {
+  });
+  events.listen(window, 'scroll', scheduleDepth, { passive: true });
+  events.listen(window, 'resize', function () {
     resizeParticles();
     scheduleDepth();
-  }, { passive: true, signal: events.signal });
-  motion.addEventListener('change', onMotionChange, { signal: events.signal });
-  depthScreen.addEventListener('change', scheduleDepth, { signal: events.signal });
-  coarseScreen.addEventListener('change', resizeParticles, { signal: events.signal });
-  document.addEventListener('visibilitychange', onVisibilityChange, { signal: events.signal });
-  window.addEventListener('pagehide', function (event) {
+  }, { passive: true });
+  events.listen(motion, 'change', onMotionChange);
+  events.listen(depthScreen, 'change', scheduleDepth);
+  events.listen(coarseScreen, 'change', resizeParticles);
+  events.listen(document, 'visibilitychange', onVisibilityChange);
+  events.listen(window, 'pagehide', function (event) {
     suspended = true;
     document.body.classList.add('effects-paused');
     stopFrames();
@@ -3292,14 +3514,14 @@ plt.show()</pre>
       if (revealObserver) revealObserver.disconnect();
       events.abort();
     }
-  }, { signal: events.signal });
-  window.addEventListener('pageshow', function () {
+  });
+  events.listen(window, 'pageshow', function () {
     suspended = document.hidden;
     document.body.classList.toggle('effects-paused', suspended);
     resizeParticles();
     startParticles();
     scheduleDepth();
-  }, { signal: events.signal });
+  });
 }());
 </script>
 <script data-showcase-source="showcase-demo.js">
@@ -3317,7 +3539,7 @@ plt.show()</pre>
   var reset = section.querySelector('.curve-reset');
   if (!chart || !slider || !toggle || !status || !reset) return;
   var motion = window.matchMedia('(prefers-reduced-motion: reduce)');
-  var events = new AbortController();
+  var events = window.BreakGlassMotion.createListeners();
   var duration = 6000;
   var elapsed = 0, last = 0, painted = 0, frame = 0;
   var running = false, visible = false, started = false, ownInput = false, disposed = false;
@@ -3377,16 +3599,16 @@ plt.show()</pre>
     stop('manual', '手动控制 · 参数保持你的选择。');
   }
   toggle.hidden = false;
-  toggle.addEventListener('click', function () {
+  events.listen(toggle, 'click', function () {
     if (running) stop('paused', '变化已暂停 · 可继续或亲手调节。'); else play();
-  }, { signal: events.signal });
-  slider.addEventListener('input', manual, { signal: events.signal });
+  });
+  events.listen(slider, 'input', manual);
   // Stop before a keyboard/pointer edit; reset never restarts autoplay.
-  slider.addEventListener('pointerdown', manual, { signal: events.signal });
-  reset.addEventListener('click', function () {
+  events.listen(slider, 'pointerdown', manual);
+  events.listen(reset, 'click', function () {
     started = true; elapsed = 0;
     stop('manual', '已恢复原曲线 · a = 0.65。');
-  }, { signal: events.signal });
+  });
   function preference() {
     toggle.disabled = motion.matches;
     if (motion.matches) stop('reduced', '已减少动态效果 · 曲线仍可手动调节。');
@@ -3402,15 +3624,15 @@ plt.show()</pre>
   }, { threshold: [0, .05] }) : null;
   if (observer) observer.observe(livePanel || chart);
   else { visible = true; started = true; section.classList.add('plot-entered'); }
-  document.addEventListener('visibilitychange', function () {
+  events.listen(document, 'visibilitychange', function () {
     if (document.hidden && running) stop('paused', '变化已暂停 · 可继续或亲手调节。');
-  }, { signal: events.signal });
-  motion.addEventListener('change', preference, { signal: events.signal });
-  window.addEventListener('pagehide', function (event) {
+  });
+  events.listen(motion, 'change', preference);
+  events.listen(window, 'pagehide', function (event) {
     stop('paused', '变化已暂停 · 可继续或亲手调节。');
     if (!event.persisted) { disposed = true; if (observer) observer.disconnect(); events.abort(); }
-  }, { signal: events.signal });
-  window.addEventListener('pageshow', function (event) { if (event.persisted) preference(); }, { signal: events.signal });
+  });
+  events.listen(window, 'pageshow', function (event) { if (event.persisted) preference(); });
   preference();
 })();
 </script>
