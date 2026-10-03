@@ -19,6 +19,10 @@ require('../../extension/src/preset/load');
 require('../../extension/src/preset/place-in-frame');
 require('../../extension/src/lesson/reading');
 require('../../extension/src/lesson/ask');
+require('../../extension/src/tutor/numbers');
+require('../../extension/src/tutor/figures');
+require('../../extension/src/tutor/parse');
+require('../../extension/src/tutor/ask');
 
 const ELEMENT_IDS = [
   'demo-video', 'video-stage', 'target-time', 'play-toggle', 'jump-target',
@@ -29,7 +33,8 @@ const ELEMENT_IDS = [
   'waiting-bar', 'waiting-progress', 'fullscreen-button',
   'wake-reason', 'reset-reason', 'local-video', 'preset-video',
   'lesson-status', 'lesson-cancel', 'lesson-next', 'lesson-endpoint', 'lesson-note',
-  'stage-banner', 'stage-banner-title', 'stage-banner-detail'
+  'stage-banner', 'stage-banner-title', 'stage-banner-detail',
+  'tutor-form', 'tutor-input', 'tutor-send', 'tutor-log', 'tutor-hint', 'tutor-examples'
 ];
 
 // 忠实一点的 style 替身：main.js 会同时用 style.left = ... 和 style.setProperty。
@@ -276,8 +281,9 @@ async function createHarness(options = {}) {
   const elements = {};
   for (const id of ELEMENT_IDS) {
     const tag = id === 'demo-video' ? 'video'
-      : (id === 'preset-video' ? 'button'
-        : (id === 'parameter-h' || id === 'local-video' || id === 'lesson-endpoint' || id === 'lesson-note' ? 'input' : 'div'));
+      : (id === 'preset-video' || id === 'tutor-send' ? 'button'
+        : (id === 'tutor-form' ? 'form'
+          : (id === 'parameter-h' || id === 'local-video' || id === 'lesson-endpoint' || id === 'lesson-note' || id === 'tutor-input' ? 'input' : 'div')));
     elements[id] = element(tag);
   }
   applyMarkupState(elements);

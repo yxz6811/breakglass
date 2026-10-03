@@ -370,6 +370,43 @@ body:has(.lg-dock[data-hold='true']) .app-shell { padding-top: 96px; }
 /* ---------- 参数行（规范 §3.2）---------- */
 .control-panel .parameter-row { margin-bottom: 18px; }
 
+/* ---------- 旁边提问：记录区限高滚动，问与答用前缀区分，不只靠颜色 ---------- */
+.tutor { margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--line); }
+.tutor__title { margin: 0 0 6px; font-size: 15px; }
+.tutor__hint { margin: 0 0 10px; color: var(--muted); font-size: 12px; line-height: 1.5; }
+.tutor__log {
+  display: grid;
+  gap: 8px;
+  max-height: 220px;
+  margin-bottom: 10px;
+  padding: 10px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.04);
+  font-size: 13px;
+  line-height: 1.55;
+}
+.tutor__entry { margin: 0; overflow-wrap: anywhere; }
+.tutor__who { font-weight: 700; }
+.tutor__entry--user .tutor__who { color: var(--muted); }
+.tutor__entry--tutor .tutor__who { color: var(--accent); }
+.tutor__entry--note { color: var(--muted); font-size: 12px; }
+.tutor__examples { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.tutor__examples button { padding: 5px 9px; border-radius: var(--radius-pill); font-size: 12px; text-align: left; }
+.tutor__form { display: flex; gap: 8px; }
+.tutor__form input {
+  flex: 1 1 auto;
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+  background: rgba(8, 17, 31, 0.65);
+  color: inherit;
+}
+.tutor__form button { flex: none; font-weight: 700; }
+
 /* ---------- 响应式（规范 §6.5）---------- */
 @media (max-width: 1050px) {
   .lg-item { width: 44px; height: 44px; }
@@ -503,4 +540,5 @@ button:disabled, input:disabled { opacity: 0.42; }
 /* 滑块与输入框 */
 input[type='range'] { accent-color: var(--accent); }
 input[type='number'], input[type='text'] { color: var(--ink); background: rgba(255, 255, 255, 0.82); border: 1px solid var(--line); }
+.tutor__log { background: rgba(255, 255, 255, 0.55); }
 ::selection { background: rgba(113, 221, 255, 0.45); color: #0B1A26; }

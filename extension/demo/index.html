@@ -19,6 +19,10 @@
     <script defer src="../src/preset/place-in-frame.js"></script>
     <script defer src="../src/lesson/reading.js"></script>
     <script defer src="../src/lesson/ask.js"></script>
+    <script defer src="../src/tutor/numbers.js"></script>
+    <script defer src="../src/tutor/figures.js"></script>
+    <script defer src="../src/tutor/parse.js"></script>
+    <script defer src="../src/tutor/ask.js"></script>
     <script defer src="../src/page/main.js"></script>
   </head>
   <body>
@@ -154,6 +158,21 @@
             <input id="parameter-k" type="range" min="-2" max="2" step="0.1" value="1" disabled>
           </div>
           <p class="source-note" id="source-note">数据来源将在交互出现后显示。</p>
+          <section class="tutor" aria-labelledby="tutor-title">
+            <h3 class="tutor__title" id="tutor-title">问一问</h3>
+            <p class="tutor__hint" id="tutor-hint">先破壁，再问这条曲线。</p>
+            <div class="tutor__log" id="tutor-log" role="log" aria-live="polite" aria-label="提问记录" tabindex="0" hidden></div>
+            <div class="tutor__examples" id="tutor-examples" role="group" aria-label="可以这样问">
+              <button type="button" data-tutor-example="把顶点高度改成 -1" disabled>把顶点高度改成 -1</button>
+              <button type="button" data-tutor-example="x 等于 1 时 y 是多少" disabled>x 等于 1 时 y 是多少</button>
+              <button type="button" data-tutor-example="如果开口是 0.5，x 等于 2 时 y 是多少" disabled>如果开口是 0.5，x=2 时 y 是多少</button>
+            </div>
+            <form class="tutor__form" id="tutor-form" autocomplete="off">
+              <label class="sr-only" for="tutor-input">向提问区提问</label>
+              <input id="tutor-input" type="text" maxlength="120" placeholder="例：把顶点高度改成 -1" aria-describedby="tutor-hint" disabled>
+              <button type="submit" id="tutor-send" disabled>问</button>
+            </form>
+          </section>
         </aside>
       </section>
 
