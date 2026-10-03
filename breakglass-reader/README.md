@@ -8,11 +8,11 @@ BreakGlass 演示页「开播前阅读」用的外部服务。页面把一支片
 
 - 已经做完：请求校验、读 JPEG 尺寸、调 OpenAI 兼容接口、由锚点算区域、用扩展自带的 `reading.js` 自检、跨域、日志不留画面和课程正文。
 - 测过的：本目录 `npm test`（模型是不联网的替身）；用一个不看图、按秒数作答的本机替身模型，把演示页、服务和破壁连起来跑过一次，记录在 `docs/BreakGlass-frontend-validation.md` §7。
-- 用智谱 `glm-4.6v-flash` 读过 9 秒片的一帧：方程读成 `y = x² + 1`，像素锚点对不上画面，这一帧被丢掉。这不代表 SC-003、SC-004、SC-005 或 2% 对齐已经通过。
+- 用智谱 `glm-4.6v-flash` 读 9 秒片时，方程能读成 `y = x² + 1`，但像素锚点经常落在画面外面或互相矛盾。服务在方程成立时改为在 JPEG 里寻找和这条方程重合的细线，不再只用模型报的像素。这不代表 SC-003、SC-004、SC-005 已经通过。
 
 ## 准备
 
-- Node 22.9 或更新（用到 `--env-file-if-exists`、`AbortSignal.any`）。没有第三方依赖，不用 `npm install`。
+- Node 22.9 或更新（用到 `--env-file-if-exists`、`AbortSignal.any`）。没有第三方依赖，不用 `npm install`。在画面里找曲线需要本机有 `ffmpeg`；没有时仍只用模型给的锚点。
 - 默认从旁边的 `extension/` 读取页面规则。目录不在仓库里的这个位置时，用 `BREAKGLASS_EXTENSION_DIR` 指向 `extension`。
 - 一个能看图片的模型，以及它的 OpenAI 兼容地址和密钥。
 
