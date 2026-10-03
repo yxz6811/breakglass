@@ -112,3 +112,11 @@ Logo 入场：初始独立图标位于视口中心，字标出现时形成居中
 - 保留整个导航栏与 Logo 的入场时序；900px 以下操作区靠右，380px 以下只保留 GitHub 图标，并保留可访问名称与 44px 点击区域。
 - 浏览器检查 1280×800 与 320×844：入口可见，链接地址正确，窄屏无横向溢出且不覆盖 Logo 或原按钮。
 - `node scripts/build-showcase.mjs`：三个根入口字节一致，各 1844257 字节；`node scripts/check.mjs`：88 个 JS/MJS、189 个本地引用通过；七项安全回归测试与 `git diff --check` 通过。
+
+## 首屏视频演示入口
+
+依据 [Constitution](../BreakGlass-constitution.md)，在“体验破壁”左侧增加“视频破壁演示”描边按钮，原生链接跳转用户指定的 `https://yangxizhe.com/breakglass/extension/demo/index.html`，沿用首屏入场时序与来源信息保护。
+
+- 桌面三按钮居中并保持 48px 高度；600px 以下新入口独占首行，原两个按钮并排第二行。
+- 浏览器检查 1280×800 与 320×844：按钮顺序正确，没有横向溢出或按钮文字溢出。实际点击新增按钮后，网址为指定 HTTPS 地址，页面显示“让视频里的抛物线可以被调节”及演示控制。这项验证只覆盖链接导航，不代表远端工作台全部交互已验证。
+- `node scripts/build-showcase.mjs`：三个根入口各 1844661 字节；`node scripts/check.mjs`：88 个 JS/MJS、189 个本地引用及内联脚本通过；`node --test tests/showcase-security.test.js`：7/7 通过；`git diff --check` 通过。

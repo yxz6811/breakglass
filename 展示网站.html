@@ -1176,8 +1176,9 @@ button:disabled, input:disabled, select:disabled { opacity: .45; cursor: default
   .brand-intro .wordmark-window { width: 100%; flex: initial; }
   .brand-intro .mission { max-width: 11ch; margin-inline: auto; font-size: clamp(32px,8vw,42px); line-height: 1.35; }
   .brand-intro .ambition { max-width: 22ch; font-size: 15px; margin-top: 20px; }
-  .brand-intro .hero-actions { margin-top: 28px; gap: 12px; }
-  .brand-intro .hero-actions .btn { padding-inline: 18px; font-size: 14px; }
+  .brand-intro .hero-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); width: min(100%, 340px); margin: 28px auto 0; gap: 12px; }
+  .brand-intro .hero-actions .btn { min-width: 0; padding-inline: 18px; font-size: 14px; }
+  .brand-intro .hero-actions .video-demo-link { grid-column: 1 / -1; }
   .brand-intro .motion-tools { margin-top: 18px; }
   .brand-intro .tweaks-panel { right: -10px; width: 286px; }
   .brand-intro .scope-note { max-width: 28ch; margin-inline: auto; font-size: 11px; }
@@ -1479,6 +1480,7 @@ body.effects-paused *, body.effects-paused *::before, body.effects-paused *::aft
     <h1 class="mission" id="mission">从观看，到<span>亲手验证。</span></h1>
     <p class="ambition">从一条曲线开始，让屏幕里的知识成为可以探索的世界。</p>
     <div class="hero-actions">
+      <a class="btn ghost video-demo-link" href="https://yangxizhe.com/breakglass/extension/demo/index.html" rel="noreferrer"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m8 5 11 7-11 7Z"/></svg>视频破壁演示</a>
       <a class="btn primary" href="#p5">体验破壁 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-5-5 5 5-5 5"/></svg></a>
       <a class="btn ghost" href="#p3">了解如何实现</a>
     </div>

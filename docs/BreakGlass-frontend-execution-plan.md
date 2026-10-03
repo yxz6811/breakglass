@@ -1,6 +1,10 @@
 # BreakGlass（破壁）前端执行计划
 
-> 2026-10-03 范围补充：本文件主体保留原抛物线前端基线；005 的完整执行顺序以 [当前帧直角三角形实施计划](../specs/005-insitu-right-triangle/plan.md) 与 [任务清单](../specs/005-insitu-right-triangle/tasks.md) 为准，覆盖扩展、本地 reader、几何计算及模型接入。依据 `AGENTS.md` 第 0 节、[Constitution 1.7.1](BreakGlass-constitution.md) 与 Spec Constitution 1.9.1 原则 VIII，不再套用仅前端限制。
+> 2026-10-03 范围补充：本文件主体保留原抛物线前端基线；005 的完整执行顺序以 [当前帧直角三角形实施计划](../specs/005-insitu-right-triangle/plan.md) 与 [任务清单](../specs/005-insitu-right-triangle/tasks.md) 为准，覆盖扩展、本地 reader、几何计算及模型接入。最新依据为 `AGENTS.md` 第 0 节、[Constitution 1.8.0](BreakGlass-constitution.md) 与 Spec Constitution 1.10.0，005 按原则 VIII，独立当前帧曲线按需识别按原则 IX 与 [本次计划](./BreakGlass-current-frame-plan-2026-10-03.md) 执行。
+
+## 2026-10-03 当前帧曲线执行补充
+
+本次独立增强依次落实单帧契约适配、曲线页当前帧入口与媒体代次取消、请求/页面替身回归、浏览器操作与真实模型验收。复用现有 `POST /read` 和 `CurveResult/createWake`，不新增后端或完整 Spec Kit 套件。单帧识别采用 30s 开发默认，300s 预读与 1500ms 唤醒保持独立；失败保留当前视频，不挂无关预设。需求与验收门槛以 [本次计划](./BreakGlass-current-frame-plan-2026-10-03.md) 为准，本节不修改原任务勾选或历史验证结论。
 
 ## 2026-10-03 新切片执行补充
 

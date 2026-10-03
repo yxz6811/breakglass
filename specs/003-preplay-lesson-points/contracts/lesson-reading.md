@@ -2,7 +2,7 @@
 
 **Status**: 本功能的验收契约  
 **Consumers**: 阅读校验、演示页、「下一个」  
-**Non-consumers**: 感知代理、`createWake` 的参数形状。既有阅读服务在 `breakglass-reader/`，按 Constitution 1.8.0 的独立例外维护，不打入扩展包。
+**Non-consumers**: 感知代理、`createWake` 的参数形状。既有阅读服务在 `breakglass-reader/`，按 [Spec Constitution 1.10.0 原则 VII](../../../.specify/memory/constitution.md) 的独立例外维护，不打入扩展包。
 
 点内曲线引用 [001 CurveResult](../../001-insitu-parabola/contracts/curve-result.md)。`time` 单位是秒。
 
@@ -125,5 +125,5 @@
 
 - 不改变 `createWake` 的参数和 `fallbackAfterMs: 1500`。
 - 不定义外部服务的实现。
-- 不授权破壁或「下一个」时补送画面。
+- 本 003 预读契约不授权缓存破壁或「下一个」时补送画面；2026-10-03 独立当前帧曲线增强另按 Constitution 原则 IX 和 [当前帧计划](../../../docs/BreakGlass-current-frame-plan-2026-10-03.md) 复用 `/read` 单帧，不修改本契约的采样、保留或 300000ms 规则。
 - 不授权把第 6 秒的预制曲线画到尺寸不符的帧上。

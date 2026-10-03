@@ -1,18 +1,19 @@
 <!--
 Sync Impact Report
-- Version change: 1.9.0 → 1.9.1
+- Version change: 1.9.1 → 1.10.0
 - Modified principles:
-  - 无原则变化；仅澄清 005 实施状态以任务清单和验证记录为准
-- Added sections: 无
+  - II / III / VII：将既有预读与新授权的当前帧曲线请求分开，明确复用 /read 的来源与预算
+  - VI / 交接接口：同一 createWake 增加显式 cachedReading 选项和 startCached 缓存入口，不新增工厂或状态
+- Added sections: IX. 当前帧曲线按需识别
 - Removed sections: 无
 - Templates status: 依赖模板在运行时读取本文件，本次未改模板
 - Deferred TODOs:
   - TODO(SEAM_CODE): 已收敛。wake.js 只导出 createWake，页面改走 onChange，fail 只接受 (code, message)
   - TODO(SEAM_DOCS): 已回写。ownership.md、plan-story-2.md 附录 B、ownership-story-2.md 改为引用本节
-  - TODO(FRAME_UPLOAD): 001/003 仍不允许破壁补送单帧。005 按原则 VIII 独立入口允许显式触发的当前帧；整段原视频上传仍不在范围。
+  - TODO(FRAME_UPLOAD): 原 001/003 缓存破壁不补送单帧；用户于 2026-10-03 授权的独立当前帧曲线增强按原则 IX 请求一帧。005 按原则 VIII 执行；整段原视频上传仍不在范围。
   - TODO(VISION_FIXTURE): `visionAdapter` 只允许 `fixture`（随扩展打包的识别样例）；它不等于外部识别已接通，也不授权破壁时上传
   - TODO(PROXY_RUNTIME): 感知代理的语言、框架和部署形态未冻结
-  - TODO(DOC_SYNC): docs/BreakGlass-constitution.md 已同步为 1.7.1；005 的系统范围以原则 VIII 为准，实施状态以任务与验证记录为据。
+  - TODO(DOC_SYNC): docs/BreakGlass-constitution.md 已同步为 1.8.0；005 按原则 VIII，当前帧曲线按原则 IX 与独立计划执行；批准范围不等于真实模型验收通过。
   - TODO(REPO_BOUNDARY): 2026-10-03 起，阅读服务源码放在 `breakglass-reader/`。不打进扩展包，密钥不入库，不部署成云端后台。扩展与演示页仍只做前端
   - TODO(RESET_EXIT): 重置是否保留交互层、退出后是否保持暂停，执行计划仍标为未确认
   - TODO(CURVE_FORM): 抛物线参数形式、初值、范围和步长必须来自最终演示素材，本文件不预设公式
@@ -39,7 +40,7 @@ Python/Pyodide、本地 Web Worker 和真实视觉识别各自是独立 P1。每
 
 该代理不得成长为产品中枢。账号、登录、权限系统、数据库、历史记录、分享、代码执行容器，以及与核心演示无关的 SaaS 能力，仍然禁止。P1 的 Python 执行留在扩展内的 Web Worker，不迁到服务端。
 
-001/003 破壁点击时的单帧上传仍未获准。其计划与实现不得先做唤醒路径上的上传接口。原则 VII 允许片子可以播放而阅读自行开始时，课程文本和至多 8 张稀疏关键帧离开浏览器。005 当前帧单场景识别另按原则 VIII；整段原视频上传与日志、历史外传均不在范围。
+原 001/003 的缓存破壁路径仍只取已存结果。原则 VII 允许开播前阅读送出课程文本和至多 8 张稀疏关键帧；2026-10-03 用户另行授权的当前帧曲线按需识别按原则 IX 显式送出一帧，复用本仓库已有 `POST /read`，不新增后端。005 当前帧单场景识别另按原则 VIII；整段原视频上传与日志、历史外传均不在范围。
 
 ### III. 同一契约，进入执行层前双重校验
 
@@ -49,7 +50,7 @@ Python/Pyodide、本地 Web Worker 和真实视觉识别各自是独立 P1。每
 
 进入交互层前必须通过：固定 JSON Schema、白名单曲线或 AST 节点、语法限制、有限值、尺寸和参数范围，以及 `requestId`、`videoId`、时间和可选置信度。Schema 必须写明 `time` 的单位。字段缺失、解析失败、数值非有限、帧不匹配或低于约定置信度时，必须拒绝。
 
-`source` 只允许 `vision` 或 `preset`。代理只能标记 `vision`，不得把模型输出标成预制成功。界面必须持续展示来源和回退原因。置信度缺失时不得编造准确率。
+`CurveResult.source` 只允许 `vision` 或 `preset`。直接视觉适配按其契约标记 `vision`。原则 VII / IX 复用的既有 `/read` 返回 `origin: external`，点内曲线保持 `source: preset`、`fallback: null`，表示进入现有缓存绘制通道，不表示包内示例识别成功；界面必须依据请求来源显示“这次阅读”或“当前帧识别”，不得改成 `packaged-sample` 或编造来源枚举。界面持续展示来源和失败原因。置信度缺失时不得编造准确率。
 
 严禁把识别出或修改后的代码交给大模型，让它预测输出或模拟逻辑。代码结果只能来自确定性本地执行器、断言和可记录的运行状态。
 
@@ -96,7 +97,7 @@ P0 的上游截止时间是 1500ms。客户端断开或到达该截止时间时�
 - 来源必须诚实。阅读得到的点显示「这次阅读」，不得写成识别成功，也不得显示「识别结果」。预先准备的片子在其自身的单点演示中仍显示「预先准备的示例」。
 - 通过校验并完成破壁的点，必须能读到 `contentRect`，且 `maxRatio` ≤ 0.02。尺寸或区域未通过的点不进入这道 2% 计算。该测量目前没有记录，验收保持未通过。
 - 读失败、断网，或 5 分钟内一处都没有通过时，丢掉失败这支片子上的点，画面留在用户选中的那一支，不自动换回预先准备的片子。预先准备的片子只在用户点「选择预设」时播放。验收用的另一支片子，地址不得是 `breakglass-demo-9s.mp4`。
-- 允许离开浏览器的只有：这次阅读所附课程文本（可空，最长 8000 字），以及至多 8 张稀疏关键帧。不得发送整段原视频，不得在破壁或「下一个」时补送当前帧，不得把文本、帧、密钥或上游原文写入日志、历史或仓库。
+- 本 003 预读路径允许离开浏览器的只有课程文本（可空，最长 8000 字）和至多 8 张稀疏关键帧；其缓存破壁与「下一个」不补送当前帧。独立当前帧增强按原则 IX 执行。所有路径均不得发送整段原视频，不得把文本、帧、密钥或上游原文写入日志、历史或仓库。
 - 浏览器包内不得放置模型密钥或阅读地址。不新建数据库或账号，也不把阅读服务部署成云端后台。阅读服务的源码放在本仓库 `breakglass-reader/`，不打进扩展包；模型密钥只留在该目录未提交的 `.env`。
 
 ### VIII. 当前帧直角三角形学习闭环（005）
@@ -113,9 +114,22 @@ P0 的上游截止时间是 1500ms。客户端断开或到达该截止时间时�
 - 005 通过独立入口与会话实施，不替换下文的曲线交接接口，不改变 `createWake`、`CurveResult`、003 的开播前阅读或 `fallbackAfterMs: 1500`。004 的多曲线与旁边提问保持独立，其不识别新图形的要求不限制 005。
 - 原帧与数学示意图并列可追溯。重建示意图按条件验收；001/003 的 2% 原位叠加测量不能代替几何关系正确性。005 验收分别记录算法与画板、预设/手工闭环、真实模型闭环及理解问题结果。长期记忆提升需独立延迟测试。
 
+### IX. 当前帧曲线按需识别
+
+2026-10-03 用户明确要求修复“曲线模式用自己的视频不能自由破壁”，并澄清目标为“任意暂停帧自动识别画面曲线”。本次以用户显式触发的独立单帧增强实施：用户可自行选择暂停时刻后请求识别这一帧，暂停、填地址或加载视频本身不触发单帧上传。需求、方案与验收边界见 [当前帧曲线计划](../../docs/BreakGlass-current-frame-plan-2026-10-03.md)。
+
+- 首版仍只识别清晰录屏或固定机位课件中的一条完整抛物线。任意暂停时刻表示不受 003 稀疏采样点限制，不承诺任意视频、所有曲线或多对象都能识别。004 的直线、圆、正弦仍为本地数学探索；005 直角三角形保持独立。
+- 复用已实现的本地无状态 `POST /read`，每次只提交一张宽不超过 640 的 JPEG，以及请求编号、当次视频绑定、秒级时间、视频时长、源尺寸和可空课程说明。不新增后端、请求端点、`CurveResult` 枚举、唤醒工厂或会话状态。密钥仅在 reader 环境；模型指令和 Schema 仍在 reader，页面说明帧将交给已配置供应商。
+- 独立适配器严格复核响应 `readingId`、`videoId`、`duration`、`origin: external`；仅接纳当前提交时间上的合法点，点内 `id/requestId`、视频、时间、源尺寸及曲线定义须与本次上下文一致。未知或非法结构、无点、不支持、非有限数、越界区域都拒绝，不能靠重新绑定成演示夹具通过。
+- 识别前要求视频可解码、已暂停且未定位中；请求 token 和媒体 epoch 绑定视频源、时间和源尺寸。成功校验后才把当前帧自己的缓存结果交给既有 `createWake`。进入绘制前仍经过既有 `CurveResult` / Session 校验，不直接在页面调用 `resolve` 或 `fail`。
+- 显式单帧操作开始后，旧预读或旧单帧任务不得抢走当前时间和覆盖层。播放、定位、换视频、地址变更、取消、退出、媒体错误或离开页面均使相应旧请求作废；即使播放或定位后又回到同一秒，也不能接受旧结果。取消不仅依赖 AbortSignal，还必须有代次检查。
+- 单帧请求开发默认截止 30s，独立计时并取消迟到响应；取消须传递至已有 reader 和上游。该值待真实模型预跑冻结，不能写成已测性能。不改 003 的 300s 预读截止、001 的 `fallbackAfterMs: 1500` 或热缓存绘制计时。
+- 空地址、失败、超时、校验失败或不支持时保留用户视频，显示原因并允许显式重试；不挂 `demo-parabola`，不自动换回 9 秒片，不静默模拟识别成功。已缓存的匹配点继续支持原有快速破壁；来源和当前帧等待状态明确分开。
+- 自动化可证明契约、取消与页面状态，不证明真实模型识别准确率、完整 MV3 链路、四画幅 2% 对齐或真实像素呈现。上述验收须独立记录，不改历史任务勾选和旧报告。
+
 ## 交接接口
 
-本节是 001/003 曲线功能在扩展包内的唯一交接面，挂在 `BreakGlass` 上。它不描述感知代理，也不授权网络请求。005 的几何题会话按原则 VIII 与独立契约实施，不为曲线接口新增别名。修改本节名字、参数顺序或状态字段必须先修订本文件。
+本节是 001/003 及原则 IX 当前帧曲线在扩展包内的唯一交接面，挂在 `BreakGlass` 上。它不描述感知代理，也不授权网络请求；原则 IX 的请求由独立适配器负责，成功缓存通过下列 `startCached` 进入既有会话。005 的几何题会话按原则 VIII 与独立契约实施，不为曲线接口新增别名。修改本节名字、参数顺序或状态字段必须先修订本文件。
 
 ### 时钟
 
@@ -177,10 +191,11 @@ new SessionController({
 createWake({
   session,    // SessionController
   config,     // 每次判定重新读取 enableLocalMock、fallbackAfterMs、prewarmed、externalAttempt、visionAdapter
-  preset,     // 已装入的预制结果；没有则为 null。不得改成 resolvePreset 回调
+  preset,     // 已装入的预制结果，或原则 IX 严格校验的阅读缓存；没有则为 null
   clock,
   onChange,   // (state) => void，state 与 getState() 同形
-  attempt     // 仅测试可注入 { start, abort }；页面不得传入，也不得引用 attempt 模块
+  attempt,    // 仅测试可注入 { start, abort }；页面不得传入，也不得引用 attempt 模块
+  cachedReading // 可选；仅严格 true 开启下列 startCached，缺省/其他值不启用
 })
 ```
 
@@ -189,13 +204,17 @@ createWake({
 ```javascript
 start({ paused, currentTime, frameSize })
   // => { ok, code?, message?, requestId? }
+startCached({ paused, currentTime, frameSize })
+  // => 与 start 同形；仅消费严格校验的阅读缓存，不发请求
 cancel()                 // => state，回到 paused-ready
 exit()                   // => state，回到 paused-ready
 onPlaybackChange({ paused, currentTime })  // => state
 dispose()                // 清理定时器；等待、交互或可恢复错误中则结束会话
 ```
 
-`onChange` 在状态变化时发出。`visionAdapter` 缺省或为 `"off"` 时，`interactive` 的 `result.source` 只能是 `preset`，`result.fallback` 为 `null` 或 `"timeout"`；仅当 `visionAdapter` 为 `"fixture"` 且 `externalAttempt` 为 `"off"` 时，允许 `result.source` 为 `"vision"`、`result.fallback` 为 `null`，并且必须携带 `result.evidence === "packaged-sample"`。其他 `visionAdapter` 取值一律视为 `"off"`。回调不得另带 `fallback`、`reason`、`elapsedMs`、`decisionAt` 或 `discarded`。是否等待只看 `status === "waiting"`。
+`startCached` 必须由工厂选项 `cachedReading === true` 显式启用，不能用真值字符串替代。输入要求 `paused === true`、有限当前时间、正安全整数源宽高；缓存须保持 `source: preset`、`fallback: null`，视频绑定与会话一致，缓存时间精确等于 `session.targetTime`，缓存、会话和当前源尺寸一致。当前播放位置仍通过既有 ±0.2 秒暂停门禁。规则层先复核缓存本身编号与完整 `CurveResult`，再装订本次会话编号并提交；不得缩放画幅、洗掉来源或让页面直接调用 `beginWait/resolve/fail`。该入口忽略 `enableLocalMock`，不启动 1500ms 看门狗、打包识别样例或外部演练替身；原 `start` 的配置与回退语义不变。
+
+`onChange` 在状态变化时发出。`visionAdapter` 缺省或为 `"off"` 时，`interactive` 的 `result.source` 只能是 `preset`，`result.fallback` 为 `null` 或 `"timeout"`；仅当 `visionAdapter` 为 `"fixture"` 且 `externalAttempt` 为 `"off"` 时，允许 `result.source` 为 `"vision"`、`result.fallback` 为 `null`，并且必须携带 `result.evidence === "packaged-sample"`。其他 `visionAdapter` 取值一律视为 `"off"`。回调不得另带 `fallback`、`reason`、`elapsedMs`、`decisionAt` 或 `discarded`。本唤醒会话是否等待只看 `status === "waiting"`；原则 IX 的 30s 网络等待在页面适配层独立管理。
 
 `externalAttempt === "off"` 时，匹配的预制结果立即进入 `interactive`。`hang` 与 `late` 在 `fallbackAfterMs`（必须为 1500）到期后才可以回退。`invalid` 不得画成成功。取消、退出、播放或离开目标时间之后，迟到结果不得再改变状态。
 
@@ -309,7 +328,7 @@ Spec、Plan、Tasks 和代码审查必须能指出：当前能力属于 P0 预�
 
 本文件是 BreakGlass 已定产品约束的单一治理源，也是 Spec Kit 的治理源。优先级为：本文件 > 已确认的需求和接口契约 > Plan 与 Tasks > 实现偏好。根目录 `AGENTS.md` 继续规定本仓库的前端工程做法；产品范围与本文件冲突时，以本文件为准。
 
-`docs/BreakGlass-constitution.md` 1.7.1 已指向本文件。既有服务端角色以原则 II 为准，开播前阅读以原则 VII 为准，005 的系统范围以原则 VIII 与 `AGENTS.md` 第 0 节为准。阅读服务源码可以放在 `breakglass-reader/`，不打进扩展包。005 可扩展该本地无状态 reader，其独立接口与预算必须有契约和验证。
+`docs/BreakGlass-constitution.md` 1.8.0 已指向本文件。既有服务端角色以原则 II 为准，开播前阅读以原则 VII 为准，005 的系统范围以原则 VIII 为准，当前帧曲线按需识别以原则 IX 与 `AGENTS.md` 第 0 节为准。阅读服务源码可以放在 `breakglass-reader/`，不打进扩展包；独立增强只能扩展或复用这一本地无状态 reader，其接口与预算须有契约和验证。
 
 005 的实施与验收状态以 [任务清单](../../specs/005-insitu-right-triangle/tasks.md) 和 [几何验证记录](../../docs/BreakGlass-geometry-validation.md) 为准。治理文本批准范围，不能替代真实模型与完整产品证据；部分实施不得标记为完整验收通过。
 
@@ -319,9 +338,9 @@ Spec、Plan、Tasks 和代码审查必须能指出：当前能力属于 P0 预�
 
 每次 Spec、Plan、Tasks 和代码审查都要检查：P0 能否离线演示、技术路线是否只选一条、MV3 权限与 CSP 是否写入计划、服务端任务是否越出感知代理、密钥是否可能进入浏览器、Schema 与结构化指令是否在服务端、`time` 单位是否写明、上游调用是否在截止时间中止、调用预算用尽后是否停止、固定夹具是否覆盖拒绝与放行、超时结果是否会被当成成功、P1 是否单独开关、页面与结果规则是否调用同一份交接接口、开播前阅读是否加长了 1500ms 或把一段视频的阅读结果套到另一段视频上。计划或测试里出现第二套工厂名、回调名或状态字段时，必须先改回本节，再继续实现。例外必须记录原因、影响、责任人、有效期限、恢复条件，以及是否阻塞 P0。没有记录的例外不算批准。
 
-本文件不授权在 `AGENTS.md` 修订前再新建别的后端，也不把未实现的 P1 视为已经完成。`breakglass-reader/` 是原则 VII 允许的那一份阅读服务源码。
+本文件不授权在 `AGENTS.md` 修订前再新建别的后端，也不把未实现的 P1 视为已经完成。`breakglass-reader/` 是原则 VII 允许、原则 VIII / IX 扩展或复用的那一份阅读服务源码。
 
-**Version**: 1.9.1 | **Ratified**: 2026-10-02 | **Last Amended**: 2026-10-03
+**Version**: 1.10.0 | **Ratified**: 2026-10-02 | **Last Amended**: 2026-10-03
 
 ## 变更记录
 
@@ -338,3 +357,4 @@ Spec、Plan、Tasks 和代码审查必须能指出：当前能力属于 P0 预�
 | 1.9.0 | 2026-10-03 | MINOR：新增原则 VIII，按用户最新范围记录 005 当前帧直角三角形学习闭环。允许本地 reader 的独立单帧识别与受限问答，补充校对、确定性解算、来源、帧/修订号绑定和独立预算；同步 AGENTS、前端基线、需求分析和执行计划。保留 001/003/004 与既有交接面；规划不等于实现。 |
 | 1.3.0 | 2026-10-02 | 冻结页面与结果规则的唯一交接接口：一个时钟、一个会话状态、一个 `createWake`，以及替身和内存计时的调用形状。禁止并行的唤醒工厂和别名字段。 |
 | 1.9.1 | 2026-10-03 | PATCH：澄清 005 的实施状态以任务清单与验证记录为准，同步产品 Constitution 1.7.1 和受影响文档。未改变范围、原则或准入门槛；真实模型及完整产品证据不足时仍保持部分完成。 |
+| 1.10.0 | 2026-10-03 | MINOR：新增原则 IX，记录用户授权的当前帧曲线按需识别。复用现有 `/read` 单帧和 `CurveResult` 缓存通道，同一 `createWake` 增加显式 `cachedReading/startCached`；明确严格身份/时间/尺寸校验、媒体代次取消及独立 30s 开发默认。保留 003 的 300s 预读与 001 的 1500ms 唤醒；失败保留视频不套示例。同步 AGENTS、产品 Constitution 1.8.0、使用说明与独立计划，真实模型仍单独验收。 |

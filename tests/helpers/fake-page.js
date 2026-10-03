@@ -9,6 +9,7 @@ const mainSource = fs.readFileSync(path.join(extensionDir, 'src/page/main.js'), 
 
 require('../../extension/src/curve/validate');
 require('../../extension/src/curve/evaluate');
+require('../../extension/src/curve/current-frame');
 require('../../extension/src/geometry/content-rect');
 require('../../extension/src/geometry/alignment');
 require('../../extension/src/geometry/figures');
@@ -136,6 +137,7 @@ function element(tagName) {
   };
   if (String(tagName).toLowerCase() === 'video') {
     node.duration = 0;
+    node.readyState = 2;
     node.src = '';
     node.seeking = false;
     // holdSeeks 为 true 时定位停在 seeking，直到测试调用 harness.finishSeek()。
@@ -299,13 +301,34 @@ async function createHarness(options = {}) {
   elements['video-stage'].rect = { left: 50, top: 0, width: 1400, height: 900 };
   elements['video-stage'].appendChild(elements['demo-video']);
 
+  const canvasCaptures = [], canvasEncodes = [];
+  const canvasOptions = options.canvas || {};
+  // A genuine local JPEG is an encoding fixture; this canvas double does not decode video pixels.
+  const canvasImage = 'data:image/jpeg;base64,' + fs.readFileSync(path.join(__dirname, '../../breakglass-reader/tests/helpers/fixtures/demo-6451-640x402.jpg')).toString('base64');
+  function createCanvas() {
+    const canvas = element('canvas');
+    canvas.width = 0; canvas.height = 0;
+    canvas.getContext = (type) => {
+      if (canvasOptions.context === false || type !== '2d') return null;
+      return { drawImage(source, ...args) {
+        canvasCaptures.push({ source, captureTime: source.currentTime, width: canvas.width, height: canvas.height, args });
+        if (canvasOptions.drawError) throw canvasOptions.drawError;
+      } };
+    };
+    canvas.toDataURL = (type, quality) => {
+      canvasEncodes.push({ type, quality, width: canvas.width, height: canvas.height });
+      if (canvasOptions.encodeError) throw canvasOptions.encodeError;
+      return canvasOptions.image === undefined ? canvasImage : canvasOptions.image;
+    };
+    return canvas;
+  }
   const documentListeners = new Map();
   const documentStub = {
     querySelector(selector) {
       const match = /^#(.+)$/.exec(selector);
       return match ? elements[match[1]] || null : null;
     },
-    createElement(tag) { return element(tag); },
+    createElement(tag) { return String(tag).toLowerCase() === 'canvas' ? createCanvas() : element(tag); },
     createElementNS(namespace, tag) { return element(tag); },
     addEventListener(type, handler) {
       const list = documentListeners.get(type) || [];
@@ -379,8 +402,11 @@ async function createHarness(options = {}) {
     now: fake.now,
     mediaQueries: fake.mediaQueries,
     observers: fake.observers,
+    canvasCaptures,
+    canvasEncodes,
     overlay() { return elements['video-stage'].children.find((child) => child.tagName === 'SVG') || null; },
     ready() {
+      video.duration = 9.383333;
       video.videoWidth = 1920;
       video.videoHeight = 1080;
       video.paused = true;

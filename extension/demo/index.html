@@ -22,6 +22,7 @@
     <script defer src="../src/preset/place-in-frame.js"></script>
     <script defer src="../src/lesson/reading.js"></script>
     <script defer src="../src/lesson/ask.js"></script>
+    <script defer src="../src/curve/current-frame.js"></script>
     <script defer src="../src/tutor/numbers.js"></script>
     <script defer src="../src/tutor/figures.js"></script>
     <script defer src="../src/tutor/parse.js"></script>
@@ -130,6 +131,13 @@
             </div>
             <div class="lesson-row">
               <p id="lesson-status" role="status" aria-live="polite"></p>
+              <label>阅读地址
+                <input id="lesson-endpoint" type="url" inputmode="url" autocomplete="off" placeholder="本机 reader 根地址或 /read" aria-describedby="current-frame-help">
+              </label>
+              <p id="current-frame-help">填入本地 reader 地址会先预读最多 8 帧；暂停后点破壁可改为只识别当前帧的抛物线。视频文件留在浏览器里，只提交截图。</p>
+              <label>课程说明
+                <textarea id="lesson-note" rows="2"></textarea>
+              </label>
               <button type="button" id="lesson-next" disabled aria-label="下一个">下一个</button>
               <button type="button" id="lesson-cancel" hidden aria-label="取消阅读">取消阅读</button>
             </div>
