@@ -86,11 +86,19 @@
         <div class="video-column">
           <div class="video-stage" id="video-stage">
             <video id="demo-video" data-video-id="fixture-parabola" preload="metadata" controls playsinline></video>
+            <div class="stage-banner" id="stage-banner" role="status" aria-live="polite" hidden>
+              <span class="stage-banner__mark" aria-hidden="true"></span>
+              <div>
+                <p class="stage-banner__title" id="stage-banner-title"></p>
+                <p class="stage-banner__detail" id="stage-banner-detail"></p>
+              </div>
+            </div>
             <div class="asset-empty" id="asset-empty">
-              <label class="stage-pick">选择视频
-                <input id="local-video" type="file" accept="video/*">
-              </label>
-              <p>文件留在这台浏览器里。</p>
+              <div class="stage-actions">
+                <button type="button" class="stage-pick" id="pick-video">选择视频</button>
+                <button type="button" class="stage-pick stage-pick--ghost" id="preset-video">选择预设</button>
+              </div>
+              <p>自己的文件留在这台浏览器里。选择预设会播放包内的 9 秒示例片。</p>
             </div>
           </div>
           <div class="transport" aria-label="视频控制">
@@ -102,10 +110,16 @@
               <span class="waiting-bar__text">正在等待外部结果…</span>
               <span class="waiting-bar__track" aria-hidden="true"><span class="waiting-bar__fill" id="waiting-progress"></span></span>
             </div>
+            <div class="stage-actions stage-actions--bar">
+              <label class="stage-pick stage-pick--ghost">选择视频
+                <input id="local-video" type="file" accept="video/*">
+              </label>
+              <button type="button" class="stage-pick stage-pick--ghost" data-choose-preset>选择预设</button>
+            </div>
             <div class="lesson-row">
               <p id="lesson-status" role="status" aria-live="polite"></p>
               <label>阅读地址
-                <input id="lesson-endpoint" type="url" inputmode="url" autocomplete="off" placeholder="留空会退回示例片">
+                <input id="lesson-endpoint" type="url" inputmode="url" autocomplete="off" placeholder="填上才开始看这支片子">
               </label>
               <label>课程说明
                 <textarea id="lesson-note" rows="2"></textarea>

@@ -81,18 +81,6 @@ async function openForeign(harness, options = {}) {
 }
 
 /**
- * 模拟退回后 9 秒片的元数据到位并停在 6 秒。
- * @param {Awaited<ReturnType<typeof createHarness>>} harness
- */
-function preparedLoaded(harness) {
-  const { video } = harness;
-  video.duration = 9;
-  video.paused = true;
-  video.currentTime = 6;
-  video.dispatch('loadedmetadata');
-}
-
-/**
  * @param {Awaited<ReturnType<typeof createHarness>>} harness
  * @returns {string}
  */
@@ -327,44 +315,121 @@ test('回包里先到的点先停；更早的后到点只入库，读完后没�
   }
 });
 
-test('空白地址：不发请求，立刻回到 9 秒片并恢复单点示例', async () => {
+test('空白地址：不发请求，用户选的片子留在画面上', async () => {
   const harness = await createHarness();
   try {
     const { elements, video, win } = harness;
     const { calls } = await openForeign(harness, { endpoint: '' });
     assert.equal(calls.length, 0);
-    assert.equal(String(video.src), PREPARED);
-    assert.equal(video.getAttribute('data-video-id'), 'fixture-parabola');
+    assert.match(String(video.src), /^blob:/);
+    assert.equal(video.getAttribute('data-video-id'), null);
     assert.equal(win.__breakglassLesson.binding(), null);
     assert.deepEqual(win.__breakglassLesson.points(), []);
-    assert.equal(status(harness), '外部阅读没有返回可用结果。已回到预先准备的片子。');
-    preparedLoaded(harness);
+    assert.equal(status(harness), '还没开始看。填上阅读地址后，这支片子会被看。');
+    assert.equal(elements['stage-banner'].dataset.mode, 'need-address');
+    assert.equal(elements['stage-banner-title'].textContent, '还没开始看');
+    assert.equal(elements['lesson-endpoint'].classList.contains('is-needed'), true);
     elements['wake-button'].dispatch('click');
-    assert.ok(harness.overlay());
-    assert.equal(elements['source-label'].textContent, '预先准备的示例');
+    assert.equal(harness.overlay(), null);
+    elements['preset-video'].dispatch('click');
+    await flush();
+    assert.equal(String(video.src), PREPARED);
   } finally {
     harness.restore();
   }
 });
 
-test('断网且一处都没有：回到 9 秒片', async () => {
+test('片子已经选中后再填阅读地址，会开始看', async () => {
+  const harness = await createHarness();
+  try {
+    const { elements } = harness;
+    await openForeign(harness, { endpoint: '' });
+    const calls = [];
+    const previous = globalThis.fetch;
+    globalThis.fetch = (url, init) => {
+      if (String(url) === ENDPOINT) {
+        calls.push({ url: String(url), init });
+        return new Promise(() => {});
+      }
+      return previous(url, init);
+    };
+    elements['lesson-endpoint'].value = ENDPOINT;
+    elements['lesson-endpoint'].dispatch('change');
+    await flush();
+    await flush();
+    assert.equal(calls.length, 1);
+    assert.equal(elements['stage-banner'].hidden, false);
+    assert.equal(elements['stage-banner'].dataset.mode, 'looking');
+    assert.equal(elements['stage-banner-title'].textContent, 'AI 正在看这段画面');
+    assert.equal(elements['lesson-endpoint'].classList.contains('is-needed'), false);
+    assert.match(status(harness), /正在读这段视频/);
+  } finally {
+    harness.restore();
+  }
+});
+
+test('这次浏览里填过的地址会补回，再选片子直接开始看', async () => {
+  const store = new Map();
+  globalThis.sessionStorage = {
+    getItem: (key) => (store.has(key) ? store.get(key) : null),
+    setItem: (key, value) => { store.set(key, String(value)); },
+    removeItem: (key) => { store.delete(key); }
+  };
+  const first = await createHarness();
+  try {
+    first.elements['lesson-endpoint'].value = ENDPOINT;
+    first.elements['lesson-endpoint'].dispatch('change');
+    assert.equal(store.get('breakglass.lessonEndpoint'), ENDPOINT);
+  } finally {
+    first.restore();
+  }
+  const harness = await createHarness();
+  try {
+    const { elements, video } = harness;
+    assert.equal(elements['lesson-endpoint'].value, ENDPOINT);
+    const calls = [];
+    const previous = globalThis.fetch;
+    globalThis.fetch = (url, init) => {
+      if (String(url) === ENDPOINT) {
+        calls.push({ url: String(url), init });
+        return new Promise(() => {});
+      }
+      return previous(url, init);
+    };
+    harness.win.__breakglassLessonFrames = (times) => times.map((time) => ({ time, image: 'data:image/jpeg;base64,AA==' }));
+    elements['local-video'].files = [new Blob(['video'], { type: 'video/mp4' })];
+    elements['local-video'].dispatch('change');
+    video.duration = 12;
+    video.videoWidth = 1920;
+    video.videoHeight = 1080;
+    video.dispatch('loadedmetadata');
+    await flush();
+    await flush();
+    assert.equal(calls.length, 1);
+    assert.equal(elements['stage-banner-title'].textContent, 'AI 正在看这段画面');
+  } finally {
+    delete globalThis.sessionStorage;
+    harness.restore();
+  }
+});
+
+test('断网且一处都没有：片子留在画面上', async () => {
   const harness = await createHarness();
   try {
     const { elements, video } = harness;
     const { calls } = await openForeign(harness, { respond: () => Promise.reject(new TypeError('offline')) });
     await flush();
     assert.equal(calls.length, 1);
-    assert.equal(String(video.src), PREPARED);
-    assert.equal(status(harness).includes('已回到预先准备的片子。'), true);
-    preparedLoaded(harness);
+    assert.match(String(video.src), /^blob:/);
+    assert.equal(status(harness), '外部阅读没有返回可用结果。这支片子留在画面上。');
     elements['wake-button'].dispatch('click');
-    assert.equal(elements['source-label'].textContent, '预先准备的示例');
+    assert.equal(harness.overlay(), null);
   } finally {
     harness.restore();
   }
 });
 
-test('5 分钟零通过：回到 9 秒片；那支片子也加载失败时如实说', async () => {
+test('5 分钟零通过：片子留在画面上，不换回 9 秒片', async () => {
   const harness = await createHarness();
   try {
     const { elements, video, win } = harness;
@@ -373,13 +438,10 @@ test('5 分钟零通过：回到 9 秒片；那支片子也加载失败时如实
     assert.equal(win.__breakglassLesson.binding().phase, 'reading');
     assert.match(String(video.src), /^blob:/);
     harness.advance(1);
-    assert.equal(String(video.src), PREPARED);
-    assert.equal(status(harness), '这次没读完。已回到预先准备的片子。');
-    preparedLoaded(harness);
+    assert.match(String(video.src), /^blob:/);
+    assert.equal(status(harness), '这次没读完。这支片子留在画面上。');
     elements['wake-button'].dispatch('click');
-    assert.equal(elements['source-label'].textContent, '预先准备的示例');
-    video.dispatch('error');
-    assert.equal(status(harness), '这次没读完。预先准备的片子没有加载出来。');
+    assert.equal(harness.overlay(), null);
   } finally {
     harness.restore();
   }
@@ -469,6 +531,41 @@ test('两组计时分开记，不混进回退、等待或识别；自比对齐�
     assert.equal(verdict.measured, false);
     assert.equal(verdict.maxRatio, null);
     assert.equal(verdict.passed, false, '没有真实测过对齐，不能算通过');
+  } finally {
+    harness.restore();
+  }
+});
+
+test('画面上分开写明正在看、可以破壁和破壁已打开', async () => {
+  const harness = await createHarness();
+  try {
+    const { elements } = harness;
+    assert.equal(elements['stage-banner'].hidden, true);
+    harness.ready();
+    assert.equal(elements['stage-banner'].dataset.mode, 'ready');
+    assert.equal(elements['stage-banner-title'].textContent, '可以破壁');
+    assert.match(elements['stage-banner-detail'].textContent, /曲线还没出现/);
+    elements['wake-button'].dispatch('click');
+    assert.equal(elements['stage-banner'].dataset.mode, 'open');
+    assert.equal(elements['stage-banner-title'].textContent, '破壁已打开');
+    harness.document.dispatch('keydown', { key: 'Escape' });
+    assert.equal(elements['stage-banner'].dataset.mode, 'ready');
+
+    await openForeign(harness);
+    assert.equal(elements['stage-banner'].hidden, false);
+    assert.equal(elements['stage-banner'].dataset.mode, 'looking');
+    assert.equal(elements['stage-banner-title'].textContent, 'AI 正在看这段画面');
+    assert.match(elements['stage-banner-detail'].textContent, /破壁还没开始/);
+    const binding = harness.win.__breakglassLesson.binding();
+    harness.video.holdSeeks = true;
+    harness.win.__breakglassLesson.offer(lessonPoint(binding.videoId, 4, 'banner'));
+    assert.equal(elements['stage-banner'].dataset.mode, 'seeking');
+    assert.equal(elements['stage-banner-title'].textContent, '正在停到这一帧');
+    harness.finishSeek();
+    assert.equal(elements['stage-banner'].dataset.mode, 'ready');
+    elements['wake-button'].dispatch('click');
+    assert.equal(elements['stage-banner'].dataset.mode, 'open');
+    assert.match(elements['stage-banner-detail'].textContent, /这次阅读/);
   } finally {
     harness.restore();
   }

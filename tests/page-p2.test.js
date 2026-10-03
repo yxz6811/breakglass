@@ -106,6 +106,9 @@ test('目标时间默认是 6 秒，会话仍跟随输入框当前值', async ()
     assert.equal(elements['target-time'].value, '6');
     assert.equal(elements['state-label'].textContent, '先选择一个视频。文件留在这台浏览器里。');
     assert.equal(elements['asset-empty'].hidden, false);
+    assert.equal(video.src, '');
+    elements['preset-video'].dispatch('click');
+    await flush();
     assert.equal(video.src, '../assets/video/breakglass-demo-9s.mp4');
     harness.ready();
     assert.equal(elements['wake-button'].disabled, false);
@@ -248,7 +251,8 @@ test('选择本地视频只换成浏览器内地址，并卸下已有曲线', as
     assert.equal(harness.overlay(), null, '新视频的尺寸还没到，不能用上一帧破壁');
     assert.equal(elements['state-label'].textContent, '正在读取所选视频。');
     video.dispatch('loadedmetadata');
-    assert.equal(elements['wake-button'].disabled, false);
+    assert.match(String(video.src), /^blob:/);
+    assert.equal(elements['wake-button'].disabled, true, '别人的片子不能沿用预设曲线破壁');
   } finally {
     harness.restore();
   }

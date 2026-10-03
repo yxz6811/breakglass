@@ -123,11 +123,28 @@ test('模型说没有抛物线时回空点，由页面退回 9 秒片', async ()
   assert.deepEqual(payload.dropped, [{ reason: 'no_parabola' }]);
 });
 
+test('方程读对但像素锚点出了画面时，改在图上找这条曲线', async () => {
+  const answer = parabolaAnswer({
+    anchors: [
+      { x: 0, y: 1, px: 200, py: 680 },
+      { x: 1, y: 2, px: 240, py: 640 },
+      { x: -1, y: 2, px: 160, py: 640 }
+    ]
+  });
+  const { status, payload } = await read(lessonRequest(), fakeModel(() => answer));
+  assert.equal(status, 200);
+  assert.equal(payload.points.length, 1);
+  assert.deepEqual(
+    Object.fromEntries(Object.entries(payload.points[0].curve.definition.parameters).map(([name, item]) => [name, item.initial])),
+    { a: 1, h: 0, k: 1 }
+  );
+});
+
 test('锚点对不上、方程无效或回答读不懂的帧都丢掉', async () => {
   const anchors = parabolaAnswer().anchors;
   anchors[2] = { ...anchors[2], py: anchors[2].py - 40 };
   const cases = [
-    [parabolaAnswer({ anchors }), 'anchors_disagree'],
+    [parabolaAnswer({ equation: { a: 1, h: 8, k: 40 }, anchors }), 'anchors_disagree'],
     [parabolaAnswer({ equation: { a: 0, h: 0, k: 1 } }), 'equation_invalid'],
     [parabolaAnswer({ equation: { a: '一', h: 0, k: 1 } }), 'equation_invalid'],
     ['抱歉，我看不清这张图。', 'answer_unreadable']
