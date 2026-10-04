@@ -42,12 +42,26 @@ test('演示页按依赖顺序加载本地脚本', () => {
     '../src/preset/place-in-frame.js',
     '../src/lesson/reading.js',
     '../src/lesson/ask.js',
+    './code-frame-demo.js',
     '../src/page/main.js'
   ]);
   for (const src of sources) {
     assert.doesNotMatch(src, /^(https?:)?\/\//);
     assert.equal(fs.existsSync(path.join(extensionDir, 'demo', src)), true, '缺少脚本：' + src);
   }
+});
+
+test('纯代码逐帧演示有独立画布、播放控制与减少动态效果入口', () => {
+  const html = readText('demo/index.html');
+  const source = readText('demo/code-frame-demo.js');
+  assert.match(html, /id="code-frame-canvas"[^>]*role="img"/);
+  assert.match(html, /id="code-frame-toggle"[^>]*aria-pressed="false"/);
+  assert.match(html, /id="code-frame-replay"/);
+  assert.match(source, /requestAnimationFrame/);
+  assert.match(source, /prefers-reduced-motion/);
+  assert.match(source, /getContext\('2d'\)/);
+  assert.match(source, /drawParabola/);
+  assert.doesNotMatch(source, /https?:\/\//);
 });
 
 test('等待与失败控件存在且默认不可用', () => {

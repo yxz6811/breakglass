@@ -19,6 +19,7 @@
     <script defer src="../src/preset/place-in-frame.js"></script>
     <script defer src="../src/lesson/reading.js"></script>
     <script defer src="../src/lesson/ask.js"></script>
+    <script defer src="./code-frame-demo.js"></script>
     <script defer src="../src/page/main.js"></script>
   </head>
   <body>
@@ -82,6 +83,26 @@
           <p class="lede">在暂停的画面上，把一条抛物线调节出来。</p>
         </div>
       </header>
+
+      <section class="code-frame-demo" aria-labelledby="code-frame-title">
+        <div class="code-frame-demo__intro">
+          <p class="eyebrow">CODE-DRAWN · FRAME BY FRAME</p>
+          <h2 id="code-frame-title">让一帧画面，变成一次实验</h2>
+          <p>这段小演示完全由 Canvas 代码逐帧绘制：先停住疑问，再把曲线变成可以亲手改变的对象。</p>
+        </div>
+        <div class="code-frame-demo__stage">
+          <canvas id="code-frame-canvas" width="1280" height="560" role="img" aria-label="纯代码逐帧绘制的抛物线形变演示"></canvas>
+          <div class="code-frame-demo__caption" aria-live="polite">
+            <span class="code-frame-demo__phase" id="code-frame-phase">准备逐帧绘制</span>
+            <span class="code-frame-demo__progress" id="code-frame-progress">0%</span>
+          </div>
+        </div>
+        <div class="code-frame-demo__controls" aria-label="逐帧演示控制">
+          <button class="code-frame-demo__button code-frame-demo__button--primary" type="button" id="code-frame-toggle" aria-pressed="false">播放形变</button>
+          <button class="code-frame-demo__button" type="button" id="code-frame-replay">重新播放</button>
+          <span class="code-frame-demo__hint">每一帧都由代码计算，不读取演示视频素材。</span>
+        </div>
+      </section>
 
       <section class="workspace" aria-label="抛物线演示工作台">
         <div class="video-column">
