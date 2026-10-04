@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>BreakGlass · 介绍动画</title>
+    <meta name="description" content="BreakGlass 破壁五分钟纯代码逐帧介绍动画。">
+    <link rel="stylesheet" href="./intro-video.css">
+    <script defer src="./intro-video.js"></script>
+  </head>
+  <body>
+    <main class="intro-video">
+      <header class="intro-video__header">
+        <a class="intro-video__back" href="./demo.html">← 回到演示页</a>
+        <p class="intro-video__eyebrow">BREAKGLASS · CODED INTRO</p>
+        <h1>让视频里的知识，开始回应你</h1>
+        <p class="intro-video__lede">纯代码绘制 · 5:00 · 60 FPS 目标 · 中文自动配音</p>
+      </header>
+
+      <section class="intro-video__screen" aria-label="BreakGlass 介绍动画画面">
+        <canvas id="intro-video-canvas" width="1920" height="1080" role="img" aria-label="BreakGlass 形变动画介绍视频"></canvas>
+        <div class="intro-video__screen-meta">
+          <span id="intro-video-scene">准备播放</span>
+          <span id="intro-video-clock">00:00 / 05:00</span>
+        </div>
+      </section>
+
+      <section class="intro-video__controls" aria-label="介绍动画控制">
+        <button class="intro-video__button intro-video__button--primary" id="intro-video-toggle" type="button" aria-pressed="false">播放介绍</button>
+        <button class="intro-video__button" id="intro-video-restart" type="button">重新开始</button>
+        <button class="intro-video__button" id="intro-video-voice" type="button" aria-pressed="true">配音：开</button>
+        <label class="intro-video__scrub" for="intro-video-timeline">
+          <span class="sr-only">跳转到介绍动画时间</span>
+          <input id="intro-video-timeline" type="range" min="0" max="300" step="0.1" value="0">
+        </label>
+        <span class="intro-video__status" id="intro-video-status" role="status" aria-live="polite">点击播放，动画与中文旁白会一起开始。</span>
+      </section>
+
+      <nav class="intro-video__chapters" aria-label="介绍动画章节">
+        <button type="button" data-scene="0">01 问题</button>
+        <button type="button" data-scene="1">02 卡点</button>
+        <button type="button" data-scene="2">03 发现</button>
+        <button type="button" data-scene="3">04 破壁</button>
+        <button type="button" data-scene="4">05 Demo</button>
+        <button type="button" data-scene="5">06 闭环</button>
+        <button type="button" data-scene="6">07 技术</button>
+        <button type="button" data-scene="7">08 用户</button>
+        <button type="button" data-scene="8">09 未来</button>
+        <button type="button" data-scene="9">10 结语</button>
+      </nav>
+
+      <p class="intro-video__note">动画内容基于当前路演稿与 P0 演示范围；真实视觉识别、通用视频适配与代码执行仍属于后续目标。</p>
+    </main>
+  </body>
+</html>

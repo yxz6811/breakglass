@@ -64,6 +64,20 @@ test('纯代码逐帧演示有独立画布、播放控制与减少动态效果�
   assert.doesNotMatch(source, /https?:\/\//);
 });
 
+test('五分钟介绍动画保持本地纯代码、60 FPS 目标与自动配音入口', () => {
+  const html = fs.readFileSync(path.join(__dirname, '..', 'site', 'modules', 'intro-video.html'), 'utf8');
+  const source = fs.readFileSync(path.join(__dirname, '..', 'site', 'modules', 'intro-video.js'), 'utf8');
+  assert.match(html, /id="intro-video-canvas"[^>]*width="1920"[^>]*height="1080"/);
+  assert.match(html, /id="intro-video-toggle"/);
+  assert.match(html, /id="intro-video-voice"/);
+  assert.match(source, /DURATION_MS = 300000/);
+  assert.match(source, /TARGET_FPS = 60/);
+  assert.match(source, /requestAnimationFrame/);
+  assert.match(source, /speechSynthesis/);
+  assert.match(source, /var scenes = \[/);
+  assert.doesNotMatch(source, /https?:\/\//);
+});
+
 test('等待与失败控件存在且默认不可用', () => {
   const html = readText('demo/index.html');
   const cancel = /<button[^>]*id="cancel-button"[^>]*>/.exec(html);
