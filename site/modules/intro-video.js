@@ -3,6 +3,7 @@
 
   var canvas = document.getElementById('intro-video-canvas');
   var toggle = document.getElementById('intro-video-toggle');
+  var screenPlay = document.getElementById('intro-video-screen-play');
   var restart = document.getElementById('intro-video-restart');
   var voiceButton = document.getElementById('intro-video-voice');
   var timeline = document.getElementById('intro-video-timeline');
@@ -10,7 +11,7 @@
   var sceneLabel = document.getElementById('intro-video-scene');
   var clockLabel = document.getElementById('intro-video-clock');
   var chapterButtons = Array.prototype.slice.call(document.querySelectorAll('[data-scene]'));
-  if (!canvas || !toggle || !restart || !voiceButton || !timeline) return;
+  if (!canvas || !toggle || !restart || !voiceButton || !timeline || !screenPlay) return;
 
   var ctx = canvas.getContext('2d');
   if (!ctx) return;
@@ -37,7 +38,8 @@
 
   var elapsed = 0;
   var running = false;
-  var voiceEnabled = 'speechSynthesis' in window;
+  var speech = 'speechSynthesis' in window && typeof window.speechSynthesis.speak === 'function' ? window.speechSynthesis : null;
+  var voiceEnabled = Boolean(speech);
   var frameHandle = 0;
   var lastTime = 0;
   var frameAccumulator = 0;
@@ -255,14 +257,22 @@
     if (running) speak(index);
   }
   function speak(index) {
-    if (!voiceEnabled) return;
-    window.speechSynthesis.cancel();
-    var utterance = new SpeechSynthesisUtterance(scenes[index].voice);
-    utterance.lang = 'zh-CN'; utterance.rate = .92; utterance.pitch = 1; utterance.volume = 1;
-    var voices = window.speechSynthesis.getVoices();
-    var chinese = voices.find(function (voice) { return /^zh/i.test(voice.lang); });
-    if (chinese) utterance.voice = chinese;
-    window.speechSynthesis.speak(utterance);
+    if (!voiceEnabled || !speech) return;
+    try {
+      speech.cancel();
+      var utterance = new SpeechSynthesisUtterance(scenes[index].voice);
+      utterance.lang = 'zh-CN'; utterance.rate = .92; utterance.pitch = 1; utterance.volume = 1;
+      var voices = speech.getVoices();
+      var chinese = voices.find(function (voice) { return /^zh/i.test(voice.lang); });
+      if (chinese) utterance.voice = chinese;
+      speech.speak(utterance);
+    } catch (error) {
+      voiceEnabled = false;
+      voiceButton.disabled = true;
+      voiceButton.setAttribute('aria-pressed', 'false');
+      voiceButton.textContent = '配音：不可用';
+      if (status) status.textContent = '语音接口不可用，动画仍会继续播放。';
+    }
   }
   function paint() {
     var index = sceneAt(elapsed); var start = sceneStarts[index]; var progress = (elapsed - start) / scenes[index].duration;
@@ -270,7 +280,7 @@
     timeline.value = String(elapsed / 1000);
     if (clockLabel) clockLabel.textContent = timeText(elapsed) + ' / 05:00';
   }
-  function stop() { running = false; if (frameHandle) cancelAnimationFrame(frameHandle); frameHandle = 0; toggle.setAttribute('aria-pressed', 'false'); toggle.textContent = elapsed >= DURATION_MS ? '重新播放' : '播放介绍'; }
+  function stop() { running = false; if (frameHandle) window.cancelAnimationFrame(frameHandle); frameHandle = 0; toggle.setAttribute('aria-pressed', 'false'); toggle.textContent = elapsed >= DURATION_MS ? '重新播放' : '播放介绍'; screenPlay.hidden = elapsed > 0 && elapsed < DURATION_MS; }
   function tick(now) {
     if (!running) return;
     var delta = Math.min(80, Math.max(0, now - lastTime)); lastTime = now; frameAccumulator += delta;
@@ -281,21 +291,23 @@
       paint();
     }
     if (elapsed >= DURATION_MS) { stop(); if (status) status.textContent = '介绍动画已完成，可以重新播放或跳转章节。'; return; }
-    frameHandle = requestAnimationFrame(tick);
+    frameHandle = window.requestAnimationFrame(tick);
   }
   function play() {
     if (running) return;
     if (elapsed >= DURATION_MS) elapsed = 0;
-    running = true; toggle.setAttribute('aria-pressed', 'true'); toggle.textContent = '暂停介绍';
+    running = true; toggle.setAttribute('aria-pressed', 'true'); toggle.textContent = '暂停介绍'; screenPlay.hidden = true;
     if (status) status.textContent = reduceMotion ? '已手动播放；系统开启了减少动态效果。' : '动画播放中，中文旁白已开启。';
-    speak(sceneAt(elapsed)); lastTime = performance.now(); frameAccumulator = FRAME_MS; frameHandle = requestAnimationFrame(tick);
+    lastTime = window.performance && typeof window.performance.now === 'function' ? window.performance.now() : Date.now(); frameAccumulator = FRAME_MS; frameHandle = window.requestAnimationFrame(tick);
   }
-  toggle.addEventListener('click', function () { if (running) { stop(); if (voiceEnabled) speechSynthesis.pause(); if (status) status.textContent = '已暂停，可继续播放。'; } else { if (voiceEnabled) speechSynthesis.resume(); play(); } });
-  restart.addEventListener('click', function () { stop(); if (voiceEnabled) speechSynthesis.cancel(); elapsed = 0; paint(); if (status) status.textContent = '已回到开头，点击播放开始介绍。'; });
-  voiceButton.addEventListener('click', function () { voiceEnabled = !voiceEnabled; voiceButton.setAttribute('aria-pressed', String(voiceEnabled)); voiceButton.textContent = '配音：' + (voiceEnabled ? '开' : '关'); if (!voiceEnabled) speechSynthesis.cancel(); else if (running) speak(sceneAt(elapsed)); });
-  timeline.addEventListener('input', function () { stop(); if (voiceEnabled) speechSynthesis.cancel(); elapsed = Number(timeline.value) * 1000; paint(); if (status) status.textContent = '已跳转到 ' + timeText(elapsed) + '。点击播放继续。'; });
-  chapterButtons.forEach(function (button) { button.addEventListener('click', function () { stop(); if (voiceEnabled) speechSynthesis.cancel(); elapsed = sceneStarts[Number(button.dataset.scene)]; paint(); if (status) status.textContent = '已跳转到“' + scenes[Number(button.dataset.scene)].title + '”。'; }); });
+  function togglePlayback() { if (running) { stop(); if (voiceEnabled && speech) speech.pause(); if (status) status.textContent = '已暂停，可继续播放。'; } else { if (voiceEnabled && speech) speech.resume(); play(); speak(sceneAt(elapsed)); } }
+  toggle.addEventListener('click', togglePlayback);
+  screenPlay.addEventListener('click', togglePlayback);
+  restart.addEventListener('click', function () { stop(); if (speech) speech.cancel(); elapsed = 0; paint(); screenPlay.hidden = false; if (status) status.textContent = '已回到开头，点击播放开始介绍。'; });
+  voiceButton.addEventListener('click', function () { voiceEnabled = !voiceEnabled; voiceButton.setAttribute('aria-pressed', String(voiceEnabled)); voiceButton.textContent = '配音：' + (voiceEnabled ? '开' : '关'); if (!voiceEnabled && speech) speech.cancel(); else if (voiceEnabled && running) speak(sceneAt(elapsed)); });
+  timeline.addEventListener('input', function () { stop(); if (speech) speech.cancel(); elapsed = Number(timeline.value) * 1000; paint(); screenPlay.hidden = true; if (status) status.textContent = '已跳转到 ' + timeText(elapsed) + '。点击播放继续。'; });
+  chapterButtons.forEach(function (button) { button.addEventListener('click', function () { stop(); if (speech) speech.cancel(); elapsed = sceneStarts[Number(button.dataset.scene)]; paint(); screenPlay.hidden = true; if (status) status.textContent = '已跳转到“' + scenes[Number(button.dataset.scene)].title + '”。'; }); });
   window.addEventListener('resize', resize, { passive: true });
-  window.addEventListener('pagehide', function () { stop(); if (voiceEnabled) speechSynthesis.cancel(); });
+  window.addEventListener('pagehide', function () { stop(); if (speech) speech.cancel(); });
   resize(); paint();
 }());

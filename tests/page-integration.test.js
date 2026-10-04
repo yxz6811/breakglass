@@ -69,6 +69,7 @@ test('五分钟介绍动画保持本地纯代码、60 FPS 目标与自动配音�
   const source = fs.readFileSync(path.join(__dirname, '..', 'site', 'modules', 'intro-video.js'), 'utf8');
   assert.match(html, /id="intro-video-canvas"[^>]*width="1920"[^>]*height="1080"/);
   assert.match(html, /id="intro-video-toggle"/);
+  assert.match(html, /id="intro-video-screen-play"/);
   assert.match(html, /id="intro-video-voice"/);
   assert.match(source, /DURATION_MS = 300000/);
   assert.match(source, /TARGET_FPS = 60/);

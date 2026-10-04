@@ -24,6 +24,8 @@ h1 { max-width: 800px; margin: 0; font-size: clamp(32px, 5vw, 72px); line-height
 .intro-video__lede { margin: 18px 0 0; color: var(--muted); font-size: 14px; }
 .intro-video__screen { position: relative; overflow: hidden; border: 1px solid var(--line); border-radius: 20px; background: #071017; box-shadow: 0 30px 100px rgba(0, 0, 0, .45); }
 #intro-video-canvas { display: block; width: 100%; height: auto; }
+.intro-video__screen-play { position: absolute; top: 50%; left: 50%; min-width: 150px; min-height: 52px; transform: translate(-50%, -50%); border: 1px solid rgba(167, 239, 255, .6); border-radius: 999px; color: #03121a; background: var(--cyan); box-shadow: 0 0 34px rgba(113, 221, 255, .2); font-weight: 800; }
+.intro-video__screen-play[hidden] { display: none; }
 .intro-video__screen-meta { position: absolute; right: 20px; bottom: 16px; left: 20px; display: flex; justify-content: space-between; color: rgba(219, 239, 244, .74); font-size: 11px; letter-spacing: .08em; pointer-events: none; }
 .intro-video__controls { display: grid; grid-template-columns: auto auto auto minmax(120px, 1fr) minmax(220px, 1.4fr); align-items: center; gap: 10px; margin-top: 16px; padding: 14px; border: 1px solid var(--line); border-radius: 14px; background: var(--panel); }
 .intro-video__button { min-height: 38px; border: 1px solid var(--line); border-radius: 999px; padding: 8px 16px; color: #eaf7fa; background: rgba(255, 255, 255, .04); }
