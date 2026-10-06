@@ -57,3 +57,97 @@ test('图上没有的方程量不到线', async () => {
   assert.ok(rgb);
   assert.equal(locateCurve(rgb, JPEG_SIZE, { a: 1, h: 8, k: 40 }), null);
 });
+
+/**
+ * @param {number} width
+ * @param {number} height
+ * @param {[number, number, number]} color
+ * @returns {Buffer}
+ */
+function canvas(width, height, color) {
+  const rgb = Buffer.alloc(width * height * 3);
+  for (let index = 0; index < rgb.length; index += 3) {
+    rgb[index] = color[0];
+    rgb[index + 1] = color[1];
+    rgb[index + 2] = color[2];
+  }
+  return rgb;
+}
+
+/**
+ * @param {Buffer} rgb
+ * @param {number} width
+ * @param {number} height
+ * @param {number} x
+ * @param {number} y
+ * @param {[number, number, number]} color
+ * @param {number} thick
+ */
+function dot(rgb, width, height, x, y, color, thick) {
+  for (let dy = -thick; dy <= thick; dy += 1) {
+    for (let dx = -thick; dx <= thick; dx += 1) {
+      const px = x + dx;
+      const py = y + dy;
+      if (px < 0 || py < 0 || px >= width || py >= height) continue;
+      const index = (py * width + px) * 3;
+      rgb[index] = color[0];
+      rgb[index + 1] = color[1];
+      rgb[index + 2] = color[2];
+    }
+  }
+}
+
+/**
+ * @param {Buffer} rgb
+ * @param {number} width
+ * @param {number} height
+ * @param {{ a: number, h: number, k: number }} params
+ * @param {{ ox: number, sx: number, oy: number, sy: number }} map
+ * @param {[number, number, number]} color
+ * @param {number} min
+ * @param {number} max
+ * @param {number} [thick]
+ */
+function drawParabola(rgb, width, height, params, map, color, min, max, thick = 1) {
+  for (let x = min; x <= max; x += 0.01) {
+    const y = params.a * (x - params.h) ** 2 + params.k;
+    dot(rgb, width, height, Math.round(map.ox + map.sx * x), Math.round(map.oy - map.sy * y), color, thick);
+  }
+}
+
+test('彩色、粉笔色和横纵比例不同的抛物线都能定位，画面上没有的方程仍然拒绝', () => {
+  const blue = canvas(640, 360, [232, 214, 168]);
+  const blueParams = { a: 1, h: 0, k: 0 };
+  const blueMap = { ox: 320, sx: 70, oy: 300, sy: 70 };
+  drawParabola(blue, 640, 360, blueParams, blueMap, [30, 90, 220], -2, 2, 1);
+  const blueFound = locateCurve(blue, { width: 640, height: 360 }, blueParams);
+  assert.ok(blueFound, '亮蓝色、只画出顶点附近的一段也应定位');
+  assert.ok(blueFound.score >= 0.72);
+  assert.ok(blueFound.drawn.min < -0.5 && blueFound.drawn.max > 0.5);
+  assert.equal(locateCurve(blue, { width: 640, height: 360 }, { a: 1, h: 3, k: 8 }), null);
+
+  const chalk = canvas(480, 270, [28, 28, 28]);
+  const chalkParams = { a: -0.5, h: 1, k: 4 };
+  const chalkMap = { ox: 180, sx: 36, oy: 220, sy: 28 };
+  drawParabola(chalk, 480, 270, chalkParams, chalkMap, [245, 245, 240], -1.2, 3.6, 1);
+  const chalkFound = locateCurve(chalk, { width: 480, height: 270 }, chalkParams);
+  assert.ok(chalkFound, '深色底上的浅色抛物线、纵轴比例不同也应定位');
+  assert.ok(chalkFound.drawn.min < 1 && chalkFound.drawn.max > 1);
+
+  const red = canvas(640, 360, [248, 248, 248]);
+  const redParams = { a: 0.5, h: -1, k: 2 };
+  const redMap = { ox: 360, sx: 55, oy: 250, sy: 40 };
+  drawParabola(red, 640, 360, redParams, redMap, [210, 40, 40], -3, 2, 2);
+  for (let x = 40; x < 600; x += 1) dot(red, 640, 360, x, 250, [40, 40, 40], 0);
+  for (let y = 30; y < 330; y += 1) dot(red, 640, 360, 305, y, [40, 40, 40], 0);
+  const redFound = locateCurve(red, { width: 640, height: 360 }, redParams);
+  assert.ok(redFound, '较粗的红色抛物线也应定位');
+  assert.equal(locateCurve(red, { width: 640, height: 360 }, { a: 1, h: 4, k: -6 }), null);
+});
+
+test('只有坐标轴、没有抛物线时对不上这条方程', () => {
+  const rgb = canvas(320, 180, [255, 255, 255]);
+  for (let x = 20; x < 300; x += 1) dot(rgb, 320, 180, x, 120, [20, 20, 20], 0);
+  for (let y = 16; y < 164; y += 1) dot(rgb, 320, 180, 160, y, [20, 20, 20], 0);
+  assert.equal(locateCurve(rgb, { width: 320, height: 180 }, { a: 1, h: 0, k: 1 }), null);
+});

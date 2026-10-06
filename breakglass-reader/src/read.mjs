@@ -181,7 +181,8 @@ async function readFrame(frame, context) {
     time: frame.time,
     params,
     placement,
-    lessonLine: clip(line || equationLine(params), LINE_LIMIT)
+    lessonLine: clip(line || equationLine(params), LINE_LIMIT),
+    model: reply.model
   };
 }
 
@@ -298,12 +299,14 @@ export async function readLesson(body, options) {
     .concat(verdict.dropped || []);
 
   const allTransport = readings.length > 0 && readings.every((item) => !item.ok && item.transport);
+  const used = [...new Set(readings.flatMap((item) => (item.ok && item.model ? [item.model] : [])))];
   log({
     event: 'read',
     readingId: request.readingId,
     frames: request.frames.length,
     points: points.length,
     reasons,
+    ...(used.length > 0 ? { model: used.join(',') } : {}),
     ms: now() - started
   });
   if (allTransport) return { status: 502, payload: { error: '模型没有回应。' } };

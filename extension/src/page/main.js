@@ -99,6 +99,13 @@
    */
   const PACKAGED_DEMO_TARGET_SECONDS = 6;
 
+  /**
+   * 演示页不放阅读地址时，破壁仍把当前暂停帧交给本机 reader。
+   * 有输入框时以输入框为准，空着就提示填写，不用这个默认值顶上。
+   * @type {string}
+   */
+  const DEFAULT_READER_URL = 'http://127.0.0.1:8787/read';
+
   let config = null;
   let presetResult = null;
   let controller = null;
@@ -855,7 +862,7 @@
       mode = 'seeking';
       title = '正在停到这一帧';
       detail = '停稳之后才能破壁。';
-    } else if (localVideoUrl && canReadCurrentFrame() && (!lessonEndpoint || !String(lessonEndpoint.value || '').trim())) {
+    } else if (lessonEndpoint && localVideoUrl && canReadCurrentFrame() && !String(lessonEndpoint.value || '').trim()) {
       mode = 'need-address';
       title = '填入本机阅读地址';
       detail = '配置本地 reader 后，暂停并点破壁识别当前帧。视频文件保留在浏览器里。';
@@ -875,7 +882,7 @@
       mode = 'ready';
       title = '可以破壁';
       detail = '点顶栏的破壁，或按 Alt+B。曲线还没出现。';
-      if (localVideoUrl && !(atTarget() && videoMatches())) detail = '点破壁或按 Alt+B，只识别当前暂停帧的抛物线。';
+      if (offersCurrentFrameRead() && !(atTarget() && videoMatches())) detail = '点破壁或按 Alt+B，只识别当前暂停帧的抛物线。';
       if (lesson && lesson.phase === 'reading') detail += '画面还在继续看。';
     } else if (awaitingEndpoint) {
       mode = 'need-address';
@@ -1418,7 +1425,7 @@
     const waiting = Boolean(sessionState() && sessionState().status === 'waiting');
     const ready = cachedCurveReady();
     wakeButton.disabled = waiting || Boolean(frameRead) || Boolean(overlay) ||
-      !(ready || (canReadCurrentFrame() && !(lesson && lesson.seeking)));
+      !(ready || (offersCurrentFrameRead() && !(lesson && lesson.seeking)));
     const playLabel = video.paused ? '播放' : '暂停';
     playToggle.setAttribute('aria-label', playLabel + '视频');
     if (playTip) playTip.textContent = playLabel;
@@ -1455,7 +1462,7 @@
         else if (overlay) reason = '交互层已经出现，不需要再次破壁。';
         else if (lesson && lesson.seeking) reason = lessonWakeStatus();
         else if (!video.paused) reason = '请先暂停视频。';
-        else if (localVideoUrl && !canReadCurrentFrame()) reason = '当前画面尚未解码、正在定位或时间无效，请等暂停帧就绪。';
+        else if (localVideoUrl && !canReadCurrentFrame() && !(atTarget() && videoMatches())) reason = '当前画面尚未解码、正在定位或时间无效，请等暂停帧就绪。';
         else if (lessonBlocksWake()) reason = lessonWakeStatus();
         else if (!hasFrameSize()) reason = pickStatus();
         else if (materialMessage()) reason = materialMessage();
@@ -1503,7 +1510,7 @@
     currentFrameWakeStartedAt = null;
     wakeStartedAt = null;
     wakeButton.disabled = Boolean(frameRead) || !(cachedCurveReady() ||
-      (canReadCurrentFrame() && !(lesson && lesson.seeking)));
+      (offersCurrentFrameRead() && !(lesson && lesson.seeking)));
     syncFrameReadControls();
     markGuide();
   }
@@ -1667,6 +1674,37 @@
     window.__breakglassWakeMounts = wakeMounts;
   }
 
+  /**
+   * 自己的片子已经暂停出画面时，破壁去识别这一帧。
+   * 不要求页面上有阅读地址框；框不存在时用本机默认 reader。
+   * @returns {boolean}
+   */
+  function offersCurrentFrameRead() {
+    return canReadCurrentFrame();
+  }
+
+  /**
+   * 挂在 yangxizhe.com 上时，暂停帧交给同源的阅读入口。
+   * 其他页面仍用本机 reader，不把帧发到任意公网地址。
+   * @returns {string}
+   */
+  function hostedReaderUrl() {
+    const page = typeof window !== 'undefined' ? window.location : null;
+    if (!page || page.protocol !== 'https:') return '';
+    if (page.hostname !== 'yangxizhe.com' && page.hostname !== 'www.yangxizhe.com') return '';
+    return new URL('/breakglass/read', page.origin).href;
+  }
+
+  /**
+   * 有地址框时只用框里的值。没有框时用这次浏览记过的地址，
+   * 在 yangxizhe.com 上用同源阅读入口，否则用本机默认 reader。
+   * @returns {string}
+   */
+  function currentFrameAddress() {
+    if (lessonEndpoint) return String(lessonEndpoint.value || '').trim();
+    return readStoredEndpoint() || hostedReaderUrl() || DEFAULT_READER_URL;
+  }
+
   function canReadCurrentFrame() {
     return Boolean(localVideoUrl && config && currentFrameApi && !bootFailure && !videoBroken && !mediaPending &&
       video.paused && !video.seeking && video.readyState >= 2 &&
@@ -1741,7 +1779,7 @@
       return;
     }
     let url;
-    try { url = currentFrameApi.buildUrl(lessonEndpoint ? lessonEndpoint.value : ''); }
+    try { url = currentFrameApi.buildUrl(currentFrameAddress()); }
     catch {
       failFrameRead({ message: '请填入本机 reader 阅读地址（根地址或 /read），再点破壁识别当前帧。' });
       if (lessonEndpoint && lessonEndpoint.focus) lessonEndpoint.focus();

@@ -94,11 +94,8 @@ video { display: block; width: 100%; height: 100%; min-height: 540px; object-fit
 .stage-pick:focus-within { outline: 2px solid var(--accent); outline-offset: 3px; }
 .asset-empty .stage-pick:focus-visible { outline-color: var(--screen-accent); }
 .transport { flex-wrap: wrap; padding: 14px 2px 0; color: var(--muted); font-size: var(--text-sm); }
-.lesson-row { display: flex; flex: 1 1 100%; flex-wrap: wrap; align-items: flex-end; gap: 10px; }
-.lesson-row label { display: flex; flex: 1 1 240px; flex-direction: column; gap: 6px; min-width: 0; font-size: var(--text-sm); }
-.lesson-row input, .lesson-row textarea { width: 100%; }
-#current-frame-help { flex: 1 1 100%; margin: 0; color: var(--muted); font-size: 12px; line-height: 1.5; }
-#lesson-status { margin: 0; flex: 1 1 100%; }
+.lesson-row { display: flex; flex: 0 1 auto; flex-wrap: wrap; align-items: center; gap: 10px; }
+#lesson-status { margin: 0; }
 #lesson-status:empty { display: none; }
 #lesson-next:disabled { display: none; }
 #lesson-endpoint.is-needed { border-color: var(--warn); box-shadow: 0 0 0 3px color-mix(in srgb, var(--warn) 20%, transparent); }

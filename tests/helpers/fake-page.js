@@ -288,7 +288,9 @@ function flush() { return new Promise((resolve) => setImmediate(resolve)); }
 
 async function createHarness(options = {}) {
   const elements = {};
+  const omitted = new Set(options.omitIds || []);
   for (const id of ELEMENT_IDS) {
+    if (omitted.has(id)) continue;
     const tag = id === 'demo-video' ? 'video'
       : (id === 'figure-kind' ? 'select'
         : (id === 'preset-video' || id === 'tutor-send' ? 'button'

@@ -128,6 +128,50 @@ test('配置：默认只听本机，总预算压在页面 300 秒截止之前，
   assert.equal(tight.allowOrigin('http://127.0.0.1:8768'), true);
 });
 
+test('智谱地址默认轮询三款免费视觉模型，别的服务商保持单模型，没填密钥的备选不入池', () => {
+  const zhipu = loadSettings({
+    READER_BASE_URL: 'https://open.bigmodel.cn/api/paas/v4/',
+    READER_API_KEY: 'server-key',
+    READER_MODEL: 'glm-4.6v-flash',
+    READER_JSON_MODE: '1',
+    READER_EXTRA_MODELS: 'gemini-2.5-flash|https://generativelanguage.googleapis.com/v1beta/openai|GEMINI_API_KEY'
+  });
+  assert.deepEqual(zhipu.models.map((item) => item.model), [
+    'glm-4.6v-flash',
+    'glm-4v-flash',
+    'glm-4.1v-thinking-flash'
+  ]);
+  assert.equal(zhipu.models[0].jsonMode, true);
+  assert.equal(zhipu.models[1].jsonMode, false);
+  assert.equal(zhipu.models.every((item) => item.apiKey === 'server-key'), true);
+
+  const withGemini = loadSettings({
+    READER_BASE_URL: 'https://open.bigmodel.cn/api/paas/v4',
+    READER_API_KEY: 'server-key',
+    READER_MODEL: 'glm-4.6v-flash',
+    GEMINI_API_KEY: 'gemini-key',
+    READER_EXTRA_MODELS: 'gemini-2.5-flash|https://generativelanguage.googleapis.com/v1beta/openai/|GEMINI_API_KEY'
+  });
+  assert.equal(withGemini.models.at(-1).model, 'gemini-2.5-flash');
+  assert.equal(withGemini.models.at(-1).baseUrl, 'https://generativelanguage.googleapis.com/v1beta/openai');
+  assert.equal(withGemini.models.at(-1).apiKey, 'gemini-key');
+
+  const other = loadSettings({
+    READER_BASE_URL: 'https://model.example/v1',
+    READER_API_KEY: 'k',
+    READER_MODEL: 'vision-test'
+  });
+  assert.deepEqual(other.models.map((item) => item.model), ['vision-test']);
+
+  const only = loadSettings({
+    READER_BASE_URL: 'https://open.bigmodel.cn/api/paas/v4',
+    READER_API_KEY: 'server-key',
+    READER_MODEL: 'glm-4.6v-flash',
+    READER_MODEL_POOL: 'glm-4v-flash'
+  });
+  assert.deepEqual(only.models.map((item) => item.model), ['glm-4v-flash']);
+});
+
 test('客户端断开会取消模型，迟到的响应不会开始下一帧或写入断开的连接', { timeout: 3000 }, async () => {
   const calls = [];
   const logs = [];

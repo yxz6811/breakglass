@@ -16,11 +16,14 @@ function log(entry) {
 
 const server = createReaderServer({ settings, pageRules, log });
 server.listen(settings.port, settings.host, () => {
-  const configured = settings.baseUrl && settings.apiKey && settings.model;
+  const configured = settings.models.length > 0;
   console.log(`阅读服务：http://${settings.host}:${settings.port}/read`);
   if (configured) {
-    const host = URL.canParse(settings.baseUrl) ? new URL(settings.baseUrl).host : '地址写错了';
-    console.log(`模型：${settings.model}（${host}）`);
+    const labels = settings.models.map((item) => {
+      const host = URL.canParse(item.baseUrl) ? new URL(item.baseUrl).host : '地址写错了';
+      return `${item.model}（${host}）`;
+    });
+    console.log(`模型池：${labels.join(' → ')}`);
   } else {
     console.log('还没配置模型：READER_BASE_URL、READER_API_KEY、READER_MODEL 缺一不可。现在请求会得到 503。');
   }

@@ -2,6 +2,7 @@ import http from 'node:http';
 import { readLesson } from './read.mjs';
 import { readGeometry } from './geometry-scene.mjs';
 import { askGeometry } from './geometry-actions.mjs';
+import { readGeometryLesson } from './geometry-lesson.mjs';
 
 /**
  * 8 张 640 宽的 JPEG 加 8000 字课程正文，远小于这个上限。
@@ -82,12 +83,15 @@ export function createReaderServer({ settings, pageRules, fetchImpl = fetch, log
     const cors = allowed ? { 'access-control-allow-origin': origin, vary: 'Origin' } : { vary: 'Origin' };
 
     if (url.pathname === '/health' && request.method === 'GET') {
-      const modelConfigured = Boolean(settings.baseUrl && settings.apiKey && settings.model);
+      const modelConfigured = Array.isArray(settings.models)
+        ? settings.models.length > 0
+        : Boolean(settings.baseUrl && settings.apiKey && settings.model);
       sendJson(response, 200, { ok: true, modelConfigured }, cors);
       return;
     }
     const geometry = url.pathname === '/geometry/read' || url.pathname === '/geometry/ask';
-    if (url.pathname !== '/read' && !geometry) {
+    const geometryLesson = url.pathname === '/geometry/lesson';
+    if (url.pathname !== '/read' && !geometry && !geometryLesson) {
       sendJson(response, 404, { error: '没有这个地址。' }, cors);
       return;
     }
@@ -114,7 +118,7 @@ export function createReaderServer({ settings, pageRules, fetchImpl = fetch, log
       return;
     }
     const contentType = String(request.headers['content-type'] || '').toLowerCase();
-    if (geometry ? contentType.split(';')[0].trim() !== 'application/json' : !contentType.startsWith('application/json')) {
+    if ((geometry || geometryLesson) ? contentType.split(';')[0].trim() !== 'application/json' : !contentType.startsWith('application/json')) {
       sendJson(response, 415, { ...(geometry ? { code: 'unsupported_media_type' } : {}), error: '请求要用 application/json。' }, cors);
       return;
     }
@@ -150,7 +154,8 @@ export function createReaderServer({ settings, pageRules, fetchImpl = fetch, log
         return;
       }
       const handler = url.pathname === '/geometry/read' ? readGeometry
-        : url.pathname === '/geometry/ask' ? askGeometry : readLesson;
+        : url.pathname === '/geometry/ask' ? askGeometry
+          : url.pathname === '/geometry/lesson' ? readGeometryLesson : readLesson;
       const result = await handler(parsed, { settings, pageRules, fetchImpl, log, signal: cancelled.signal });
       if (cancelled.signal.aborted) return;
       sendJson(response, result.status, result.payload, cors);
