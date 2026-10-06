@@ -108,3 +108,9 @@ node --test tests/geometry-read.test.mjs tests/geometry-ask.test.mjs tests/serve
 ```
 
 当前测试使用本机 HTTP 服务和不联网的模型替身，覆盖坐标映射、严格字段/数值、4 MiB、取消/迟到、独立截止、来源/PNA、未配置模型和 `/read` 回归。真实候选正确率、10～15 份素材、浏览器校对及学习闭环按 [005 quickstart](../specs/005-insitu-right-triangle/quickstart.md) 另记；本服务不保存原题快照或判定用户已理解。
+
+## 006 持续视觉与画面摘要（2026-10-06）
+
+复用本机无状态reader，新增`POST /learning/read`（单帧JPEG、最多640px宽/4MiB）与`POST /learning/summarize`（最多20条短结构观察/64KiB）。每类最多一个请求，单次模型调用、不自动重试；服务端开发截止各30s，扩展客户端25s。新预算与旧`/read`/003/005分开。
+
+继续使用本目录`.env.example`所示的供应商设置；未配置返回503，不伪装识别成功。模型密钥仅在reader，画面/观察内容不写日志或学习记录。006仅受控自制素材可启用，B站处理授权待确认。当前没有音频、字幕或整视频文件理解；后台摘要只覆盖所列画面观察。接口见[006契约](../specs/006-plugin-learning-layer/contracts/plugin-learning.md)，范围及实际替身/MV3/真实模型状态见[验证记录](../docs/BreakGlass-continuous-vision-validation-2026-10-06.md)。

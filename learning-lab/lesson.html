@@ -1,0 +1,7 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>BreakGlass 自制视频验证站</title><link rel="stylesheet" href="../extension/src/ui/theme.css"><link rel="stylesheet" href="lesson.css"></head>
+<body><main><p>BREAKGLASS · 自制素材验证</p><h1>看画面，理解数学</h1><p>这是一张受控教学页面，用来验证插件视觉链路；没有预先生成的热点，也不以预设条件冒充模型识别。</p>
+<label for="lesson">选择自制视频</label><select id="lesson"><option value="triangle">直角三角形 3–4–5</option><option value="parabola">抛物线 y=x²+1</option></select>
+<div class="stage"><video controls playsinline preload="metadata" src="../extension/assets/video/geometry/triangle-3-4-5.mp4"></video></div>
+<p>视频就绪后点击浏览器工具栏的 BreakGlass 图标，再在学习面板开启持续视觉识别。当前画面经本机 reader 提交给其已配置模型，未配置时会显示失败。</p>
+<p>首版仅观察当前可见画面，不包含音频。测试站不代表 B 站处理许可或真实 AI 效果已经通过。</p><script src="lesson.js"></script></main></body></html>

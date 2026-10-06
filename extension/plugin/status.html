@@ -1,0 +1,12 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>BreakGlass 视觉学习</title><link rel="stylesheet" href="../src/ui/theme.css"><link rel="stylesheet" href="status.css"></head>
+<body><main>
+  <p class="eyebrow">BREAKGLASS · 视觉学习</p><h1>持续识别，逐步理解</h1>
+  <section><h2>当前验证范围</h2><p>首切片在自制视频测试站上持续抽取当前画面，通过本机 reader 请求视觉模型，再显示待校对热点和滚动总结。原始画面不保存在学习记录中；当前模式不采集音频。</p>
+  <p role="status">B 站公开视频的处理授权待确认，当前不会采集或上传其画面。真实模型、真实平台和地区发布分别验收。</p>
+  <p>在仓库根目录运行 <code>node scripts/learning-lab.mjs</code>，打开自制教学站，加载视频后点击插件图标。reader 与视觉模型需另行配置。</p>
+  <nav><a href="http://localhost:4173/learning-lab/lesson.html" target="_blank" rel="noopener">打开自制教学站</a><a href="../demo/index.html">抛物线工作台</a><a href="../demo/geometry.html">几何工作台</a></nav></section>
+  <section><h2>这台浏览器的学习记录</h2><p>本机访客记录，尚无账号或跨设备同步。保存的是你主动标记的疑问或个人易错点；AI 常见误区提示不代表你已经做错。</p><button id="refresh" type="button">刷新记录</button><button id="clear" type="button">清除全部本机记录</button><p id="status" role="status"></p><ol id="records"></ol></section>
+  <script src="status.js"></script>
+</main></body></html>

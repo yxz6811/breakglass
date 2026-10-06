@@ -133,3 +133,9 @@ Safari 使用媒体查询新旧监听接口的能力检测；旧环境的导航�
 - [UI 设计建议](docs/BreakGlass-ui-design-guide.md)
 - [UI 现状清单](docs/BreakGlass-ui-inventory.md)
 - [UI 待实现清单](docs/BreakGlass-ui-todo.md)
+
+## 006 持续视觉首切片（2026-10-06）
+
+已按用户要求开始实现插件持续视觉识别和后台滚动总结，治理2.2.0；实际状态见 [006任务](specs/006-plugin-learning-layer/tasks.md) / [验证记录](docs/BreakGlass-continuous-vision-validation-2026-10-06.md)。主路不依赖作者层或平台业务API；B站处理许可待确认，当前仅受控自制素材试验。问题及解决办法、视觉与视频读取的组合增强见 [持续视觉规划](docs/BreakGlass-continuous-vision-plan-2026-10-06.md)。
+
+开发：从仓库根运行 `node scripts/learning-lab.mjs`，加载 `extension/` 为解压MV3扩展；配置本机 `breakglass-reader/.env` 后启动reader。打开 `http://localhost:4173/learning-lab/lesson.html`、等视频就绪，点击插件图标，再显式开始持续识别。单帧/摘要使用新 `/learning/read` / `/learning/summarize`；密钥仅在reader。新UI仅本机访客记录，无真实账号/跨设备/完整音频/整课保证；网站文件入口和粒子另阶段验证。没有模型配置会诚实显示失败。

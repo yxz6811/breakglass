@@ -1,0 +1,8 @@
+main { max-width: 920px; margin: 48px auto; padding: 24px; }
+h1 { font-size: clamp(28px, 4vw, 42px); }
+section { margin-top: 24px; padding: 24px; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-panel); }
+nav { display: flex; gap: 16px; flex-wrap: wrap; }
+a, button { display: inline-flex; align-items: center; min-height: 44px; padding: 8px 16px; color: var(--accent); }
+button { cursor: pointer; margin: 4px; }
+li { margin-top: 16px; overflow-wrap: anywhere; }
+code { overflow-wrap: anywhere; }

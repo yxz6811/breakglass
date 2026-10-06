@@ -1,0 +1,5 @@
+main { max-width: 1120px; margin: 32px auto; padding: 24px; }
+.stage { margin-top: 24px; background: var(--bg-stage); border-radius: 13px; overflow: hidden; }
+video { display: block; width: 100%; aspect-ratio: 16 / 9; object-fit: contain; }
+select { min-height: 44px; }
+@media (min-width: 1250px) { main { margin-right: 400px; } }

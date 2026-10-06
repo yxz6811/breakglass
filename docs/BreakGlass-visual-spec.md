@@ -1,5 +1,7 @@
 # BreakGlass 视觉规范（Visual Spec）
 
+> 2026-10-06 实施增补：006按两份Constitution 2.2.0原则XIV实施持续视觉与滚动总结，复用本文1.6.0令牌。插件新UI采用Shadow DOM局部样式；任务/真实模型/平台及浏览器证据见[006任务](../specs/006-plugin-learning-layer/tasks.md)和[持续视觉验证](BreakGlass-continuous-vision-validation-2026-10-06.md)。下文“新入口待实施”是2.1.0规划时基线，不能覆盖最新逐项状态；未验证项仍不视为通过。
+
 > 2026-10-06 双入口补充：插件为主入口，网站视频导入识别新增 BG-F12/BG-U13，复用分析/互动及共享视觉令牌，具备独立文件与传输状态；以最新产品/UI规划和 Constitution 2.1.0 原则 XIII 为准。新增能力均待实施。
 
 | 项 | 值 |

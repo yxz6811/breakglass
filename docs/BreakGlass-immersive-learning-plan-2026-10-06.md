@@ -1,8 +1,11 @@
 # BreakGlass 视频沉浸学习产品规划
 
+> 2026-10-06 最新决定：用户已授权实施；主流程改为视觉模型持续识别当前视频画面，并在后台滚动总结已分析内容。作者知识层是可选加速/测试，平台业务接口不是核心依赖。问题、解决措施、降级和验收见 [持续视觉规划](BreakGlass-continuous-vision-plan-2026-10-06.md) BG-VR01–14，治理见 Constitution 2.2.0 原则 XIV；B站处理授权待确认。下文原基线与历史阶段判断不代表最新功能已经完成。
+
+
 > 日期：2026-10-06。状态：产品目标与实施规划；本次交付为文档，不表示新增功能已实现、服务已接通或学习效果已验证。
 >
-> 仓库基线：`main@d4b6e0bfdffff2b2584a537b1e0ff87e4d7e2ae9`，包含 PR #63；本轮文档差异另行记录。治理依据：[Spec Constitution 2.1.0](../.specify/memory/constitution.md)、[产品 Constitution 2.1.0](BreakGlass-constitution.md) 原则 XI/XII/XIII 及 [AGENTS.md](../AGENTS.md)。
+> 仓库基线：`main@d4b6e0bfdffff2b2584a537b1e0ff87e4d7e2ae9`，包含 PR #63；本轮文档差异另行记录。治理依据：[Spec Constitution 2.2.0](../.specify/memory/constitution.md)、[产品 Constitution 2.2.0](BreakGlass-constitution.md) 原则 XI/XII/XIII 及 [AGENTS.md](../AGENTS.md)。
 >
 > 配套交付：[UI 规划](BreakGlass-ui-plan-2026-10-06.md)、[素材权利与风险规划](BreakGlass-rights-and-risk-plan-2026-10-06.md)。功能使用同一组 `BG-F01`–`BG-F12`，界面使用 `BG-U01`–`BG-U13`；实施时逐项对应状态、数据、动作和验收，不创建另一组同义编号。风险按宪法原则 XII 的地区发布门槛处理。
 
@@ -24,7 +27,7 @@ BreakGlass 的主要入口是浏览器插件。学生观看支持平台的网课
 
 | 能力 | 已有依据 | 本规划需要补齐的部分 |
 | --- | --- | --- |
-| 扩展入口 | [manifest](../extension/manifest.json) 为 Chrome MV3，权限和主机权限为空；当前打开扩展演示页 | 支持站点适配、逐站授权、播放器识别、退出清理；尚无第三方视频注入验收 |
+| 扩展入口 | [manifest](../extension/manifest.json)为MV3；006新增activeTab/scripting/storage及固定loopback请求桥，显式注入固定受控教学页；旧演示入口保留 | 已有受控自制视频、模型替身的Edge MV3验证；真实模型、获准平台/布局/全屏等仍独立验收，未列B站支持 |
 | 抛物线 | [求值](../extension/src/curve/evaluate.js)、[校验](../extension/src/curve/validate.js)、[当前帧识别](../extension/src/curve/current-frame.js) 与独立缓存唤醒 | 函数概念更深的解释、平台视频时空绑定和新热点 UI；真实模型与像素证据继续独立补齐 |
 | 直角三角形 | [确定性解算](../extension/src/geometry-scene/solve.js)、[场景校验](../extension/src/geometry-scene/validate.js)、[动作](../extension/src/geometry-scene/actions.js)、[视图](../extension/src/geometry-scene/view.js) | 复用条件校对与不可变原题快照；不将预设、手工条件算成自动识别成功 |
 | 阅读与提问 | [003](../specs/003-preplay-lesson-points/spec.md)、[005](../specs/005-insitu-right-triangle/spec.md)、本地无状态 [reader](../breakglass-reader/) | 新模式的分段任务、部分就绪、缓存及取消契约；已有路径不自动升级为云任务 |
@@ -35,7 +38,7 @@ BreakGlass 的主要入口是浏览器插件。学生观看支持平台的网课
 
 ## 3. 范围与兼容约束
 
-本轮将插件优先的双入口（支持站点网课插件、网站用户视频导入）、分段预处理、时空热点、参数化呈现、受限账号与学习记录纳入产品规划。后续实施须有独立 Spec/Plan/Tasks、版本化契约、真实依赖与验收记录；本次不改业务代码、建立服务、部署或新增扩展权限。
+本轮将插件优先的双入口（支持站点网课插件、网站用户视频导入）、分段预处理、时空热点、参数化呈现、受限账号与学习记录纳入产品规划。后续实施须有独立 Spec/Plan/Tasks、版本化契约、真实依赖与验收记录；此前仅交付文档；后续用户已授权按006实现持续视觉首切片，生产服务/账号/部署仍须对应契约与独立验收。
 
 既有 `001`–`005` 及当前帧增强保留自己的来源、请求、状态和数据约束，不由新规划重新解释：
 
