@@ -7,6 +7,8 @@ const derive = promisify(scrypt);
 const COOKIE = 'breakglass_local_session';
 const MAX_BODY = 64 * 1024;
 const SESSION_MS = 8 * 60 * 60 * 1000;
+const PAIRING_MS = 120 * 1000;
+const PLUGIN_ORIGIN = /^chrome-extension:\/\/[a-p]{32}$/;
 const DEFAULT_ORIGINS = ['http://127.0.0.1:4173', 'http://localhost:4173'];
 const publicUser = (user) => ({ id: user.id, username: user.username });
 const tokenKey = (token) => createHash('sha256').update(token).digest('hex');
@@ -63,33 +65,73 @@ function readJson(request, limit) {
 }
 
 /** Creates only API handling, with no listener or deployment. Local single-process development use. */
-export function createLearningHandler({ dataDir, allowedOrigins = DEFAULT_ORIGINS } = {}) {
+export function createLearningHandler({ dataDir, allowedOrigins = DEFAULT_ORIGINS, now = Date.now } = {}) {
   if (!Array.isArray(allowedOrigins) || allowedOrigins.length === 0
     || !allowedOrigins.every((origin) => typeof origin === 'string'
       && /^http:\/\/(?:127\.0\.0\.1|localhost|\[::1\])(?::\d+)?$/.test(origin))) {
     throw new TypeError('本机账户服务只接受明确的 loopback Origin。');
   }
   const origins = new Set(allowedOrigins);
+  if (typeof now !== 'function') throw new TypeError('本机服务时钟必须为函数。');
   const store = createAccountStore({ dataDir, validate: checks.database });
   const sessions = new Map();
+  const pairingCodes = new Map();
+  const pluginTokens = new Map();
+  const pairingRequests = new Map();
   const loginFailures = new Map();
   const requests = new Map();
   const dummySalt = randomBytes(16).toString('hex');
   const dummyHash = randomBytes(64).toString('hex');
 
   function rate(ip, name = null) {
-    const now = Date.now();
-    for (const [key, item] of requests) if (now - item.start >= 60000) requests.delete(key);
-    for (const [key, item] of loginFailures) if (now - item.start >= 15 * 60000) loginFailures.delete(key);
-    const current = requests.get(ip) || { start: now, count: 0 };
+    const time = now();
+    for (const [key, item] of requests) if (time - item.start >= 60000) requests.delete(key);
+    for (const [key, item] of loginFailures) if (time - item.start >= 15 * 60000) loginFailures.delete(key);
+    const current = requests.get(ip) || { start: time, count: 0 };
     if (current.count >= 20) fail(429, 'rate_limited', '登录请求过于频繁，请稍后重试。');
     current.count += 1; requests.set(ip, current);
     if (name && (loginFailures.get(`${ip}:${name}`)?.count || 0) >= 5) fail(429, 'rate_limited', '登录失败次数过多，请稍后重试。');
   }
 
+  function ratePairing(ip) {
+    const time = now();
+    for (const [key, item] of pairingRequests) if (time - item.start >= 60000) pairingRequests.delete(key);
+    const entry = pairingRequests.get(ip) || { start: time, count: 0 };
+    if (entry.count >= 20) fail(429, 'rate_limited', '插件配对请求过于频繁，请稍后重试。');
+    entry.count += 1; pairingRequests.set(ip, entry);
+  }
+
+  function sweepSessions() {
+    const time = now();
+    for (const [key, item] of sessions) if (item.expiresAt <= time) sessions.delete(key);
+    for (const [key, item] of pairingCodes) {
+      if (item.expiresAt <= time || !sessions.has(item.parentKey)) pairingCodes.delete(key);
+    }
+    for (const [key, item] of pluginTokens) {
+      if (item.expiresAt <= time || !sessions.has(item.parentKey)) pluginTokens.delete(key);
+    }
+  }
+
+  function revokePlugins(userId) {
+    for (const [key, item] of pairingCodes) if (item.userId === userId) pairingCodes.delete(key);
+    for (const [key, item] of pluginTokens) if (item.userId === userId) pluginTokens.delete(key);
+  }
+
+  function assertLive(active) {
+    sweepSessions();
+    if (active.pluginKey) {
+      const paired = pluginTokens.get(active.pluginKey);
+      const parent = paired && sessions.get(paired.parentKey);
+      if (paired !== active.paired || !parent || parent.userId !== active.user.id) {
+        fail(401, 'plugin_disconnected', '插件连接已失效，请在网站重新配对。');
+      }
+    } else if (sessions.get(active.key) !== active.session) {
+      fail(401, 'unauthenticated', '本机账户会话已失效。');
+    }
+  }
+
   function sessionFor(request) {
-    const now = Date.now();
-    for (const [key, item] of sessions) if (item.expiresAt <= now) sessions.delete(key);
+    sweepSessions();
     const token = cookieToken(request);
     return token ? { key: tokenKey(token), session: sessions.get(tokenKey(token)) } : { key: null, session: null };
   }
@@ -97,7 +139,7 @@ export function createLearningHandler({ dataDir, allowedOrigins = DEFAULT_ORIGIN
     const previous = sessionFor(request); if (previous.key) sessions.delete(previous.key);
     while (sessions.size >= 1000) sessions.delete(sessions.keys().next().value);
     const token = randomBytes(32).toString('base64url');
-    const session = { userId: user.id, csrfToken: randomBytes(24).toString('base64url'), expiresAt: Date.now() + SESSION_MS };
+    const session = { userId: user.id, csrfToken: randomBytes(24).toString('base64url'), expiresAt: now() + SESSION_MS };
     sessions.set(tokenKey(token), session);
     return { body: { user: publicUser(user), csrfToken: session.csrfToken, epoch: user.epoch },
       cookie: `${COOKIE}=${token}; HttpOnly; SameSite=Strict; Path=/api; Max-Age=${SESSION_MS / 1000}` };
@@ -113,6 +155,33 @@ export function createLearningHandler({ dataDir, allowedOrigins = DEFAULT_ORIGIN
     if (!user) fail(401, 'unauthenticated', '本机账户会话已失效。');
     return { ...active, user };
   }
+
+  function clientOriginFor(request, claimed) {
+    const value = claimed === undefined ? request.headers['x-breakglass-client-origin'] : claimed;
+    if (typeof value !== 'string' || !PLUGIN_ORIGIN.test(value)
+      || (request.headers.origin !== undefined && request.headers.origin !== value)) {
+      fail(403, 'plugin_origin_rejected', '插件请求来源与连接身份不一致。');
+    }
+    return value;
+  }
+
+  async function authenticatedPlugin(request) {
+    sweepSessions();
+    const clientOrigin = clientOriginFor(request);
+    const match = /^Bearer ([A-Za-z0-9_-]{43})$/.exec(String(request.headers.authorization || ''));
+    const pluginKey = match ? tokenKey(match[1]) : null;
+    const paired = pluginKey && pluginTokens.get(pluginKey);
+    const parent = paired && sessions.get(paired.parentKey);
+    if (!paired || !parent || paired.clientOrigin !== clientOrigin || parent.userId !== paired.userId) {
+      fail(401, 'plugin_disconnected', '插件连接已失效，请在网站重新配对。');
+    }
+    const state = await store.read();
+    const user = state.users.find((item) => item.id === paired.userId);
+    if (!user) fail(401, 'plugin_disconnected', '插件连接对应的账户已失效。');
+    const active = { pluginKey, paired, user };
+    assertLive(active);
+    return active;
+  }
   function checkEpoch(user, expected) {
     if (!checks.epoch(expected)) fail(400, 'invalid_epoch', '需要当前账户的数据版本。');
     if (user.epoch !== expected) fail(409, 'epoch_conflict', '账户数据已删除或更新，请刷新后重试。');
@@ -122,19 +191,51 @@ export function createLearningHandler({ dataDir, allowedOrigins = DEFAULT_ORIGIN
     user.epoch += 1;
   }
   const mutate = (active, expected, operation) => store.transact((state) => {
+    // A logout/revocation may happen while this transaction waits in the file queue.
+    // Recheck the original capability before committing private learning data.
+    assertLive(active);
     const user = state.users.find((item) => item.id === active.user.id);
     if (!user) fail(401, 'unauthenticated', '本机账户不存在。');
     checkEpoch(user, expected);
     return operation(user);
-  });
+  }, { beforeCommit: () => assertLive(active) });
+
+  async function saveRecord(active, id, body) {
+    if (!checks.exact(body, ['record', 'expectedEpoch'])) fail(400, 'invalid_request', '保存记录需要固定字段。');
+    const record = checks.record(body.record);
+    if (!record || record.id !== id) fail(400, 'invalid_record', '记录结构、来源或标识无效。');
+    return mutate(active, body.expectedEpoch, (user) => {
+      const existing = user.records.find((item) => item.id === id);
+      if (existing && JSON.stringify(existing) !== JSON.stringify(record)) fail(409, 'record_conflict', '同一标识已有不同记录。');
+      if (!existing) {
+        if (user.records.length >= 500) fail(409, 'record_limit', '本机账户记录数量已达上限。');
+        user.records.push(record);
+      }
+      return { record: existing || record, epoch: user.epoch };
+    });
+  }
+
+  async function saveWatch(active, sourceId, body) {
+    if (!checks.exact(body, ['source', 'time', 'duration', 'expectedEpoch'])) fail(400, 'invalid_request', '观看记录字段无效。');
+    const item = checks.watch({ source: body.source, time: body.time, duration: body.duration, updatedAt: new Date(now()).toISOString() });
+    if (!item || item.source.id !== sourceId) fail(400, 'invalid_watch', '观看记录来源或时间无效。');
+    return mutate(active, body.expectedEpoch, (user) => {
+      const index = user.watch.findIndex((entry) => entry.source.id === sourceId);
+      if (index >= 0 && user.watch[index].source.kind !== item.source.kind) fail(409, 'source_conflict', '来源标识属于另一种材料。');
+      if (index < 0 && user.watch.length >= 100) fail(409, 'watch_limit', '本机观看记录数量已达上限。');
+      if (index >= 0) user.watch[index] = item; else user.watch.push(item);
+      return { item, epoch: user.epoch };
+    });
+  }
 
   return async function handle(request, response) {
     let url;
     try { url = new URL(request.url || '/', 'http://local-learning.invalid'); }
     catch { return false; }
     if (!url.pathname.startsWith('/api/')) return false;
+    const pluginRoute = url.pathname.startsWith('/api/plugin/');
     const origin = request.headers.origin;
-    const cors = typeof origin === 'string' && origins.has(origin)
+    const cors = typeof origin === 'string' && (origins.has(origin) || (pluginRoute && PLUGIN_ORIGIN.test(origin)))
       ? { 'access-control-allow-origin': origin, 'access-control-allow-credentials': 'true', vary: 'Origin' } : { vary: 'Origin' };
     const send = (status, payload, extra = {}) => {
       if (response.destroyed || response.writableEnded) return;
@@ -148,18 +249,77 @@ export function createLearningHandler({ dataDir, allowedOrigins = DEFAULT_ORIGIN
         fail(403, 'loopback_only', '本机开发账户服务不对公网开放。');
       }
       const mutation = ['POST', 'PUT', 'DELETE'].includes(request.method);
-      if ((typeof origin === 'string' && !origins.has(origin)) || (mutation && !origins.has(origin))) {
+      if (pluginRoute ? (origin !== undefined && (typeof origin !== 'string' || !PLUGIN_ORIGIN.test(origin)))
+        : ((typeof origin === 'string' && !origins.has(origin)) || (mutation && !origins.has(origin)))) {
         fail(403, 'forbidden_origin', '账户请求来源未获准。');
       }
       if (request.method === 'OPTIONS') {
-        if (!origins.has(origin)) fail(403, 'forbidden_origin', '账户请求来源未获准。');
-        send(204, {}, { 'access-control-allow-methods': 'GET, POST, PUT, DELETE, OPTIONS',
-          'access-control-allow-headers': 'content-type, x-breakglass-csrf', 'access-control-max-age': '600' });
+        if (pluginRoute ? !PLUGIN_ORIGIN.test(String(origin)) : !origins.has(origin)) fail(403, 'forbidden_origin', '账户请求来源未获准。');
+        send(204, {}, { 'access-control-allow-methods': pluginRoute ? 'GET, POST, PUT, OPTIONS' : 'GET, POST, PUT, DELETE, OPTIONS',
+          'access-control-allow-headers': pluginRoute ? 'content-type, authorization, x-breakglass-client-origin' : 'content-type, x-breakglass-csrf',
+          'access-control-max-age': '600' });
         return true;
       }
       if (!['GET', 'POST', 'PUT', 'DELETE'].includes(request.method)) fail(405, 'unsupported_method', '账户接口不接受此方法。');
       const credentialRoute = ['/api/account/register', '/api/account/login'].includes(url.pathname);
-      const body = mutation ? await readJson(request, credentialRoute ? 2048 : MAX_BODY) : null;
+      const connecting = url.pathname === '/api/plugin/connect';
+      const body = mutation ? await readJson(request, credentialRoute || connecting ? 2048 : MAX_BODY) : null;
+
+      if (pluginRoute) {
+        if (connecting && request.method === 'POST') {
+          ratePairing(ip);
+          if (!checks.exact(body, ['code', 'clientOrigin']) || typeof body.code !== 'string'
+            || !/^[A-Za-z0-9_-]{22}$/.test(body.code)) fail(400, 'invalid_pairing_code', '配对请求需要有效代码和插件来源。');
+          const clientOrigin = clientOriginFor(request, body.clientOrigin);
+          if (request.headers['x-breakglass-client-origin'] !== undefined && request.headers['x-breakglass-client-origin'] !== clientOrigin) {
+            fail(403, 'plugin_origin_rejected', '插件来源声明不一致。');
+          }
+          sweepSessions();
+          const codeKey = tokenKey(body.code);
+          const pairing = pairingCodes.get(codeKey);
+          // Consume before any asynchronous work: concurrent retries cannot mint two tokens.
+          pairingCodes.delete(codeKey);
+          const parent = pairing && sessions.get(pairing.parentKey);
+          if (!pairing || !parent || parent.userId !== pairing.userId) fail(401, 'pairing_expired', '配对码已过期或已使用，请在网站重新生成。');
+          const state = await store.read();
+          const user = state.users.find((item) => item.id === pairing.userId);
+          sweepSessions();
+          if (!user || sessions.get(pairing.parentKey) !== parent || pairing.expiresAt <= now()) {
+            fail(401, 'pairing_expired', '配对码已过期或账户已退出，请重新生成。');
+          }
+          if (pluginTokens.size >= 1000 || [...pluginTokens.values()].filter((item) => item.userId === user.id).length >= 16) {
+            fail(409, 'plugin_connection_limit', '插件连接数量已达上限，请先撤销已有连接。');
+          }
+          const token = randomBytes(32).toString('base64url');
+          const expiresAt = parent.expiresAt;
+          pluginTokens.set(tokenKey(token), { parentKey: pairing.parentKey, userId: user.id, clientOrigin, expiresAt });
+          send(200, { token, user: publicUser(user), epoch: user.epoch, expiresAt });
+          return true;
+        }
+        const active = await authenticatedPlugin(request);
+        if (url.pathname === '/api/plugin/me' && request.method === 'GET') {
+          send(200, { user: publicUser(active.user), epoch: active.user.epoch, expiresAt: active.paired.expiresAt }); return true;
+        }
+        if (url.pathname === '/api/plugin/disconnect' && request.method === 'POST') {
+          if (!checks.exact(body, [])) fail(400, 'invalid_request', '断开请求不接受额外字段。');
+          pluginTokens.delete(active.pluginKey); send(200, { ok: true }); return true;
+        }
+        if (url.pathname === '/api/plugin/records' && request.method === 'GET') {
+          send(200, { records: active.user.records, epoch: active.user.epoch }); return true;
+        }
+        const pairedRecord = /^\/api\/plugin\/records\/([^/]+)$/.exec(url.pathname);
+        if (pairedRecord && request.method === 'PUT') {
+          send(200, await saveRecord(active, pathId(pairedRecord[1]), body)); return true;
+        }
+        if (url.pathname === '/api/plugin/watch' && request.method === 'GET') {
+          send(200, { items: active.user.watch, epoch: active.user.epoch }); return true;
+        }
+        const pairedWatch = /^\/api\/plugin\/watch\/([^/]+)$/.exec(url.pathname);
+        if (pairedWatch && request.method === 'PUT') {
+          send(200, await saveWatch(active, pathId(pairedWatch[1]), body)); return true;
+        }
+        fail(404, 'plugin_scope_rejected', '插件连接只允许记录和观看位置同步。');
+      }
 
       if (credentialRoute && request.method === 'POST') {
         if (!checks.exact(body, ['username', 'password'])) fail(400, 'invalid_credentials', '请填写用户名和密码。');
@@ -181,7 +341,7 @@ export function createLearningHandler({ dataDir, allowedOrigins = DEFAULT_ORIGIN
           user = state.users.find((item) => item.username === name);
           const calculated = await hashPassword(body.password, user?.passwordSalt || dummySalt);
           if (!equals(calculated, user?.passwordHash || dummyHash)) {
-            const key = `${ip}:${name}`; const entry = loginFailures.get(key) || { start: Date.now(), count: 0 };
+            const key = `${ip}:${name}`; const entry = loginFailures.get(key) || { start: now(), count: 0 };
             entry.count += 1; loginFailures.set(key, entry);
             fail(401, 'invalid_credentials', '用户名或密码不正确。');
           }
@@ -200,6 +360,20 @@ export function createLearningHandler({ dataDir, allowedOrigins = DEFAULT_ORIGIN
         return true;
       }
       const active = await authenticated(request, mutation);
+      if (url.pathname === '/api/account/plugin-pairing' && ['POST', 'DELETE'].includes(request.method)) {
+        if (!checks.exact(body, [])) fail(400, 'invalid_request', '插件配对设置不接受额外字段。');
+        assertLive(active);
+        if (request.method === 'DELETE') {
+          revokePlugins(active.user.id); send(200, { ok: true }); return true;
+        }
+        ratePairing(ip);
+        for (const [key, item] of pairingCodes) if (item.parentKey === active.key) pairingCodes.delete(key);
+        if (pairingCodes.size >= 1000) fail(409, 'pairing_limit', '待连接配对码数量已达上限，请稍后重试。');
+        const code = randomBytes(16).toString('base64url');
+        const expiresAt = Math.min(now() + PAIRING_MS, active.session.expiresAt);
+        pairingCodes.set(tokenKey(code), { userId: active.user.id, parentKey: active.key, expiresAt });
+        send(200, { code, expiresAt, user: publicUser(active.user) }); return true;
+      }
       if (url.pathname === '/api/account/logout' && request.method === 'POST') {
         if (!checks.exact(body, [])) fail(400, 'invalid_request', '退出请求不接受额外字段。');
         sessions.delete(active.key);
@@ -213,19 +387,7 @@ export function createLearningHandler({ dataDir, allowedOrigins = DEFAULT_ORIGIN
       if (recordPath && ['PUT', 'DELETE'].includes(request.method)) {
         const id = pathId(recordPath[1]);
         if (request.method === 'PUT') {
-          if (!checks.exact(body, ['record', 'expectedEpoch'])) fail(400, 'invalid_request', '保存记录需要固定字段。');
-          const record = checks.record(body.record);
-          if (!record || record.id !== id) fail(400, 'invalid_record', '记录结构、来源或标识无效。');
-          const result = await mutate(active, body.expectedEpoch, (user) => {
-            const existing = user.records.find((item) => item.id === id);
-            if (existing && JSON.stringify(existing) !== JSON.stringify(record)) fail(409, 'record_conflict', '同一标识已有不同记录。');
-            if (!existing) {
-              if (user.records.length >= 500) fail(409, 'record_limit', '本机账户记录数量已达上限。');
-              user.records.push(record);
-            }
-            return { record: existing || record, epoch: user.epoch };
-          });
-          send(200, result); return true;
+          send(200, await saveRecord(active, id, body)); return true;
         }
         if (!checks.exact(body, ['expectedEpoch'])) fail(400, 'invalid_request', '删除记录需要当前数据版本。');
         const result = await mutate(active, body.expectedEpoch, (user) => {
@@ -248,18 +410,7 @@ export function createLearningHandler({ dataDir, allowedOrigins = DEFAULT_ORIGIN
       }
       const watchPath = /^\/api\/learning\/watch\/([^/]+)$/.exec(url.pathname);
       if (watchPath && request.method === 'PUT') {
-        const sourceId = pathId(watchPath[1]);
-        if (!checks.safeId(sourceId) || !checks.exact(body, ['source', 'time', 'duration', 'expectedEpoch'])) fail(400, 'invalid_request', '观看记录字段无效。');
-        const item = checks.watch({ source: body.source, time: body.time, duration: body.duration, updatedAt: new Date().toISOString() });
-        if (!item || item.source.id !== sourceId) fail(400, 'invalid_watch', '观看记录来源或时间无效。');
-        const result = await mutate(active, body.expectedEpoch, (user) => {
-          const index = user.watch.findIndex((entry) => entry.source.id === sourceId);
-          if (index >= 0 && user.watch[index].source.kind !== item.source.kind) fail(409, 'source_conflict', '来源标识属于另一种材料。');
-          if (index < 0 && user.watch.length >= 100) fail(409, 'watch_limit', '本机观看记录数量已达上限。');
-          if (index >= 0) user.watch[index] = item; else user.watch.push(item);
-          return { item, epoch: user.epoch };
-        });
-        send(200, result); return true;
+        send(200, await saveWatch(active, pathId(watchPath[1]), body)); return true;
       }
       if (url.pathname === '/api/learning/attempts' && request.method === 'GET') {
         if ([...url.searchParams.keys()].some((key) => key !== 'recordId') || url.searchParams.getAll('recordId').length > 1) fail(400, 'invalid_request', '复练查询字段无效。');
@@ -278,7 +429,7 @@ export function createLearningHandler({ dataDir, allowedOrigins = DEFAULT_ORIGIN
           if (user.attempts.length >= 2000) fail(409, 'attempt_limit', '本机复练次数已达上限。');
           const attempt = { id: randomUUID(), recordId: original.id, answer: body.answer,
             hintUsed: body.hintUsed, correct: verdict.correct,
-            outcome: verdict.correct ? body.hintUsed ? 'correct_with_hint' : 'correct_independent' : 'wrong', createdAt: new Date().toISOString() };
+            outcome: verdict.correct ? body.hintUsed ? 'correct_with_hint' : 'correct_independent' : 'wrong', createdAt: new Date(now()).toISOString() };
           user.attempts.push(attempt); return { attempt, expectedAnswer: verdict.expectedAnswer, epoch: user.epoch };
         });
         send(200, result); return true;

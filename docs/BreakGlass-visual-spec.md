@@ -1,5 +1,8 @@
 # BreakGlass 视觉规范（Visual Spec）
 
+> 008最新实施（治理2.4.0）：插件与网站本机账号显式配对、未来记录/观看同步、受限离线队列，网站短片段多帧＋登记作者字幕，以及参数预测/三级提示/独立程序变式。UI、风险及状态见[008连通学习规划](BreakGlass-connected-learning-2026-10-06.md)与[任务](../specs/008-connected-learning/tasks.md)。真实模型、B站许可、公网跨设备与真实学生效果仍独立待验；下文历史基线保留。
+
+
 > 007网站主题增补（用户最新要求）：学习管理中心沿用仓库showcase暗色品牌，使用`learning-site/site.css`局部覆盖与品牌SVG。颜色、布局与功能映射见[管理网站UI规划](BreakGlass-learning-management-ui-2026-10-06.md)。旧工作台共享令牌、注入Shadow DOM及历史验收保持独立；暗色管理网站不代表更改所有产品主题。
 
 > 2026-10-06 实施增补：006按两份Constitution 2.2.0原则XIV实施持续视觉与滚动总结，复用本文1.6.0令牌。插件新UI采用Shadow DOM局部样式；任务/真实模型/平台及浏览器证据见[006任务](../specs/006-plugin-learning-layer/tasks.md)和[持续视觉验证](BreakGlass-continuous-vision-validation-2026-10-06.md)。下文“新入口待实施”是2.1.0规划时基线，不能覆盖最新逐项状态；未验证项仍不视为通过。

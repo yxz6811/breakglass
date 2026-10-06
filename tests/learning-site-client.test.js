@@ -82,3 +82,15 @@ test('deletion supersedes old write acknowledgements and their earlier data epoc
   resolveSave(reply({ record: { id: 'old-record' }, epoch: 0 })); await rejected;
   assert.equal(client.snapshot().epoch, 1); assert.equal(client.snapshot().user.id, 'alice');
 });
+
+test('refresh of same account detects external deletion epoch and invalidates stale saves', async () => {
+  let epoch = 0; let resolveSave; let signal;
+  const client = createClient({ fetch: async (route, options) => {
+    if (route === '/api/account/me') return reply({ user: { id: 'alice', username: 'alice' }, csrfToken: 'csrf', epoch });
+    signal = options.signal; return new Promise((resolve) => { resolveSave = resolve; });
+  } });
+  await client.refresh(); const original = client.snapshot().generation;
+  const old = client.saveRecord({ id: 'pre-deletion' }); const rejected = assert.rejects(old, (error) => error.code === 'stale_session');
+  epoch = 1; await client.refresh(); assert.ok(client.snapshot().generation > original); assert.equal(signal.aborted, true);
+  resolveSave(reply({ epoch: 0 })); await rejected; assert.equal(client.snapshot().epoch, 1);
+});

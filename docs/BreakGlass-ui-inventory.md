@@ -1,5 +1,8 @@
 # BreakGlass 功能与参数清单（面向按钮 UI 与交互动画设计）
 
+> 008最新实施（治理2.4.0）：插件与网站本机账号显式配对、未来记录/观看同步、受限离线队列，网站短片段多帧＋登记作者字幕，以及参数预测/三级提示/独立程序变式。UI、风险及状态见[008连通学习规划](BreakGlass-connected-learning-2026-10-06.md)与[任务](../specs/008-connected-learning/tasks.md)。真实模型、B站许可、公网跨设备与真实学生效果仍独立待验；下文历史基线保留。
+
+
 > 007实际管理网站：`learning-site/index.html`新增概览、观看进度、记录、复练、本地视频与账户设置；插件状态页新增明确JSON导出和管理中心入口。该页面的控件/功能映射见[管理网站UI规划](BreakGlass-learning-management-ui-2026-10-06.md)，验证以[007任务](../specs/007-learning-site-and-particles/tasks.md)为准。本表下方保留旧演示基线。
 
 > 2026-10-06 双入口补充：插件为主入口，网站视频导入识别新增 BG-F12/BG-U13，复用分析/互动及共享视觉令牌，具备独立文件与传输状态；以最新产品/UI规划和 Constitution 2.1.0 原则 XIII 为准。新增能力均待实施。

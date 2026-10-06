@@ -124,7 +124,25 @@
     listen(document, 'visibilitychange', () => { if (document.hidden) stop('页面隐藏，画面和总结处理已停止。'); });
     overlay.updateStatus(allowed ? '获准自制素材：点击开始后仅发送当前代表帧。模型留空时会显示未配置。'
       : '文件只在本机预览。你可以输入通用数学条件；没有启用AI或读取音轨。');
-    return { start, stop, destroy };
+    function showPreparedContext(value) {
+      if (!allowed || !current() || value?.status !== 'context' || value.sourceId !== source.id
+        || value.videoVersion !== source.version || value.analysisVersion !== source.analysisVersion
+        || !Array.isArray(value.objects)) throw new Error('片段来源已改变。');
+      stop();
+      const prepared = value.objects.flatMap(({ frameTime, result }) => {
+        const candidate = bg.pluginContracts.validateVisualResult(result); if (!candidate.ok) throw new Error(candidate.message);
+        const end = Math.min(video.duration, frameTime + 2); if (end <= frameTime) return [];
+        return [{ id: `context-${crypto.randomUUID()}`, start: frameTime, end, area: candidate.value.area,
+          title: candidate.value.title, explanation: `${candidate.value.explanation}\n常见误区：${candidate.value.pitfallHint || '暂无提醒，不能据此判定学生出错。'}`,
+          template: candidate.value.template, snapshot: candidate.value.snapshot, origin: 'vision',
+          sourceLabel: value.coverage?.inputTypes?.includes('subtitle') ? 'AI片段候选（稀疏画面＋作者字幕）' : 'AI片段候选（稀疏画面）' }];
+      });
+      const valid = bg.pluginContracts.validatePoints(prepared, { duration: video.duration, source });
+      if (!valid.ok) throw new Error(valid.message);
+      points = valid.value; overlay.updatePoints(points); overlay.updateSummary(value);
+      overlay.updateStatus('片段候选已载入；当前帧热点可点击，数学条件仍须人工确认。未处理音频。');
+    }
+    return { start, stop, destroy, showPreparedContext };
   }
   bg.webVisual = { createSession };
 })(globalThis);

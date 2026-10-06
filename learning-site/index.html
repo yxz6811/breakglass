@@ -38,6 +38,13 @@
           <button id="manual-explore" type="button" disabled>只探索手工数学条件</button></div>
         <p id="session-status" role="status" aria-live="polite"></p>
       </section>
+      <section class="processing-info" aria-labelledby="context-title"><h3 id="context-title">把一小段连起来理解</h3>
+        <p>选择不超过30秒的片段，默认分析4张代表帧。可以结合已登记作者字幕；不会读取音轨，也不会上传整视频。候选总结可能遗漏未采样的细节。</p>
+        <div class="field-grid"><label>片段起点（秒）<input id="context-start" type="number" min="0" step="0.01" value="0"></label><label>片段终点（秒）<input id="context-end" type="number" min="0" step="0.01" value="1"></label></div>
+        <label class="record-select"><input id="use-author-subtitles" type="checkbox" checked disabled>结合登记作者字幕</label><p id="context-source" class="muted">等待素材登记核对。</p>
+        <div class="actions"><button id="analyze-context" type="button" disabled>分析这个片段</button><button id="cancel-context" type="button" disabled>停止并清除片段候选</button></div>
+        <p id="context-status" role="status" aria-live="polite">选择获准素材后可使用；模型留空时明确显示未配置。</p><div id="context-result" class="context-result"></div>
+      </section>
     </section>
     <section id="account" class="panel" data-page="account" hidden aria-labelledby="account-title"><h2 id="account-title">当前账户</h2>
       <p id="account-status" role="status" aria-live="polite">正在读取本机账户状态…</p>
@@ -46,6 +53,12 @@
         <div class="actions"><button id="login" class="primary" type="submit">登录 / 切换账户</button><button id="register" type="button">注册本机开发账户</button><button id="logout" type="button" disabled>退出当前账户</button></div>
       </form>
       <p class="muted">未登录时记录真实保存在这台浏览器。登录不会自动上传本机记录；退出或切换会清理旧账户的可见数据并停止当前识别会话。</p>
+      <section class="processing-info" aria-labelledby="pair-title"><h3 id="pair-title">连接学习插件</h3>
+        <p>登录后生成一次性配对码，在插件的账户设置中输入。配对只连接这台电脑的当前网站会话；退出、切换账户、撤销或服务重启后需要重新配对。</p>
+        <div class="actions"><button id="create-pairing" type="button" disabled>生成两分钟配对码</button><button id="revoke-pairings" type="button" disabled>撤销此账户全部插件连接</button></div>
+        <output id="pairing-code" class="pairing-code" aria-label="一次性插件配对码"></output><p id="pairing-status" role="status" aria-live="polite">先登录，再由你主动连接插件。</p>
+        <p class="muted">插件保存先留在本机。开启同步后，新记录与观看位置可写入此账户；配对前的记录需另行勾选导入。失败会显示“未确认”，不会计作已同步。</p>
+      </section>
     </section>
     <section id="learning-center" class="panel" data-page="records" hidden aria-labelledby="center-title"><h2 id="center-title">疑问与易错记录</h2>
       <div class="field-grid"><label>查看范围<select id="record-scope"><option value="local">本机访客记录</option><option id="account-option" value="account" disabled>当前账户记录</option></select></label>
@@ -72,11 +85,13 @@
       <div class="actions"><button id="scene-apply" type="button">应用参数探索</button><button id="scene-reset" type="button">恢复保存的条件</button><button id="scene-return" type="button" disabled>定位匹配视频</button><button id="scene-close" type="button">收起场景</button></div>
       <p id="scene-status" role="status"></p>
       <section id="practice-panel" aria-labelledby="practice-title"><h3 id="practice-title">可跳过的理解复练</h3>
+        <section class="processing-info" aria-labelledby="prediction-title"><h4 id="prediction-title">先想变化，再看图</h4><p id="prediction-question"></p><div id="prediction-options" class="actions"></div><p id="prediction-status" role="status"></p><button id="apply-prediction" type="button" disabled>在图中验证这个变化</button><p class="muted">这里练习理解变化，不生成正式作答或掌握结论；下面的复练仍使用保存的原条件。</p></section>
         <p id="practice-question"></p><form id="practice-form"><div id="practice-number-field"><label>斜边 BC<input id="practice-number" type="number" step="any"></label></div>
           <div id="practice-vertex-fields" class="field-grid" hidden><label>顶点横坐标 h<input id="practice-h" type="number" step="any"></label><label>顶点纵坐标 k<input id="practice-k" type="number" step="any"></label></div>
           <label>我为什么这样想（可选，仅本次）<textarea id="self-explanation" rows="2" maxlength="1000"></textarea></label>
-          <div class="actions"><button id="submit-practice" class="primary" type="submit">提交答案并验证</button><button id="show-hint" type="button">给一点提示</button><button id="show-answer" type="button">查看答案</button><button id="skip-practice" type="button">跳过这次复练</button></div>
+          <div class="actions"><button id="submit-practice" class="primary" type="submit">提交答案并验证</button><button id="show-hint" type="button">给一点提示（0/3）</button><button id="show-answer" type="button">查看答案</button><button id="skip-practice" type="button">跳过这次复练</button></div>
         </form><p id="practice-hint" class="muted" hidden></p><p id="practice-answer" hidden></p><p id="practice-status" role="status"></p>
+        <div class="actions"><button id="create-variant" type="button">换一道程序生成的变式</button><button id="save-explanation" type="button">把我的解释保存为疑问笔记</button></div><p id="pedagogy-status" role="status"></p>
       </section>
     </section>
     <section class="panel" data-page="account" hidden aria-labelledby="data-title"><h2 id="data-title">账户数据与模型设置</h2>
@@ -90,6 +105,6 @@
   <script src="../extension/src/curve/evaluate.js"></script>
   <script src="../extension/src/geometry-scene/validate.js"></script><script src="../extension/src/geometry-scene/solve.js"></script><script src="../extension/src/geometry-scene/actions.js"></script>
   <script src="../extension/src/geometry/content-rect.js"></script><script src="../extension/src/plugin/contracts.js"></script><script src="../extension/src/plugin/frame-sampler.js"></script><script src="../extension/src/plugin/live-loop.js"></script><script src="../extension/src/plugin/overlay.js"></script>
-  <script src="../extension/src/plugin/particle-renderer.js"></script><script src="account-client.js"></script><script src="records.js"></script><script src="import.js"></script><script src="visual-session.js"></script><script src="app.js"></script>
+  <script src="../extension/src/plugin/particle-renderer.js"></script><script src="../extension/src/plugin/video-context.js"></script><script src="account-client.js"></script><script src="records.js"></script><script src="pedagogy.js"></script><script src="import.js"></script><script src="visual-session.js"></script><script src="pairing.js"></script><script src="context.js"></script><script src="app.js"></script>
 </body>
 </html>

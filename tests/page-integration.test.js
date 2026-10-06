@@ -104,7 +104,7 @@ test('006仅新增显式activeTab和本机reader权限，不放宽旧页面脚�
   const manifest = readJson('manifest.json');
   assert.equal(manifest.manifest_version, 3);
   assert.deepEqual(manifest.permissions, ['activeTab', 'scripting', 'storage']);
-  assert.deepEqual(manifest.host_permissions, ['http://127.0.0.1:8787/*']);
+  assert.deepEqual(manifest.host_permissions, ['http://127.0.0.1:8787/*', 'http://127.0.0.1:4174/*']);
   assert.equal('content_scripts' in manifest, false);
   assert.equal(manifest.content_security_policy.extension_pages, "script-src 'self'; object-src 'self'");
 });
@@ -123,6 +123,7 @@ test('扩展不含远程地址或动态代码，005 仅保留本机 reader 文�
     if (relative === 'src/background/service-worker.js') {
       withoutSvgNamespace = withoutSvgNamespace.replaceAll('http://127.0.0.1:8787/learning/', 'LOCAL_READER/learning/');
     }
+    if (relative === 'src/plugin/account-sync.js') withoutSvgNamespace = withoutSvgNamespace.replaceAll('http://127.0.0.1:4174/api/plugin', 'LOCAL_ACCOUNT/api/plugin');
     assert.doesNotMatch(withoutSvgNamespace, /https?:\/\//, '远程地址：' + file);
     assert.doesNotMatch(text, /\bXMLHttpRequest\b|WebSocket|EventSource|importScripts|\beval\s*\(|new\s+Function/, '动态或网络代码：' + file);
   }
@@ -168,7 +169,7 @@ test('覆盖层绝对定位并接入多画幅重算与测量', () => {
 test('入口不可用时不会注入未验证页面', () => {
   const manifest = readJson('manifest.json');
   assert.equal('content_scripts' in manifest, false);
-  assert.deepEqual(manifest.host_permissions, ['http://127.0.0.1:8787/*']);
+  assert.deepEqual(manifest.host_permissions, ['http://127.0.0.1:8787/*', 'http://127.0.0.1:4174/*']);
   assert.equal('web_accessible_resources' in manifest, false);
 });
 

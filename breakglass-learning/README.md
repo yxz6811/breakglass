@@ -40,4 +40,28 @@ const handleLearning = createLearningHandler({
 
 稳定错误包括 401 `unauthenticated/invalid_credentials`、403 `forbidden_origin/csrf_rejected/loopback_only`、409 `epoch_conflict/record_conflict`、413 `payload_too_large/storage_full`、429 `rate_limited`；损坏或不可写存储返回 503，不泄露目录。所有 API 响应 no-store。请求最多 64 KiB，注册/登录最多 2 KiB；注册与登录每 IP 最多 20 次/分钟，账号+IP 连续 5 次登录失败后 15 分钟内拒绝后续登录。
 
+## 008 本机插件配对同步
+
+网页登录后，由学生明确生成一次性配对码，在插件记录页输入并连接当前账号。连接只授权学习记录和私人观看位置，不读取网站cookie、不发送密码、不上传视频、不自动导入此前访客数据。对应宿主仍为loopback本机开发服务，未部署公众云账号。
+
+| 接口 | 请求/结果 |
+| --- | --- |
+| POST `/api/account/plugin-pairing` | 网站cookie+CSRF，`{}` → `{code,expiresAt,user}`；code为22字符base64url，最多120秒，同一父会话新码失效旧码 |
+| DELETE `/api/account/plugin-pairing` | 网站cookie+CSRF，`{}` → `{ok:true}`；撤销当前账号全部待配对码和插件连接 |
+| POST `/api/plugin/connect` | `{code,clientOrigin}` → `{token,user,epoch,expiresAt}`；一次性消费代码并绑定父网站会话 |
+| GET `/api/plugin/me` | `{user,epoch,expiresAt}` |
+| POST `/api/plugin/disconnect` | `{}` → `{ok:true}`；仅撤销当前插件令牌 |
+| GET `/api/plugin/records` | `{records,epoch}`；仅当前连接账号 |
+| PUT `/api/plugin/records/:id` | `{record,expectedEpoch}` → `{record,epoch}`；与网站共用严格结构、数学、同值幂等和冲突规则 |
+| GET `/api/plugin/watch` | `{items,epoch}` |
+| PUT `/api/plugin/watch/:sourceId` | `{source,time,duration,expectedEpoch}` → `{item,epoch}`；与网站共用观看元数据规则 |
+
+所有`expiresAt`为Unix毫秒数。插件令牌为43字符base64url，只在服务端内存存其SHA-256哈希；配对码也仅内存哈希，不写账户数据、导出或日志。连接寿命不超过父网页会话的8小时；网页退出、切换账号使该父会话对应的插件连接失效，重启全部运行时连接失效，已有学习数据保留。服务端在每次插件请求以及学习事务提交前核验父会话；账号删除推进epoch，旧队列不得通过刷新epoch再重放删除前的数据。
+
+`clientOrigin`须精确符合`chrome-extension://[a-p]{32}`。连接后的请求须带`Authorization: Bearer TOKEN`和`X-BreakGlass-Client-Origin: clientOrigin`；后台请求可没有Origin，存在时必须与绑定值完全一致。普通网站Origin不能使用插件接口；cookie和CSRF不代替插件令牌。权限不包含作答、账号管理、全部导出或删除。PUT的record.id本身是幂等操作标识，不向原有作答POST增加自动重试。
+
+生成配对码和连接共同限制为每IP每分钟20次。连接最多16个/账号、1000个/服务；待配对码最多1000个且同父会话只保留最新一个。连接请求最多2KiB，记录/观看请求最多64KiB。稳定新增错误包括401 `pairing_expired/plugin_disconnected`、403 `plugin_origin_rejected`、409 `plugin_connection_limit`和404 `plugin_scope_rejected`。令牌失效后须重新登录并明确配对，不能静默把原账号队列归给新账号。
+
+测试使用可注入`now`时钟核验120秒与8小时到期，不改变生产默认`Date.now`，不是虚拟HTTP或虚拟持久化。真实HTTP/文件用例还覆盖并发一次码消费、跨账号与跨扩展隔离、幂等冲突、删除epoch、撤销、原子提交前失权、限额与重启。
+
 验证命令：`npm test`（本目录）或 `node --test breakglass-learning/tests/*.test.mjs`（仓库根）。这些测试验证真实本机 HTTP/账户/文件持久化，不代表正式地区发布、监护、跨境、安全审计或学习效果验收。本模块不读取模型密钥，也不提供云部署。

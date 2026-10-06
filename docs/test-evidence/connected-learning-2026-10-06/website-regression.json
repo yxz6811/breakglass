@@ -1,0 +1,117 @@
+{
+  "status": "passed",
+  "model": "explicit in-process transport stub; no real model inference",
+  "checks": {
+    "emptyOverviewAndBrandResponsive": true,
+    "actualFileFingerprintCaptureAndGuestSave": true,
+    "restoredSceneWithoutVideoAndParticleCamera": true,
+    "guestActualWrongHintCorrectIndependentCorrectAndSkip": true,
+    "realAccountRegistrationAndExplicitGuestImport": true,
+    "accountProgramJudgedAttemptsAndWatch": true,
+    "logoutSecondAccountIsolationAndReturn": true,
+    "unregisteredSameNamePreviewManualAndFingerprintIsolation": true,
+    "realExportAndAccountAndGuestClear": true,
+    "unconfiguredModelHonestEmptyResult": true
+  },
+  "steps": [
+    "emptyOverviewAndBrandResponsive",
+    "actualFileFingerprintCaptureAndGuestSave",
+    "restoredSceneWithoutVideoAndParticleCamera",
+    "guestActualWrongHintCorrectIndependentCorrectAndSkip",
+    "realAccountRegistrationAndExplicitGuestImport",
+    "accountProgramJudgedAttemptsAndWatch",
+    "logoutSecondAccountIsolationAndReturn",
+    "unregisteredSameNamePreviewManualAndFingerprintIsolation",
+    "realExportAndAccountAndGuestClear",
+    "unconfiguredModelHonestEmptyResult"
+  ],
+  "screenshots": [
+    "site-empty-overview-1440.png",
+    "site-empty-overview-360.png",
+    "site-model-stub-confirmed-learning-panel.png",
+    "site-model-stub-hotspot-confirmed-1440.png",
+    "site-restored-particles-front.png",
+    "site-restored-particles-rotated.png",
+    "site-guest-actual-wrong.png",
+    "site-account-explicit-import.png",
+    "site-account-watch-matched.png",
+    "site-second-account-empty.png",
+    "site-unregistered-preview-manual-no-ai.png",
+    "site-cleared-local-and-account.png",
+    "site-unconfigured-model-no-fake-hotspot.png"
+  ],
+  "network": [
+    {
+      "mode": "configured-test-stub",
+      "path": "/api/vision/read",
+      "sourceId": "file-fb34fb64f937df683862740b67dc43b1c925bd37ffc04cf9ae6a6efdce7339a3",
+      "frameTime": 4,
+      "hasJpeg": true,
+      "imageChars": 26931,
+      "observationCount": 0,
+      "status": 200
+    },
+    {
+      "mode": "configured-test-stub",
+      "path": "/api/vision/summarize",
+      "sourceId": "file-fb34fb64f937df683862740b67dc43b1c925bd37ffc04cf9ae6a6efdce7339a3",
+      "hasJpeg": false,
+      "imageChars": 0,
+      "observationCount": 1,
+      "status": 200
+    },
+    {
+      "mode": "model-unconfigured",
+      "path": "/api/vision/read",
+      "sourceId": "file-fb34fb64f937df683862740b67dc43b1c925bd37ffc04cf9ae6a6efdce7339a3",
+      "frameTime": 4,
+      "hasJpeg": true,
+      "imageChars": 26931,
+      "observationCount": 0,
+      "status": 503
+    }
+  ],
+  "pageErrors": [],
+  "realModelVerified": false,
+  "publicDeploymentVerified": false,
+  "learningEffectVerified": false,
+  "platformRightsVerified": false,
+  "environment": {
+    "platform": "win32",
+    "release": "10.0.26200",
+    "node": "v24.21.0",
+    "cpu": "AMD Ryzen 5 9600X 6-Core Processor             "
+  },
+  "browser": "154.0.4258.37",
+  "initialConfiguration": {
+    "provider": "explicit test stub",
+    "credentialsObtainedFromUser": false
+  },
+  "layouts": [
+    {
+      "width": 1440,
+      "scrollWidth": 1440,
+      "clientWidth": 1440
+    },
+    {
+      "width": 360,
+      "scrollWidth": 360,
+      "clientWidth": 360
+    }
+  ],
+  "learningLayer": {
+    "layout": "flow",
+    "parent": "import-workbench",
+    "left": 317,
+    "top": 132.234375,
+    "width": 640,
+    "background": "rgb(16, 23, 27)",
+    "pointerEvents": "auto"
+  },
+  "guestRecordId": "c447f2ee-5dd1-40bf-a2e7-784750dbbf6d",
+  "particleRendering": "actual Edge canvas screenshots change with camera; mathematical SVG unchanged",
+  "visualCalls": 1,
+  "summaryCalls": 1,
+  "unconfiguredProviderCalls": 0,
+  "screenshotsRetained": "external workspace output; new008 screenshots stored separately"
+}

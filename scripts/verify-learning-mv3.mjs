@@ -77,7 +77,7 @@ try {
   await page.getByRole('button', { name: '向右观察', exact: true }).press('Enter');
   await page.getByRole('button', { name: '正视图', exact: true }).click();
   assert.equal(await page.locator('.bg-triangle').count(), 1, 'clear math survives particle mode/fallback');
-  await page.getByRole('textbox', { name: '我的疑问或易错提醒（仅本机）', exact: true }).fill('为什么不能直接相加？');
+  await page.getByRole('textbox', { name: '我的疑问或易错提醒（先存本机，账号同步按配对设置）', exact: true }).fill('为什么不能直接相加？');
   await page.getByRole('button', { name: '保存疑问', exact: true }).click();
   await page.getByText('疑问已保存到本机。', { exact: true }).waitFor();
   await page.screenshot({ path: path.join(output, 'mv3-model-stub-learning.png'), fullPage: true });
@@ -105,7 +105,7 @@ try {
   // Clear from the extension page while the video tab remains visible and its
   // paused frame is unchanged: there is no new request to detect a stale token.
   await recordsPage.locator('#clear').evaluate((button) => button.click());
-  await recordsPage.getByText('已清除记录并使在途会话失效。', { exact: true }).waitFor();
+  await recordsPage.getByText('已清除本机记录和待同步队列，并停止在途视觉会话；账号已确认记录保留。', { exact: true }).waitFor();
   assert.equal(await recordsPage.locator('#records li').count(), 0);
   await page.getByRole('button', { name: '开始持续视觉识别', exact: true }).waitFor();
   assert.equal(await page.locator('.bg-point-list button').count(), 0);

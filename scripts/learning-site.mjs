@@ -3,20 +3,24 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { createHash, randomUUID } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
+import { createRequire } from 'node:module';
 import { createLearningHandler } from '../breakglass-learning/src/server.mjs';
-import { readLearning, checkLearningRead } from '../breakglass-reader/src/learning.mjs';
+import { readLearning, checkLearningRead, LEARNING_METADATA_FIELDS, exactLearningFields } from '../breakglass-reader/src/learning.mjs';
 import { summarizeLearning, checkLearningSummary } from '../breakglass-reader/src/learning-summary.mjs';
+import { readLearningContext, checkLearningContext } from '../breakglass-reader/src/learning-context.mjs';
 import { loadSettings } from '../breakglass-reader/src/settings.mjs';
 const root = path.resolve(fileURLToPath(new URL('../', import.meta.url)));
+const textContext = createRequire(import.meta.url)('../extension/src/plugin/video-context.js');
 export const FILE_LIMITS = Object.freeze({ maxBytes: 64 * 1024 * 1024, maxDuration: 600, maxWidth: 1920, maxHeight: 1080 });
 const fixtures = [
-  { file: 'extension/assets/video/geometry/triangle-3-4-5.mp4', title: '自制直角三角形课程', duration: 12 },
+  { file: 'extension/assets/video/geometry/triangle-3-4-5.mp4', title: '自制直角三角形课程', duration: 12,
+    subtitle: 'extension/assets/video/geometry/triangle-3-4-5.zh.vtt' },
   { file: 'extension/assets/video/breakglass-demo-9s.mp4', title: '自制抛物线课程', duration: 9.383333 }
 ];
 const extensions = ['src/ui/theme.css', 'src/geometry/content-rect.js', 'src/curve/evaluate.js',
   'src/geometry-scene/validate.js', 'src/geometry-scene/solve.js', 'src/geometry-scene/actions.js',
   'src/plugin/contracts.js', 'src/plugin/live-loop.js', 'src/plugin/frame-sampler.js', 'src/plugin/particle-renderer.js',
-  'src/plugin/overlay.js', 'src/plugin/overlay.css'].map((file) => '/extension/' + file);
+  'src/plugin/overlay.js', 'src/plugin/overlay.css', 'src/plugin/video-context.js'].map((file) => '/extension/' + file);
 const brand = ['/site/assets/breakglass-brand/logo-aperture-fracture.svg', '/site/assets/breakglass-brand/wordmark-aperture.svg'];
 const types = { '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.svg': 'image/svg+xml', '.mp4': 'video/mp4' };
 function json(response, status, value) {
@@ -51,7 +55,14 @@ export function registeredSources() {
   return new Map(fixtures.map((fixture) => {
     const sha = createHash('sha256').update(fs.readFileSync(path.join(root, fixture.file))).digest('hex');
     const id = 'file-' + sha;
-    return [id, { source: { kind: 'local-file', id, version: '1', analysisVersion: '1', materialMode: 'self-authored', title: fixture.title }, duration: fixture.duration }];
+    let context = null;
+    if (fixture.subtitle) {
+      const text = fs.readFileSync(path.join(root, fixture.subtitle), 'utf8');
+      const parsed = textContext.parseTextCues(text, { format: 'vtt' });
+      if (!parsed.ok) throw new Error('登记的自制字幕无效。');
+      context = { id: 'subtitle-' + createHash('sha256').update(text).digest('hex'), title: '项目作者编写的中文字幕（非音轨识别）', cues: parsed.cues };
+    }
+    return [id, { source: { kind: 'local-file', id, version: '1', analysisVersion: '1', materialMode: 'self-authored', title: fixture.title }, duration: fixture.duration, context }];
   }));
 }
 export function createLearningSiteServer({ settings = loadSettings({}), dataDir, fetchImpl = fetch,
@@ -80,7 +91,8 @@ export function createLearningSiteServer({ settings = loadSettings({}), dataDir,
         }
         if (uri.pathname === '/api/vision/policy' && request.method === 'GET') {
           const registered = sources.get(uri.searchParams.get('sourceId'));
-          json(response, 200, { allowed: Boolean(registered), ...(registered ? { source: registered.source } : {}),
+          json(response, 200, { allowed: Boolean(registered), ...(registered ? { source: registered.source,
+            context: registered.context ? { id: registered.context.id, title: registered.context.title } : null } : {}),
             reason: registered ? '匹配登记的自制教学素材；仅画面处理，私有使用。' : '未登记AI处理许可；文件可本地预览，并可输入你自己的通用数学条件。',
             supplierConfigured: configured, limits: FILE_LIMITS }); return;
         }
@@ -98,7 +110,7 @@ export function createLearningSiteServer({ settings = loadSettings({}), dataDir,
           if (sessions.size >= 16) { json(response, 429, { error: '本机分析会话已达上限，请先停止其他会话。' }); return; }
           const token = randomUUID();
           sessions.set(token, { sourceId: registered.source.id, origin: request.headers.origin,
-            startedAt: Date.now(), read: 0, summarize: 0, controllers: new Set() });
+            startedAt: Date.now(), read: 0, summarize: 0, context: 0, controllers: new Set() });
           json(response, 200, { token }); return;
         }
         if (uri.pathname === '/api/vision/session/end') {
@@ -111,33 +123,47 @@ export function createLearningSiteServer({ settings = loadSettings({}), dataDir,
           }
           json(response, 200, { ok: true }); return;
         }
-        const route = uri.pathname === '/api/vision/read' ? 'read' : uri.pathname === '/api/vision/summarize' ? 'summarize' : null;
+        const route = uri.pathname === '/api/vision/read' ? 'read' : uri.pathname === '/api/vision/summarize' ? 'summarize'
+          : uri.pathname === '/api/vision/context' ? 'context' : null;
         if (!route) { json(response, 404, { error: '没有此接口。' }); return; }
         const token = request.headers['x-breakglass-visual-session']; const session = sessions.get(token);
         if (!session || session.origin !== request.headers.origin) { json(response, 403, { error: '分析会话已失效。' }); return; }
-        if (slots[route] || session.controllers.size >= 2) { json(response, 429, { error: '上一轮仍在分析。' }); return; }
-        if (session[route] >= (route === 'read' ? 32 : 8)) { json(response, 429, { error: '本次调用额度已用完。' }); return; }
-        slots[route] = true; const controller = new AbortController(); session.controllers.add(controller);
+        const slot = route === 'context' ? 'read' : route;
+        if (slots[slot] || session.controllers.size >= 2) { json(response, 429, { error: '上一轮仍在分析。' }); return; }
+        if (session[route] >= (route === 'read' ? 32 : route === 'context' ? 4 : 8)) { json(response, 429, { error: '本次调用额度已用完。' }); return; }
+        slots[slot] = true; const controller = new AbortController(); session.controllers.add(controller);
         const disconnect = () => { if (!response.writableEnded) controller.abort(); };
         request.once('aborted', disconnect); response.once('close', disconnect);
         try {
-          const input = await body(request, route === 'read' ? 4 * 1024 * 1024 : 65536);
+          let input = await body(request, route === 'summarize' ? 65536 : 4 * 1024 * 1024);
           const registered = sources.get(input?.sourceId);
-          const times = route === 'read' ? [input?.frameTime] : Array.isArray(input?.observations) ? input.observations.map((item) => item?.frameTime) : null;
+          const times = route === 'read' ? [input?.frameTime] : route === 'context'
+            ? Array.isArray(input?.frames) ? input.frames.map((item) => item?.frameTime) : null
+            : Array.isArray(input?.observations) ? input.observations.map((item) => item?.frameTime) : null;
           if (!registered || registered.source.id !== session.sourceId || input.videoVersion !== '1'
             || input.analysisVersion !== '1' || input.materialMode !== 'self-authored' || !Array.isArray(times)
             || !times.every((time) => Number.isFinite(time) && time >= 0 && time <= registered.duration)) {
             json(response, 403, { code: 'permission_pending', error: '素材身份、范围或许可不符。' }); return;
           }
-          const validation = route === 'read' ? checkLearningRead(input) : checkLearningSummary(input);
+          if (route === 'context') {
+            if (!exactLearningFields(input, [...LEARNING_METADATA_FIELDS, 'frames', 'contextSourceId'])
+              || (input.contextSourceId !== null && input.contextSourceId !== registered.context?.id)) {
+              json(response, 400, { error: '只能使用此素材登记的字幕标识，不能提交任意字幕文本。' }); return;
+            }
+            const window = input.contextSourceId === null ? { ok: true, cues: [] }
+              : textContext.selectCueWindow(registered.context.cues, times[0], times.at(-1));
+            if (!window.ok) { json(response, 400, { error: '字幕时间窗无效。' }); return; }
+            input = { ...input, cues: window.cues };
+          }
+          const validation = route === 'read' ? checkLearningRead(input) : route === 'context' ? checkLearningContext(input) : checkLearningSummary(input);
           if (!validation.ok) { json(response, 400, { error: '画面或观察请求结构无效。' }); return; }
           controller.signal.throwIfAborted();
           if (sessions.get(token) !== session) { json(response, 403, { error: '旧分析会话已失效。' }); return; }
           session[route] += 1;
-          const result = await (route === 'read' ? readLearning : summarizeLearning)(input, { settings, fetchImpl, signal: controller.signal });
+          const result = await (route === 'read' ? readLearning : route === 'context' ? readLearningContext : summarizeLearning)(input, { settings, fetchImpl, signal: controller.signal });
           if (!controller.signal.aborted && sessions.get(token) === session) json(response, result.status, result.payload);
         } finally {
-          slots[route] = false; session.controllers.delete(controller);
+          slots[slot] = false; session.controllers.delete(controller);
           request.off('aborted', disconnect); response.off('close', disconnect);
         }
       } catch (error) {
