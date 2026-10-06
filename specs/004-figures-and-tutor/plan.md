@@ -36,7 +36,9 @@
 
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
-对照 `docs/BreakGlass-constitution.md` 1.6.0 与 `.specify/memory/constitution.md` 1.8.0。
+对照 [产品 Constitution 2.1.0](../../docs/BreakGlass-constitution.md) 与 [Spec Constitution 2.1.0](../../.specify/memory/constitution.md)。
+
+2026-10-06 治理复核：本计划仍只交付故事 2 的本地确定性提问，不识别新图形、不发起网络请求，不改变 `CurveResult/createWake` 或 1500ms 保底。故事 1 与 005 保持独立；PR #63 不批准通用形状、预处理或粒子/分龄方案，原场景未取得验证证据时不据此标记完成。
 
 | 门禁 | 设计前 | 设计后 | 依据 |
 | --- | --- | --- | --- |

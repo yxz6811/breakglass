@@ -34,14 +34,16 @@
 
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
-对照 `.specify/memory/constitution.md` 1.6.0 与 `docs/BreakGlass-constitution.md` 1.4.0。本仓库仍只做前端。
+对照 [Spec Constitution 2.1.0](../../.specify/memory/constitution.md) 原则 VII / X 与 [产品 Constitution 2.1.0](../../docs/BreakGlass-constitution.md)。扩展与演示页继续做前端，既有本地无状态 reader 按原则 VII 维护。
+
+2026-10-06 治理复核：003 仍按至多 8 帧、300s 截止预读，缓存破壁沿用 `CurveResult/createWake`；1500ms 保底不变。PR #63 不批准 `/preprocess`、`VideoTimeline` 或新批量预算；SC-003～005 的未通过项与当前帧 30s 独立增强分别记录，不以策略更新改写验收。
 
 | 门禁 | 结果 | 依据 |
 | --- | --- | --- |
 | P0 离线演示不被本切片抬高门槛 | 通过 | 预先准备片子上的单点演示保留；通过「选择预设」进入 |
 | 技术路线只选一条 | 通过 | 沿用 Vanilla JS + 原生 CSS/SVG |
 | MV3 权限与 CSP 保持现有表面 | 通过 | 不改 `extension/manifest.json` |
-| 不在本仓库实现阅读服务或感知代理 | 通过 | 地址只来自当次页面 |
+| 本地 reader 不进入扩展包或云端后台 | 通过 | 原则 VII；源码在 `breakglass-reader/`，地址只来自当次页面 |
 | 密钥不进入浏览器包 | 通过 | 配置与仓库不含密钥或地址 |
 | 阅读不进入 1.5 秒和 100ms | 通过 | `lesson-first-point` 与 `lesson-wake-visible` 分开；后者尚无 20 次记录，验收未通过 |
 | 破壁只取已存结果 | 通过 | 点击和「下一个」未就绪时都不发起计算 |
@@ -102,4 +104,4 @@ Phase 1 没有新增工厂、错误码或 WASM。尺寸不符的点在进入 `cr
 
 ## Complexity Tracking
 
-无未批准的宪法例外。原则 VII 已修订为 1.6.0。2% 与 20 次样本的缺口记在 TODO(READING_METRICS)，不构成另开一条例外。
+无未批准的宪法例外。原则 VII 的历史 1.6.0 修订依据保留，当前执行 2.1.0。2% 与 20 次样本的缺口记在 TODO(READING_METRICS)，不构成另开一条例外。
