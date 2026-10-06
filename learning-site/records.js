@@ -12,6 +12,7 @@
   const iso = (value) => typeof value === 'string' && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(value)
     && Number.isFinite(Date.parse(value)) && new Date(value).toISOString() === value;
   const contracts = () => typeof require === 'function' ? require('../extension/src/plugin/contracts') : globalThis.BreakGlass.pluginContracts;
+  const math = () => typeof require === 'function' ? require('./math-learning') : globalThis.BreakGlass.mathLearning;
   function validateSource(value, allowPending = false) {
     const checked = contracts().validateSource(value);
     if (!checked.ok || !safeIdentity(checked.value.id, 128)
@@ -44,10 +45,12 @@
   }
   function expectedAnswer(record) {
     if (!validSnapshot(record.template, record.snapshot)) throw new TypeError('数学条件无效。');
+    if (math()?.isExtended(record.template)) return math().expectedAnswer(record.template, record.snapshot);
     return record.template === 'right-triangle' ? Math.hypot(record.snapshot.AB, record.snapshot.AC)
       : { h: record.snapshot.h, k: record.snapshot.k };
   }
   function judge(record, answer) {
+    if (math()?.isExtended(record.template)) return math().judge(record.template, record.snapshot, answer)?.correct === true;
     const expected = expectedAnswer(record);
     if (record.template === 'right-triangle') return finite(answer)
       && Math.abs(answer - expected) <= Math.max(1e-9, Math.abs(expected) * 1e-6);
@@ -56,7 +59,7 @@
       && Math.abs(answer.h - expected.h) <= 1e-9 && Math.abs(answer.k - expected.k) <= 1e-9);
   }
   function normalizeAnswer(record, answer) {
-    if (record.template === 'right-triangle') {
+    if (record.template === 'right-triangle' || math()?.isExtended(record.template)) {
       if (!finite(answer)) throw new TypeError('答案必须是有限数值。');
       return answer;
     }
@@ -181,9 +184,13 @@
       && (kind === 'all' || (kind === 'wrong' ? wrong.has(record.id) : record.kind === kind)));
   }
   function nextReview(attempts, recordId) {
-    const latest = attempts.filter((item) => item.recordId === recordId).sort((a, b) => a.createdAt.localeCompare(b.createdAt)).pop();
+    const history = attempts.filter((item) => item.recordId === recordId).sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+    const latest = history.at(-1);
     if (!latest) return null;
-    const days = latest.correct ? latest.hintUsed ? 3 : 7 : 1;
+    let streak = 0;
+    for (let i = history.length - 1; i >= 0 && history[i].correct && !history[i].hintUsed; i -= 1) streak += 1;
+    // A product suggestion based on submitted history, never a learning-effect measurement.
+    const days = latest.correct ? latest.hintUsed ? 3 : Math.min(28, 7 * 2 ** Math.min(streak - 1, 2)) : 1;
     return new Date(Date.parse(latest.createdAt) + days * 86400000).toISOString();
   }
   function learningState(record, attempts) {

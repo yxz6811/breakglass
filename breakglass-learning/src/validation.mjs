@@ -1,6 +1,8 @@
 import { createRequire } from 'node:module';
 const require = createRequire(import.meta.url);
 const rules = require('../../extension/src/plugin/contracts.js');
+const annotations = require('../../learning-site/annotations.js');
+const mathLearning = require('../../learning-site/math-learning.js');
 
 export function exact(value, keys) {
   return value && typeof value === 'object' && !Array.isArray(value)
@@ -30,6 +32,14 @@ export function record(value) {
   return checked.ok ? checked.value : null;
 }
 
+export function annotationMetadata(value) {
+  try { return annotations.validateMetadata(value); } catch { return null; }
+}
+export function annotation(value) {
+  try { return annotations.validateAnnotation(value); } catch { return null; }
+}
+export const sameAnnotationMetadata = annotations.sameMetadata;
+
 export function watch(value) {
   if (!exact(value, ['source', 'time', 'duration', 'updatedAt']) || !finite(value.time) || value.time < 0
     || !finite(value.duration) || value.duration <= 0 || value.duration > 600 || value.time > value.duration || !iso(value.updatedAt)) return null;
@@ -41,6 +51,7 @@ export function watch(value) {
 }
 
 export function judge(template, snapshot, answer) {
+  if (mathLearning.isExtended(template)) return mathLearning.judge(template, snapshot, answer);
   if (template === 'right-triangle') {
     if (!finite(answer)) return null;
     const expectedAnswer = Math.hypot(snapshot.AB, snapshot.AC);
@@ -69,11 +80,15 @@ function unique(values, key) { return new Set(values.map(key)).size === values.l
 export function database(value) {
   if (!exact(value, ['schemaVersion', 'users']) || value.schemaVersion !== 1 || !Array.isArray(value.users)
     || value.users.length > 50 || !unique(value.users, (item) => item.id) || !unique(value.users, (item) => item.username)) return false;
-  return value.users.every((user) => exact(user, ['id', 'username', 'passwordSalt', 'passwordHash', 'epoch', 'records', 'watch', 'attempts'])
+  return value.users.every((user) => (exact(user, ['id', 'username', 'passwordSalt', 'passwordHash', 'epoch', 'records', 'watch', 'attempts'])
+      || exact(user, ['id', 'username', 'passwordSalt', 'passwordHash', 'epoch', 'records', 'watch', 'attempts', 'annotations']))
     && safeId(user.id) && username(user.username) === user.username && epoch(user.epoch)
     && /^[a-f0-9]{32}$/.test(user.passwordSalt) && /^[a-f0-9]{128}$/.test(user.passwordHash)
     && Array.isArray(user.records) && user.records.length <= 500 && unique(user.records, (item) => item.id) && user.records.every(record)
     && Array.isArray(user.watch) && user.watch.length <= 100 && unique(user.watch, (item) => item.source.id) && user.watch.every(watch)
     && Array.isArray(user.attempts) && user.attempts.length <= 2000 && unique(user.attempts, (item) => item.id)
-    && user.attempts.every((item) => attempt(item, user.records)));
+    && user.attempts.every((item) => attempt(item, user.records))
+    && (!Object.hasOwn(user, 'annotations') || (Array.isArray(user.annotations) && user.annotations.length <= 500
+      && unique(user.annotations, (item) => item.recordId) && user.annotations.every((item) => annotation(item)
+        && user.records.some((original) => original.id === item.recordId)))));
 }

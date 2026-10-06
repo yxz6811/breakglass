@@ -68,5 +68,7 @@ export function createAccountStore({ dataDir, validate }) {
       await fs.unlink(temporary).catch(() => {});
     }
   });
-  return { read, transact };
+  // Internal synchronous capability check: no mutable account data is exposed.
+  const peekEpoch = (userId) => state?.users.find((user) => user.id === userId)?.epoch ?? null;
+  return { read, transact, peekEpoch };
 }

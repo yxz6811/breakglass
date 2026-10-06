@@ -5,6 +5,7 @@
   root.BreakGlass.pedagogy = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this, function (root) {
   const records = () => typeof require === 'function' ? require('./records') : root.BreakGlass.webRecords;
+  const math = () => typeof require === 'function' ? require('./math-learning') : root.BreakGlass.mathLearning;
   const uuid = () => root.crypto.randomUUID();
   const utc = () => new Date().toISOString();
   function checked(input) {
@@ -17,6 +18,7 @@
   }
   function bounded(original, snapshot = original.snapshot) {
     if (!records().validSnapshot(original.template, snapshot)) throw new TypeError('变化后的数学条件无效。');
+    if (math()?.isExtended(original.template)) return { ...snapshot };
     if (original.template === 'right-triangle') {
       const lengths = [snapshot.AB, snapshot.AC];
       if (lengths.some((value) => value < 1e-6 || value > 1e6)
@@ -31,6 +33,7 @@
   }
   function hints(input) {
     const original = checked(input); const s = original.snapshot;
+    if (math()?.isExtended(original.template)) return math().hints(original.template, s);
     if (original.template === 'right-triangle') return [
       '先找直角A。它对面的BC是斜边，想想斜边和两条直角边是什么关系。',
       '勾股关系比较的是平方：BC²=AB²+AC²。边长不能直接相加。',
@@ -44,6 +47,7 @@
   }
   function prediction(input) {
     const original = checked(input); const s = bounded(original);
+    if (math()?.isExtended(original.template)) return math().prediction(original.template, s);
     if (original.template === 'right-triangle') {
       const snapshot = bounded(original, { ...s, AB: s.AB + 1 });
       if (!(snapshot.AB > s.AB) || !(Math.hypot(snapshot.AB, snapshot.AC) > Math.hypot(s.AB, s.AC))) {
@@ -67,7 +71,9 @@
     }
     if (!Number.isSafeInteger(index) || index < 1 || index > 20) throw new RangeError('本轮变式序号须为1至20的整数。');
     const s = bounded(original);
-    const snapshot = bounded(original, original.template === 'right-triangle'
+    const snapshot = bounded(original, math()?.isExtended(original.template)
+      ? math().variantSnapshot(original.template, s, index)
+      : original.template === 'right-triangle'
       ? { ...s, AB: s.AB * (1 + index / 4), AC: s.AC * (index % 2 === 0 ? 1 + index / 10 : 1) }
       : { a: index % 2 === 0 ? -s.a : s.a, h: s.h + index, k: s.k + (index % 2 === 0 ? -1 : 1) * (1 + index % 3) });
     if (JSON.stringify(snapshot) === JSON.stringify(s)) throw new RangeError('变化未形成独立新条件，未生成变式。');
@@ -75,7 +81,8 @@
     if (sourceLabel.length > 120) throw new RangeError('原记录标识过长，无法在来源标签中完整追溯。');
     return checked({ id, kind: 'question', source: { kind: 'manual-notes', id: `variant-${id}`, version: '1',
       analysisVersion: '1', materialMode: 'self-authored', title: '程序生成变式' }, time: 0,
-    title: original.template === 'right-triangle' ? '程序变式：直角三角形' : '程序变式：抛物线',
+    title: math()?.isExtended(original.template) ? `程序变式：${math().templateInfo(original.template).title}`
+      : original.template === 'right-triangle' ? '程序变式：直角三角形' : '程序变式：抛物线',
     note: '程序根据已保存数学条件生成了独立新题。请先独立作答；它不是原视频的新识别结果。',
     template: original.template, snapshot, origin: 'manual', sourceLabel, createdAt: now });
   }

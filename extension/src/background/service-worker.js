@@ -1,5 +1,6 @@
 import '../curve/evaluate.js';
 import '../geometry-scene/validate.js';
+import '../plugin/math-learning.js';
 import '../plugin/contracts.js';
 import '../plugin/registry.js';
 import '../plugin/record-store.js';
@@ -235,7 +236,7 @@ chrome.action.onClicked.addListener((tab) => {
       return;
     }
     const files = ['src/geometry/content-rect.js', 'src/curve/evaluate.js', 'src/geometry-scene/validate.js',
-      'src/geometry-scene/solve.js', 'src/geometry-scene/actions.js', 'src/plugin/contracts.js',
+      'src/geometry-scene/solve.js', 'src/geometry-scene/actions.js', 'src/plugin/math-learning.js', 'src/plugin/contracts.js',
       'src/plugin/live-loop.js', 'src/plugin/frame-sampler.js', 'src/plugin/particle-renderer.js',
       'src/plugin/overlay.js', 'src/plugin/session.js'];
     const cssText = await (await fetch(chrome.runtime.getURL('src/plugin/overlay.css'))).text();

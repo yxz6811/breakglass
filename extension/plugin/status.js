@@ -47,7 +47,9 @@ async function refresh() {
       const source = document.createElement('p');
       source.textContent = `${record.source.title || record.source.id} · 第${record.time.toFixed(1)}秒 · ${record.sourceLabel}`;
       const scene = document.createElement('p');
-      scene.textContent = record.template === 'parabola'
+      scene.textContent = globalThis.BreakGlass?.mathLearning?.isExtended(record.template)
+        ? `手工数学快照：${globalThis.BreakGlass.mathLearning.equation(record.template, record.snapshot)}；可在学习管理中心回顾与复练。`
+        : record.template === 'parabola'
         ? `结构快照：y = ${record.snapshot.a}(x − ${record.snapshot.h})² + ${record.snapshot.k}`
         : `结构快照：AB=${record.snapshot.AB}，AC=${record.snapshot.AC}，单位=${record.snapshot.unit}；BC由程序计算。`;
       item.append(title, note, source, scene); list.append(item);

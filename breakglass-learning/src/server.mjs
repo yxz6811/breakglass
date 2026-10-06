@@ -65,12 +65,25 @@ function readJson(request, limit) {
 }
 
 /** Creates only API handling, with no listener or deployment. Local single-process development use. */
-export function createLearningHandler({ dataDir, allowedOrigins = DEFAULT_ORIGINS, now = Date.now } = {}) {
-  if (!Array.isArray(allowedOrigins) || allowedOrigins.length === 0
+export function createLearningHandler({ dataDir, allowedOrigins = DEFAULT_ORIGINS, now = Date.now, onPrivateScopeInvalidated,
+  secureCookies = false, authorizeAccount, productionOrigin = null } = {}) {
+  if (typeof secureCookies !== 'boolean') throw new TypeError('账户安全cookie开关必须为布尔值。');
+  if (authorizeAccount !== undefined && typeof authorizeAccount !== 'function') throw new TypeError('账户发布审批检查必须为函数。');
+  if (productionOrigin !== null) {
+    let url;
+    try { url = typeof productionOrigin === 'string' ? new URL(productionOrigin) : null; } catch { /* Reject below. */ }
+    if (!url || url.protocol !== 'https:' || url.origin !== productionOrigin || url.port || url.username || url.password || url.search || url.hash
+      || !url.hostname.includes('.') || !/^[a-z0-9.-]+$/.test(url.hostname) || /(?:^|\.)(?:localhost|local|internal|test|invalid)$/.test(url.hostname)
+      || /^\d+(?:\.\d+){3}$/.test(url.hostname) || !secureCookies || typeof authorizeAccount !== 'function'
+      || !Array.isArray(allowedOrigins) || allowedOrigins.length !== 1 || allowedOrigins[0] !== productionOrigin) {
+      throw new TypeError('生产账户入口须明确唯一HTTPS域名、Secure cookie及账户发布审批检查。');
+    }
+  } else if (!Array.isArray(allowedOrigins) || allowedOrigins.length === 0
     || !allowedOrigins.every((origin) => typeof origin === 'string'
       && /^http:\/\/(?:127\.0\.0\.1|localhost|\[::1\])(?::\d+)?$/.test(origin))) {
     throw new TypeError('本机账户服务只接受明确的 loopback Origin。');
   }
+  authorizeAccount ||= () => true;
   const origins = new Set(allowedOrigins);
   if (typeof now !== 'function') throw new TypeError('本机服务时钟必须为函数。');
   const store = createAccountStore({ dataDir, validate: checks.database });
@@ -80,6 +93,14 @@ export function createLearningHandler({ dataDir, allowedOrigins = DEFAULT_ORIGIN
   const pairingRequests = new Map();
   const loginFailures = new Map();
   const requests = new Map();
+  const privateScopeListeners = new Set();
+  if (onPrivateScopeInvalidated !== undefined) {
+    if (typeof onPrivateScopeInvalidated !== 'function') throw new TypeError('私有学习生命周期通知必须为函数。');
+    privateScopeListeners.add(onPrivateScopeInvalidated);
+  }
+  const notifyPrivateScope = async (event) => {
+    await Promise.all([...privateScopeListeners].map((listener) => listener({ ...event })));
+  };
   const dummySalt = randomBytes(16).toString('hex');
   const dummyHash = randomBytes(64).toString('hex');
 
@@ -135,14 +156,18 @@ export function createLearningHandler({ dataDir, allowedOrigins = DEFAULT_ORIGIN
     const token = cookieToken(request);
     return token ? { key: tokenKey(token), session: sessions.get(tokenKey(token)) } : { key: null, session: null };
   }
-  function createSession(user, request) {
-    const previous = sessionFor(request); if (previous.key) sessions.delete(previous.key);
+  async function createSession(user, request) {
+    const previous = sessionFor(request);
+    if (previous.key) {
+      sessions.delete(previous.key);
+      if (previous.session) await notifyPrivateScope({ userId: previous.session.userId, sessionKey: previous.key, reason: 'session_replaced' });
+    }
     while (sessions.size >= 1000) sessions.delete(sessions.keys().next().value);
     const token = randomBytes(32).toString('base64url');
     const session = { userId: user.id, csrfToken: randomBytes(24).toString('base64url'), expiresAt: now() + SESSION_MS };
     sessions.set(tokenKey(token), session);
     return { body: { user: publicUser(user), csrfToken: session.csrfToken, epoch: user.epoch },
-      cookie: `${COOKIE}=${token}; HttpOnly; SameSite=Strict; Path=/api; Max-Age=${SESSION_MS / 1000}` };
+      cookie: `${COOKIE}=${token}; HttpOnly; SameSite=Strict; Path=/api; Max-Age=${SESSION_MS / 1000}${secureCookies ? '; Secure' : ''}` };
   }
   async function authenticated(request, mutation = false) {
     const active = sessionFor(request);
@@ -190,15 +215,21 @@ export function createLearningHandler({ dataDir, allowedOrigins = DEFAULT_ORIGIN
     if (user.epoch >= Number.MAX_SAFE_INTEGER - 1) fail(409, 'epoch_exhausted', '本机数据版本已达上限。');
     user.epoch += 1;
   }
-  const mutate = (active, expected, operation) => store.transact((state) => {
-    // A logout/revocation may happen while this transaction waits in the file queue.
-    // Recheck the original capability before committing private learning data.
-    assertLive(active);
-    const user = state.users.find((item) => item.id === active.user.id);
-    if (!user) fail(401, 'unauthenticated', '本机账户不存在。');
-    checkEpoch(user, expected);
-    return operation(user);
-  }, { beforeCommit: () => assertLive(active) });
+  const mutate = async (active, expected, operation) => {
+    const result = await store.transact((state) => {
+      // A logout/revocation may happen while this transaction waits in the file queue.
+      // Recheck the original capability before committing private learning data.
+      assertLive(active);
+      const user = state.users.find((item) => item.id === active.user.id);
+      if (!user) fail(401, 'unauthenticated', '本机账户不存在。');
+      checkEpoch(user, expected);
+      return operation(user);
+    }, { beforeCommit: () => assertLive(active) });
+    if (result?.epoch !== undefined && result.epoch !== expected) {
+      await notifyPrivateScope({ userId: active.user.id, epoch: result.epoch, reason: 'data_epoch' });
+    }
+    return result;
+  };
 
   async function saveRecord(active, id, body) {
     if (!checks.exact(body, ['record', 'expectedEpoch'])) fail(400, 'invalid_request', '保存记录需要固定字段。');
@@ -228,7 +259,7 @@ export function createLearningHandler({ dataDir, allowedOrigins = DEFAULT_ORIGIN
     });
   }
 
-  return async function handle(request, response) {
+  const handle = async function handle(request, response) {
     let url;
     try { url = new URL(request.url || '/', 'http://local-learning.invalid'); }
     catch { return false; }
@@ -333,7 +364,7 @@ export function createLearningHandler({ dataDir, allowedOrigins = DEFAULT_ORIGIN
           user = await store.transact((state) => {
             if (state.users.some((item) => item.username === name)) fail(409, 'username_unavailable', '这个本机用户名已被使用。');
             if (state.users.length >= 50) fail(409, 'account_limit', '本机开发账户数量已达上限。');
-            const next = { id: randomUUID(), username: name, passwordSalt, passwordHash, epoch: 0, records: [], watch: [], attempts: [] };
+            const next = { id: randomUUID(), username: name, passwordSalt, passwordHash, epoch: 0, records: [], watch: [], attempts: [], annotations: [] };
             state.users.push(next); return next;
           });
         } else {
@@ -346,8 +377,11 @@ export function createLearningHandler({ dataDir, allowedOrigins = DEFAULT_ORIGIN
             fail(401, 'invalid_credentials', '用户名或密码不正确。');
           }
           loginFailures.delete(`${ip}:${name}`);
+          if (await authorizeAccount(publicUser(user), 'login') !== true) {
+            fail(403, 'release_not_approved', '当前账户的地区与受众发布条件尚未批准。');
+          }
         }
-        const created = createSession(user, request);
+        const created = await createSession(user, request);
         send(url.pathname.endsWith('/register') ? 201 : 200, created.body, { 'set-cookie': created.cookie });
         return true;
       }
@@ -377,11 +411,46 @@ export function createLearningHandler({ dataDir, allowedOrigins = DEFAULT_ORIGIN
       if (url.pathname === '/api/account/logout' && request.method === 'POST') {
         if (!checks.exact(body, [])) fail(400, 'invalid_request', '退出请求不接受额外字段。');
         sessions.delete(active.key);
-        send(200, { ok: true }, { 'set-cookie': `${COOKIE}=; HttpOnly; SameSite=Strict; Path=/api; Max-Age=0` });
+        await notifyPrivateScope({ userId: active.user.id, sessionKey: active.key, reason: 'logout' });
+        send(200, { ok: true }, { 'set-cookie': `${COOKIE}=; HttpOnly; SameSite=Strict; Path=/api; Max-Age=0${secureCookies ? '; Secure' : ''}` });
         return true;
       }
       if (url.pathname === '/api/learning/records' && request.method === 'GET') {
         send(200, { records: active.user.records, epoch: active.user.epoch }); return true;
+      }
+      if (url.pathname === '/api/annotations' && request.method === 'GET') {
+        if (url.search) fail(400, 'invalid_request', '备注列表不接受额外查询参数。');
+        assertLive(active);
+        send(200, { annotations: active.user.annotations || [], epoch: active.user.epoch }); return true;
+      }
+      const annotationPath = /^\/api\/annotations\/([^/]+)$/.exec(url.pathname);
+      if (annotationPath && ['GET', 'PUT'].includes(request.method)) {
+        if (url.search) fail(400, 'invalid_request', '备注接口不接受额外查询参数。');
+        const id = pathId(annotationPath[1]);
+        if (request.method === 'GET') {
+          assertLive(active);
+          if (!active.user.records.some((item) => item.id === id)) fail(404, 'record_not_found', '当前账户没有这条原学习记录。');
+          send(200, { annotation: (active.user.annotations || []).find((item) => item.recordId === id) || null, epoch: active.user.epoch }); return true;
+        }
+        if (!checks.exact(body, ['annotation', 'expectedRevision', 'expectedEpoch']) || !checks.epoch(body.expectedRevision)) {
+          fail(400, 'invalid_request', '备注保存需要固定字段、修订号和当前数据版本。');
+        }
+        const metadata = checks.annotationMetadata(body.annotation);
+        if (!metadata) fail(400, 'invalid_annotation', '备注只接受标题、短文本、疑问/易错类型和最多8个原因标签。');
+        const result = await mutate(active, body.expectedEpoch, (user) => {
+          if (!user.records.some((item) => item.id === id)) fail(404, 'record_not_found', '当前账户没有这条原学习记录。');
+          user.annotations ||= [];
+          const existing = user.annotations.find((item) => item.recordId === id);
+          if (checks.sameAnnotationMetadata(existing, metadata)) return { annotation: existing, epoch: user.epoch };
+          const revision = existing?.revision || 0;
+          if (revision !== body.expectedRevision) fail(409, 'revision_conflict', '备注已在另一处更新；请保留输入并重新读取修订后再保存。');
+          if (revision >= Number.MAX_SAFE_INTEGER - 1) fail(409, 'revision_exhausted', '备注修订次数已达上限。');
+          const annotation = checks.annotation({ schemaVersion: '1', recordId: id, revision: revision + 1, ...metadata, updatedAt: new Date(now()).toISOString() });
+          if (!annotation) fail(400, 'invalid_annotation', '备注生成无效。');
+          user.annotations = [...user.annotations.filter((item) => item.recordId !== id), annotation];
+          return { annotation, epoch: user.epoch };
+        });
+        send(200, result); return true;
       }
       const recordPath = /^\/api\/learning\/records\/([^/]+)$/.exec(url.pathname);
       if (recordPath && ['PUT', 'DELETE'].includes(request.method)) {
@@ -394,6 +463,7 @@ export function createLearningHandler({ dataDir, allowedOrigins = DEFAULT_ORIGIN
           if (!user.records.some((item) => item.id === id)) fail(404, 'record_not_found', '当前账户没有这条记录。');
           user.records = user.records.filter((item) => item.id !== id);
           user.attempts = user.attempts.filter((item) => item.recordId !== id);
+          if (user.annotations) user.annotations = user.annotations.filter((item) => item.recordId !== id);
           changedEpoch(user); return { ok: true, epoch: user.epoch };
         });
         send(200, result); return true;
@@ -401,7 +471,8 @@ export function createLearningHandler({ dataDir, allowedOrigins = DEFAULT_ORIGIN
       if (url.pathname === '/api/learning/records' && request.method === 'DELETE') {
         if (!checks.exact(body, ['expectedEpoch'])) fail(400, 'invalid_request', '清除记录需要当前数据版本。');
         const result = await mutate(active, body.expectedEpoch, (user) => {
-          user.records = []; user.attempts = []; changedEpoch(user); return { ok: true, epoch: user.epoch };
+          user.records = []; user.attempts = []; if (user.annotations) user.annotations = [];
+          changedEpoch(user); return { ok: true, epoch: user.epoch };
         });
         send(200, result); return true;
       }
@@ -425,7 +496,7 @@ export function createLearningHandler({ dataDir, allowedOrigins = DEFAULT_ORIGIN
           const original = user.records.find((item) => item.id === body.recordId);
           if (!original) fail(404, 'record_not_found', '当前账户没有对应练习记录。');
           const verdict = checks.judge(original.template, original.snapshot, body.answer);
-          if (!verdict) fail(400, 'invalid_answer', '斜边回答为数值；顶点回答为有限 h、k。');
+          if (!verdict) fail(400, 'invalid_answer', '答案须符合对应练习的数值或顶点 h、k 格式。');
           if (user.attempts.length >= 2000) fail(409, 'attempt_limit', '本机复练次数已达上限。');
           const attempt = { id: randomUUID(), recordId: original.id, answer: body.answer,
             hintUsed: body.hintUsed, correct: verdict.correct,
@@ -441,7 +512,8 @@ export function createLearningHandler({ dataDir, allowedOrigins = DEFAULT_ORIGIN
       if (url.pathname === '/api/account/data' && request.method === 'DELETE') {
         if (!checks.exact(body, ['expectedEpoch'])) fail(400, 'invalid_request', '删除账户学习数据需要当前版本。');
         const result = await mutate(active, body.expectedEpoch, (user) => {
-          user.records = []; user.watch = []; user.attempts = []; changedEpoch(user); return { ok: true, epoch: user.epoch };
+          user.records = []; user.watch = []; user.attempts = []; if (user.annotations) user.annotations = [];
+          changedEpoch(user); return { ok: true, epoch: user.epoch };
         });
         send(200, result); return true;
       }
@@ -452,4 +524,32 @@ export function createLearningHandler({ dataDir, allowedOrigins = DEFAULT_ORIGIN
       return true;
     }
   };
+  // These capabilities are available only to the same-process analysis gateway.
+  // Session hashes never enter API payloads or persistent cache keys.
+  handle.privateScope = async (request) => {
+    const active = sessionFor(request);
+    if (!active.session) return null;
+    const state = await store.read();
+    if (sessions.get(active.key) !== active.session || active.session.expiresAt <= now()) return null;
+    const user = state.users.find((item) => item.id === active.session.userId);
+    return user ? { id: user.id, epoch: user.epoch, sessionKey: active.key } : null;
+  };
+  handle.isPrivateScopeCurrent = async (request, snapshot) => {
+    const current = await handle.privateScope(request);
+    return snapshot === null ? current === null : Boolean(current && snapshot && current.id === snapshot.id
+      && current.epoch === snapshot.epoch && current.sessionKey === snapshot.sessionKey);
+  };
+  // Recheck immediately before synchronous private-cache commit. Expiry and
+  // capacity eviction do not require a lifecycle callback to invalidate it.
+  handle.isPrivateScopeLive = (snapshot) => {
+    if (!snapshot || typeof snapshot.id !== 'string' || typeof snapshot.sessionKey !== 'string' || !checks.epoch(snapshot.epoch)) return false;
+    const session = sessions.get(snapshot.sessionKey); const time = now();
+    return Boolean(session && session.userId === snapshot.id && Number.isFinite(time) && session.expiresAt > time
+      && store.peekEpoch(snapshot.id) === snapshot.epoch);
+  };
+  handle.onPrivateScopeInvalidated = (listener) => {
+    if (typeof listener !== 'function') throw new TypeError('私有学习生命周期通知必须为函数。');
+    privateScopeListeners.add(listener); return () => privateScopeListeners.delete(listener);
+  };
+  return handle;
 }
