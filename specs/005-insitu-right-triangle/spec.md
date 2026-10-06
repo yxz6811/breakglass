@@ -10,7 +10,9 @@
 
 ## Scope & Governance
 
-本规格依据 [BreakGlass 产品 Constitution](../../docs/BreakGlass-constitution.md) 1.7.1 和 [Spec Kit Constitution](../../.specify/memory/constitution.md) 1.9.1 的 005 独立切片约定。用户已经解除本会话及 005 的仅前端职责限制；这不自动授权账号、数据库、代码执行服务或其他业务后台，也不表示本规格中的能力已经实现。
+本规格依据 [BreakGlass 产品 Constitution](../../docs/BreakGlass-constitution.md) 2.1.0 和 [Spec Kit Constitution](../../.specify/memory/constitution.md) 2.1.0 原则 VIII 的 005 独立切片约定。用户已经解除本会话及 005 的仅前端职责限制；这不自动授权账号、数据库、代码执行服务或其他业务后台，也不表示本规格中的能力已经实现。
+
+2026-10-06 治理复核：005 继续使用独立 `SceneResult` 1.0.0 与确定性直角三角形闭环，识别 30s / 问答 10s 仍为待真实预跑冻结的开发默认。PR #63 不批准任意形状、批量预处理或粒子/分龄/真 3D；自制示例、手工条件、真实模型、完整 MV3 与学习效果各自验收，原未通过项不变。001/003 的 `CurveResult/createWake`、1500ms 和 300s 预算仍独立。
 
 - **支持场景**：用户选择的本地录屏或固定机位几何视频；当前帧只有一个待探索的直角三角形，固定命名为 A、B、C，∠A = 90°，AB、AC 为直角边，BC 为斜边。题目条件来自可读的文字或标记，或用户明确校对输入。
 - **允许操作**：改变 AB 并固定 AC，或改变 AC 并固定 AB；保持 ∠A = 90°，重新计算 BC；查询当前结果；恢复用户确认后的原题。

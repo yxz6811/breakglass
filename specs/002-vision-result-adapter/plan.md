@@ -32,7 +32,9 @@
 
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
-对照 `.specify/memory/constitution.md` v1.3.0 与 `docs/BreakGlass-constitution.md` v1.2.0。产品范围以这两份文件为准；本仓库仍只做前端。
+对照 [Spec Constitution 2.1.0](../../.specify/memory/constitution.md) 与 [产品 Constitution 2.1.0](../../docs/BreakGlass-constitution.md)。002 仍只做包内识别样例的前端适配，不继承其他切片的 reader 或上传范围。
+
+2026-10-06 治理复核：保留 `CurveResult/createWake`、1500ms 保底、默认关闭开关及独立识别计时；PR #63 不批准真实识别、形状泛化或新增端点。下文 1.4.0 / T002 是来源门禁的历史修订依据，验收仍以本切片记录为准。
 
 | 门禁 | 结果 | 依据 |
 | --- | --- | --- |
@@ -94,9 +96,11 @@ tests/
 
 Phase 1 契约没有新增端点、密钥、第二种工厂或 WASM。`vision-adapter.md` 把 `evidence: "packaged-sample"` 定为进入交互的必要条件，因此界面不能把样例说成外部服务已接通。
 
-交互态允许 `source: "vision"` 这一门禁仍依赖宪法 1.4.0 修订。设计文档只冻结修订文本，本命令不改 `.specify/memory/constitution.md`。实现任务必须把该修订放在修改 `wake.js` 之前。
+交互态允许 `source: "vision"` 的历史门禁修订为宪法 1.4.0，已由 T002 完成；当前 2.1.0 延续包内 `packaged-sample` 约束。该修订不证明外部服务接通，也不改变 001 的预制与超时路径。
 
 ## Complexity Tracking
+
+下表保留 1.4.0 修订前的历史理由；该治理问题已由 T002 收敛，不代表当前仍有未批准例外。
 
 | Violation | Why Needed | Simpler Alternative Rejected Because |
 |-----------|------------|-------------------------------------|

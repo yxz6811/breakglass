@@ -1,6 +1,10 @@
 # BreakGlass（破壁）前端需求与落地分析
 
-> 2026-10-03 范围补充：下文保留 2026-10-01 前端分析的历史口径。用户选择“可验证的单场景闭环”并解除其仅前端限制；[005 当前帧直角三角形规格](../specs/005-insitu-right-triangle/spec.md) 覆盖视频关联、条件校对、几何解算、对话动作、本地 reader 与理解验证。最新范围按 [Constitution 1.8.0](BreakGlass-constitution.md) 和 Spec Constitution 1.10.0 执行，005 属原则 VIII，独立当前帧曲线按需识别属原则 IX；不将授权或规划写成验收通过。
+> 2026-10-06 最新产品规划：新插件与账号学习网站按两份 Constitution 2.1.0 原则 XI、[产品规划](./BreakGlass-immersive-learning-plan-2026-10-06.md) 和 [UI 规划](./BreakGlass-ui-plan-2026-10-06.md) 执行。本文件保留旧切片/历史分析的职责与预算；旧文中的无账号或仅演示限制不作为新产品目标的全局禁令。本次不实现新功能，也不改历史验收。
+
+> 2026-10-06 治理复核：PR #63 的 [后续策略](./BREAKGLASS-next-strategy.md) 已归档；新范围按 Spec Constitution 2.1.0 原则 X / 产品 Constitution 2.1.0 准入。L1/L2/L3 尚未批准实施，当前扩展内演示页与各切片的真实模型、像素及学习证据分别验收；下文历史资料和验收状态保留。
+
+> 2026-10-03 范围补充：下文保留 2026-10-01 前端分析的历史口径。用户选择“可验证的单场景闭环”并解除其仅前端限制；[005 当前帧直角三角形规格](../specs/005-insitu-right-triangle/spec.md) 覆盖视频关联、条件校对、几何解算、对话动作、本地 reader 与理解验证。最新范围按 [Constitution 2.1.0](BreakGlass-constitution.md) 和 Spec Constitution 2.1.0 执行，005 属原则 VIII，独立当前帧曲线按需识别属原则 IX；不将授权或规划写成验收通过。
 
 ## 2026-10-03 当前帧曲线分析补充
 

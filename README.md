@@ -1,5 +1,7 @@
 # BreakGlass（破壁）
 
+> 2026-10-06 规划更新：两份 Constitution 2.1.0 明确插件优先，同时保留网站用户视频导入识别与账号学习记录两种入口。功能、阶段与当前实现边界见 [产品规划](docs/BreakGlass-immersive-learning-plan-2026-10-06.md)，逐界面功能与状态验收见 [UI 规划](docs/BreakGlass-ui-plan-2026-10-06.md)。中国大陆及海外的素材权利、儿童数据、跨境、AI 标识与撤权删除按原则 XII 和 [风险方案](docs/BreakGlass-rights-and-risk-plan-2026-10-06.md) 执行。本次只交付文档；第三方网课注入、新网站上传工作台、账号与云端记录尚未实现，旧接口/预算/验收保持独立。
+
 BreakGlass 是一个 Chrome MV3 扩展原型：把已验证演示视频中的数学抛物线变成可调节的原位 SVG 交互层，并提供独立的当前帧直角三角形学习工作台。
 
 当前交付基线是一个离线可演示的数学抛物线 P0 vertical slice。用户在扩展内演示页播放、暂停并定位视频，在目标时间唤醒预先准备的曲线，拖动参数、重置或退出。预制结果始终标明来源，不伪装成实时识别。
@@ -8,7 +10,7 @@ BreakGlass 是一个 Chrome MV3 扩展原型：把已验证演示视频中的数
 
 - P0：单个录屏或固定机位数学抛物线场景。
 - P1：真实视觉识别、Python/Pyodide 和其他扩展能力，必须单独立项和验收。
-- 不包含任意网站注入、用户账号、云端同步、数据库、代码执行服务或自建后端。
+- 当前实现没有第三方网站注入、用户账号、云端记录或权威数据库。新规划以支持网站的插件为主入口，网站保留用户视频导入识别，并承接账号/观看记录/个人错题复练；这些是待实施能力。网站首版默认在浏览器解码原文件，确认后发送获准稀疏材料；未来整文件临时模式按原则 XIII 独立冻结，不复用旧 reader。任意网站保证、永久原视频云盘和云端代码执行不在范围。
 - 9 秒演示片已在仓库里。预制区域按这支片子第 6 秒的画面写。这一帧的手工读数见验证记录，不能当成 2% 对齐已经通过，也不能代替四画幅验收。
 - 开播前阅读在片子可播放且已填写阅读地址时自动开始。验收片子不得使用 `breakglass-demo-9s.mp4`；失败、断网、地址留空或 5 分钟内一处都没通过时，画面保留用户选中的片子并丢弃无效结果。示例片只在点击「选择预设」时加载。已有独立阅读服务源码在 `breakglass-reader/`，不进入扩展包，也不部署为云端后台；未配置服务和模型时，页面不会从画面里找出抛物线。
 - 当前帧曲线增强：自己的视频可在任意有效暂停时刻点击「破壁」。有匹配的已校验缓存时直接打开；没有时向已有本地 `/read` 发送这一帧请求识别。首版仍只支持清晰完整抛物线，30s 为待真实预跑冻结的独立开发默认，不改 300s 预读或 1500ms 唤醒。方案与未验证范围见 [当前帧曲线计划](docs/BreakGlass-current-frame-plan-2026-10-03.md)，不以入口或替身测试宣称任意视频识别已验收。
@@ -100,10 +102,15 @@ Safari 使用媒体查询新旧监听接口的能力检测；旧环境的导航�
 
 ## 文档入口
 
+- [插件沉浸学习产品规划（2026-10-06）](docs/BreakGlass-immersive-learning-plan-2026-10-06.md)
+- [插件与学习网站 UI 规划（2026-10-06）](docs/BreakGlass-ui-plan-2026-10-06.md)
+- [素材权利、版权与地区风险方案（2026-10-06）](docs/BreakGlass-rights-and-risk-plan-2026-10-06.md)
 - [项目约定](AGENTS.md)
 - [前后端职责边界](docs/frontend-backend-boundary.md)
 - [前端任务与执行流程](docs/frontend-task-tracker.md)
 - [BreakGlass Constitution](docs/BreakGlass-constitution.md)
+- [Spec Constitution（治理源）](.specify/memory/constitution.md)
+- [后续发展策略与技术改造方案（候选方向与准入）](docs/BREAKGLASS-next-strategy.md)
 - [OpenMAIC 学习笔记](docs/BreakGlass-openmaic-learning.md)
 - [最新功能规格](specs/001-insitu-parabola/spec.md)
 - [实施计划](specs/001-insitu-parabola/plan.md)
