@@ -1,6 +1,10 @@
 # BreakGlass（破壁）前端执行计划
 
-> 2026-10-03 范围补充：本文件主体保留原抛物线前端基线；005 的完整执行顺序以 [当前帧直角三角形实施计划](../specs/005-insitu-right-triangle/plan.md) 与 [任务清单](../specs/005-insitu-right-triangle/tasks.md) 为准，覆盖扩展、本地 reader、几何计算及模型接入。最新依据为 `AGENTS.md` 第 0 节、[Constitution 1.8.0](BreakGlass-constitution.md) 与 Spec Constitution 1.10.0，005 按原则 VIII，独立当前帧曲线按需识别按原则 IX 与 [本次计划](./BreakGlass-current-frame-plan-2026-10-03.md) 执行。
+> 2026-10-06 最新产品规划：新插件与账号学习网站按两份 Constitution 2.1.0 原则 XI、[产品规划](./BreakGlass-immersive-learning-plan-2026-10-06.md) 和 [UI 规划](./BreakGlass-ui-plan-2026-10-06.md) 执行。本文件保留旧切片/历史分析的职责与预算；旧文中的无账号或仅演示限制不作为新产品目标的全局禁令。本次不实现新功能，也不改历史验收。
+
+> 2026-10-06 治理复核：按 Spec Constitution 2.1.0 原则 X / 产品 Constitution 2.1.0 完善 [后续策略](./BREAKGLASS-next-strategy.md)。先按既有任务补齐独立实测与可追溯记录；L1/L2/L3 的新增范围明确决定后回写相应规格、契约和任务，该次策略同步本身不新建切片。006 几何阅读另按 Constitution 2.2.0 原则 XIV 记录，不覆盖原则 X 的策略准入，也不覆盖现有接口/预算。下文历史计划与未验收项保留。
+
+> 2026-10-03 范围补充：本文件主体保留原抛物线前端基线；005 的完整执行顺序以 [当前帧直角三角形实施计划](../specs/005-insitu-right-triangle/plan.md) 与 [任务清单](../specs/005-insitu-right-triangle/tasks.md) 为准，覆盖扩展、本地 reader、几何计算及模型接入。最新依据为 `AGENTS.md` 第 0 节、[Constitution 2.1.0](BreakGlass-constitution.md) 与 Spec Constitution 2.1.0，005 按原则 VIII，独立当前帧曲线按需识别按原则 IX 与 [本次计划](./BreakGlass-current-frame-plan-2026-10-03.md) 执行。
 
 ## 2026-10-03 当前帧曲线执行补充
 

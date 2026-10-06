@@ -32,7 +32,9 @@
 
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
-对照 `docs/BreakGlass-constitution.md` v1.2.0（仓库前端执行基线）。`.specify/memory/constitution.md` v1.3.0 是 Spec Kit 治理记忆，其「交接接口」一节是本仓库的接口事实来源，感知代理约束不属于本仓库交付范围。
+对照 [产品 Constitution 2.1.0](../../docs/BreakGlass-constitution.md) 与 [Spec Constitution 2.1.0](../../.specify/memory/constitution.md)，后者的「交接接口」是 001 的接口事实来源。001 保持前端单抛物线范围，独立阅读与识别增强不属于本计划交付。
+
+2026-10-06 治理复核：PR #63 不改变 001 的 `CurveResult/createWake`、1500ms 保底和原验收门槛。热缓存计时与四画幅 2% 实测仍须按原记录补证据；原则 X 的策略准入不替代验收。
 
 | 门禁 | 结果 | 依据 |
 | --- | --- | --- |

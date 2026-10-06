@@ -14,7 +14,9 @@
 
 ## 治理依据
 
-本计划按 [AGENTS.md](../../AGENTS.md) 的 005 范围、[Spec Kit Constitution](../../.specify/memory/constitution.md) **1.9.1** 和 [BreakGlass 产品约束](../../docs/BreakGlass-constitution.md) **1.7.1** 执行。005 允许在既有 `breakglass-reader/` 中增加本地无状态的识别与动作提议处理，不授权自建云端业务后台、数据库、账号系统、代码执行服务或远程可执行代码。
+本计划按 [AGENTS.md](../../AGENTS.md) 的 005 范围、[Spec Kit Constitution](../../.specify/memory/constitution.md) **2.1.0** 原则 VIII / X 和 [BreakGlass 产品约束](../../docs/BreakGlass-constitution.md) **2.1.0** 执行。005 允许在既有 `breakglass-reader/` 中增加本地无状态的识别与动作提议处理，不授权自建云端业务后台、数据库、账号系统、代码执行服务或远程可执行代码。
+
+2026-10-06 治理复核：独立 `SceneResult` 1.0.0、识别 30s / 问答 10s 开发默认与真实预跑冻结要求继续有效。PR #63 不改变单直角三角形范围，不把批量预处理、新端点、任意形状或 L3 纳入执行。预设/手工、自制素材、真实模型、完整 MV3 和学习验证分别记证据，G1～G8 与任务中的未验收项保留；001/003 的旧接口及 1500ms / 300s 不受本次同步影响。
 
 实施前核对上述版本和 [scene-actions.md](./contracts/scene-actions.md) 一致；若文件未同步，不以本计划覆盖上层规则。进入代码和合并阶段重新核对权限、秘密来源、上传范围、Schema、预算、旧结果拒绝以及 001～004 的行为隔离。
 

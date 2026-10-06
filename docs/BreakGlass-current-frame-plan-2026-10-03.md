@@ -1,6 +1,10 @@
 # 当前帧曲线按需识别：需求、方案与验收计划
 
-日期：2026-10-03。状态：已授权独立增强；实现和实际测试结果另行记录，本计划不宣称真实模型或完整产品验收通过。依据 [AGENTS 第 0 节](../AGENTS.md)、[产品 Constitution 1.8.0](./BreakGlass-constitution.md) 和 [Spec Constitution 1.10.0 原则 IX](../.specify/memory/constitution.md)。
+> 2026-10-06 最新产品规划：新插件与账号学习网站按两份 Constitution 2.1.0 原则 XI、[产品规划](./BreakGlass-immersive-learning-plan-2026-10-06.md) 和 [UI 规划](./BreakGlass-ui-plan-2026-10-06.md) 执行。本文件保留旧切片/历史分析的职责与预算；旧文中的无账号或仅演示限制不作为新产品目标的全局禁令。本次不实现新功能，也不改历史验收。
+
+> 2026-10-06 治理复核：本切片按 Spec Constitution 2.1.0 原则 IX/X 与产品 Constitution 2.1.0 执行；后续策略不改变单帧显式触发、严格绑定、30s 开发默认、已有缓存门禁与独立真实模型验收。
+
+日期：2026-10-03。状态：已授权独立增强；实现和实际测试结果另行记录，本计划不宣称真实模型或完整产品验收通过。依据 [AGENTS 第 0 节](../AGENTS.md)、[产品 Constitution 2.1.0](./BreakGlass-constitution.md) 和 [Spec Constitution 2.1.0 原则 IX](../.specify/memory/constitution.md)。
 
 ## 用户需求与边界
 

@@ -34,7 +34,7 @@
 
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
-依据 Spec Constitution 1.11.0 与产品 Constitution 1.9.0。
+依据 Spec Constitution 2.2.0 原则 XIV 与产品 Constitution 2.2.0。原则 X 是策略准入，不是本功能。
 
 | 门禁 | 结果 |
 | --- | --- |
@@ -46,7 +46,7 @@
 | 密钥不进浏览器、仓库和日志 | 通过。沿用 reader 环境变量。 |
 | 失败不伪装成预设成功 | 通过。空地址、失败和超时保留用户视频。 |
 | 不改原则 VII / VIII / IX 的触发与契约 | 通过。新接口、新页面、新会话。 |
-| 原则 X 已写入治理文件 | 通过。2026-10-06 已修订 Spec Constitution 1.11.0、产品 Constitution 1.9.0 和 `AGENTS.md` 第 0 节。 |
+| 原则 XIV 已写入治理文件 | 通过。2026-10-06 合并后记入 Spec Constitution 2.2.0、产品 Constitution 2.2.0 和 `AGENTS.md` 第 0 节。 |
 
 Phase 0 前无未记录的例外。设计后的复核见文末。
 
@@ -95,10 +95,10 @@ breakglass-reader/tests/geometry-lesson.test.mjs
 
 ## Complexity Tracking
 
-无宪法例外需要登记。新路由是原则 X 写明的既有 reader 扩展，不是第二套识别服务。
+无宪法例外需要登记。新路由是原则 XIV 写明的既有 reader 扩展，不是第二套识别服务。
 
 ## 设计后的宪法复核
 
 Phase 1 契约仍满足上表：结果不进入 `CurveResult`；破壁不调用 `createWake`；`/geometry/read` 保持单帧、显式触发和 4MiB；`/read` 仍只收抛物线。热缓存 20 次与真实模型正确率在 quickstart 中保持未通过，不把计划写成验收。
 
-实施开始前须再读原则 X。若白名单要扩大，先修订宪法版本，再改规格、契约和任务。
+若白名单要扩大，先修订原则 XIV 的宪法版本，再改规格、契约和任务。

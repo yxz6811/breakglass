@@ -1,5 +1,9 @@
 # BreakGlass 待实现的前端 UI 与参数调节
 
+> 2026-10-06 双入口补充：插件为主入口，网站视频导入识别新增 BG-F12/BG-U13，复用分析/互动及共享视觉令牌，具备独立文件与传输状态；以最新产品/UI规划和 Constitution 2.1.0 原则 XIII 为准。新增能力均待实施。
+
+> 2026-10-06 新产品范围见 [产品规划](./BreakGlass-immersive-learning-plan-2026-10-06.md) 与 [UI 规划](./BreakGlass-ui-plan-2026-10-06.md)，版权与地区风险见 [风险方案](./BreakGlass-rights-and-risk-plan-2026-10-06.md)，按 Constitution 2.1.0 原则 XI/XII/XIII 执行。下表保留 2026-10-02 旧切片待办与历史测试口径；新插件热点、账号网站和风险门禁均未实现，完整的新 UI 工作按 BG-F/BG-U/UI-A 与 M0–M4 排序，不把本表的四项当作全部产品待办。
+
 > 只列**尚未实现**的部分。已完成的功能、按钮、状态与参数清单见 [`BreakGlass-ui-inventory.md`](./BreakGlass-ui-inventory.md)；令牌与动效数值见 [`BreakGlass-visual-spec.md`](./BreakGlass-visual-spec.md)。
 > 依据：`specs/001-insitu-parabola/spec.md`（FR-002/010/017/018）、`docs/BreakGlass-frontend-execution-plan.md`（P-01~P-05、FE-06、§10）、`AGENTS.md` §6/§7。
 > 核对时间：2026-10-02，基线 `前端计划02`（含识别结果适配 002 与可访问性补齐）；自动化基线 189 项通过。
