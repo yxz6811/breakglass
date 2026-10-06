@@ -203,10 +203,12 @@ test('18 P0 全程仅包内请求，006最小权限不使旧路径发新请求',
       } else if (relative === 'src/geometry-scene/request.js') {
         text = text.replaceAll('例如 http://127.0.0.1:8787。', '例如本机地址。');
       }
-      // 006 permits only this loopback reader and controlled fixture link.
+      // 006 reader/fixture and 007 explicit local management navigation only.
       if (relative === 'manifest.json') text = text.replaceAll('http://127.0.0.1:8787/*', 'LOCAL_READER');
       if (relative === 'src/background/service-worker.js') text = text.replaceAll('http://127.0.0.1:8787/learning/', 'LOCAL_READER/learning/');
-      if (relative === 'plugin/status.html') text = text.replaceAll('http://localhost:4173/learning-lab/lesson.html', 'CONTROLLED_LESSON');
+      if (relative === 'plugin/status.html') text = text
+        .replaceAll('http://localhost:4173/learning-lab/lesson.html', 'CONTROLLED_LESSON')
+        .replaceAll('http://localhost:4174/learning-site/index.html', 'LOCAL_MANAGEMENT');
       assert.doesNotMatch(text, /https?:\/\//, '不得出现远程地址：' + file);
     }
     const { buildUrl } = require('../extension/src/geometry-scene/request.js');

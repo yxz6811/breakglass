@@ -41,6 +41,15 @@ test('pending-rights metadata cannot become usable points or saved records', () 
   assert.equal(contracts.validateRecord({ ...record(), source: pending }, { source: pending, duration: 12 }).ok, false);
 });
 
+test('007 local file identities require complete SHA-256 without granting analysis permission', () => {
+  const file = { ...source(), kind: 'local-file', id: 'file-' + 'a'.repeat(64) };
+  assert.equal(contracts.validateSource(file).ok, true);
+  assert.equal(contracts.validateSource({ ...file, id: 'same-title' }).ok, false);
+  assert.equal(contracts.validateSource({ ...file, id: 'file-' + 'a'.repeat(63) }).ok, false);
+  assert.equal(contracts.validateRecord({ ...record(), source: { ...file, materialMode: 'permission-pending' } },
+    { source: { ...file, materialMode: 'permission-pending' }, duration: 12 }).ok, false);
+});
+
 test('vision candidates and manual corrections have honest source-compatible origins', () => {
   for (const origin of ['vision', 'manual']) assert.equal(contracts.validatePoints([{ ...point(), origin }], context()).ok, true);
   assert.equal(contracts.validatePoints([{ ...point(), origin: 'author' }], context()).ok, false);

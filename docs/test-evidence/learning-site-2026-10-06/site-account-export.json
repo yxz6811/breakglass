@@ -1,0 +1,115 @@
+{
+  "schemaVersion": "1",
+  "user": {
+    "id": "7f0178b9-ca95-4e4a-aff1-bfcc2b8e2ee9",
+    "username": "site_a_muws7ukc"
+  },
+  "epoch": 0,
+  "records": [
+    {
+      "id": "65ccba80-4b0c-4794-8167-8201bf46472d",
+      "kind": "pitfall",
+      "source": {
+        "kind": "local-file",
+        "id": "file-fb34fb64f937df683862740b67dc43b1c925bd37ffc04cf9ae6a6efdce7339a3",
+        "version": "1",
+        "analysisVersion": "1",
+        "materialMode": "self-authored",
+        "title": "自制直角三角形课程"
+      },
+      "time": 4,
+      "title": "直角三角形",
+      "note": "为什么不能直接把两条直角边相加？",
+      "template": "right-triangle",
+      "snapshot": {
+        "AB": 3,
+        "AC": 4,
+        "unit": "cm"
+      },
+      "origin": "vision",
+      "sourceLabel": "AI画面候选",
+      "createdAt": "2026-10-06T14:36:32.517Z"
+    },
+    {
+      "id": "38ae8c89-4f25-47e2-84d6-afc1d2665e53",
+      "kind": "question",
+      "source": {
+        "kind": "manual-notes",
+        "id": "manual-file-9895c771111e754e91e10396035400bd1b5f3069bb767b1e87197cee06c4d9c1",
+        "version": "1",
+        "analysisVersion": "1",
+        "materialMode": "self-authored",
+        "title": "我输入的数学条件"
+      },
+      "time": 2.194414,
+      "title": "手工数学条件",
+      "note": "这是我自己输入的数学条件。",
+      "template": "right-triangle",
+      "snapshot": {
+        "AB": 3,
+        "AC": 4,
+        "unit": "unit"
+      },
+      "origin": "manual",
+      "sourceLabel": "学生手工校对（非 AI 识别）",
+      "createdAt": "2026-10-06T14:36:34.644Z"
+    }
+  ],
+  "watch": [
+    {
+      "source": {
+        "kind": "local-file",
+        "id": "file-fb34fb64f937df683862740b67dc43b1c925bd37ffc04cf9ae6a6efdce7339a3",
+        "version": "1",
+        "analysisVersion": "1",
+        "materialMode": "self-authored",
+        "title": "自制直角三角形课程"
+      },
+      "time": 3.19651,
+      "duration": 12,
+      "updatedAt": "2026-10-06T14:36:33.960Z"
+    },
+    {
+      "source": {
+        "kind": "local-file",
+        "id": "file-9895c771111e754e91e10396035400bd1b5f3069bb767b1e87197cee06c4d9c1",
+        "version": "1",
+        "analysisVersion": "1",
+        "materialMode": "permission-pending",
+        "title": "我的本地课程"
+      },
+      "time": 2.194414,
+      "duration": 12,
+      "updatedAt": "2026-10-06T14:36:34.508Z"
+    }
+  ],
+  "attempts": [
+    {
+      "id": "0f75f7b3-c286-4c7b-aa61-ac3821652196",
+      "recordId": "65ccba80-4b0c-4794-8167-8201bf46472d",
+      "answer": 7,
+      "hintUsed": false,
+      "correct": false,
+      "outcome": "wrong",
+      "createdAt": "2026-10-06T14:36:33.501Z"
+    },
+    {
+      "id": "682dfb01-7ac8-4982-99fe-c8edc1af4fe0",
+      "recordId": "65ccba80-4b0c-4794-8167-8201bf46472d",
+      "answer": 5,
+      "hintUsed": true,
+      "correct": true,
+      "outcome": "correct_with_hint",
+      "createdAt": "2026-10-06T14:36:33.539Z"
+    },
+    {
+      "id": "a5c39496-e36d-4f5a-acd6-3341addb73e0",
+      "recordId": "65ccba80-4b0c-4794-8167-8201bf46472d",
+      "answer": 5,
+      "hintUsed": false,
+      "correct": true,
+      "outcome": "correct_independent",
+      "createdAt": "2026-10-06T14:36:33.602Z"
+    }
+  ]
+}

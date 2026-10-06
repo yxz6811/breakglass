@@ -7,6 +7,6 @@
   <p role="status">B 站公开视频的处理授权待确认，当前不会采集或上传其画面。真实模型、真实平台和地区发布分别验收。</p>
   <p>在仓库根目录运行 <code>node scripts/learning-lab.mjs</code>，打开自制教学站，加载视频后点击插件图标。reader 与视觉模型需另行配置。</p>
   <nav><a href="http://localhost:4173/learning-lab/lesson.html" target="_blank" rel="noopener">打开自制教学站</a><a href="../demo/index.html">抛物线工作台</a><a href="../demo/geometry.html">几何工作台</a></nav></section>
-  <section><h2>这台浏览器的学习记录</h2><p>本机访客记录，尚无账号或跨设备同步。保存的是你主动标记的疑问或个人易错点；AI 常见误区提示不代表你已经做错。</p><button id="refresh" type="button">刷新记录</button><button id="clear" type="button">清除全部本机记录</button><p id="status" role="status"></p><ol id="records"></ol></section>
+  <section><h2>这台浏览器的学习记录</h2><p>插件记录保存在本机。保存的是你主动标记的疑问或个人易错点；AI 常见误区提示不代表你已经做错。可显式导出JSON，在学习管理中心审核导入，再选择需要存入当前账号的记录。</p><button id="refresh" type="button">刷新记录</button><button id="export" type="button">导出本机记录 JSON</button><button id="clear" type="button">清除全部本机记录</button><p><a href="http://localhost:4174/learning-site/index.html" target="_blank" rel="noopener">打开学习管理中心</a>（先运行 <code>node --env-file-if-exists=breakglass-reader/.env scripts/learning-site.mjs</code>）</p><p id="status" role="status"></p><ol id="records"></ol></section>
   <script src="status.js"></script>
 </main></body></html>

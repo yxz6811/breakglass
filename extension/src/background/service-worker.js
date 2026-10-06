@@ -164,7 +164,8 @@ chrome.action.onClicked.addListener((tab) => {
     }
     const files = ['src/geometry/content-rect.js', 'src/curve/evaluate.js', 'src/geometry-scene/validate.js',
       'src/geometry-scene/solve.js', 'src/geometry-scene/actions.js', 'src/plugin/contracts.js',
-      'src/plugin/live-loop.js', 'src/plugin/overlay.js', 'src/plugin/session.js'];
+      'src/plugin/live-loop.js', 'src/plugin/frame-sampler.js', 'src/plugin/particle-renderer.js',
+      'src/plugin/overlay.js', 'src/plugin/session.js'];
     const cssText = await (await fetch(chrome.runtime.getURL('src/plugin/overlay.css'))).text();
     await chrome.scripting.executeScript({ target: { tabId: tab.id }, files });
     await chrome.scripting.executeScript({ target: { tabId: tab.id }, func: (config) => globalThis.BreakGlass.pluginSession.start(config),

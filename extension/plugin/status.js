@@ -22,6 +22,21 @@ async function refresh() {
   } catch (error) { status.textContent = error.message || '无法读取本机记录。'; }
 }
 document.querySelector('#refresh').addEventListener('click', refresh);
+document.querySelector('#export').addEventListener('click', async () => {
+  try {
+    const response = await chrome.runtime.sendMessage({ type: 'plugin:list' });
+    if (!response.ok) throw new Error(response.message);
+    const payload = { schemaVersion: '1', origin: 'breakglass-plugin',
+      aiGeneratedContentPresent: response.records.some((record) => record.origin === 'vision'), records: response.records };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    if (blob.size > 256 * 1024) throw new Error('导出包超过网站导入上限256KiB，请减少记录后再导出。');
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a'); anchor.href = url; anchor.download = 'breakglass-plugin-records.json';
+    document.body.append(anchor); anchor.click(); anchor.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    status.textContent = '已导出最小数学记录；不包含截图、原视频或密钥。网站导入需要另外审核确认。';
+  } catch (error) { status.textContent = error.message || '导出失败，请重试。'; }
+});
 document.querySelector('#clear').addEventListener('click', async () => {
   const response = await chrome.runtime.sendMessage({ type: 'plugin:clear' });
   if (!response.ok) { status.textContent = response.message; return; }

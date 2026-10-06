@@ -55,13 +55,16 @@
 
   function source(value) {
     if (!exact(value, SOURCE_KEYS, ['title'])) return fail('invalid_source', '来源字段不符合固定结构。');
-    if (!['visual-session', 'creator-layer', 'manual-notes'].includes(value.kind)
+    if (!['visual-session', 'local-file', 'creator-layer', 'manual-notes'].includes(value.kind)
       || !identity(value.id) || !identity(value.version, 64) || value.analysisVersion !== '1'
       || !['self-authored', 'licensed', 'permission-pending'].includes(value.materialMode)) {
       return fail('invalid_source', '来源身份、版本或素材状态无效。');
     }
     if (own(value, 'title') && (!text(value.title, 120) || !privateText(value.title))) {
       return fail('invalid_source', '来源标题应为不含地址或凭证的短文本。');
+    }
+    if (value.kind === 'local-file' && !/^file-[a-f0-9]{64}$/.test(value.id)) {
+      return fail('invalid_source', '本地文件来源需要完整SHA-256指纹。');
     }
     const copy = { kind: value.kind, id: value.id, version: value.version,
       analysisVersion: value.analysisVersion, materialMode: value.materialMode };
@@ -124,7 +127,7 @@
       && value.x + value.width <= 1 + 1e-9 && value.y + value.height <= 1 + 1e-9;
   }
   function matchingOrigin(value, activeSource) {
-    const origins = activeSource.kind === 'visual-session' ? ['vision', 'manual']
+    const origins = ['visual-session', 'local-file'].includes(activeSource.kind) ? ['vision', 'manual']
       : activeSource.kind === 'creator-layer' ? ['author', 'manual'] : ['manual'];
     return origins.includes(value);
   }

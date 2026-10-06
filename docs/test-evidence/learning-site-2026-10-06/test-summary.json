@@ -1,0 +1,32 @@
+{
+  "status": "passed",
+  "date": "2026-10-06",
+  "sourceBase": "1ff95c1232e8b7a9145a0ac69c870c679ac1d350",
+  "sourceScope": "007 new implementation plus shared sampler/particle/overlay/plugin export updates; final commit in branch history",
+  "node": {
+    "tests": 768,
+    "pass": 768,
+    "fail": 0,
+    "cancelled": 0,
+    "skipped": 0,
+    "todo": 0
+  },
+  "static": {
+    "jsMjs": 163,
+    "localReferences": 282,
+    "inlineScripts": "passed"
+  },
+  "commands": [
+    "node --test --test-reporter=tap",
+    "node scripts/check.mjs",
+    "node scripts/verify-learning-site.mjs <external-output>",
+    "node scripts/verify-learning-mv3.mjs <external-output>"
+  ],
+  "testPrerequisites": {
+    "node": "24.21.0",
+    "browser": "Edge 154.0.4258.37",
+    "legacyVideoTests": "FFmpeg 7.1 in tool PATH only",
+    "browserHarness": "Playwright from tool environment; not app dependency"
+  },
+  "model": "explicit test stub only; real model remains configurable and unverified"
+}

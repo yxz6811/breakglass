@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
-const folders = ['extension', 'site', 'prototypes', 'tests', 'breakglass-reader', 'scripts', 'learning-lab'];
+const folders = ['extension', 'site', 'prototypes', 'tests', 'breakglass-reader', 'breakglass-learning', 'scripts', 'learning-lab', 'learning-site'];
 const files = [];
 function walk(directory) {
   for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {

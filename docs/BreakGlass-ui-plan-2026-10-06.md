@@ -1,16 +1,18 @@
 # BreakGlass 视频插件与学习网站 UI 规划
 
+> 007最新实施：用户要求继续写代码、模型留空可配置，并以showcase视觉建设当前账号管理网站。治理2.3.0；管理网站采用局部暗色品牌主题，观看位置与实际复练状态分开展示。详细映射见[管理网站UI规划](BreakGlass-learning-management-ui-2026-10-06.md)，实际状态见[007任务](../specs/007-learning-site-and-particles/tasks.md)。下文旧规划表与里程碑不自动表示已验收。
+
 > 2026-10-06 最新决定：用户已授权实施；主流程改为视觉模型持续识别当前视频画面，并在后台滚动总结已分析内容。作者知识层是可选加速/测试，平台业务接口不是核心依赖。问题、解决措施、降级和验收见 [持续视觉规划](BreakGlass-continuous-vision-plan-2026-10-06.md) BG-VR01–14，治理见 Constitution 2.2.0 原则 XIV；B站处理授权待确认。下文原基线与历史阶段判断不代表最新功能已经完成。
 
 
 | 项目 | 内容 |
 | --- | --- |
 | 版本 / 日期 | 1.1.0 / 2026-10-06 |
-| 状态 | 已形成规划；本文所有新增 UI、接口依赖和验收场景均待实施、待验证 |
+| 状态 | 006受控插件已有证据；007管理网站已实施，具体通过项以007任务/证据为准；其他平台/地区/真实模型待验证 |
 | 仓库基线 | 远端 `main@d4b6e0bfdffff2b2584a537b1e0ff87e4d7e2ae9`，并结合本次本地文档治理修订 |
 | 治理依据 | [产品 Constitution 2.2.0](./BreakGlass-constitution.md)、[Spec Constitution 2.2.0](../.specify/memory/constitution.md) 原则 XI/XII、[AGENTS.md](../AGENTS.md) |
 | 产品配套 | [沉浸学习产品规划](./BreakGlass-immersive-learning-plan-2026-10-06.md)；统一登记 12 个功能 `BG-F01` 至 `BG-F12`、13 个界面 `BG-U01` 至 `BG-U13`、27 个 UI 验收 `UI-A01` 至 `UI-A27` |
-| 视觉基线 | [Visual Spec 1.6.0](./BreakGlass-visual-spec.md)（继承 1.5.0 令牌）、[UI 设计建议](./BreakGlass-ui-design-guide.md)、[现状清单 2.6.0](./BreakGlass-ui-inventory.md)、`extension/src/ui/theme.css` |
+| 视觉基线 | [Visual Spec 1.7.0](./BreakGlass-visual-spec.md)（旧工作台继承1.5.0，007局部暗色）、[UI 设计建议](./BreakGlass-ui-design-guide.md)、[现状清单 2.6.0](./BreakGlass-ui-inventory.md)、`extension/src/ui/theme.css` |
 | 最新交付范围 | 已授权006持续视觉首切片；代码、真实模型、平台/地区发布分别验收，账号/网站M2/M3仍独立 |
 | 权利与地区配套 | [版权、未成年人及地区风险规划](./BreakGlass-rights-and-risk-plan-2026-10-06.md)；中国大陆与拟首发海外地区分别冻结准入策略 |
 
@@ -46,7 +48,7 @@
 
 ## 3. 继承的视觉和交互基线
 
-令牌仍以 `extension/src/ui/theme.css` 与 Visual Spec 1.6.0 为准，1.6.0 继承 1.5.0 的既有数值。学习网站新区域继承冰面主题；介绍站暗色背景不强制迁移。
+令牌仍以 `extension/src/ui/theme.css` 与 Visual Spec 1.6.0 为准，1.6.0 继承 1.5.0 的既有数值。007管理网站按用户最新要求采用介绍站暗色品牌；旧工作台及插件局部层继续继承既有冰面主题。网站局部覆盖见管理网站UI规划。
 
 | 角色 | 数值与使用规则 |
 | --- | --- |

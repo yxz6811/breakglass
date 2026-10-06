@@ -44,29 +44,7 @@
       && location.pathname === '/learning-lab/lesson.html' && !document.hidden; }
     async function capture(signal) {
       if (signal.aborted || !sameMedia()) { stop('页面或视频已变化，视觉会话停止。'); return null; }
-      const bounds = video.getBoundingClientRect();
-      if (bounds.width <= 0 || bounds.height <= 0 || bounds.bottom <= 0 || bounds.right <= 0
-        || bounds.top >= window.innerHeight || bounds.left >= window.innerWidth) return null;
-      if (video.seeking || video.readyState < 2 || video.videoWidth <= 0 || video.videoHeight <= 0) return null;
-      const frameTime = video.currentTime;
-      const canvas = document.createElement('canvas');
-      canvas.width = Math.min(640, video.videoWidth);
-      canvas.height = Math.round(video.videoHeight * canvas.width / video.videoWidth);
-      const context = canvas.getContext('2d', { willReadFrequently: true });
-      try {
-        context.drawImage(video, 0, 0, canvas.width, canvas.height);
-        const probe = document.createElement('canvas'); probe.width = 16; probe.height = 9;
-        const pixels = probe.getContext('2d', { willReadFrequently: true });
-        pixels.drawImage(canvas, 0, 0, 16, 9);
-        // Quantized small image fingerprint. Metadata is never treated as visual recognition.
-        const values = pixels.getImageData(0, 0, 16, 9).data;
-        let signature = '';
-        for (let i = 0; i < values.length; i += 4) signature += String.fromCharCode(Math.round((values[i] + values[i + 1] + values[i + 2]) / 24));
-        const image = canvas.toDataURL('image/jpeg', 0.75);
-        if (signal.aborted || !sameMedia() || video.seeking || Math.abs(video.currentTime - frameTime) > 0.25) return null;
-        return { frameTime, image, signature };
-      } catch { throw new Error('当前采集方式无法读取该画面；不会绕过跨域或保护限制。'); }
-      finally { canvas.width = 0; canvas.height = 0; }
+      return bg.frameSampling.capture(video, signal, sameMedia);
     }
     function validateSummary(answer, times) {
       const text = (value, max) => typeof value === 'string' && value.length <= max;
