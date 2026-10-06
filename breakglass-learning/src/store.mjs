@@ -44,7 +44,7 @@ export function createAccountStore({ dataDir, validate }) {
     return job;
   };
   const read = () => serial(() => structuredClone(state));
-  const transact = (operation) => serial(async () => {
+  const transact = (operation, { beforeCommit } = {}) => serial(async () => {
     const next = structuredClone(state);
     const result = await operation(next);
     if (!validate(next)) throw new Error('invalid_store');
@@ -57,6 +57,9 @@ export function createAccountStore({ dataDir, validate }) {
       await file.writeFile(json, 'utf8');
       await file.sync();
       await file.close(); file = null;
+      // Request capabilities can be revoked during asynchronous file I/O. The
+      // temporary snapshot remains private and must not replace state afterwards.
+      beforeCommit?.();
       await fs.rename(temporary, filename);
       state = next;
       return structuredClone(result);
@@ -65,5 +68,7 @@ export function createAccountStore({ dataDir, validate }) {
       await fs.unlink(temporary).catch(() => {});
     }
   });
-  return { read, transact };
+  // Internal synchronous capability check: no mutable account data is exposed.
+  const peekEpoch = (userId) => state?.users.find((user) => user.id === userId)?.epoch ?? null;
+  return { read, transact, peekEpoch };
 }

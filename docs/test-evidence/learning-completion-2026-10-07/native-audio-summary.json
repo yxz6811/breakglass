@@ -1,0 +1,25 @@
+{
+  "status": "passed",
+  "generatedSelfAuthoredTone": true,
+  "actualNativeFFmpeg": true,
+  "actualHTTP": true,
+  "model": "explicit multipart transport stub",
+  "realASRVerified": false,
+  "realSpeechAccuracyVerified": false,
+  "publicDeploymentVerified": false,
+  "bilibiliPermissionVerified": false,
+  "learningEffectVerified": false,
+  "environment": {
+    "node": "v24.21.0",
+    "platform": "win32"
+  },
+  "checks": {
+    "realDecodeToBoundedMultipartStub": true,
+    "permissionGate": true,
+    "silentVideoIsHonestFailure": true,
+    "changedRegisteredFileNeverUploads": true
+  },
+  "decodeMs": 64.7782,
+  "decodedAudioSeconds": 1,
+  "artifactScope": "Summary only. The temporary generated tone/video and audio payload are not copied."
+}

@@ -1,0 +1,16 @@
+{
+  "schemaVersion": "1",
+  "mode": "production-pilot",
+  "runtimeFingerprint": "REPLACE_WITH_APPROVED_NON_SECRET_RUNTIME_FINGERPRINT",
+  "publicOrigin": "https://learning.example.com",
+  "dataDir": "C:/configure-outside-repository/breakglass-production",
+  "operator": {
+    "name": "请填写实际运营主体",
+    "contact": "operator@example.com"
+  },
+  "countries": ["CN", "US", "DE"],
+  "audience": ["adults", "minors"],
+  "expiresAt": "2030-01-01T00:00:00.000Z",
+  "evidence": [],
+  "accounts": []
+}

@@ -172,7 +172,7 @@ try {
         background: styles.backgroundColor, pointerEvents: styles.pointerEvents };
     });
     assert.equal(evidence.learningLayer.parent, 'import-workbench', 'Independent layer must remain in the website workbench');
-    await page.getByRole('checkbox').check();
+    await page.locator('.bg-confirm input').check();
     await page.getByRole('button', { name: '确认条件并探索', exact: true }).click();
     assert.match(await page.locator('.bg-math-summary').textContent(), /BC.*= 5 cm/);
     await overlayOpen();
@@ -287,7 +287,7 @@ try {
     await nav('import'); await page.locator('#manual-explore').click(); await overlayOpen();
     await page.getByRole('button', { name: '校对当前条件', exact: true }).click();
     await page.getByRole('combobox', { name: '数学模板', exact: true }).selectOption('right-triangle');
-    await page.getByRole('checkbox').check(); await page.getByRole('button', { name: '生成手工候选并探索', exact: true }).click();
+    await page.locator('.bg-confirm input').check(); await page.getByRole('button', { name: '生成手工候选并探索', exact: true }).click();
     await page.getByRole('textbox', { name: '我的疑问或易错提醒', exact: true }).fill('这是我自己输入的数学条件。');
     await page.getByRole('button', { name: '保存疑问', exact: true }).click();
     await page.getByText('记录已由当前账号服务确认保存。', { exact: true }).waitFor();

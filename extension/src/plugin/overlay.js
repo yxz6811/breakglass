@@ -756,7 +756,11 @@
           feedback.textContent = result && result.ok === true && result.storage === 'account'
             ? '记录已由当前账号服务确认保存。'
             : result && result.ok === true && result.storage === 'local'
-              ? (kind === 'pitfall' ? '个人易错标记已保存到本机。这不代表你已经做错。' : '疑问已保存到本机。')
+              ? ((kind === 'pitfall' ? '个人易错标记已保存到本机。这不代表你已经做错。' : '疑问已保存到本机。')
+                + (result.syncStatus === 'confirmed' ? ' 当前配对账号已确认同步。'
+                  : result.syncStatus === 'queued' ? ' 账号尚未确认，请到插件记录页检查待同步队列。'
+                  : result.syncStatus === 'cancelled' ? ' 账号同步已取消，请在记录页核对。'
+                  : result.syncStatus === 'failed' ? ' 此记录未进入同步队列；请在插件记录页重新审核导入。' : ''))
               : '记录未保存，请重试。';
         }).catch((error) => {
           if (!destroyed && epoch === actionEpoch && selected === captured) {

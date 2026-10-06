@@ -64,7 +64,8 @@
       const value = await request('/api/account/me', { authenticated: false, owner });
       if (owner !== generation) throw new AccountError('账户已改变，忽略旧请求结果。', 'stale_session');
       const nextUser = value.user ? { id: value.user.id, username: value.user.username } : null;
-      if ((user && user.id) !== (nextUser && nextUser.id)) advanceGeneration();
+      if ((user && user.id) !== (nextUser && nextUser.id)
+        || (user && nextUser && user.id === nextUser.id && epoch !== value.epoch)) advanceGeneration();
       user = nextUser;
       csrfToken = typeof value.csrfToken === 'string' ? value.csrfToken : '';
       epoch = Number.isSafeInteger(value.epoch) ? value.epoch : 0;
@@ -102,7 +103,12 @@
       snapshot, refresh, invalidate,
       register: (credentials) => authenticate('register', credentials),
       login: (credentials) => authenticate('login', credentials), logout,
+      createPluginPairing: () => request('/api/account/plugin-pairing', { method: 'POST', body: {} }),
+      revokePluginPairings: () => request('/api/account/plugin-pairing', { method: 'DELETE', body: {} }),
       records: () => request('/api/learning/records'),
+      annotations: () => request('/api/annotations'),
+      annotation: (recordId) => request(`/api/annotations/${encodeURIComponent(recordId)}`),
+      saveAnnotation: (recordId, annotation, expectedRevision) => write(`/api/annotations/${encodeURIComponent(recordId)}`, 'PUT', { annotation, expectedRevision }),
       saveRecord: (record) => write(`/api/learning/records/${encodeURIComponent(record.id)}`, 'PUT', { record }),
       deleteRecord: (id) => write(`/api/learning/records/${encodeURIComponent(id)}`, 'DELETE'),
       clearRecords: () => write('/api/learning/records', 'DELETE'),

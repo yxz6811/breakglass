@@ -1,4 +1,10 @@
 /* Management surface follows the repository aperture identity. */
+.annotation-editor label { display:grid; gap:8px; margin:14px 0; }
+.reason-tags { display:flex; flex-wrap:wrap; gap:8px; }
+.progressive-window { border-top:1px solid var(--line); padding:16px 0; }
+.progressive-window h4 { color:var(--accent); }
+.math-graph { display:grid; gap:12px; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); }
+.math-graph-node { border:1px solid var(--line); padding:16px; border-radius:var(--radius-sm); }
 :root { color-scheme: dark; --bg-base:#080b0d; --bg-stage:#080b0d; --screen-ink:#f2f5f7; --screen-muted:#a2adb3; --screen-accent:#71ddff; --ice-hi:#152026; --ice-lo:#10171b; --ink:#f2f5f7; --muted:#a2adb3; --accent:#71ddff; --line:#303a40; --panel:#10171b; --control-bg:#10171b; --control-hover:#17232b; --primary-bg:#71ddff; --primary-ink:#080b0d; --warn:#ffd08a; --radius-sm:12px; --radius-card:12px; --radius-panel:16px; --panel-shadow:none; }
 body { background:#080b0d; background-image:linear-gradient(rgba(48,58,64,.15) 1px,transparent 1px),linear-gradient(90deg,rgba(48,58,64,.15) 1px,transparent 1px); background-size:80px 80px; }
 .site-sidebar { position:fixed; inset:0 auto 0 0; width:240px; padding:24px 20px; border-right:1px solid var(--line); background:#080b0d; z-index:10; }
@@ -59,3 +65,4 @@ footer { margin-left:240px; padding:24px 40px; color:var(--muted); font-size:12p
 @media(max-width:1050px) { .stat-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } .overview-grid { grid-template-columns:1fr; gap:0; } }
 @media(max-width:760px) { .site-sidebar { position:static; width:auto; padding:16px; border-right:0; border-bottom:1px solid var(--line); } .site-sidebar nav { display:flex; overflow-x:auto; gap:4px; margin-top:16px; } .site-sidebar nav button { width:auto; flex:0 0 auto; } .sidebar-caption,.sidebar-note { display:none; } .site-header,main,footer { margin-left:0; padding:16px; } .site-header { flex-wrap:wrap; } .panel { padding:16px; } .field-grid { grid-template-columns:1fr; } .stat-grid { gap:12px; } .stat-card { padding:16px; } .video-stage { min-height:120px; } }
 @media(prefers-reduced-motion:reduce) { .drop-zone { transition:none; } }
+ .pairing-code { display: block; min-height: 1.6em; margin-top: 12px; overflow-wrap: anywhere; color: var(--site-accent, #71ddff); font: 600 1.25rem/1.6 monospace; letter-spacing: 0.08em; user-select: all; }

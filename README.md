@@ -1,5 +1,10 @@
 # BreakGlass（破壁）
 
+> 009最新交付（2026-10-07，治理2.5.0）：本机/账户备注和原因标签修订、20片段渐进分析与私有缓存、五种新增手工数学及粒子/基础诊断、可配置登记短音轨ASR、严格发布检查与试点运行准备。功能/入口见[009规划](docs/BreakGlass-learning-completion-2026-10-07.md)，完成项见[任务](specs/009-learning-completion/tasks.md)，实际范围见[验证记录](docs/BreakGlass-validation-learning-completion-2026-10-07.md)。真实AI/ASR质量、B站许可、正式托管/地区发布和真实学生效果仍须独立证据；不会以测试替身标为通过。
+
+> 008阶段交付（历史基线）：本机插件账号配对与记录/观看同步、短片段稀疏画面＋登记作者字幕、两模板深度复练。治理2.4.0，范围/进度见[008规划](docs/BreakGlass-connected-learning-2026-10-06.md)及[任务](specs/008-connected-learning/tasks.md)。模型留空可配置，B站处理许可、真实AI、公网跨设备和正式地区发布仍待验。
+
+
 > 2026-10-06 初始文档规划（历史基线）：两份 Constitution 2.1.0 明确插件优先，同时保留网站用户视频导入识别与账号学习记录两种入口。功能、阶段与当前实现边界见 [产品规划](docs/BreakGlass-immersive-learning-plan-2026-10-06.md)，逐界面功能与状态验收见 [UI 规划](docs/BreakGlass-ui-plan-2026-10-06.md)。中国大陆及海外的素材权利、儿童数据、跨境、AI 标识与撤权删除按原则 XII 和 [风险方案](docs/BreakGlass-rights-and-risk-plan-2026-10-06.md) 执行。本次只交付文档；第三方网课注入、新网站上传工作台、账号与云端记录尚未实现，旧接口/预算/验收保持独立。
 
 BreakGlass 是一个 Chrome MV3 扩展原型：把已验证演示视频中的数学抛物线变成可调节的原位 SVG 交互层，并提供独立的当前帧直角三角形学习工作台。
@@ -39,7 +44,7 @@ docs/                      分析与项目专属说明
 
 ## 学习管理网站（007）
 
-按介绍站 showcase 的暗色品牌视觉实现 `learning-site/`：当前账号概览、观看位置、疑问与个人易错记录、实际作答复练、结构数学场景与粒子视角、数据导出/删除及本地视频工作台。账号由独立本机开发服务真实保存，插件记录先显式导出 JSON，再审核导入网站本机并选择导入账号；尚无自动跨设备云同步。治理为 2.3.0，进度与外部待验收项见 [007任务](specs/007-learning-site-and-particles/tasks.md)。
+按介绍站 showcase 的暗色品牌视觉实现 `learning-site/`：当前账号概览、观看位置、疑问与个人易错记录、备注/错因修订、实际作答复练、七种结构数学模板与粒子视角、知识关系诊断、数据导出/删除及本地视频工作台。账号由独立本机开发服务真实保存；008已支持显式配对的未来插件记录/观看同步，旧记录仍需审核选择，JSON导入保留。尚未发布公网跨设备服务。治理为2.5.0，007–009分别记录阶段任务和外部待验收项。
 
 在仓库根目录启动：
 
@@ -153,3 +158,14 @@ Safari 使用媒体查询新旧监听接口的能力检测；旧环境的导航�
 已按用户要求开始实现插件持续视觉识别和后台滚动总结，治理2.2.0；实际状态见 [006任务](specs/006-plugin-learning-layer/tasks.md) / [验证记录](docs/BreakGlass-continuous-vision-validation-2026-10-06.md)。主路不依赖作者层或平台业务API；B站处理许可待确认，当前仅受控自制素材试验。问题及解决办法、视觉与视频读取的组合增强见 [持续视觉规划](docs/BreakGlass-continuous-vision-plan-2026-10-06.md)。
 
 开发：从仓库根运行 `node scripts/learning-lab.mjs`，加载 `extension/` 为解压MV3扩展；配置本机 `breakglass-reader/.env` 后启动reader。打开 `http://localhost:4173/learning-lab/lesson.html`、等视频就绪，点击插件图标，再显式开始持续识别。单帧/摘要使用新 `/learning/read` / `/learning/summarize`；密钥仅在reader。新UI仅本机访客记录，无真实账号/跨设备/完整音频/整课保证；网站文件入口和粒子另阶段验证。没有模型配置会诚实显示失败。
+
+
+## 网站与插件账号连接（007/008）
+
+从仓库根运行 `node --env-file-if-exists=breakglass-reader/.env scripts/learning-site.mjs`，打开 `http://localhost:4174/learning-site/index.html`。数据默认在仓库外临时开发目录，可用`BREAKGLASS_LEARNING_DATA_DIR`指定仓库外绝对目录。账户密码经scrypt保存，cookie会话和插件配对只供本机开发；服务重启后重新登录/配对。
+
+在网站账户设置登录并生成一次码，打开扩展的插件记录页进行配对，按需开启未来同步；旧本机记录另行勾选导入。断网记录先留本机，在插件页面明确重试；网站撤销/退出/切号和删除epoch会阻断旧连接。清除本机不会删除账户内容。
+
+视频工作台可显式选择≤30秒片段，默认抽4帧，并按登记选择作者字幕；没有音轨或整文件上传。候选需校对，已存条件可预测、逐级提示、独立变式与真实作答。模型未配置仍可预览、手工探索、观看记录和复练。
+
+可选模型实测工具为 `scripts/evaluate-learning-model.mjs`，默认不调用供应商；将来配置后显式加`--run-model`并指定仓库外`--output`路径。当前not-run不代表真实AI通过。实际集成脚本`verify-connected-learning.mjs`模型是明确替身，独占4173/4174/8787并使用临时测试账户。

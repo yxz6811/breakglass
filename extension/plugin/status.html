@@ -7,6 +7,11 @@
   <p role="status">B 站公开视频的处理授权待确认，当前不会采集或上传其画面。真实模型、真实平台和地区发布分别验收。</p>
   <p>在仓库根目录运行 <code>node scripts/learning-lab.mjs</code>，打开自制教学站，加载视频后点击插件图标。reader 与视觉模型需另行配置。</p>
   <nav><a href="http://localhost:4173/learning-lab/lesson.html" target="_blank" rel="noopener">打开自制教学站</a><a href="../demo/index.html">抛物线工作台</a><a href="../demo/geometry.html">几何工作台</a></nav></section>
-  <section><h2>这台浏览器的学习记录</h2><p>插件记录保存在本机。保存的是你主动标记的疑问或个人易错点；AI 常见误区提示不代表你已经做错。可显式导出JSON，在学习管理中心审核导入，再选择需要存入当前账号的记录。</p><button id="refresh" type="button">刷新记录</button><button id="export" type="button">导出本机记录 JSON</button><button id="clear" type="button">清除全部本机记录</button><p><a href="http://localhost:4174/learning-site/index.html" target="_blank" rel="noopener">打开学习管理中心</a>（先运行 <code>node --env-file-if-exists=breakglass-reader/.env scripts/learning-site.mjs</code>）</p><p id="status" role="status"></p><ol id="records"></ol></section>
-  <script src="status.js"></script>
+  <section aria-labelledby="account-title"><h2 id="account-title">配对当前本机网站账号</h2>
+  <p>在学习管理中心登录后生成一次性配对码，再粘贴到这里。配对仅允许向该账号同步最小记录和观看位置；模型密钥、原视频和画面不会进入账号记录。网站退出、换号或撤销配对后，插件需要重新配对。</p>
+  <form id="pair-form"><label for="pair-code">一次性配对码（120秒有效）</label><input id="pair-code" maxlength="22" autocomplete="off" spellcheck="false" required><label class="check"><input id="pair-enabled" type="checkbox">同步今后主动保存的新记录及受控课程观看位置</label><button type="submit">配对账号</button></form>
+  <p id="account-status" role="status"></p><label class="check"><input id="sync-enabled" type="checkbox" disabled>未来新记录自动同步</label>
+  <button id="account-refresh" type="button">核对配对账号</button><button id="retry-sync" type="button">重试待同步记录</button><button id="disconnect" type="button">断开配对</button>
+  </section><section><h2>学习记录</h2><label for="record-scope">记录来源</label><select id="record-scope"><option value="local">这台浏览器</option><option value="account">当前配对账号</option></select><p>插件记录保存在本机。保存的是你主动标记的疑问或个人易错点；AI 常见误区提示不代表你已经做错。开启同步后，新记录会先保存在本机，再等待当前配对账号确认。已有本机记录不会自动迁移；请逐条勾选并审核导入。也可显式导出JSON，在学习管理中心审核导入。</p><button id="import-selected" type="button">将勾选的本机记录导入当前账号</button><button id="refresh" type="button">刷新记录</button><button id="export" type="button">导出本机记录 JSON</button><button id="clear" type="button">清除全部本机记录</button><p><a href="http://localhost:4174/learning-site/index.html" target="_blank" rel="noopener">打开学习管理中心</a>（先运行 <code>node --env-file-if-exists=breakglass-reader/.env scripts/learning-site.mjs</code>）</p><p id="status" role="status"></p><ol id="records"></ol></section>
+  <script src="../src/plugin/math-learning.js"></script><script src="status.js"></script>
 </main></body></html>

@@ -63,7 +63,7 @@ function createFixture(options = {}) {
   sandbox.materialMode = materialMode; sandbox.fileId = FILE_ID;
   const session = vm.runInContext(`BreakGlass.webVisual.createSession({video, cssText:'local-style', manualOnly,
     source:{kind:'local-file',id:fileId,version:'1',analysisVersion:'1',materialMode,title:'自制课程'}})`, sandbox);
-  return { session, video, document, window, calls, states, pointUpdates, summaries, tasks, overlay, mount,
+  return { session, video, document, window, calls, states, pointUpdates, summaries, tasks, overlay, mount, sandbox,
     overlayOptions: () => overlayOptions, captures: () => captured, setTime(value) { now = value; },
     async advance() { const first = tasks.entries().next().value; if (!first) return false;
       tasks.delete(first[0]); first[1](); await flush(); return true; } };
@@ -126,6 +126,19 @@ test('permission-pending and explicit manual mode create only manual-notes with 
     fixture.session.stop(); fixture.session.destroy();
     assert.equal(fixture.calls.length, 0);
   }
+});
+
+test('prepared context reuses the confirmed mathematical overlay without new acquisition and is cleared on stop', () => {
+  const fixture = createFixture(); fixture.sandbox.session = fixture.session;
+  vm.runInContext(`session.showPreparedContext({schemaVersion:'1',status:'context',sourceId:fileId,videoVersion:'1',analysisVersion:'1',
+    contextSourceId:'subtitle-id',coverage:{inputTypes:['frames']},summary:'仅画面',keyPoints:[],pitfalls:[],observedTimes:[2],
+    objects:[{frameTime:2,result:{schemaVersion:'1',template:'right-triangle',snapshot:{AB:3,AC:4,unit:'cm'},area:null,
+      title:'三角形候选',explanation:'核对直角条件。',pitfallHint:''}}]})`, fixture.sandbox);
+  assert.equal(fixture.calls.length, 0); assert.equal(fixture.captures(), 0);
+  const point = fixture.pointUpdates.at(-1)[0]; assert.equal(point.origin, 'vision'); assert.equal(point.start, 2);
+  assert.equal(point.sourceLabel, 'AI片段候选（稀疏画面）'); assert.deepEqual(point.snapshot, { AB: 3, AC: 4, unit: 'cm' });
+  assert.equal(fixture.summaries.at(-1).summary, '仅画面'); fixture.session.stop(); assert.deepEqual(fixture.pointUpdates.at(-1), []);
+  assert.equal(fixture.summaries.at(-1), null); fixture.session.destroy();
 });
 
 test('restarting while begin is pending aborts the old owner, and its late token does not end the new session', async () => {

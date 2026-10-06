@@ -47,10 +47,12 @@
   function dependencies() {
     if (typeof require === 'function') return {
       curve: require('../curve/evaluate'),
-      geometry: require('../geometry-scene/validate')
+      geometry: require('../geometry-scene/validate'),
+      math: require('./math-learning')
     };
     return { curve: root.BreakGlass && root.BreakGlass.evaluate,
-      geometry: root.BreakGlass && root.BreakGlass.geometryScene };
+      geometry: root.BreakGlass && root.BreakGlass.geometryScene,
+      math: root.BreakGlass && root.BreakGlass.mathLearning };
   }
 
   function source(value) {
@@ -85,6 +87,10 @@
 
   function snapshot(template, value) {
     const validators = dependencies();
+    if (validators.math && validators.math.isExtended(template)) {
+      const checked = validators.math.validateSnapshot(template, value);
+      return checked.ok ? { ok: true, value: checked.value } : fail('invalid_snapshot', checked.message);
+    }
     if (template === 'parabola') {
       if (!exact(value, ['a', 'h', 'k']) || ![value.a, value.h, value.k].every(finite)) {
         return fail('invalid_snapshot', '抛物线只接受有限的 a、h、k。');
@@ -163,6 +169,9 @@
         || !text(item.sourceLabel, 120) || !matchingOrigin(item.origin, active.source)) {
         return fail('invalid_point_content', '学习点文字或来源不匹配。');
       }
+      if (!['parabola', 'right-triangle'].includes(item.template)) {
+        return fail('unsupported_template', '视频学习点只支持已冻结的抛物线和直角三角形。');
+      }
       const checked = snapshot(item.template, item.snapshot);
       if (!checked.ok) return checked;
       ids.add(item.id);
@@ -181,6 +190,9 @@
       || !text(value.explanation, 1500, true) || typeof value.pitfallHint !== 'string'
       || (value.pitfallHint !== '' && !text(value.pitfallHint, 400, true))) {
       return fail('invalid_visual_result', '视觉候选不符合受限数学结构。');
+    }
+    if (!['parabola', 'right-triangle'].includes(value.template)) {
+      return fail('unsupported_template', '视觉候选仍只支持抛物线和直角三角形。');
     }
     const checked = snapshot(value.template, value.snapshot);
     if (!checked.ok) return checked;
@@ -203,6 +215,10 @@
     }
     if (!finite(value.time) || value.time < 0 || value.time > active.duration
       || !matchingOrigin(value.origin, active.source)) return fail('invalid_record_identity', '记录时间或来源无效。');
+    if (!['parabola', 'right-triangle'].includes(value.template)
+      && (storedSource.value.kind !== 'manual-notes' || value.origin !== 'manual')) {
+      return fail('manual_template_required', '新增数学模板必须是学生手工条件，不能冒充视频识别。');
+    }
     if (!text(value.title, 120) || !text(value.note, 1000, true) || !text(value.sourceLabel, 120)
       || ![value.title, value.note, value.sourceLabel].every(privateText)) {
       return fail('invalid_record_text', '记录只接受不含媒体地址或凭证的个人短文本。');

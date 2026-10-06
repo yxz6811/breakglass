@@ -1,0 +1,26 @@
+{
+  "status": "passed",
+  "node": "v24.21.0",
+  "tests": 867,
+  "passed": 867,
+  "failed": 0,
+  "cancelled": 0,
+  "skipped": 0,
+  "addedSince007": 99,
+  "static": {
+    "scripts": 182,
+    "localReferences": 300,
+    "inlineScripts": "passed"
+  },
+  "actualConnectedBrowser": {
+    "checks": 13,
+    "screenshots": 9,
+    "browser": "154.0.4258.37",
+    "errors": 0
+  },
+  "realModelVerified": false,
+  "bilibiliPermissionVerified": false,
+  "publicDeploymentVerified": false,
+  "learningEffectVerified": false,
+  "governance": "2.4.0"
+}

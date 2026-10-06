@@ -1,0 +1,65 @@
+{
+  "status": "passed",
+  "actualMV3": true,
+  "actualAccountHTTP": true,
+  "model": "explicit injected transport stub",
+  "realModelVerified": false,
+  "publicDeploymentVerified": false,
+  "bilibiliPermissionVerified": false,
+  "learningEffectVerified": false,
+  "checks": {
+    "actualMV3NoUploadBeforeExplicitStart": true,
+    "tokenOnlyWorkerSession": true,
+    "websiteCodeAndRealExtensionPairingWithoutGuestMigration": true,
+    "futureSaveConfirmsSameAccountAndWatchMetadata": true,
+    "explicitSelectedOldGuestImport": true,
+    "offlineQueueExplicitRetrySameAccount": true,
+    "shortWindowAuthorSubtitlesActualIndependentDecodeAndCandidate": true,
+    "predictionThreeHintsSeparateVariantAndExplanationActualAnswers": true,
+    "parabolaPredictionAndIndependentVariantUseActualVertexMath": true,
+    "deleteEpochPreventsQueuedResurrectionAndLocalSurvives": true,
+    "websiteRevocationDisconnectsRealWorker": true,
+    "pluginWatchRemainsAvailableWhenRealReaderIsUnconfigured": true,
+    "blankConfigurationHonestContextFailureAndNoProvider": true
+  },
+  "screenshots": [],
+  "errors": [],
+  "calls": {
+    "read": 4,
+    "summary": 4,
+    "context": 1
+  },
+  "contextCoverage": [
+    {
+      "observedTimes": [
+        2,
+        4,
+        6,
+        8
+      ],
+      "jpegCount": 4,
+      "authorCueCount": 2,
+      "hasAudio": false,
+      "hasFullFile": false
+    }
+  ],
+  "environment": {
+    "platform": "win32",
+    "node": "v24.21.0"
+  },
+  "browser": "154.0.4258.37",
+  "browserName": "System Microsoft Edge",
+  "artifactScope": "Summary only. No account records, browser profile, credentials or screenshots copied.",
+  "environmentSelection": {
+    "headlessShell": {
+      "result": "unsupported Extensions CDP domain",
+      "completedBusinessChecks": 0
+    },
+    "downloadedChrome": {
+      "launchFailures": 2,
+      "result": "spawn UNKNOWN",
+      "completedBusinessChecks": 0
+    },
+    "successfulRuntime": "System Microsoft Edge full browser"
+  }
+}

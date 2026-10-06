@@ -1,0 +1,39 @@
+{
+  "schemaVersion": "1",
+  "status": "not-run",
+  "code": "unconfigured",
+  "evidenceKind": "none",
+  "generatedAt": "2026-10-06T15:15:08.720Z",
+  "scope": {
+    "material": "repository-authored-triangle-fixture",
+    "durationSeconds": 12,
+    "frameTimes": [
+      2,
+      4,
+      8
+    ],
+    "audio": false,
+    "completeVideo": false,
+    "longCourse": false,
+    "studentLearningStudy": false,
+    "thirdPartyPlatform": "permission-pending"
+  },
+  "source": {
+    "id": "file-fb34fb64f937df683862740b67dc43b1c925bd37ffc04cf9ae6a6efdce7339a3",
+    "videoVersion": "1",
+    "analysisVersion": "1",
+    "materialMode": "self-authored",
+    "contextSourceId": "subtitle-53869638063e3f1d983c73925dcd9e8a887c23bf37635a2818fcabfe90e1b61c"
+  },
+  "groundTruth": {
+    "template": "right-triangle",
+    "AB": 3,
+    "AC": 4,
+    "unit": "cm",
+    "basis": "manual-labels-of-authored-fixture"
+  },
+  "providerCalls": 0,
+  "applicationCalls": 0,
+  "calls": [],
+  "metrics": null
+}

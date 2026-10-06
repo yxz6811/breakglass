@@ -25,6 +25,11 @@
     let points = [];
     let observations = [];
     const listeners = [];
+    let lastWatchAt = 0;
+    let watchBusy = false;
+    let watchToken = null;
+    let watchEpoch = 0;
+    let watchConnecting = false;
     const listen = (target, type, fn) => { target.addEventListener(type, fn); listeners.push(() => target.removeEventListener(type, fn)); };
     const status = (message) => overlay.updateStatus(message);
     function stop(reason = '视觉识别已停止；未保存的画面和观察已清除。') {
@@ -111,6 +116,7 @@
       void summarize(epoch);
     } });
     const overlay = bg.pluginOverlay.createLearningOverlay({ video, source, cssText, points: [],
+      saveNoteLabel: '我的疑问或易错提醒（先存本机，账号同步按配对设置）',
       onToggleRecognition: async () => {
         if (loop.isRunning()) { stop(); return; }
         if (!sameMedia()) { stop('当前画面已变化，请重新点击插件。'); return; }
@@ -130,20 +136,53 @@
         return reply;
       }, onClose: () => destroy()
     });
+    function stopWatch(reason) {
+      watchEpoch += 1; const previous = watchToken; watchToken = null;
+      watchBusy = false; watchConnecting = false;
+      if (previous) void send({ type: 'plugin:watch-end', token: previous }).catch(() => {});
+      if (reason) status(reason);
+    }
+    function stopAll(reason) { stop(reason); stopWatch(); }
     const onRevoked = (message, sender, respond) => {
       if (sender.id !== chrome.runtime.id || message?.type !== 'plugin:revoked'
-        || !token || message.token !== token) return;
-      stop('本机记录已清除，视觉会话与未保存的热点、观察和总结已停止并清空。');
+        || (message.token !== token && message.token !== watchToken)) return;
+      stopAll('本机记录已清除，视觉会话与未保存的热点、观察和总结已停止并清空。');
       respond({ ok: true });
     };
     chrome.runtime.onMessage.addListener(onRevoked);
     listeners.push(() => chrome.runtime.onMessage.removeListener(onRevoked));
-    function destroy() { if (disposed) return; stop(); disposed = true; listeners.forEach((off) => off()); overlay.destroy(); if (active?.destroy === destroy) active = null; }
-    listen(document, 'visibilitychange', () => { if (document.hidden) stop('页面已隐藏，采集和后台总结已停止。回到视频后可重新开启。'); });
-    listen(video, 'seeking', () => stop('视频已跳转，旧帧候选和在途总结已清除。可重新开启识别。'));
+    function destroy() { if (disposed) return; stopAll(); disposed = true; listeners.forEach((off) => off()); overlay.destroy(); if (active?.destroy === destroy) active = null; }
+    listen(document, 'visibilitychange', () => { if (document.hidden) stopAll('页面已隐藏，视觉与观看跟踪已停止。回到视频后重新播放或开启识别。'); });
+    listen(video, 'seeking', () => stopAll('视频已跳转，旧帧候选和在途总结已清除；重新播放后记录观看位置。'));
+    async function syncWatch(force = false) {
+      if (!watchToken || watchBusy || !sameMedia() || (!force && Date.now() - lastWatchAt < 15000)) return;
+      if (!Number.isFinite(video.currentTime)) return;
+      const owner = watchEpoch; const current = watchToken; lastWatchAt = Date.now(); watchBusy = true;
+      try {
+        const reply = await send({ type: 'plugin:watch', token: current, time: video.currentTime });
+        if (owner === watchEpoch && !reply?.ok) stopWatch(reply?.message || '观看跟踪已停止，请核对配对账号后重新播放。');
+      } catch (_) { if (owner === watchEpoch) stopWatch('观看跟踪未能确认，请核对配对账号后重新播放。'); }
+      finally { if (owner === watchEpoch) watchBusy = false; }
+    }
+    async function beginWatch() {
+      if (watchConnecting || !sameMedia()) return;
+      stopWatch(); const owner = watchEpoch; watchConnecting = true;
+      try {
+        const reply = await send({ type: 'plugin:watch-begin', lessonId: lesson.id });
+        if (disposed || owner !== watchEpoch || !sameMedia()) {
+          if (reply?.token) void send({ type: 'plugin:watch-end', token: reply.token }).catch(() => {});
+          return;
+        }
+        if (reply?.ok && reply.enabled) { watchToken = reply.token; lastWatchAt = 0; void syncWatch(true); }
+      } finally { if (owner === watchEpoch) watchConnecting = false; }
+    }
+    listen(video, 'timeupdate', () => { void syncWatch(); });
+    listen(video, 'play', () => { void beginWatch().catch(() => {}); });
+    listen(video, 'pause', () => { void syncWatch(true); });
     listen(video, 'emptied', destroy);
     listen(window, 'pagehide', destroy);
     status('自制素材验证：点击开始持续识别。画面经本机 reader 送到其已配置模型；未配置时会显示失败。');
+    if (!video.paused) void beginWatch().catch(() => {});
     active = { destroy };
     return { ok: true };
   }

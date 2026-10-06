@@ -1,8 +1,10 @@
 import '../curve/evaluate.js';
 import '../geometry-scene/validate.js';
+import '../plugin/math-learning.js';
 import '../plugin/contracts.js';
 import '../plugin/registry.js';
 import '../plugin/record-store.js';
+import '../plugin/account-sync.js';
 
 const { pluginContracts: rules, pluginRegistry: registry, pluginRecords } = globalThis.BreakGlass;
 const STATE = 'pluginLearningRecordsV1';
@@ -15,10 +17,21 @@ const records = pluginRecords.createRecordStore({
   set: (state) => chrome.storage.local.set({ [STATE]: state }),
   validate: rules.validateRecord
 });
+const ACCOUNT = 'pluginPairedAccountV1';
+const ACCOUNT_QUEUE = 'pluginAccountQueueV1';
+const accountSync = globalThis.BreakGlass.pluginAccountSync.createSync({
+  getQueue: async () => (await chrome.storage.local.get(ACCOUNT_QUEUE))[ACCOUNT_QUEUE],
+  setQueue: (value) => chrome.storage.local.set({ [ACCOUNT_QUEUE]: value }),
+  getSession: async () => (await chrome.storage.session.get(ACCOUNT))[ACCOUNT],
+  setSession: (value) => value ? chrome.storage.session.set({ [ACCOUNT]: value }) : chrome.storage.session.remove(ACCOUNT),
+  fetch: (url, options) => fetch(url, options), clientOrigin: chrome.runtime.getURL('').slice(0, -1),
+  validateRecord: rules.validateRecord
+});
 const inflight = new Map();
 let operations = Promise.resolve();
 function serial(fn) { const job = operations.then(fn); operations = job.catch(() => {}); return job; }
 const keyFor = (tabId) => `visualSession:${tabId}`;
+const watchKeyFor = (tabId) => `watchSession:${tabId}`;
 const ownPage = (sender) => sender.id === chrome.runtime.id
   && sender.url?.startsWith(chrome.runtime.getURL('plugin/'));
 
@@ -40,12 +53,12 @@ async function boundedJson(response) {
   } finally { await reader.cancel().catch(() => {}); }
 }
 
-async function permittedSession(message, sender) {
+async function permittedSession(message, sender, key = keyFor) {
   await ready;
   if (!sender.tab || !rules.resolvePolicy(sender.url).allowed || sender.frameId !== 0) throw new Error('该页面尚未获准处理。');
   const liveTab = await chrome.tabs.get(sender.tab.id);
   if (!rules.resolvePolicy(liveTab.url).allowed || !liveTab.active) throw new Error('仅处理当前观看的受控页面。');
-  const stored = (await chrome.storage.session.get(keyFor(sender.tab.id)))[keyFor(sender.tab.id)];
+  const stored = (await chrome.storage.session.get(key(sender.tab.id)))[key(sender.tab.id)];
   if (!stored || stored.token !== message.token || stored.documentId !== sender.documentId
     || Date.now() - stored.startedAt > 30 * 60 * 1000) throw new Error('视觉会话已失效，请重新开启。');
   return stored;
@@ -57,25 +70,50 @@ function abortTab(tabId) {
 async function handle(message, sender) {
   if (!message || typeof message.type !== 'string') throw new Error('无效消息。');
   await ready;
+  if (message.type.startsWith('plugin:account:')) {
+    if (!ownPage(sender)) throw new Error('账号配对入口无效。');
+    switch (message.type) {
+      case 'plugin:account:state': return { ok: true, ...(await accountSync.snapshot()) };
+      case 'plugin:account:connect': return { ok: true, ...(await accountSync.connect(message.code, message.enabled)) };
+      case 'plugin:account:disconnect': return { ok: true, ...(await accountSync.disconnect()) };
+      case 'plugin:account:enable': return { ok: true, ...(await accountSync.enable(message.enabled)) };
+      case 'plugin:account:retry': return { ok: true, ...(await accountSync.retry()) };
+      case 'plugin:account:list': return { ok: true, ...(await accountSync.accountRecords()) };
+      case 'plugin:account:import': {
+        if (!Array.isArray(message.ids) || message.ids.length < 1 || message.ids.length > 100
+          || !message.ids.every((id) => typeof id === 'string')) throw new Error('请勾选需要导入的本机记录。');
+        const stored = await records.list(); const requested = new Set(message.ids);
+        const chosen = stored.records.filter((record) => requested.has(record.id));
+        if (chosen.length !== requested.size) throw new Error('选择的本机记录已变化，请刷新后重试。');
+        return { ok: true, ...(await accountSync.importRecords(chosen)) };
+      }
+      default: throw new Error('未知账号操作。');
+    }
+  }
   if (message.type === 'plugin:list') {
     if (!ownPage(sender)) throw new Error('记录入口无效。');
     return { ok: true, ...(await records.list()) };
   }
   if (message.type === 'plugin:clear') {
     if (!ownPage(sender)) throw new Error('记录入口无效。');
-    await serial(async () => {
+    const clearing = serial(async () => {
       const sessions = await chrome.storage.session.get(null);
       for (const abort of inflight.values()) abort.abort();
       inflight.clear();
-      await chrome.storage.session.clear();
+      await accountSync.clearPending();
+      const visualKeys = Object.keys(sessions).filter((key) => /^(visualSession|watchSession):\d+$/.test(key));
+      await chrome.storage.session.remove(visualKeys);
       await records.clear();
       // A paused, unchanged frame may never make another request. Revoke its
       // content session directly so deletion also clears private observations.
       await Promise.allSettled(Object.entries(sessions).filter(([key, session]) =>
-        /^visualSession:\d+$/.test(key) && typeof session?.token === 'string')
-        .map(([key, session]) => chrome.tabs.sendMessage(Number(key.slice('visualSession:'.length)),
+        /^(visualSession|watchSession):\d+$/.test(key) && typeof session?.token === 'string')
+        .map(([key, session]) => chrome.tabs.sendMessage(Number(key.split(':')[1]),
           { type: 'plugin:revoked', token: session.token }, { documentId: session.documentId })));
     });
+    // Reserve the deletion lane first, then cancel a write already in flight.
+    await accountSync.clearPending();
+    await clearing;
     return { ok: true };
   }
   if (message.type === 'plugin:begin') return serial(async () => {
@@ -100,14 +138,49 @@ async function handle(message, sender) {
     }
     return { ok: true };
   });
-  if (message.type === 'plugin:save') {
+  if (message.type === 'plugin:save') return serial(async () => {
     const session = await permittedSession(message, sender);
+    const accountBinding = await accountSync.snapshot();
     const r = message.record;
     const input = { kind: r?.kind, source: r?.source, time: r?.time, title: r?.title, note: r?.note,
       template: r?.template, snapshot: r?.snapshot, origin: r?.origin, sourceLabel: r?.sourceLabel };
     const saved = await records.save(input, session.epoch, { duration: session.duration, source: session.source });
-    return { ok: true, storage: 'local', id: saved.id };
-  }
+    let sync = { syncStatus: 'not-paired' };
+    try { sync = await accountSync.enqueue(saved, accountBinding); } catch (_) { sync = { syncStatus: 'failed' }; }
+    return { ok: true, storage: 'local', id: saved.id, syncStatus: sync.syncStatus,
+      accountUsername: sync.user?.username || null };
+  });
+  if (message.type === 'plugin:watch-begin') return serial(async () => {
+    if (!sender.tab || sender.frameId !== 0 || !rules.resolvePolicy(sender.url).allowed) throw new Error('观看来源不在受控范围。');
+    const tab = await chrome.tabs.get(sender.tab.id);
+    if (!tab.active || !rules.resolvePolicy(tab.url).allowed) throw new Error('请回到当前视频页面。');
+    const lesson = registry.findLesson(message.lessonId); if (!lesson) throw new Error('未登记的受控素材。');
+    const accountState = await accountSync.snapshot();
+    await chrome.storage.session.remove(watchKeyFor(sender.tab.id));
+    if (!accountState.paired || !accountState.enabled) return { ok: true, enabled: false };
+    const accountBinding = { user: { id: accountState.user.id }, enabled: true, epoch: accountState.epoch, revision: accountState.revision };
+    const session = { token: crypto.randomUUID(), source: registry.sourceFor(lesson), duration: lesson.duration,
+      accountBinding, documentId: sender.documentId, startedAt: Date.now() };
+    await chrome.storage.session.set({ [watchKeyFor(sender.tab.id)]: session });
+    return { ok: true, enabled: true, token: session.token };
+  });
+  if (message.type === 'plugin:watch-end') return serial(async () => {
+    if (!sender.tab) throw new Error('无效观看会话。');
+    const stored = (await chrome.storage.session.get(watchKeyFor(sender.tab.id)))[watchKeyFor(sender.tab.id)];
+    if (stored?.token === message.token && stored.documentId === sender.documentId) await chrome.storage.session.remove(watchKeyFor(sender.tab.id));
+    return { ok: true };
+  });
+  if (message.type === 'plugin:watch') return serial(async () => {
+    const session = await permittedSession(message, sender, watchKeyFor);
+    if (typeof message.time !== 'number' || !Number.isFinite(message.time) || message.time < 0
+      || message.time > session.duration) throw new Error('观看位置无效。');
+    const outcome = await accountSync.watch({ source: session.source, time: message.time, duration: session.duration }, session.accountBinding);
+    if (!outcome.watchAccepted || !outcome.watchConfirmed) {
+      await chrome.storage.session.remove(watchKeyFor(sender.tab.id));
+      throw new Error('观看位置未确认，或配对与同步选项已变化；请核对账号和待同步状态后重新播放。');
+    }
+    return { ok: true };
+  });
   if (message.type !== 'plugin:read' && message.type !== 'plugin:summary') throw new Error('未知消息。');
   const summary = message.type === 'plugin:summary';
   const session = await serial(async () => {
@@ -163,7 +236,7 @@ chrome.action.onClicked.addListener((tab) => {
       return;
     }
     const files = ['src/geometry/content-rect.js', 'src/curve/evaluate.js', 'src/geometry-scene/validate.js',
-      'src/geometry-scene/solve.js', 'src/geometry-scene/actions.js', 'src/plugin/contracts.js',
+      'src/geometry-scene/solve.js', 'src/geometry-scene/actions.js', 'src/plugin/math-learning.js', 'src/plugin/contracts.js',
       'src/plugin/live-loop.js', 'src/plugin/frame-sampler.js', 'src/plugin/particle-renderer.js',
       'src/plugin/overlay.js', 'src/plugin/session.js'];
     const cssText = await (await fetch(chrome.runtime.getURL('src/plugin/overlay.css'))).text();
@@ -172,7 +245,7 @@ chrome.action.onClicked.addListener((tab) => {
       args: [{ cssText, lessons: registry.lessons }] });
   })().catch(() => chrome.tabs.create({ url: chrome.runtime.getURL('plugin/status.html') }));
 });
-chrome.tabs.onRemoved.addListener((tabId) => { abortTab(tabId); void chrome.storage.session.remove(keyFor(tabId)); });
+chrome.tabs.onRemoved.addListener((tabId) => { abortTab(tabId); void chrome.storage.session.remove([keyFor(tabId), watchKeyFor(tabId)]); });
 chrome.tabs.onUpdated.addListener((tabId, change) => {
-  if (change.status === 'loading' || change.url) { abortTab(tabId); void chrome.storage.session.remove(keyFor(tabId)); }
+  if (change.status === 'loading' || change.url) { abortTab(tabId); void chrome.storage.session.remove([keyFor(tabId), watchKeyFor(tabId)]); }
 });
