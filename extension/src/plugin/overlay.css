@@ -1,0 +1,156 @@
+:host {
+  all: initial;
+  position: fixed;
+  inset: 0;
+  z-index: 2147483000;
+  pointer-events: none;
+  color: #14232f;
+  font: 16px/1.6 Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --bg-ink: #14232f;
+  --bg-muted: #4e6474;
+  --bg-accent: #0b6f91;
+  --bg-screen: #0e1720;
+  --bg-screen-ink: #eef5ff;
+  --bg-screen-accent: #71ddff;
+  --bg-line: rgba(90, 116, 138, .3);
+  --bg-ease: cubic-bezier(.2, .8, .2, 1);
+}
+:host([data-bg-layout="flow"]) {
+  position: relative;
+  inset: auto;
+  display: block;
+  width: auto;
+  margin: 12px;
+  z-index: auto;
+}
+:host([data-bg-layout="flow"]) .bg-panel {
+  position: relative;
+  inset: auto;
+  width: 100%;
+  max-width: 640px;
+  max-height: 70vh;
+  padding: 16px;
+}
+.bg-launcher {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 640px;
+  pointer-events: auto;
+}
+.bg-panel, .bg-panel *, .bg-hotspots, .bg-hotspot { box-sizing: border-box; }
+[hidden] { display: none !important; }
+.bg-panel {
+  position: fixed;
+  right: 20px;
+  top: 20px;
+  width: min(376px, calc(100vw - 40px));
+  max-height: calc(100vh - 40px);
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding: 24px;
+  border: 1px solid var(--bg-line);
+  border-radius: 20px;
+  background: linear-gradient(150deg, rgba(255, 255, 255, .94), rgba(200, 220, 230, .82));
+  box-shadow: 0 18px 46px rgba(96, 124, 146, .18), inset 0 1px 0 rgba(255, 255, 255, .9);
+  pointer-events: auto;
+  text-align: left;
+  overflow-wrap: anywhere;
+  isolation: isolate;
+}
+.bg-header { display: flex; gap: 12px; align-items: center; justify-content: space-between; }
+.bg-heading { margin: 0; font-size: 24px; line-height: 1.25; font-weight: 650; }
+.bg-subheading { margin: 16px 0 8px; font-size: 18px; line-height: 1.4; font-weight: 650; }
+.bg-panel p { margin: 8px 0; }
+.bg-source { color: var(--bg-accent); font-size: 14px; font-weight: 600; }
+.bg-muted { color: var(--bg-muted); font-size: 14px; line-height: 1.6; }
+.bg-status { padding: 8px 12px; border-radius: 14px; background: #eef4f8; color: var(--bg-ink); font-size: 14px; }
+.bg-error { color: #8a5a00; font-size: 14px; }
+.bg-explanation { white-space: pre-wrap; }
+.bg-point-list { display: grid; gap: 8px; margin-bottom: 12px; }
+.bg-button, .bg-input, .bg-hotspot {
+  min-height: 44px;
+  font: inherit;
+  font-size: 14px;
+  line-height: 1.4;
+}
+.bg-button {
+  min-width: 44px;
+  padding: 10px 12px;
+  border: 1px solid var(--bg-line);
+  border-radius: 9px;
+  color: var(--bg-ink);
+  background: rgba(255, 255, 255, .86);
+  cursor: pointer;
+  transition: border-color 120ms var(--bg-ease), background-color 120ms var(--bg-ease);
+}
+.bg-button:hover { border-color: var(--bg-accent); background: #fff; }
+.bg-button:active { transform: translateY(1px); transition-duration: 80ms; }
+.bg-button:disabled { opacity: .65; cursor: wait; transform: none; }
+.bg-primary { color: #fff; border-color: transparent; background: linear-gradient(135deg, #0b6f91, #1755bd); }
+.bg-primary:hover { color: #fff; background: linear-gradient(135deg, #0b6f91, #1755bd); }
+.bg-secondary { color: var(--bg-accent); }
+.bg-close { flex: 0 0 auto; }
+.bg-list-button { width: 100%; text-align: left; }
+.bg-button:focus-visible, .bg-input:focus-visible, .bg-confirm input:focus-visible, .bg-subheading:focus-visible {
+  outline: 2px solid var(--bg-accent);
+  outline-offset: 3px;
+}
+.bg-fields, .bg-interactive-controls { display: grid; gap: 12px; margin: 12px 0; }
+.bg-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.bg-field { display: grid; gap: 4px; min-width: 0; font-size: 14px; }
+.bg-input {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--bg-line);
+  border-radius: 9px;
+  color: var(--bg-ink);
+  background: #fff;
+  font-variant-numeric: tabular-nums;
+}
+textarea.bg-input { resize: vertical; }
+.bg-confirm { display: flex; align-items: flex-start; gap: 8px; min-height: 44px; padding: 8px 0; font-size: 14px; cursor: pointer; }
+.bg-confirm input { flex: 0 0 auto; width: 20px; height: 20px; margin: 1px 0 0; accent-color: var(--bg-accent); }
+.bg-detail { margin-top: 16px; padding-top: 4px; border-top: 1px solid var(--bg-line); }
+.bg-stage { padding: 12px; border-radius: 13px; color: var(--bg-screen-ink); background: var(--bg-screen); }
+.bg-stage svg { display: block; width: 100%; height: auto; }
+.bg-axis { stroke: #9fb4cc; stroke-width: 1; }
+.bg-plot-border { fill: none; stroke: #9fb4cc; stroke-width: 1; stroke-dasharray: 3 3; }
+.bg-svg-label { fill: var(--bg-screen-ink); font: 12px system-ui, sans-serif; }
+.bg-curve, .bg-triangle { fill: none; stroke: var(--bg-screen-accent); stroke-width: 2.5; stroke-linejoin: round; }
+.bg-vertex { fill: #ffd08a; }
+.bg-right-angle { fill: none; stroke: #ffd08a; stroke-width: 1.5; }
+.bg-math-summary { font-size: 14px; font-variant-numeric: tabular-nums; }
+.bg-edge-control { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: end; }
+.bg-save { display: flex; flex-wrap: wrap; gap: 8px; margin: 16px 0; padding-top: 12px; border-top: 1px solid var(--bg-line); }
+.bg-save > .bg-field, .bg-save > p { flex-basis: 100%; }
+.bg-summary { margin-top: 16px; padding-top: 8px; border-top: 1px solid var(--bg-line); }
+.bg-summary-heading { margin: 12px 0 4px; font-size: 14px; }
+.bg-summary-list { margin: 4px 0; padding-left: 24px; font-size: 14px; }
+.bg-hotspots { position: fixed; overflow: hidden; pointer-events: none; z-index: 2147483000; }
+.bg-hotspot {
+  position: absolute;
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  padding: 0;
+  transform: translate(-50%, -50%);
+  border: 1px solid rgba(113, 221, 255, .7);
+  border-radius: 999px;
+  color: #eef5ff;
+  background: rgba(14, 23, 32, .88);
+  box-shadow: 0 0 12px rgba(113, 221, 255, .45);
+  cursor: pointer;
+  pointer-events: auto;
+  touch-action: manipulation;
+  transition: box-shadow 160ms var(--bg-ease);
+}
+.bg-hotspot:hover { box-shadow: 0 0 18px rgba(113, 221, 255, .7); }
+.bg-hotspot:focus-visible { outline: 2px solid var(--bg-screen-accent); outline-offset: -5px; }
+@media (max-width: 600px) {
+  .bg-header { flex-wrap: wrap; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bg-button, .bg-hotspot { transition: none; animation: none; }
+  .bg-button:active { transform: none; }
+}

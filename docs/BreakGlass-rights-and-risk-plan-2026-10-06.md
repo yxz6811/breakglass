@@ -1,8 +1,11 @@
 # BreakGlass 素材权利、地区合规与产品风险规划
 
+> 2026-10-06 最新决定：用户已授权实施；主流程改为视觉模型持续识别当前视频画面，并在后台滚动总结已分析内容。作者知识层是可选加速/测试，平台业务接口不是核心依赖。问题、解决措施、降级和验收见 [持续视觉规划](BreakGlass-continuous-vision-plan-2026-10-06.md) BG-VR01–14，治理见 Constitution 2.2.0 原则 XIV；B站处理授权待确认。下文原基线与历史阶段判断不代表最新功能已经完成。
+
+
 > 日期：2026-10-06。状态：风险识别、产品方案与上线门槛；尚未完成具体平台授权、法律审查或真实服务验收。
 >
-> 配套：[产品规划](BreakGlass-immersive-learning-plan-2026-10-06.md)、[UI 规划](BreakGlass-ui-plan-2026-10-06.md)、[Spec Constitution 2.1.0](../.specify/memory/constitution.md) 与 [产品 Constitution 2.1.0](BreakGlass-constitution.md) 原则 XII。复用 BG-F/BG-U/BG-A 编号，风险另使用 BG-R01–BG-R11。
+> 配套：[产品规划](BreakGlass-immersive-learning-plan-2026-10-06.md)、[UI 规划](BreakGlass-ui-plan-2026-10-06.md)、[Spec Constitution 2.2.0](../.specify/memory/constitution.md) 与 [产品 Constitution 2.2.0](BreakGlass-constitution.md) 原则 XII。复用 BG-F/BG-U/BG-A 编号，风险另使用 BG-R01–BG-R11。
 >
 > 用户目标为中国大陆及海外。海外具体国家、运营主体、用户年龄、模型/云服务地区与收费模式未冻结，以下以中国大陆、美国、欧盟为分区评估示例，不代表已经覆盖全球或作出具体法律结论。每个地区上线前重新核对现行规则、具体平台条款和真实数据流。
 

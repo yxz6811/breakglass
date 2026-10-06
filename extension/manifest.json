@@ -1,17 +1,18 @@
 {
   "manifest_version": 3,
+  "minimum_chrome_version": "116",
   "name": "BreakGlass（破壁）",
-  "version": "0.1.0",
-  "description": "在扩展内演示页中把预先准备的数学抛物线变成可调节的 SVG 图层。",
+  "version": "0.2.0",
+  "description": "持续视觉学习首切片：受控自制视频识别、滚动总结与本机记录；真实平台处理许可另行验证。",
   "action": {
-    "default_title": "打开 BreakGlass 演示"
+    "default_title": "开启 BreakGlass 视觉学习"
   },
   "background": {
     "service_worker": "src/background/service-worker.js",
     "type": "module"
   },
-  "permissions": [],
-  "host_permissions": [],
+  "permissions": ["activeTab", "scripting", "storage"],
+  "host_permissions": ["http://127.0.0.1:8787/*"],
   "content_security_policy": {
     "extension_pages": "script-src 'self'; object-src 'self'"
   }

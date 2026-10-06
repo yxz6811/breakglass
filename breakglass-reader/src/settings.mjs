@@ -62,6 +62,8 @@ export function loadSettings(env) {
     concurrency: intInRange(env.READER_CONCURRENCY, 2, 1, 8),
     geometryReadBudgetMs: geometryBudget(env.READER_GEOMETRY_READ_BUDGET_MS, 30000),
     geometryAskBudgetMs: geometryBudget(env.READER_GEOMETRY_ASK_BUDGET_MS, 10000),
+    learningReadBudgetMs: geometryBudget(env.READER_LEARNING_READ_BUDGET_MS, 30000),
+    learningSummaryBudgetMs: geometryBudget(env.READER_LEARNING_SUMMARY_BUDGET_MS, 30000),
     allowOrigin: listed.length > 0
       ? (origin) => listed.includes(origin)
       : (origin) => DEFAULT_ORIGINS.some((pattern) => pattern.test(origin)),

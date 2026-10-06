@@ -1,0 +1,28 @@
+{
+  "date": "2026-10-06",
+  "scope": "006 controlled self-authored media; explicit model test stubs; not real AI or Bilibili",
+  "testedWorkingTreeBase": "4cf65475e4a3f4dffdccd35dcc8e368ac949f7fb",
+  "nodeCommand": "node --test --test-reporter=tap",
+  "node": {
+    "tests": 711,
+    "pass": 711,
+    "fail": 0,
+    "cancelled": 0,
+    "skipped": 0,
+    "todo": 0
+  },
+  "syntaxCommand": "node scripts/check.mjs",
+  "syntax": {
+    "javascriptFiles": 144,
+    "localReferences": 250,
+    "inlineScripts": "passed"
+  },
+  "testOnlyPrerequisites": {
+    "ffmpeg": "7.1 (on test command PATH; not a new runtime dependency)",
+    "browser": "Edge 154.0.4258.37",
+    "node": "v24.21.0"
+  },
+  "realModelVerified": false,
+  "bilibiliPermissionVerified": false,
+  "audioOrFullVideoUnderstandingImplemented": false
+}
