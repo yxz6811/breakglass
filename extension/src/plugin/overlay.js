@@ -114,6 +114,9 @@
     let actionEpoch = 0;
     let savePending = false;
     let manualSerial = 0;
+    let particleRenderer = null;
+    let particleEnabled = false;
+    let particleView = { yaw: 0, pitch: 0 };
     let recognizing = false;
     let recognitionPending = false;
     let hotspotSignature = '';
@@ -177,7 +180,7 @@
     const sourceInfo = node('p', 'bg-source', `${source.title || '当前视频'} · ${source.version}`);
     const mode = source.materialMode === 'self-authored' ? '自制教学材料'
       : source.materialMode === 'licensed' ? '已授权教学材料' : '材料许可待确认';
-    const scope = node('p', 'bg-muted', source.kind === 'visual-session'
+    const scope = node('p', 'bg-muted', ['visual-session', 'local-file'].includes(source.kind)
       ? `${mode} · 持续 AI 视觉识别。点击开始后，获准画面经本机 reader 发给已配置的视觉模型；不包含音频，原帧不写入学习记录。`
       : `${mode} · 作者测试夹具或手工条件；这一模式不进行视觉采集。`);
     const status = node('p', 'bg-status', '学习层已就绪');
@@ -204,7 +207,11 @@
     panel.append(header, layoutNote, sourceInfo, scope, status, recognitionButton, recognitionStatus, mapStatus,
       listHeading, list, manual, detail, returnButton, summarySection);
     shadow.append(layer, launcher, panel);
-    (doc.body || doc.documentElement).append(host);
+    const mount = options.mount;
+    if (mount && (mount.ownerDocument !== doc || !mount.isConnected || typeof mount.append !== 'function')) {
+      throw new TypeError('学习层容器必须属于当前页面。');
+    }
+    (mount || doc.body || doc.documentElement).append(host);
 
     function updateStatus(value) {
       if (!destroyed) status.textContent = text(typeof value === 'string' ? value : value && value.message) || '学习层已就绪';
@@ -295,6 +302,8 @@
     }
     function clearSelection(message) {
       if (!selected) return;
+      if (particleRenderer) particleRenderer.destroy();
+      particleRenderer = null; particleEnabled = false; particleView = { yaw: 0, pitch: 0 };
       selected = null;
       actionEpoch += 1;
       savePending = false;
@@ -485,7 +494,7 @@
       const submit = node('button', 'bg-button bg-primary', creating ? '生成手工候选并探索' : '确认条件并探索');
       submit.type = 'submit';
       form.append(node('p', 'bg-muted', template === 'parabola'
-        ? '保持二维坐标与真实函数关系；SVG 显示窗口随顶点移动，粒子场景尚未接入。'
+        ? '保持二维坐标与函数关系；SVG探索使用固定坐标窗口，可选粒子视角表达同一平面对象。'
         : '边长由条件给定，不根据视频像素估计；一次改变一条直角边。'), fields, confirmLabel, errors, submit);
       form.addEventListener('submit', (event) => {
         event.preventDefault();
@@ -557,6 +566,8 @@
 
     function renderInteractive() {
       if (!selected || !selected.confirmed) return;
+      if (particleRenderer) particleRenderer.destroy();
+      particleRenderer = null;
       const point = selected.point;
       const title = node('h3', 'bg-subheading', point.title);
       title.tabIndex = -1;
@@ -613,9 +624,42 @@
         try { verifySnapshot(point.template, selected.snapshot); renderInteractive(); }
         catch (cause) { error.textContent = cause.message; }
       }, 'bg-button bg-secondary'));
+      if (bg.particles) appendParticleControls();
       appendSaveControls();
-      updateStatus('条件已校对。修改参数后由本机数学程序重新计算；当前互动使用 SVG，粒子场景尚未接入。');
+      updateStatus('条件已校对。参数与图形由本机数学程序计算；粒子视角和清晰图形表达同一二维对象。');
       title.focus({ preventScroll: true });
+    }
+
+    function appendParticleControls() {
+      const group = node('section', 'bg-particles');
+      group.setAttribute('aria-label', '同一数学对象的粒子视角');
+      const toggle = button(particleEnabled ? '关闭粒子视角' : '开启粒子视角', () => {
+        particleEnabled = !particleEnabled; renderInteractive();
+      });
+      group.append(toggle);
+      if (particleEnabled) {
+        const canvas = node('canvas', 'bg-particle-canvas');
+        canvas.width = 320; canvas.height = 240;
+        canvas.setAttribute('role', 'img'); canvas.setAttribute('aria-label', '二维数学对象的粒子空间视角，数学高度为零');
+        const note = node('p', 'bg-muted', '这是同一个二维对象，旋转只改变观察视角。上方清晰图形及计算条件始终保留。');
+        group.append(canvas, note); detail.append(group);
+        try {
+          particleRenderer = bg.particles.createRenderer({ canvas, template: selected.point.template, snapshot: selected.snapshot,
+            reducedMotion: Boolean(win.matchMedia && win.matchMedia('(prefers-reduced-motion: reduce)').matches),
+            onFallback: () => { canvas.hidden = true; note.textContent = '已使用简洁图形；参数、数学关系与清晰图形仍可使用。'; } });
+          particleRenderer.setView(particleView);
+          const controls = node('div', 'bg-particle-controls');
+          const rotate = (yaw, pitch) => {
+            particleView = { yaw: Math.max(-Math.PI, Math.min(Math.PI, particleView.yaw + yaw)),
+              pitch: Math.max(-1.2, Math.min(1.2, particleView.pitch + pitch)) };
+            particleRenderer.setView(particleView);
+          };
+          controls.append(button('向左观察', () => rotate(-0.2, 0)), button('向右观察', () => rotate(0.2, 0)),
+            button('向上观察', () => rotate(0, 0.2)), button('向下观察', () => rotate(0, -0.2)),
+            button('正视图', () => { particleView = { yaw: 0, pitch: 0 }; particleRenderer.resetView(); }));
+          group.append(controls);
+        } catch { canvas.hidden = true; note.textContent = '已使用简洁图形；互动参数仍可操作。'; }
+      } else detail.append(group);
     }
 
     function drawParabola(stage, summary, snapshot, window) {
@@ -681,10 +725,12 @@
     function appendSaveControls() {
       const group = node('div', 'bg-save');
       const label = node('label', 'bg-field');
-      label.append(node('span', '', '我的疑问或易错提醒（仅本机）'));
+      label.append(node('span', '', options.saveNoteLabel || '我的疑问或易错提醒（仅本机）'));
       const note = node('textarea', 'bg-input');
       note.rows = 2;
       note.maxLength = 1000;
+      note.value = selected.noteDraft || '';
+      note.addEventListener('input', () => { if (selected) selected.noteDraft = note.value; });
       label.append(note);
       const feedback = node('p', 'bg-muted');
       feedback.setAttribute('role', 'status');
@@ -698,7 +744,7 @@
         const epoch = actionEpoch;
         savePending = true;
         saveButtons.forEach((el) => { el.disabled = true; });
-        feedback.textContent = '正在保存到本机…';
+        feedback.textContent = '正在保存个人记录…';
         const record = {
           kind, source: copy(source), time: captured.time,
           title: captured.point.title, note: note.value.trim(), template: captured.point.template,
@@ -707,12 +753,14 @@
         };
         Promise.resolve().then(() => destroyed || epoch !== actionEpoch || selected !== captured ? null : onSave(record)).then((result) => {
           if (destroyed || epoch !== actionEpoch || selected !== captured) return;
-          feedback.textContent = result && result.ok === true && result.storage === 'local'
-            ? (kind === 'pitfall' ? '个人易错标记已保存到本机。这不代表你已经做错。' : '疑问已保存到本机。')
-            : '记录未保存到本机，请重试。';
+          feedback.textContent = result && result.ok === true && result.storage === 'account'
+            ? '记录已由当前账号服务确认保存。'
+            : result && result.ok === true && result.storage === 'local'
+              ? (kind === 'pitfall' ? '个人易错标记已保存到本机。这不代表你已经做错。' : '疑问已保存到本机。')
+              : '记录未保存，请重试。';
         }).catch((error) => {
           if (!destroyed && epoch === actionEpoch && selected === captured) {
-            feedback.textContent = `本机保存失败：${text(error && error.message, 200) || '请重试。'}`;
+            feedback.textContent = `保存失败：${text(error && error.message, 200) || '请重试。'}`;
           }
         }).finally(() => {
           if (destroyed || epoch !== actionEpoch || selected !== captured) return;
@@ -795,7 +843,7 @@
     function fullscreenChanged() {
       const fullscreen = doc.fullscreenElement;
       if (fullscreen && fullscreen.tagName !== 'VIDEO' && fullscreen.contains(video)) fullscreen.append(host);
-      else (doc.body || doc.documentElement).append(host);
+      else (mount && mount.isConnected ? mount : doc.body || doc.documentElement).append(host);
       if (fullscreen && fullscreen.tagName === 'VIDEO') {
         updateStatus('原生视频全屏不支持学习层；退出全屏后可继续使用重点列表。');
       }
@@ -817,6 +865,8 @@
     function destroy() {
       if (destroyed) return;
       destroyed = true;
+      if (particleRenderer) particleRenderer.destroy();
+      particleRenderer = null;
       actionEpoch += 1;
       if (scheduled) win.cancelAnimationFrame(scheduled);
       listeners.forEach((dispose) => dispose());

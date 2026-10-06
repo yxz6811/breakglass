@@ -1,0 +1,22 @@
+/* Appended inside the learning overlay Shadow DOM on this website only. */
+:host {
+  color-scheme: dark;
+  color: #f2f5f7;
+  --bg-ink: #f2f5f7;
+  --bg-muted: #a2adb3;
+  --bg-accent: #71ddff;
+  --bg-screen: #080b0d;
+  --bg-screen-ink: #f2f5f7;
+  --bg-screen-accent: #71ddff;
+  --bg-line: #303a40;
+}
+.bg-panel { background: #10171b; border-color: #303a40; border-radius: 16px; box-shadow: none; }
+.bg-status { background: #152026; color: #f2f5f7; border-radius: 12px; }
+.bg-error { color: #ffd08a; }
+.bg-button { background: #10171b; border-color: #303a40; border-radius: 12px; color: #f2f5f7; }
+.bg-button:hover { background: #17232b; border-color: #71ddff; }
+.bg-primary, .bg-primary:hover { background: #71ddff; color: #080b0d; border-color: #71ddff; }
+.bg-secondary { color: #71ddff; }
+.bg-input { background: #080b0d; color: #f2f5f7; border-color: #303a40; border-radius: 12px; }
+.bg-stage { background: #080b0d; border: 1px solid #303a40; border-radius: 12px; }
+.bg-axis, .bg-plot-border { stroke: #a2adb3; }

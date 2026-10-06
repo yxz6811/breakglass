@@ -1,0 +1,304 @@
+import { randomBytes, randomUUID, scrypt, timingSafeEqual, createHash } from 'node:crypto';
+import { promisify } from 'node:util';
+import { createAccountStore } from './store.mjs';
+import * as checks from './validation.mjs';
+
+const derive = promisify(scrypt);
+const COOKIE = 'breakglass_local_session';
+const MAX_BODY = 64 * 1024;
+const SESSION_MS = 8 * 60 * 60 * 1000;
+const DEFAULT_ORIGINS = ['http://127.0.0.1:4173', 'http://localhost:4173'];
+const publicUser = (user) => ({ id: user.id, username: user.username });
+const tokenKey = (token) => createHash('sha256').update(token).digest('hex');
+const fail = (status, code, message) => { throw Object.assign(new Error(message), { status, code }); };
+const equals = (left, right) => {
+  if (typeof left !== 'string' || typeof right !== 'string') return false;
+  const a = Buffer.from(left); const b = Buffer.from(right);
+  return a.length === b.length && timingSafeEqual(a, b);
+};
+const hashPassword = async (password, salt) => (await derive(password, Buffer.from(salt, 'hex'), 64,
+  { N: 16384, r: 8, p: 1, maxmem: 64 * 1024 * 1024 })).toString('hex');
+function pathId(value) {
+  let id;
+  try { id = decodeURIComponent(value); } catch { fail(400, 'invalid_id', '标识编码无效。'); }
+  if (!checks.safeId(id)) fail(400, 'invalid_id', '标识无效。');
+  return id;
+}
+
+function cookieToken(request) {
+  const values = String(request.headers.cookie || '').split(';').map((item) => item.trim())
+    .filter((item) => item.startsWith(`${COOKIE}=`)).map((item) => item.slice(COOKIE.length + 1));
+  return values.length === 1 && /^[A-Za-z0-9_-]{43}$/.test(values[0]) ? values[0] : null;
+}
+
+function readJson(request, limit) {
+  return new Promise((resolve, reject) => {
+    let size = 0; const chunks = [];
+    let finished = false;
+    const finish = (error, value) => {
+      if (finished) return; finished = true;
+      request.off('data', data); request.off('end', end); request.off('error', errorEvent); request.off('aborted', aborted);
+      if (error) reject(error); else resolve(value);
+    };
+    const data = (chunk) => {
+      size += chunk.length;
+      if (size > limit) {
+        const error = Object.assign(new Error('请求超过本机学习服务上限。'), { status: 413, code: 'payload_too_large' });
+        finish(error); request.resume(); return;
+      }
+      chunks.push(chunk);
+    };
+    const end = () => {
+      if (size === 0) { finish(null, {}); return; }
+      if (String(request.headers['content-type'] || '').split(';')[0].trim().toLowerCase() !== 'application/json') {
+        finish(Object.assign(new Error('请求需要 application/json。'), { status: 415, code: 'unsupported_media_type' })); return;
+      }
+      try { finish(null, JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(Buffer.concat(chunks)))); }
+      catch { finish(Object.assign(new Error('请求不是有效 JSON。'), { status: 400, code: 'invalid_json' })); }
+    };
+    const errorEvent = () => finish(Object.assign(new Error('请求已断开。'), { status: 400, code: 'invalid_request' }));
+    const aborted = () => { errorEvent(); request.once('error', () => {}); };
+    request.on('data', data); request.once('end', end); request.once('error', errorEvent); request.once('aborted', aborted);
+  });
+}
+
+/** Creates only API handling, with no listener or deployment. Local single-process development use. */
+export function createLearningHandler({ dataDir, allowedOrigins = DEFAULT_ORIGINS } = {}) {
+  if (!Array.isArray(allowedOrigins) || allowedOrigins.length === 0
+    || !allowedOrigins.every((origin) => typeof origin === 'string'
+      && /^http:\/\/(?:127\.0\.0\.1|localhost|\[::1\])(?::\d+)?$/.test(origin))) {
+    throw new TypeError('本机账户服务只接受明确的 loopback Origin。');
+  }
+  const origins = new Set(allowedOrigins);
+  const store = createAccountStore({ dataDir, validate: checks.database });
+  const sessions = new Map();
+  const loginFailures = new Map();
+  const requests = new Map();
+  const dummySalt = randomBytes(16).toString('hex');
+  const dummyHash = randomBytes(64).toString('hex');
+
+  function rate(ip, name = null) {
+    const now = Date.now();
+    for (const [key, item] of requests) if (now - item.start >= 60000) requests.delete(key);
+    for (const [key, item] of loginFailures) if (now - item.start >= 15 * 60000) loginFailures.delete(key);
+    const current = requests.get(ip) || { start: now, count: 0 };
+    if (current.count >= 20) fail(429, 'rate_limited', '登录请求过于频繁，请稍后重试。');
+    current.count += 1; requests.set(ip, current);
+    if (name && (loginFailures.get(`${ip}:${name}`)?.count || 0) >= 5) fail(429, 'rate_limited', '登录失败次数过多，请稍后重试。');
+  }
+
+  function sessionFor(request) {
+    const now = Date.now();
+    for (const [key, item] of sessions) if (item.expiresAt <= now) sessions.delete(key);
+    const token = cookieToken(request);
+    return token ? { key: tokenKey(token), session: sessions.get(tokenKey(token)) } : { key: null, session: null };
+  }
+  function createSession(user, request) {
+    const previous = sessionFor(request); if (previous.key) sessions.delete(previous.key);
+    while (sessions.size >= 1000) sessions.delete(sessions.keys().next().value);
+    const token = randomBytes(32).toString('base64url');
+    const session = { userId: user.id, csrfToken: randomBytes(24).toString('base64url'), expiresAt: Date.now() + SESSION_MS };
+    sessions.set(tokenKey(token), session);
+    return { body: { user: publicUser(user), csrfToken: session.csrfToken, epoch: user.epoch },
+      cookie: `${COOKIE}=${token}; HttpOnly; SameSite=Strict; Path=/api; Max-Age=${SESSION_MS / 1000}` };
+  }
+  async function authenticated(request, mutation = false) {
+    const active = sessionFor(request);
+    if (!active.session) fail(401, 'unauthenticated', '请登录本机开发账户。');
+    if (mutation && !equals(request.headers['x-breakglass-csrf'], active.session.csrfToken)) {
+      fail(403, 'csrf_rejected', '写入校验失效，请刷新账户状态。');
+    }
+    const state = await store.read();
+    const user = state.users.find((item) => item.id === active.session.userId);
+    if (!user) fail(401, 'unauthenticated', '本机账户会话已失效。');
+    return { ...active, user };
+  }
+  function checkEpoch(user, expected) {
+    if (!checks.epoch(expected)) fail(400, 'invalid_epoch', '需要当前账户的数据版本。');
+    if (user.epoch !== expected) fail(409, 'epoch_conflict', '账户数据已删除或更新，请刷新后重试。');
+  }
+  function changedEpoch(user) {
+    if (user.epoch >= Number.MAX_SAFE_INTEGER - 1) fail(409, 'epoch_exhausted', '本机数据版本已达上限。');
+    user.epoch += 1;
+  }
+  const mutate = (active, expected, operation) => store.transact((state) => {
+    const user = state.users.find((item) => item.id === active.user.id);
+    if (!user) fail(401, 'unauthenticated', '本机账户不存在。');
+    checkEpoch(user, expected);
+    return operation(user);
+  });
+
+  return async function handle(request, response) {
+    let url;
+    try { url = new URL(request.url || '/', 'http://local-learning.invalid'); }
+    catch { return false; }
+    if (!url.pathname.startsWith('/api/')) return false;
+    const origin = request.headers.origin;
+    const cors = typeof origin === 'string' && origins.has(origin)
+      ? { 'access-control-allow-origin': origin, 'access-control-allow-credentials': 'true', vary: 'Origin' } : { vary: 'Origin' };
+    const send = (status, payload, extra = {}) => {
+      if (response.destroyed || response.writableEnded) return;
+      response.writeHead(status, { ...cors, 'content-type': 'application/json; charset=utf-8',
+        'cache-control': 'no-store', 'x-content-type-options': 'nosniff', ...extra });
+      response.end(JSON.stringify(payload));
+    };
+    try {
+      const ip = request.socket.remoteAddress || '';
+      if (!(ip === '::1' || ip.startsWith('127.') || ip.startsWith('::ffff:127.'))) {
+        fail(403, 'loopback_only', '本机开发账户服务不对公网开放。');
+      }
+      const mutation = ['POST', 'PUT', 'DELETE'].includes(request.method);
+      if ((typeof origin === 'string' && !origins.has(origin)) || (mutation && !origins.has(origin))) {
+        fail(403, 'forbidden_origin', '账户请求来源未获准。');
+      }
+      if (request.method === 'OPTIONS') {
+        if (!origins.has(origin)) fail(403, 'forbidden_origin', '账户请求来源未获准。');
+        send(204, {}, { 'access-control-allow-methods': 'GET, POST, PUT, DELETE, OPTIONS',
+          'access-control-allow-headers': 'content-type, x-breakglass-csrf', 'access-control-max-age': '600' });
+        return true;
+      }
+      if (!['GET', 'POST', 'PUT', 'DELETE'].includes(request.method)) fail(405, 'unsupported_method', '账户接口不接受此方法。');
+      const credentialRoute = ['/api/account/register', '/api/account/login'].includes(url.pathname);
+      const body = mutation ? await readJson(request, credentialRoute ? 2048 : MAX_BODY) : null;
+
+      if (credentialRoute && request.method === 'POST') {
+        if (!checks.exact(body, ['username', 'password'])) fail(400, 'invalid_credentials', '请填写用户名和密码。');
+        const name = checks.username(body.username);
+        if (!name || !checks.password(body.password)) fail(400, 'invalid_credentials', '用户名须为3至32个字母、数字或._-；密码须为8至128字符。');
+        rate(ip, url.pathname.endsWith('/login') ? name : null);
+        let user;
+        if (url.pathname.endsWith('/register')) {
+          const passwordSalt = randomBytes(16).toString('hex');
+          const passwordHash = await hashPassword(body.password, passwordSalt);
+          user = await store.transact((state) => {
+            if (state.users.some((item) => item.username === name)) fail(409, 'username_unavailable', '这个本机用户名已被使用。');
+            if (state.users.length >= 50) fail(409, 'account_limit', '本机开发账户数量已达上限。');
+            const next = { id: randomUUID(), username: name, passwordSalt, passwordHash, epoch: 0, records: [], watch: [], attempts: [] };
+            state.users.push(next); return next;
+          });
+        } else {
+          const state = await store.read();
+          user = state.users.find((item) => item.username === name);
+          const calculated = await hashPassword(body.password, user?.passwordSalt || dummySalt);
+          if (!equals(calculated, user?.passwordHash || dummyHash)) {
+            const key = `${ip}:${name}`; const entry = loginFailures.get(key) || { start: Date.now(), count: 0 };
+            entry.count += 1; loginFailures.set(key, entry);
+            fail(401, 'invalid_credentials', '用户名或密码不正确。');
+          }
+          loginFailures.delete(`${ip}:${name}`);
+        }
+        const created = createSession(user, request);
+        send(url.pathname.endsWith('/register') ? 201 : 200, created.body, { 'set-cookie': created.cookie });
+        return true;
+      }
+      if (url.pathname === '/api/account/me' && request.method === 'GET') {
+        const active = sessionFor(request);
+        if (!active.session) { send(200, { user: null }); return true; }
+        const state = await store.read();
+        const user = state.users.find((item) => item.id === active.session.userId);
+        send(200, user ? { user: publicUser(user), csrfToken: active.session.csrfToken, epoch: user.epoch } : { user: null });
+        return true;
+      }
+      const active = await authenticated(request, mutation);
+      if (url.pathname === '/api/account/logout' && request.method === 'POST') {
+        if (!checks.exact(body, [])) fail(400, 'invalid_request', '退出请求不接受额外字段。');
+        sessions.delete(active.key);
+        send(200, { ok: true }, { 'set-cookie': `${COOKIE}=; HttpOnly; SameSite=Strict; Path=/api; Max-Age=0` });
+        return true;
+      }
+      if (url.pathname === '/api/learning/records' && request.method === 'GET') {
+        send(200, { records: active.user.records, epoch: active.user.epoch }); return true;
+      }
+      const recordPath = /^\/api\/learning\/records\/([^/]+)$/.exec(url.pathname);
+      if (recordPath && ['PUT', 'DELETE'].includes(request.method)) {
+        const id = pathId(recordPath[1]);
+        if (request.method === 'PUT') {
+          if (!checks.exact(body, ['record', 'expectedEpoch'])) fail(400, 'invalid_request', '保存记录需要固定字段。');
+          const record = checks.record(body.record);
+          if (!record || record.id !== id) fail(400, 'invalid_record', '记录结构、来源或标识无效。');
+          const result = await mutate(active, body.expectedEpoch, (user) => {
+            const existing = user.records.find((item) => item.id === id);
+            if (existing && JSON.stringify(existing) !== JSON.stringify(record)) fail(409, 'record_conflict', '同一标识已有不同记录。');
+            if (!existing) {
+              if (user.records.length >= 500) fail(409, 'record_limit', '本机账户记录数量已达上限。');
+              user.records.push(record);
+            }
+            return { record: existing || record, epoch: user.epoch };
+          });
+          send(200, result); return true;
+        }
+        if (!checks.exact(body, ['expectedEpoch'])) fail(400, 'invalid_request', '删除记录需要当前数据版本。');
+        const result = await mutate(active, body.expectedEpoch, (user) => {
+          if (!user.records.some((item) => item.id === id)) fail(404, 'record_not_found', '当前账户没有这条记录。');
+          user.records = user.records.filter((item) => item.id !== id);
+          user.attempts = user.attempts.filter((item) => item.recordId !== id);
+          changedEpoch(user); return { ok: true, epoch: user.epoch };
+        });
+        send(200, result); return true;
+      }
+      if (url.pathname === '/api/learning/records' && request.method === 'DELETE') {
+        if (!checks.exact(body, ['expectedEpoch'])) fail(400, 'invalid_request', '清除记录需要当前数据版本。');
+        const result = await mutate(active, body.expectedEpoch, (user) => {
+          user.records = []; user.attempts = []; changedEpoch(user); return { ok: true, epoch: user.epoch };
+        });
+        send(200, result); return true;
+      }
+      if (url.pathname === '/api/learning/watch' && request.method === 'GET') {
+        send(200, { items: active.user.watch, epoch: active.user.epoch }); return true;
+      }
+      const watchPath = /^\/api\/learning\/watch\/([^/]+)$/.exec(url.pathname);
+      if (watchPath && request.method === 'PUT') {
+        const sourceId = pathId(watchPath[1]);
+        if (!checks.safeId(sourceId) || !checks.exact(body, ['source', 'time', 'duration', 'expectedEpoch'])) fail(400, 'invalid_request', '观看记录字段无效。');
+        const item = checks.watch({ source: body.source, time: body.time, duration: body.duration, updatedAt: new Date().toISOString() });
+        if (!item || item.source.id !== sourceId) fail(400, 'invalid_watch', '观看记录来源或时间无效。');
+        const result = await mutate(active, body.expectedEpoch, (user) => {
+          const index = user.watch.findIndex((entry) => entry.source.id === sourceId);
+          if (index >= 0 && user.watch[index].source.kind !== item.source.kind) fail(409, 'source_conflict', '来源标识属于另一种材料。');
+          if (index < 0 && user.watch.length >= 100) fail(409, 'watch_limit', '本机观看记录数量已达上限。');
+          if (index >= 0) user.watch[index] = item; else user.watch.push(item);
+          return { item, epoch: user.epoch };
+        });
+        send(200, result); return true;
+      }
+      if (url.pathname === '/api/learning/attempts' && request.method === 'GET') {
+        if ([...url.searchParams.keys()].some((key) => key !== 'recordId') || url.searchParams.getAll('recordId').length > 1) fail(400, 'invalid_request', '复练查询字段无效。');
+        const id = url.searchParams.get('recordId');
+        if (id !== null && !checks.safeId(id)) fail(400, 'invalid_id', '记录标识无效。');
+        send(200, { attempts: id === null ? active.user.attempts : active.user.attempts.filter((item) => item.recordId === id), epoch: active.user.epoch }); return true;
+      }
+      if (url.pathname === '/api/learning/attempts' && request.method === 'POST') {
+        if (!checks.exact(body, ['recordId', 'answer', 'hintUsed', 'expectedEpoch']) || !checks.safeId(body.recordId)
+          || typeof body.hintUsed !== 'boolean') fail(400, 'invalid_attempt', '复练提交字段无效。');
+        const result = await mutate(active, body.expectedEpoch, (user) => {
+          const original = user.records.find((item) => item.id === body.recordId);
+          if (!original) fail(404, 'record_not_found', '当前账户没有对应练习记录。');
+          const verdict = checks.judge(original.template, original.snapshot, body.answer);
+          if (!verdict) fail(400, 'invalid_answer', '斜边回答为数值；顶点回答为有限 h、k。');
+          if (user.attempts.length >= 2000) fail(409, 'attempt_limit', '本机复练次数已达上限。');
+          const attempt = { id: randomUUID(), recordId: original.id, answer: body.answer,
+            hintUsed: body.hintUsed, correct: verdict.correct,
+            outcome: verdict.correct ? body.hintUsed ? 'correct_with_hint' : 'correct_independent' : 'wrong', createdAt: new Date().toISOString() };
+          user.attempts.push(attempt); return { attempt, expectedAnswer: verdict.expectedAnswer, epoch: user.epoch };
+        });
+        send(200, result); return true;
+      }
+      if (url.pathname === '/api/learning/export' && request.method === 'GET') {
+        send(200, { schemaVersion: '1', user: publicUser(active.user), epoch: active.user.epoch,
+          records: active.user.records, watch: active.user.watch, attempts: active.user.attempts }); return true;
+      }
+      if (url.pathname === '/api/account/data' && request.method === 'DELETE') {
+        if (!checks.exact(body, ['expectedEpoch'])) fail(400, 'invalid_request', '删除账户学习数据需要当前版本。');
+        const result = await mutate(active, body.expectedEpoch, (user) => {
+          user.records = []; user.watch = []; user.attempts = []; changedEpoch(user); return { ok: true, epoch: user.epoch };
+        });
+        send(200, result); return true;
+      }
+      fail(404, 'not_found', '没有这个账户接口。');
+    } catch (error) {
+      const status = Number.isInteger(error.status) ? error.status : 503;
+      send(status, { code: error.code || 'local_storage_unavailable', error: error.status ? error.message : '本机账户服务暂不可用，已有数据未被覆盖。' });
+      return true;
+    }
+  };
+}

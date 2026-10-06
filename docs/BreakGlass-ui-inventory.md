@@ -1,5 +1,7 @@
 # BreakGlass 功能与参数清单（面向按钮 UI 与交互动画设计）
 
+> 007实际管理网站：`learning-site/index.html`新增概览、观看进度、记录、复练、本地视频与账户设置；插件状态页新增明确JSON导出和管理中心入口。该页面的控件/功能映射见[管理网站UI规划](BreakGlass-learning-management-ui-2026-10-06.md)，验证以[007任务](../specs/007-learning-site-and-particles/tasks.md)为准。本表下方保留旧演示基线。
+
 > 2026-10-06 双入口补充：插件为主入口，网站视频导入识别新增 BG-F12/BG-U13，复用分析/互动及共享视觉令牌，具备独立文件与传输状态；以最新产品/UI规划和 Constitution 2.1.0 原则 XIII 为准。新增能力均待实施。
 
 > 2026-10-06 新规划入口：本表继续记录既有工作台现状；插件网课热点、账号学习网站及版权/地区门禁按 [UI 规划](./BreakGlass-ui-plan-2026-10-06.md) 与 [风险方案](./BreakGlass-rights-and-risk-plan-2026-10-06.md) 独立实施。本次不把 BG-F/BG-U 规划项写成已有按钮或已通过验收。
@@ -203,7 +205,7 @@
 
 | 项 | 值 |
 | --- | --- |
-| **顶栏放大** | 余弦钟形权重 `w(d) = 0.5(1+cos(π·min(1,|d|/R)))`；`R=132px`、`maxScale=1.55`、`lift=10px`、刚度 `20/s`、收敛阈值 `0.0015`；只写 `transform` |
+| **顶栏放大** | 余弦钟形权重 `w(d) = 0.5(1+cos(π·min(1,\|d\|/R)))`；`R=132px`、`maxScale=1.55`、`lift=10px`、刚度 `20/s`、收敛阈值 `0.0015`；只写 `transform` |
 | 覆盖层指针事件 | `pointerdown` / `pointermove` / `pointerup`，`setPointerCapture`，拖动中每次 move 重绘 |
 | 曲线绘制 | 81 个采样点（1 `M` + 80 `L`），坐标 2 位小数 |
 | 曲线样式 | 深屏 `stroke: var(--screen-accent)`（`#71ddff`）、`stroke-width: 3`、`stroke-linecap: round`、`fill: none` |

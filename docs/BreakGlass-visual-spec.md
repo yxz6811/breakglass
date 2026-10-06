@@ -1,15 +1,17 @@
 # BreakGlass 视觉规范（Visual Spec）
 
+> 007网站主题增补（用户最新要求）：学习管理中心沿用仓库showcase暗色品牌，使用`learning-site/site.css`局部覆盖与品牌SVG。颜色、布局与功能映射见[管理网站UI规划](BreakGlass-learning-management-ui-2026-10-06.md)。旧工作台共享令牌、注入Shadow DOM及历史验收保持独立；暗色管理网站不代表更改所有产品主题。
+
 > 2026-10-06 实施增补：006按两份Constitution 2.2.0原则XIV实施持续视觉与滚动总结，复用本文1.6.0令牌。插件新UI采用Shadow DOM局部样式；任务/真实模型/平台及浏览器证据见[006任务](../specs/006-plugin-learning-layer/tasks.md)和[持续视觉验证](BreakGlass-continuous-vision-validation-2026-10-06.md)。下文“新入口待实施”是2.1.0规划时基线，不能覆盖最新逐项状态；未验证项仍不视为通过。
 
 > 2026-10-06 双入口补充：插件为主入口，网站视频导入识别新增 BG-F12/BG-U13，复用分析/互动及共享视觉令牌，具备独立文件与传输状态；以最新产品/UI规划和 Constitution 2.1.0 原则 XIII 为准。新增能力均待实施。
 
 | 项 | 值 |
 | --- | --- |
-| 版本 | 1.6.0 |
+| 版本 | 1.7.0 |
 | 日期 | 2026-10-06 |
-| 状态 | 两个产品工作台统一采用浅色冰面；共享视觉源为 `extension/src/ui/theme.css`，浏览器验收另记，不由本文判定通过 |
-| 适用范围 | `extension/demo/index.html` 与 `extension/demo/geometry.html` 的共享主题和组件视觉；`site/` 介绍站及根目录样稿不在本轮范围 |
+| 状态 | 旧工作台保留共享冰面；007管理网站采用局部暗色品牌主题，浏览器证据另记 |
+| 适用范围 | 旧两个demo的共享主题；007学习网站局部暗色主题；介绍站源码与根目录样稿不改 |
 | 依据 | `AGENTS.md` §6、产品 Constitution 1.7.1、Spec Constitution 1.9.1、001/003 既有工作台及 `specs/005-insitu-right-triangle/` 当前帧闭环 |
 | 配套 | 令牌与组件说明见本文；逐交互的设计理由见 [`BreakGlass-ui-design-guide.md`](./BreakGlass-ui-design-guide.md)；现状清单见 [`BreakGlass-ui-inventory.md`](./BreakGlass-ui-inventory.md)；待实现项见 [`BreakGlass-ui-todo.md`](./BreakGlass-ui-todo.md)；液态玻璃原型见 [`../prototypes/liquid-glass-toolbar/README.md`](../prototypes/liquid-glass-toolbar/README.md) |
 | 边界 | 本轮只统一视觉，不改变业务状态、接口、来源、准入或计时预算。此前浏览器手工验收（T030/T038）仍未执行；003 四画幅/真实像素计时、005 真实模型验收仍保留未通过事实。历史版本中的自动检查不代表本轮浏览器验收 |
@@ -421,6 +423,7 @@
 
 | 版本 | 日期 | 变更 |
 | --- | --- | --- |
+| 1.7.0 | 2026-10-06 | 按用户要求新增007管理网站showcase暗色局部主题及品牌、布局、44px控件/状态功能映射；旧共享工作台令牌保持独立，证据见007。 |
 | 1.6.0 | 2026-10-06 | 不改变共享令牌，补充新插件/学习网站的视觉继承与UI规划入口，明确网页内布局、热点/粒子动效、处理进度及风险状态独立实施与验收；旧预算和历史证据保留。 |
 | 1.5.0 | 2026-10-03 | 两个产品工作台统一浅色冰面，共享视觉源改为 `extension/src/ui/theme.css`；明确深屏独立令牌、44px普通控件、桌面48px/窄屏44px dock、深青蓝白字主按钮、排版/面板/焦点及005候选来源规则。同轮沿用主分支426c41a的本地提问侧栏，补其主题与既有状态说明。介绍站与根目录样稿不在范围；保留历史未验收项，不宣称本轮浏览器验收通过 |
 | 1.4.0 | 2026-10-02 | 规范里的可访问性条款全部落地：错误态 `aria-live="assertive"`、禁用态原因（`aria-describedby` + `.sr-only`）、滑块 `aria-valuetext`、控制点 `r=18` 热区与 `grab/grabbing` 光标；顺带修复等待与可恢复错误态下退出按钮不可用的问题。自动基线 189 项通过 |

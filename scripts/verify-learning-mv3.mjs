@@ -71,6 +71,12 @@ try {
   assert.match(await page.locator('.bg-math-summary').textContent(), /AC = 4.*7\.211/);
   await page.getByRole('button', { name: '恢复所选条件', exact: true }).click();
   assert.match(await page.locator('.bg-math-summary').textContent(), /BC.*= 5 cm/);
+  await page.getByRole('button', { name: '开启粒子视角', exact: true }).click();
+  await page.locator('.bg-particle-canvas').waitFor({ state: 'attached' });
+  await page.getByRole('button', { name: '向右观察', exact: true }).focus();
+  await page.getByRole('button', { name: '向右观察', exact: true }).press('Enter');
+  await page.getByRole('button', { name: '正视图', exact: true }).click();
+  assert.equal(await page.locator('.bg-triangle').count(), 1, 'clear math survives particle mode/fallback');
   await page.getByRole('textbox', { name: '我的疑问或易错提醒（仅本机）', exact: true }).fill('为什么不能直接相加？');
   await page.getByRole('button', { name: '保存疑问', exact: true }).click();
   await page.getByText('疑问已保存到本机。', { exact: true }).waitFor();
@@ -83,6 +89,13 @@ try {
   const recordsPage = await context.newPage();
   await recordsPage.goto(`chrome-extension://${extension.id}/plugin/status.html`);
   await recordsPage.getByText('为什么不能直接相加？', { exact: true }).waitFor();
+  const downloaded = recordsPage.waitForEvent('download');
+  await recordsPage.getByRole('button', { name: '导出本机记录 JSON', exact: true }).click();
+  const download = await downloaded;
+  const exported = JSON.parse(fs.readFileSync(await download.path(), 'utf8'));
+  assert.equal(exported.origin, 'breakglass-plugin'); assert.equal(exported.aiGeneratedContentPresent, true);
+  assert.equal(exported.records.length, 1); assert.equal(exported.records[0].note, '为什么不能直接相加？');
+  assert.equal(Object.hasOwn(exported.records[0], 'image'), false);
   await page.bringToFront();
   await page.getByRole('button', { name: '开始持续视觉识别', exact: true }).click();
   await page.locator('.bg-point-list button').first().waitFor();
@@ -152,7 +165,7 @@ try {
   const evidence = { status: 'passed', browser: await context.browser().version(), actualMV3: true,
     invocation: 'CDP Extensions.triggerAction (real action permission grant)', model: 'explicit in-process test stub; not a real vision model',
     actualVideoCapture: true, visualCalls, summaryCalls, noUploadBeforeStart: true, reinjectionSingleOwner: true,
-    localSaveAndClear: true, clearRevokesVisibleUnchangedSession: true,
+    localSaveAndClear: true, clearRevokesVisibleUnchangedSession: true, explicitMinimalJsonExport: true, particleKeyboardAndSvgPreserved: true,
     keyboardPointSelection: true, triangleDeterministicChangeAndRestore: true, parabolaRenderedParameterChange: true,
     unsupportedPageNoInjectionOrUpload: true,
     environment: { platform: os.platform(), release: os.release(), node: process.version, cpu: os.cpus()[0]?.model || 'unknown' },
