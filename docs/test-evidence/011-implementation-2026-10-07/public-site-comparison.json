@@ -1,0 +1,40 @@
+{
+  "checkedAt": "2026-10-07",
+  "origin": "https://yangxizhe.com/breakglass/",
+  "scope": "public static assets only; no model/account capability inferred",
+  "files": [
+    {
+      "path": "extension/demo/index.html",
+      "localSha256": "15e9ef845ce1e2ced21495f9e4c0baf9fd1ae65e513e7e7e3c581ef72265b72b",
+      "status": 200,
+      "bytes": 14323,
+      "remoteSha256": "0e45a131588d7dd7e594ff8d0288cde63fe6eca3d5fc8242bbeac0dbc19fc803",
+      "equal": false
+    },
+    {
+      "path": "extension/demo/workspace.js",
+      "localSha256": "eb26b14effd1e0b5695e24463e5d6c4c6694ba11cad5433e879923724d33a577",
+      "status": 404,
+      "error": "HTTPError"
+    },
+    {
+      "path": "learning-site/app.js",
+      "localSha256": "c7f9bfcd68ca41eab256b4236921c999f339526fe13284f0719b2b9f3ca05bb2",
+      "status": 404,
+      "error": "HTTPError"
+    },
+    {
+      "path": "learning-site/recognition-workbench.js",
+      "localSha256": "f82c17dec4df1a0b5e5035ce59719b5634cb4dbbd506bbe7f8db3399d0ffb74a",
+      "status": 404,
+      "error": "HTTPError"
+    },
+    {
+      "path": "extension/src/plugin/recognition-contracts.js",
+      "localSha256": "25d322a018de69b0c5a9189908e68511ffe6d578d2c553ec272ee2a825152bab",
+      "status": 404,
+      "error": "HTTPError"
+    }
+  ],
+  "localCheckedAt": "2026-10-07T06:23:27.390327+00:00"
+}

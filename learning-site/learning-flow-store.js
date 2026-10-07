@@ -43,31 +43,34 @@
   }
   function createLocalStore(storage, { getRecords, id = () => root.crypto.randomUUID(), now = () => new Date().toISOString() } = {}) {
     if (!storage || typeof getRecords !== 'function') throw new TypeError('学习流程需要当前本机原记录。');
-    function write(state, expectedEpoch) {
+    function write(state, expectedEpoch, expectedRaw) {
       const text = JSON.stringify(state);
       if (new TextEncoder().encode(text).length > 2 * 1024 * 1024) fail('本机学习流程超过2MiB。', 'flow_limit');
       if (getRecords().epoch !== expectedEpoch) fail('本机数据已改变，旧操作已忽略。', 'epoch_conflict');
+      if (expectedRaw !== undefined && storage.getItem(KEY) !== expectedRaw) fail('学习流程已在其他位置更新；输入保留，请刷新后重试。', 'revision_conflict');
       storage.setItem(KEY, text);
     }
-    function read() {
+    function readObserved() {
       const current = getRecords(), raw = storage.getItem(KEY);
       const empty = { epoch: current.epoch, flow: emptyFlow() };
-      if (!raw) return empty;
+      if (!raw) return { state: empty, raw };
       if (new TextEncoder().encode(raw).length > 2 * 1024 * 1024) fail('本机学习流程超过2MiB。', 'local_storage_unavailable');
       let value; try { value = JSON.parse(raw); } catch { fail('本机学习流程无法读取，请先备份再清除。', 'local_storage_unavailable'); }
       if (!exact(value, ['epoch','flow']) || !Number.isSafeInteger(value.epoch) || value.epoch < 0) fail('本机学习流程版本无效。');
-      if (value.epoch !== current.epoch) { write(empty, current.epoch); return empty; }
+      if (value.epoch !== current.epoch) { write(empty, current.epoch, raw); return { state: empty, raw: JSON.stringify(empty) }; }
       const state = { epoch: current.epoch, flow: pruneFlow(value.flow, current.records) };
       // Deleted parents must disappear from the stored sidecar, so saving the
       // same record ID later cannot bring its old help or evidence back.
-      if (JSON.stringify(state.flow) !== JSON.stringify(value.flow)) write(state, current.epoch);
-      return state;
+      if (JSON.stringify(state.flow) !== JSON.stringify(value.flow)) { write(state, current.epoch, raw); return { state, raw: JSON.stringify(state) }; }
+      return { state, raw };
     }
+    function read() { return readObserved().state; }
     function mutate(expectedEpoch, operation) {
       const current = getRecords(); if (current.epoch !== expectedEpoch) fail('本机数据已清除，旧学习操作已忽略。', 'epoch_conflict');
-      const state = read(), result = operation(state.flow, current.records);
+      const observed = readObserved(), state = observed.state, result = operation(state.flow, current.records);
       state.flow = validateFlow(state.flow, current.records);
-      write(state, expectedEpoch); return { ...clone(result), epoch: state.epoch };
+      if (JSON.stringify(getRecords().records) !== JSON.stringify(current.records)) fail('原题已在其他位置更新，旧学习操作未写入。', 'revision_conflict');
+      write(state, expectedEpoch, observed.raw); return { ...clone(result), epoch: state.epoch };
     }
     function original(records, recordId) { const r = records.find(v => v.id === recordId); if (!r) fail('原题已不存在。', 'record_not_found'); return r; }
     function revision(existing, expected) { if (!Number.isSafeInteger(expected) || expected < 0 || (existing?.revision || 0) !== expected) fail('学习设置已改变；请保留输入，重新读取后保存。', 'revision_conflict'); }

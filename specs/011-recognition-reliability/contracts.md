@@ -1,6 +1,6 @@
-# 011 契约草案
+# 011 契约与冻结条款
 
-日期：2026-10-07。**状态：建议，未冻结、未实施。** C01–C06 是待 S0 决定的具体约束，不能据此声称端点或字段已存在。治理 2.6.2 及 006–010 的严格来源、权限、scope、epoch、响应边界和历史预算继续有效。
+日期：2026-10-07。用户已授权执行011。**状态：文末011实施契约v1的C01–C06已冻结，实施验证进行中。** 以下原提案保留供追溯，文末冻结条款优先；冻结不表示代码或验收已完成。治理及006–010的严格来源、权限、scope、epoch、响应边界和历史预算继续有效。
 
 ## C01：识别许可撤销与生命周期
 
@@ -71,3 +71,55 @@ UI-A45–53 见[优化方案](../../docs/BreakGlass-recognition-optimization-pla
 性能比较绑定相同素材/尺寸/源码/配置与负载，列全部样本数、P50/P95/超时/429、事件循环、RSS和实际费用。去重前的廉价签名必须经小符号变化测试；只有测出收益才采用，不能增加采样/上传额度。有限调度/worker/启动并行化均待数据决定，不提前新增依赖或多服务。
 
 拟发布清单包含提交、资源哈希与非秘密运行识别配置版本、支持入口和实际验证范围；不包含账号、密钥或私有媒体。本机 8765 工作台和静态展示不同能力分别标注；同一发布包不靠临时源文件修改适配供应商。公开托管、平台/地区与未成年人发布仍须原有独立证据。
+
+## 011实施契约v1
+
+2026-10-07：用户在规划推送后要求“可以执行任务”，随后要求多个会话共同分工。先冻结C01/C02，其他条款须在对应编码前补齐；旧接口和预算保持。
+
+### C01 冻结：取消接口
+
+- 主workspace持有单调permissionGeneration；curve/geometry mount增内部options.getPermissionGeneration()，未传时独立页代次为0。每次模型操作捕获媒体代次、owner/epoch、permissionGeneration及请求token，返回再次检查canRead/isActive和所有身份。
+- 两页面控制器返回内部stopReader()，取消当前帧/预读/几何识别及模型问答，失效请求token，不修改createWake公开接口、不重新勾选、不清掉已确认手工数学。workspace在开关关闭、许可失效、换源/换号、隐藏、销毁时推进代次并调用；新开关代次不能接纳旧响应。
+- 尚未确认的旧AI候选不可继续确认/派生保存；已经确认且合法保留的数学允许reader关闭后的手工保存。停止、退出登录、授权撤回和删除分别遵循原规则。
+- 初始化/销毁以generation和AbortController守卫，所有工作台自有监听可清理；局部失败释放已创建控制器/媒体/请求，不重复挂载。生命周期修复无需引入并行依赖加载或新框架。
+
+### C02 冻结：证据与范围
+
+- 新增learning-site/learning-evidence.js纯投影模块，不落库、不改attempt/receipt/record/flow字段。attempt:id和receipt:id分命名空间；唯一合法父record、exercise、context与receipt组且原数学/帮助判定一致才有权威证据。重复/矛盾组整体排除；导入未验证历史不参与权威掌握/调度，保留待核对展示。
+- stage与correct/hintUsed/outcome分别保留，outcome沿用既有合法值。completion保留真实对错/帮助，可显示近期和错题，但不计完整独立题、掌握状态或间隔调度。practice/delayed及合法旧attempt参与现有窄题型状态；错题记录按recordId去重，近期按事件排序。同名旧/新ID不得冲突或重复制造连续答对。
+- 概览、记录/实际错题、近期和队列共用投影规则；调度沿用原1/3/7/14/28天产品规则。仅显式purpose=practice参与复练，笔记/观看/预测/例题/跳过不生成作答。纯投影禁止清帮助、改原题或提升导入可信度。
+- app内部公开context.getSaveTarget()返回{scope:'local'|'account',label,owner,epoch,canSave}，并通过options.onScopeChange(target)在有效范围/身份变化时通知workspace。label为纯文本本机访客或具体账号；owner为现有learningOwner()值；保存按钮附近常驻显示该真实范围，canSave=false时不可冒充已保存。getter、callback不新增服务路由。
+- 本机records/annotations/flow storage事件同步刷新；同owner且父记录/题目仍存在时不清未提交答案、解释、备注、错因/复习日期草稿，更新权威帮助与提交锁，冲突文字提示。父记录删除或owner/epoch变化才清旧草稿。账号沿用可见活动页面10秒服务刷新与generation/epoch/序号守卫；storage不是账号同步。后台/隐藏期间不承诺实时刷新，恢复后刷新。
+- 新投影模块由主会话加入HTML/前门白名单和workspace依赖；两协作会话只修改分配的实现文件，主会话整合与验证。
+
+### C04 冻结：有限公式
+
+- 新内部normaliseEquation只接受严格general{form,a,b,c}、vertex{form,a,h,k}及旧模型兼容{a,h,k}。不接受字符串数值、accessor、原型/未知字段、非有限值；每原始系数绝对值≤1e6，abs(a)≥1e-6。换算后a/h/k绝对值≤1e6，注册曲线的有限域校验继续执行；先检测除法/平方/减法溢出。a=0拒绝，不假称新抛物线识别支持直线。
+- 模型可读一般式时直接给a/b/c，程序换算h/k。旧输出a/h/k兼容，外部CurveResult形状不变。题面不清、无数值依据或多对象不明确必须拒绝/降级；课程文本/字幕不能填补截图缺失数学标注。
+- 原位校验细则由C03新通道冻结，不将旧墨迹72%或锚点自洽升级为位置真实正确。旧路径保持兼容，新的可信定位只在新通道使用。
+
+### C05 冻结：模型与上游读取
+
+- 服务端新增有限profileVersion='recognition-profile-v1'；READER_TEMPERATURE_POLICY仅fixed/omit（默认fixed），READER_TEMPERATURE严格有限0..2（默认0）；READER_REASONING_EFFORT可留空或none/minimal/low/medium/high/xhigh/max；READER_IMAGE_TRANSPORT仅inline/public-url（默认inline）。未知配置拒绝，不解析任意JSON头/参数或自动换模型。jsonMode继续现有布尔配置，ASR独立。
+- inline JPEG只在inline策略下发送；public-url策略遇到当前data URL明确unsupported，不自动托管或公开图片。具体模型允许值由部署者按入口文档配置；这组有限配置不是自动兼容任意模型的证明。
+- 同一profile构建器覆盖askModel与askGeometryModel及复用后者的read/context/summary。默认保持既有temperature=0；omit不发送temperature，fixed只发送已校验值，reasoning未配置不发送。
+- 两入口共用真实响应流≤64KiB读取和abort race；累计超限即cancel且不解析，迟到不回传，非流测试替身也验证字节数。错误类型不含完整上游内容；原public路由错误/字段兼容。profile非秘密身份导出供网关cache/providerVersion使用，含温度/输出/传输/推理及profileVersion，不含密钥。
+- 模型预算不变，无自动重试。空基础配置无供应商请求；本轮不凭替身测试宣称真实模型通过。
+
+### C03 冻结：受限单帧与来源记录
+
+- 新POST /api/vision/recognition，严格请求{schemaVersion:'011.1',requestId,sourceId,videoVersion,analysisVersion,materialMode,kind,frameTime,frameSize,image}；kind仅parabola/right-triangle。1张≤640宽JPEG，原帧尺寸必须与自制登记元数据一致且JPEG比例一致，正文≤4MiB，秒在登记duration内；不接收ROI、字幕/文本、URL或凭证字段。首轮仅全帧，裁剪留待独立版本。
+- /api/vision/session新增可选capability:'recognition-v1'，原{sourceId}兼容。新能力创建时由privateOwner服务绑定账号/访客，owner=null旧会话不接受新通道；新capability会话的原read与recognition共用session.read/slots.read、32次额度和客户端readCalls，切kind/入口不重置。新请求不接受progressive token。采集起客户端25s总截止，上游30s；失败/超时不返还已开始的调用额度。显式prepare只创建会话，不采集/启动loop，start仍需主动连续启用。
+- 原会话结束、账号/epoch变化、失效/隐藏/换源中止新请求；返回前检查来源登记仍有效、session身份和private owner。新响应、客户端读流与前门专用响应≤64KiB，固定路由/方法；旧接收器不接新包。
+- 响应严格{schemaVersion:'011.1',requestId,sourceId,videoVersion,analysisVersion,kind,frameTime,frameSize,jpegSize,status,candidate,evidence,limitations}。status仅candidate/insufficient/unsupported；candidate为null或{template,snapshot}，snapshot复用现有有限数学校验。evidence严格{formulaBasis,mathStatus,placementStatus,map,calibrationBasis,profileVersion,promptVersion,calibrationVersion}；formulaBasis仅visible-equation/visible-lengths/none，mathStatus仅candidate/consistent/insufficient，placementStatus仅unknown/checked，calibrationBasis仅none/authored-reference，map为null或有限{ox,oy,sx,sy}且sx/sy正。limitations为≤8个有限代码，不含模型全文。
+- 首轮模型只从题面提取有限一般式/顶点式或明确A直角及AB/AC与单位，不从外形猜数值、不用字幕补题面。无依据/多对象不明确返回insufficient/unsupported。模型的basis声明仍是候选，consistent仅是程序数学自洽，学生确认后才进入保存/探索。
+- 普通素材定位默认unknown。自动checked只允许版本/时间绑定的自制登记标定参考和独立像素检查共同通过；sx/sy分别检查，归一化参考点/可见曲线误差≤短边2%，竞争对象/低清晰度拒绝原位。墨迹拟合与模型自报锚点不得直接checked。独立画板始终可用；人工输入正比例和合法原点只标student-calibrated，不升级为自动checked。005几何维持独立画板，无新增原位顶点能力。
+- 浏览器新增recognition-contracts/provenance/recognition-workbench有限模块。app.context.getVisualSession()/prepareRecognitionSession()复用同一webVisual控制器；该控制器新增prepare()/recognize({kind,frameSize},signal)，不启动连续loop。workbench由workspace显式mount，停止/销毁/活动/许可代次守卫；确认/保存处展示来源、数学与位置状态，学生可改有限条件、用2D独立画板，保存后复用原实线工作台。
+- 必要provenance为独立schemaVersion:'011.1'的学生确认来源sidecar，按recordId关联，不塞旧record/flow。保存元数据为{recordId,requestId,sourceId,videoVersion,analysisVersion,frameTime,frameSize,template,originalSnapshot,placementStatus,map,profileVersion,promptVersion,calibrationVersion,confirmation:'student',attribution:'student-confirmed-candidate'}；placementStatus在持久层仅unknown/student-calibrated，map按前者为null、后者有限合法，不把客户端声明当服务证明的模型正确或自动像素证据。record必须与来源/版本/时间/template关联，原数学仍独立。
+- 本机存储KEY='breakglass.website.provenance.v1'，≤500条/512KiB，绑定recordsStore epoch；账户新增GET /api/learning/provenance及PUT /api/learning/provenance/:recordId，请求{metadata,expectedRevision,expectedEpoch}，响应{provenance,epoch}；服务生成revision/updatedAt，CSRF/账号/epoch/beforeCommit核对、原parent存在且关联合法，修订冲突409、同内容幂等。账户provenance可选字段，旧文件等价空数组，≤500条/账号并纳入整个account store文件8MiB上限。
+- 删除父record、清records或data-delete级联provenance；本机epoch变化清除/拒绝旧sidecar。开关停止/退出登录不删除合法历史。导出含独立provenance；旧迁移包不自动接受新字段，新版迁移严格审核/同来源关联/去重/总限额后单独启用，首轮只导出不新增迁移能力，旧流程兼容。
+
+### C06 冻结：测量与交付
+
+- 分阶段测量/版本清单仅有限非秘密字段；采样先低成本检查或worker/并行加载只有对照收益和小符号召回不退化时才采用，未采用亦如实记录测量决定，不新增依赖。
+- 自制夹具、有限公式与坐标、取消/投影/有界流、新通道HTTP/保存/删除与UI-A45–53分别验证。当前版本真实模型、四画幅实际呈现/MV3、教师/学生与正式发布均独立；没有条件的任务不勾。

@@ -55,6 +55,16 @@ test('一帧读到抛物线：回一个能被页面收下的点', async () => {
   assert.deepEqual(again.dropped, []);
 });
 
+test('一般式由程序换算，旧输出包不夹带公式form或来源sidecar', async () => {
+  const model = fakeModel(() => parabolaAnswer({ equation: { form: 'general', a: 1, b: 0, c: 1 } }));
+  const { status, payload } = await read(lessonRequest(), model);
+  assert.equal(status, 200); assert.equal(payload.points.length, 1); assert.equal(model.calls.length, 1);
+  const curve = payload.points[0].curve;
+  assert.deepEqual(Object.fromEntries(Object.entries(curve.definition.parameters).map(([key, value]) => [key, value.initial])), { a: 1, h: 0, k: 1 });
+  assert.deepEqual(Object.keys(curve).sort(), ['definition', 'fallback', 'frameSize', 'requestId', 'source', 'time', 'videoId']);
+  assert.equal(pageRules.validateLessonReading(payload, SOURCE_SIZE).ok, true);
+});
+
 test('发给模型的是 OpenAI 兼容格式：带图、带密钥头，温度为 0', async () => {
   const model = fakeModel(() => parabolaAnswer());
   await read(lessonRequest(), model);

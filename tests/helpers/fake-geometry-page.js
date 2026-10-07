@@ -155,7 +155,10 @@ function createGeometryHarness(options = {}) {
     geometryRequest: {
       buildUrl: request.buildUrl,
       sameContext: request.sameContext,
-      requestGeometry(settings) { const pending = { ...settings, body: JSON.parse(JSON.stringify(settings.body)), canceled: false, cancel() { pending.canceled = true; } }; requests.push(pending); return pending; }
+      requestGeometry(settings) {
+        if (options.requestGeometry) return options.requestGeometry(settings);
+        const pending = { ...settings, body: JSON.parse(JSON.stringify(settings.body)), canceled: false, cancel() { pending.canceled = true; } }; requests.push(pending); return pending;
+      }
     }
   };
   const page = createGeometryPage({ document, window, BreakGlass: BG, ...options.pageOptions, ...(options.borrowedVideo ? { video } : {}) });

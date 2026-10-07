@@ -2,6 +2,7 @@ import { decodeJpegDataUrl, decodeJpegRgb, jpegSize, sameAspect } from './jpeg.m
 import { locateCurve } from './locate.mjs';
 import { askModel } from './model.mjs';
 import { fitAxes, placeCurve, sliderRanges } from './geometry.mjs';
+import { normaliseEquation } from './equation-normalise.mjs';
 
 const MAX_FRAMES = 8;
 const COURSE_TEXT_LIMIT = 8000;
@@ -149,11 +150,11 @@ async function readFrame(frame, context) {
   const answer = reply.answer;
   if (answer.hasParabola !== true) return { ok: false, reason: 'no_parabola' };
 
-  const equation = answer.equation && typeof answer.equation === 'object' ? answer.equation : {};
-  const params = { a: equation.a, h: equation.h, k: equation.k };
-  if (!finite(params.a) || !finite(params.h) || !finite(params.k) || Math.abs(params.a) < 1e-6) {
+  const normalised = normaliseEquation(answer.equation);
+  if (!normalised.ok) {
     return { ok: false, reason: 'equation_invalid' };
   }
+  const params = normalised.params;
   const workSignal = AbortSignal.any([budget, ...(signal ? [signal] : [])]);
   const rgb = await decodeJpegRgb(bytes, image, { signal: workSignal });
   signal?.throwIfAborted();
@@ -306,6 +307,7 @@ export async function readLesson(body, options) {
     reasons,
     ms: now() - started
   });
-  if (allTransport) return { status: 502, payload: { error: '模型没有回应。' } };
+  if (allTransport) return { status: 502, payload: { error: readings.every((item) => item.reason === 'unsupported_image_transport')
+    ? '当前模型传输策略不支持 inline JPEG；没有调用供应商或公开图片。' : '模型没有回应。' } };
   return { status: 200, payload: { ...envelope, points, dropped } };
 }

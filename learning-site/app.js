@@ -16,7 +16,37 @@
   const CACHE_CLEAR_PENDING = 'breakglass.website.guest-cache-clear-pending';
   const video = options.video || $('learning-video');
   const flowStore = bg.learningFlowStore?.createLocalStore(localStorage, { getRecords: () => store.read() });
+  const provenanceStore = bg.webProvenance?.createStore({ storage: localStorage, recordsStore: store });
+  const PROVENANCE_KEY = bg.webProvenance?.KEY || 'breakglass.website.provenance.v1';
   let flowUI = null;
+  let lastSaveTarget = ''; let lastRecordIds = new Set(); let annotationRecordId = null;
+  const saveScopeLabels = new Map();
+  function getSaveTarget() {
+    const scope = $('record-scope').value === 'account' ? 'account' : 'local';
+    const state = client.snapshot();
+    return { scope, label: scope === 'account' ? state.user ? `账号：${state.user.username}` : '账号：尚未登录' : '本机访客 · 这台浏览器',
+      owner: learningOwner(), epoch: scope === 'account' ? state.epoch : store.read().epoch,
+      canSave: !destroyed && (scope === 'local' || Boolean(state.user && accountLoaded && !accountLoading && !accountLoadError)) };
+  }
+  function publishSaveTarget() {
+    const target = getSaveTarget(), signature = JSON.stringify(target);
+    for (const id of ['save-explanation', 'create-variant']) {
+      const control = $(id); if (!control?.parentElement) continue;
+      if (!saveScopeLabels.has(id)) { const label = node('p', 'muted'); label.dataset.saveScope = id; control.parentElement.append(label); saveScopeLabels.set(id, label); }
+    }
+    for (const id of ['math-workbench', 'annotation-workbench']) {
+      const host = $(id); if (!host || saveScopeLabels.has(id)) continue;
+      const control = host.querySelector(id === 'math-workbench' ? '[data-math-action="save"]' : 'button[type="submit"]');
+      const label = node('p', 'muted'); label.dataset.saveScope = id; (control?.parentElement || host).append(label); saveScopeLabels.set(id, label);
+    }
+    saveScopeLabels.forEach(label => { label.textContent = `保存到：${target.label}${target.canSave ? '' : ' · 保存条件尚未确认'}`; });
+    if (signature !== lastSaveTarget) { lastSaveTarget = signature; options.onScopeChange?.({ ...target }); }
+    return target;
+  }
+  function project(data = activeData()) {
+    const target = getSaveTarget();
+    return bg.learningEvidence.project(data, { scope: target.scope, owner: target.owner, epoch: target.epoch });
+  }
   function mediaSnapshot() { return { selection: chosen, policy, source: chosen?.source || null, generation: importer.epoch(), owner: learningOwner(), view }; }
   function mediaChanged() { if (!destroyed) options.onMediaChange?.(mediaSnapshot()); }
   function publishScene(template, snapshot, origin = 'source', source = null) { options.onScene?.({ template, snapshot: { ...snapshot }, origin, confirmed: true, sourceId: source?.id || null, sourceVersion: source?.version || null }); }
@@ -29,7 +59,7 @@
   }
   let view = 'overview';
   let accountOwner = ''; let renderedOwner = null;
-  let accountData = { records: [], attempts: [], watch: [], annotations: [], flow: bg.learningFlowStore?.emptyFlow() || {} };
+  let accountData = { records: [], attempts: [], watch: [], annotations: [], provenance: [], provenanceError: '', flow: bg.learningFlowStore?.emptyFlow() || {} };
   let accountLoading = false;
   let accountLoaded = false;
   let accountLoadError = '';
@@ -39,6 +69,7 @@
   let policyController = null;
   let sampleController = null;
   let session = null;
+  let sessionGeneration = 0; let sessionOwner = null; let sessionManualOnly = false; let recognitionPreparing = null;
   let sessionPrepared = false;
   let candidateSelection = 0;
   let cssPromise = null;
@@ -103,14 +134,15 @@
   });
   function learningOwner() {
     const state = client.snapshot();
-    return `${$('record-scope').value}:${state.generation}:${state.user?.id || 'guest'}:${state.epoch}:${store.read().epoch}`;
+    const scope = $('record-scope').value;
+    return `${scope}:${state.generation}:${state.user?.id || 'guest'}:${scope === 'account' ? state.epoch : '-'}:${scope === 'local' ? store.read().epoch : '-'}`;
   }
   function currentAnnotation(record, scope) {
     return annotationOwner === learningOwner() && $('record-scope').value === scope
       && activeData().records.some((item) => item.id === record.id);
   }
   function openAnnotation(record, scope) {
-    annotationOwner = learningOwner(); void annotationEditor.open(record, scope);
+    annotationOwner = learningOwner(); annotationRecordId = record.id; void annotationEditor.open(record, scope);
     $('annotation-workbench').scrollIntoView({ behavior: 'auto', block: 'nearest' });
   }
   mathWorkbench = bg.mathWorkbench.mount($('math-workbench'), { document, onPurpose: savePurpose, onScene: options.onScene, getState: activeData, getOwner: learningOwner,
@@ -160,13 +192,49 @@
   function errorMessage(error) { return error && error.code === 'stale_session' ? '账户或学习数据状态已改变；旧操作已忽略。' : error.message || '操作失败，请重试。'; }
   function time(value) { return `${Math.floor(value / 60)}:${String(Math.floor(value % 60)).padStart(2, '0')}`; }
   function date(value) { return new Date(value).toLocaleString('zh-CN', { hour12: false }); }
-  function activeData() { return $('record-scope').value === 'account' ? accountData : { ...store.read(), annotations: annotationStore.read().annotations, flow: flowStore?.read().flow || {} }; }
+  function localProvenance() {
+    if (!provenanceStore) return { items: [], error: localStorage.getItem(PROVENANCE_KEY) ? '来源读取模块尚未就绪，原数据保留。' : '' };
+    try {
+      const raw = localStorage.getItem(PROVENANCE_KEY), value = provenanceStore.read();
+      const next = JSON.stringify(value);
+      // Persist the store's validated parent pruning, so same-ID reimport
+      // cannot recover deleted source associations. Never rewrite a peer update.
+      if (raw !== null && raw !== next && store.read().epoch === value.epoch && localStorage.getItem(PROVENANCE_KEY) === raw) localStorage.setItem(PROVENANCE_KEY, next);
+      return { items: value.items, error: '' };
+    } catch (error) { return { items: [], error: errorMessage(error) }; }
+  }
+  function activeData() {
+    if ($('record-scope').value === 'account') return accountData;
+    const provenance = localProvenance();
+    return { ...store.read(), annotations: annotationStore.read().annotations, flow: flowStore?.read().flow || {}, provenance: provenance.items, provenanceError: provenance.error };
+  }
   function sourceTitle(source) { return `${source.title || '保存的数学条件'} · ${source.id.slice(-8)}`; }
   function sameFile(source) { return Boolean(chosen && records.fileId(source) === chosen.source.id && source.version === chosen.source.version); }
-  function stopSession(keepContext = false) { sessionPrepared = false; if (session) { session.destroy(); session = null; }
+  function visualOwner() { return chosen ? `${learningOwner()}:${importer.epoch()}:${records.identity(chosen.source)}` : null; }
+  function getVisualSession() { return session && sessionOwner === visualOwner() && !sessionManualOnly ? session : null; }
+  async function prepareRecognitionSession() {
+    if (!isActive() || document.hidden || !chosen || !policy?.allowed || chosen.source.kind !== 'local-file'
+      || !policy.source || records.identity(policy.source) !== records.identity(chosen.source)) throw new Error('当前素材、范围或处理许可未确认，不能准备识别会话。');
+    if (recognitionPreparing) return recognitionPreparing;
+    const existing = getVisualSession();
+    if (existing) {
+      const serial = sessionGeneration;
+      try {
+        if (typeof existing.prepare !== 'function') throw new Error('单帧识别会话能力尚未就绪。');
+        if (!await existing.prepare() || serial !== sessionGeneration || getVisualSession() !== existing || !policy?.allowed || !isActive() || document.hidden) throw new Error('识别会话准备未确认或范围已改变。');
+        return existing;
+      } catch (error) { if (serial === sessionGeneration && session === existing) stopSession(); throw error; }
+    }
+    const pending = openSession(false, null, () => true, true);
+    recognitionPreparing = pending;
+    try { const value = await pending; if (!value) throw new Error('识别会话准备未确认。'); return value; }
+    finally { if (recognitionPreparing === pending) recognitionPreparing = null; }
+  }
+  function stopSession(keepContext = false) { sessionGeneration += 1; sessionOwner = null; recognitionPreparing = null; sessionPrepared = false; if (session) { session.destroy(); session = null; }
     if (!keepContext) { contextUI.stop(); progressiveUI?.stop(); } audioUI?.stop(); $('stop-analysis').disabled = true; }
   function closeScene() {
     practiceEpoch += 1;
+    ['practice-number', 'practice-h', 'practice-k', 'self-explanation'].forEach(id => { $(id).value = ''; });
     options.onScene?.(null);
     if (renderer) renderer.destroy();
     renderer = null; scene = null; practiceRecordId = null; $('scene-stage').replaceChildren(); $('scene-panel').hidden = true;
@@ -192,9 +260,9 @@
   function accountChanged(state) {
     if (destroyed) return;
     pairing.update(state);
-    const next = `${state.generation}:${state.user ? state.user.id : 'guest'}`;
+    const next = `${state.generation}:${state.user ? state.user.id : 'guest'}:${state.epoch}`;
     if (next !== accountOwner) {
-      accountOwner = next; loadEpoch += 1; accountData = { records: [], attempts: [], watch: [], annotations: [], flow: bg.learningFlowStore?.emptyFlow() || {} };
+      accountOwner = next; loadEpoch += 1; accountData = { records: [], attempts: [], watch: [], annotations: [], provenance: [], provenanceError: '', flow: bg.learningFlowStore?.emptyFlow() || {} };
       accountLoaded = false; accountLoadError = '';
       watchTracking = false; video.pause();
       selectedLocal.clear(); stopSession(); closeScene();
@@ -215,62 +283,87 @@
     const serial = ++loadEpoch;
     accountLoading = true; accountLoadError = ''; renderData();
     message('center-status', '正在读取当前账户的记录、观看位置和真实复练结果…');
-    const replies = await Promise.allSettled([client.records(), client.watch(), client.attempts(), client.annotations(), client.flow ? client.flow() : Promise.resolve({epoch: owner.epoch, flow: {}})]);
-    if (serial !== loadEpoch || owner.generation !== client.snapshot().generation) return;
-    const failed = replies.find((reply) => reply.status === 'rejected');
+    const replies = await Promise.allSettled([client.records(), client.watch(), client.attempts(), client.annotations(), client.flow ? client.flow() : Promise.resolve({epoch: owner.epoch, flow: {}}),
+      client.provenance ? client.provenance() : Promise.resolve({ epoch: owner.epoch, provenance: [] })]);
+    if (serial !== loadEpoch || owner.generation !== client.snapshot().generation || owner.epoch !== client.snapshot().epoch || owner.user.id !== client.snapshot().user?.id) return;
+    const failed = replies.slice(0, 5).find((reply) => reply.status === 'rejected');
     accountLoading = false;
     if (failed) { accountLoadError = errorMessage(failed.reason); renderData(); message('center-status', accountLoadError); return; }
-    const epochs = replies.map((reply) => reply.value.epoch);
+    const epochs = replies.slice(0, 5).map((reply) => reply.value.epoch);
     if (epochs.some((epoch) => epoch !== owner.epoch)) { accountLoadError = '学习数据版本已改变，请刷新当前账户。'; renderData(); return; }
+    let provenance = accountData.provenance || [], provenanceError = '';
+    try {
+      const reply = replies[5]; if (reply.status !== 'fulfilled') throw reply.reason;
+      if (reply.value.epoch !== owner.epoch || !Array.isArray(reply.value.provenance) || reply.value.provenance.length > 500) throw new Error('来源资料版本或结构无效');
+      const seen = new Set();
+      provenance = reply.value.provenance.map(item => {
+        if (seen.has(item.recordId)) throw new Error('来源资料存在重复父记录'); seen.add(item.recordId);
+        const record = replies[0].value.records.find(record => record.id === item.recordId);
+        if (!record) throw new Error('来源资料的原题不存在');
+        return bg.webProvenance.validate(item, record);
+      });
+    } catch (error) { provenanceError = errorMessage(error); }
     accountData = { records: replies[0].value.records, watch: replies[1].value.items, attempts: replies[2].value.attempts,
-      annotations: replies[3].value.annotations.map(bg.webAnnotations.validateAnnotation), flow: replies[4].value.flow };
+      annotations: replies[3].value.annotations.map(bg.webAnnotations.validateAnnotation), flow: replies[4].value.flow, provenance, provenanceError };
     accountLoaded = true;
-    renderData(); message('center-status', `当前账户已读取 ${accountData.records.length} 条记录。`);
+    renderData(); message('center-status', `当前账户已读取 ${accountData.records.length} 条记录。${provenanceError ? `来源记录读取未确认：${provenanceError}` : ''}`);
   }
-  function mastery(record, attempts) {
-    return records.learningState(record, attempts);
+  function mastery(record, evidence) {
+    return evidence.records.find(item => item.recordId === record.id)?.state || '待验证';
   }
-  function renderDashboard(data) {
+  function renderDashboard(data, evidence) {
     const accountScope = $('record-scope').value === 'account';
     const pending = accountScope && !accountLoaded;
     message('overview-identity', accountScope && accountLoading ? '正在读取当前账户的真实记录…'
       : accountScope && accountLoadError ? `账户刷新未确认：${accountLoadError}${accountLoaded ? '；保留此前确认的数据。' : ''}`
         : `${accountScope ? '当前账户' : '本机访客'}的真实学习记录；没有记录时显示空态。`);
     const summary = $('dashboard-summary'); summary.replaceChildren();
-    const actualWrong = records.filterRecords(data.records, data.attempts, { kind: 'wrong' }).length;
+    const actualWrong = evidence.summary.wrongRecords;
     [['保存的疑问', data.records.filter((r) => r.kind === 'question').length], ['个人易错标记', data.records.filter((r) => r.kind === 'pitfall').length],
       ['有答错证据的记录', actualWrong], ['记录的课程位置', data.watch.length]].forEach(([label, count]) => {
       const card = node('div', 'stat-card'); card.append(node('p', '', label), node('strong', '', pending ? '—' : String(count))); summary.append(card);
     });
     const counts = { '待验证': 0, '使用提示完成': 0, '最近一次独立正确': 0, '需要复练': 0 };
-    data.records.forEach((record) => { counts[mastery(record, data.attempts)] += 1; });
+    data.records.forEach((record) => { counts[mastery(record, evidence)] += 1; });
     $('dashboard-states').replaceChildren();
     Object.entries(counts).forEach(([label, count]) => { const row = node('div', 'status-row'); row.append(node('span', '', label), node('strong', '', pending ? '待同步' : `${count} 条`)); $('dashboard-states').append(row); });
     const activity = $('dashboard-activity'); activity.replaceChildren();
-    const recent = data.attempts.slice().sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, 4);
+    const recent = evidence.events.slice(-4).reverse();
     recent.forEach((attempt) => {
       const record = data.records.find((item) => item.id === attempt.recordId);
       const row = node('div', 'status-row'); row.append(node('span', '', record ? record.title : '复练记录'),
-        node('span', 'muted', `${attempt.correct ? attempt.hintUsed ? '使用提示完成' : '独立答对' : '需要复练'} · ${date(attempt.createdAt)}`)); activity.append(row);
+        node('span', 'muted', `${attempt.stage === 'completion' ? '补步骤 · ' : attempt.stage === 'delayed' ? '延后题型（实际间隔另核） · ' : ''}${attempt.correct ? attempt.hintUsed ? '使用帮助答对' : '无帮助答对' : '实际答错'} · ${date(attempt.createdAt)}`)); activity.append(row);
     });
     if (!recent.length) activity.append(node('p', 'muted', '还没有提交过复练答案。观看进度不会替代理解验证。'));
   }
   function renderData() {
     if (destroyed) return;
-    const nextOwner = learningOwner(); if (renderedOwner !== nextOwner) { renderedOwner = nextOwner; options.onOwnerChange?.(nextOwner); mediaChanged(); }
+    const nextOwner = learningOwner(); if (renderedOwner !== nextOwner) {
+      if (renderedOwner !== null) { annotationOwner = null; annotationRecordId = null; annotationEditor.close(); mathWorkbench?.reset(); closeScene(); stopSession(); lastRecordIds.clear(); }
+      renderedOwner = nextOwner; options.onOwnerChange?.(nextOwner); mediaChanged();
+    }
     let data;
     try { data = activeData(); } catch (error) { message('center-status', errorMessage(error)); return; }
+    const ids = new Set(data.records.map(record => record.id));
+    if (practiceRecordId && lastRecordIds.has(practiceRecordId) && !ids.has(practiceRecordId)) { mathWorkbench?.reset(); closeScene(); }
+    if (annotationRecordId && !ids.has(annotationRecordId)) { annotationOwner = null; annotationRecordId = null; annotationEditor.close(); }
+    lastRecordIds = ids;
+    const evidence = project(data);
     const metadata = new Map((data.annotations || []).map((item) => [item.recordId, item]));
     const displayRecords = data.records.map((record) => bg.webAnnotations.displayRecord(record, metadata.get(record.id)));
-    renderDashboard({ ...data, records: displayRecords });
+    renderDashboard({ ...data, records: displayRecords }, evidence);
     mathWorkbench?.refresh(); flowUI?.refresh();
+    publishSaveTarget();
     const sourceFilter = $('record-source');
     const previous = sourceFilter.value;
     sourceFilter.replaceChildren(); const all = node('option', '', '全部来源'); all.value = 'all'; sourceFilter.append(all);
     const sources = new Map(data.records.map((record) => [records.identity(record.source), record.source]));
     sources.forEach((source, key) => { const option = node('option', '', sourceTitle(source)); option.value = key; sourceFilter.append(option); });
     if (previous === 'all' || sources.has(previous)) sourceFilter.value = previous;
-    const filtered = records.filterRecords(displayRecords, data.attempts, { kind: $('record-kind').value, source: sourceFilter.value });
+    const wrong = new Set(evidence.records.filter(item => item.hasWrong).map(item => item.recordId));
+    const kind = $('record-kind').value;
+    const filtered = displayRecords.filter(record => (sourceFilter.value === 'all' || records.identity(record.source) === sourceFilter.value)
+      && (kind === 'all' || (kind === 'wrong' ? wrong.has(record.id) : record.kind === kind)));
     const list = $('record-list'); list.replaceChildren();
     if (!filtered.length) list.append(node('p', 'muted', '当前范围没有符合筛选的记录。先保存一个疑问或手工数学条件，再来回顾。'));
     const localScope = $('record-scope').value === 'local';
@@ -283,10 +376,13 @@
         label.append(checkbox, node('span', '', '选择导入当前账户')); card.append(label);
       }
       card.append(node('span', 'badge', record.kind === 'question' ? '疑问' : '个人易错标记'));
-      if (data.attempts.some((item) => item.recordId === record.id && item.outcome === 'wrong' && item.correct === false)) card.append(node('span', 'badge wrong', '有实际答错证据'));
+      if (wrong.has(record.id)) card.append(node('span', 'badge wrong', '有实际答错证据'));
       card.append(node('h3', '', record.title), node('p', '', record.note), node('p', 'muted', `${sourceTitle(record.source)} · ${time(record.time)}`),
-        node('p', 'muted', `${record.origin === 'vision' ? 'AI视觉来源，条件已由学生确认' : record.origin === 'author' ? '作者知识层（历史测试夹具）' : '手工数学条件，非AI识别'} · ${record.sourceLabel}`), node('p', 'muted', mastery(record, data.attempts)));
-      const review = records.nextReview(data.attempts, record.id);
+        node('p', 'muted', `${record.origin === 'vision' ? 'AI视觉来源，条件已由学生确认' : record.origin === 'author' ? '作者知识层（历史测试夹具）' : '手工数学条件，非AI识别'} · ${record.sourceLabel}`), node('p', 'muted', mastery(record, evidence)));
+      if (data.provenance?.some(item => item.recordId === record.id)) card.append(node('p', 'muted', '来源关系已保存：学生确认的候选；模型准确性与原位效果仍需独立核对。'));
+      if (data.provenanceError) card.append(node('p', 'muted', `来源记录读取未确认：${data.provenanceError}`));
+      const plan = evidence.records.find(item => item.recordId === record.id)?.plan;
+      const review = plan?.eligible ? plan.reviewAt : null;
       if (review) card.append(node('p', 'muted', `建议复练：${date(review)}（可跳过；不是掌握保证）`));
       if (record.tags.length) { const tags = node('p', 'reason-tags'); record.tags.forEach((tag) => tags.append(node('span', 'badge', tag))); card.append(tags); }
       const actions = node('div', 'actions'); actions.append(button('恢复数学场景 / 复练', () => openScene(original, localScope ? 'local' : 'account')),
@@ -365,21 +461,30 @@
     })).then((styles) => styles.join('\n')).catch((error) => { cssPromise = null; throw error; });
     return cssPromise;
   }
-  async function openSession(manualOnly, prepared = null, isPreparedCurrent = () => true) {
+  async function openSession(manualOnly, prepared = null, isPreparedCurrent = () => true, prepareOnly = false) {
     if (!chosen || !isActive()) return;
     if (!manualOnly && (!policy || !policy.allowed)) { message('session-status', '材料未获准，不发送画面。'); return; }
+    const existing = !manualOnly && !prepared && !prepareOnly ? getVisualSession() : null;
+    if (existing) {
+      const serial = sessionGeneration;
+      try { if (!await existing.start()) throw new Error('持续识别会话准备未确认。'); if (serial !== sessionGeneration || getVisualSession() !== existing) return null;
+        message('session-status', '持续视觉识别使用当前同源会话与剩余额度，请以实际状态为准。'); return existing;
+      } catch (error) { if (serial === sessionGeneration && session === existing) { stopSession(); message('session-status', errorMessage(error)); } return null; }
+    }
     stopSession(Boolean(prepared));
-    const owner = client.snapshot(); const learningScope = learningOwner(); const importEpoch = importer.epoch(); const file = chosen.source.id;
+    const serial = sessionGeneration;
+    const owner = client.snapshot(); const target = getSaveTarget(); const learningScope = learningOwner(); const importEpoch = importer.epoch(); const file = chosen.source.id;
     try {
       const cssText = await overlayCSS();
       if (!chosen || chosen.source.id !== file || importEpoch !== importer.epoch() || owner.generation !== client.snapshot().generation
-        || learningScope !== learningOwner() || !isActive() || (prepared && !isPreparedCurrent())) return;
-      const localEpoch = store.read().epoch;
-      const next = bg.webVisual.createSession({ video, source: { ...chosen.source }, cssText, manualOnly,
+        || learningScope !== learningOwner() || serial !== sessionGeneration || !isActive() || document.hidden || (!manualOnly && !policy?.allowed) || (prepared && !isPreparedCurrent())) return;
+      const localEpoch = target.scope === 'local' ? store.read().epoch : null;
+      const next = bg.webVisual.createSession({ video, source: { ...chosen.source }, cssText, manualOnly, deferOverlay: prepareOnly,
         onSave: async (input) => {
-          if (!isActive() || learningScope !== learningOwner() || !chosen || chosen.source.id !== file || importer.epoch() !== importEpoch || owner.generation !== client.snapshot().generation) throw new Error('来源或账户已改变，旧记录不保存。');
+          if (!isActive() || serial !== sessionGeneration || learningScope !== learningOwner() || !chosen || chosen.source.id !== file || importer.epoch() !== importEpoch || owner.generation !== client.snapshot().generation) throw new Error('来源或账户已改变，旧记录不保存。');
           const record = records.validateRecord({ ...input, id: crypto.randomUUID(), createdAt: new Date().toISOString() });
-          if (owner.user) {
+          if (target.scope === 'account') {
+            if (!owner.user || !getSaveTarget().canSave) throw new Error('当前账号保存条件尚未确认。');
             await client.saveRecord(record);
             if (owner.generation !== client.snapshot().generation) throw new Error('账户已改变。');
             await loadAccountData(); return { ok: true, storage: 'account' };
@@ -387,11 +492,17 @@
           store.save(record, localEpoch); renderData(); return { ok: true, storage: 'local' };
         }
       });
-      session = next; sessionPrepared = Boolean(prepared); $('stop-analysis').disabled = false;
-      if (prepared) { next.showPreparedContext(prepared); message('session-status', '片段数学候选已载入热点层；点击当前时间的热点，校对后探索或保存。'); }
+      session = next; sessionOwner = visualOwner(); sessionManualOnly = manualOnly; sessionPrepared = Boolean(prepared); $('stop-analysis').disabled = false;
+      if (prepareOnly) {
+        if (typeof next.prepare !== 'function' || !await next.prepare()) throw new Error('单帧识别会话准备未确认。');
+        if (serial !== sessionGeneration || learningScope !== learningOwner() || !isActive() || document.hidden || !policy?.allowed) { next.destroy(); return null; }
+        message('session-status', '单帧识别会话已准备；尚未开启持续采样。');
+      }
+      else if (prepared) { next.showPreparedContext(prepared); message('session-status', '片段数学候选已载入热点层；点击当前时间的热点，校对后探索或保存。'); }
       else if (manualOnly) message('session-status', '独立手工条件模式：不分析原视频，不上传画面；输入和保存自己的数学条件。');
-      else { await next.start(); message('session-status', '持续视觉识别操作已提交，请以学习面板的实际状态为准；失败不会替换成预设热点。'); }
-    } catch (error) { message('session-status', errorMessage(error)); }
+      else { if (!await next.start()) throw new Error('持续识别会话准备未确认。'); if (serial === sessionGeneration) message('session-status', '持续视觉识别操作已提交，请以学习面板的实际状态为准；失败不会替换成预设热点。'); }
+      return next;
+    } catch (error) { if (serial === sessionGeneration) { stopSession(); message('session-status', errorMessage(error)); } if (prepareOnly) throw error; return null; }
   }
   async function sample(path, name, { targetTime } = {}) {
     if (destroyed) return;
@@ -435,7 +546,7 @@
     try {
       message('center-status', `正在删除${destination}记录…`);
       annotationEditor.close(); mathWorkbench?.reset();
-      if (localScope) { flowStore?.remove(record.id, store.read().epoch); store.remove(record.id); annotationStore.remove(record.id); practiceHelp.delete(`${learningOwner()}:${record.id}`); selectedLocal.delete(record.id); renderData(); }
+      if (localScope) { flowStore?.remove(record.id, store.read().epoch); store.remove(record.id); annotationStore.remove(record.id); const provenance = localProvenance(); practiceHelp.delete(`${learningOwner()}:${record.id}`); selectedLocal.delete(record.id); renderData(); if (provenance.error) throw new Error(`原题已删除，来源清理未确认：${provenance.error}`); }
       else { await client.deleteRecord(record.id); await loadAccountData(); }
       if (scene && scene.record.id === record.id) closeScene();
       message('center-status', `${destination}删除已确认。`);
@@ -467,11 +578,18 @@
     try {
       const owner = learningOwner(); let value;
       if ($('record-scope').value === 'account') {
-        const [data, metadata, flowData] = await Promise.all([client.exportData(), client.annotations(), client.flow()]);
-        if (owner !== learningOwner() || data.epoch !== metadata.epoch || data.epoch !== flowData.epoch) throw new Error('导出期间账户或资料版本已改变，请重试。');
-        value = { ...data, annotations: metadata.annotations, flow: flowData.flow };
-      } else value = { ...store.read(), annotations: annotationStore.read().annotations, flow: flowStore?.read().flow || bg.learningFlowStore.emptyFlow() };
-      download(value, 'breakglass-learning.json'); message('data-status', '已导出当前范围的原记录、备注修订与作答，不包含原视频、分析帧或密钥。');
+        const [data, metadata, flowData, sourceData] = await Promise.all([client.exportData(), client.annotations(), client.flow(),
+          client.provenance ? client.provenance() : Promise.resolve({ epoch: client.snapshot().epoch, provenance: [] })]);
+        if (owner !== learningOwner() || data.epoch !== metadata.epoch || data.epoch !== flowData.epoch || data.epoch !== sourceData.epoch) throw new Error('导出期间账户或资料版本已改变，请重试。');
+        if (!Array.isArray(sourceData.provenance) || sourceData.provenance.length > 500) throw new Error('来源记录导出结构未确认');
+        const seen = new Set(), provenance = sourceData.provenance.map(item => { if (seen.has(item.recordId)) throw new Error('来源记录重复'); seen.add(item.recordId); return bg.webProvenance.validate(item, data.records.find(record => record.id === item.recordId)); });
+        value = { ...data, annotations: metadata.annotations, flow: flowData.flow, provenance };
+      } else {
+        const provenance = localProvenance(); if (provenance.error) throw new Error(`来源记录导出未确认：${provenance.error}`);
+        value = { ...store.read(), annotations: annotationStore.read().annotations, flow: flowStore?.read().flow || bg.learningFlowStore.emptyFlow(), provenance: provenance.items };
+        if (owner !== learningOwner()) throw new Error('导出期间本机资料版本已改变，请重试。');
+      }
+      download(value, 'breakglass-learning.json'); message('data-status', '已导出当前范围的原记录、备注、作答与独立来源记录；学生确认的候选不代表模型准确性已通过验收。');
     }
     catch (error) { message('data-status', errorMessage(error)); }
   }
@@ -554,7 +672,7 @@
     message('practice-question', triangle ? `A 为直角，AB=${s.AB}，AC=${s.AC}（${s.unit}）。先求斜边 BC。`
       : `函数 y=${s.a}(x−${s.h})²+${s.k} 的顶点坐标是什么？`);
     message('practice-status', '答案默认隐藏。提交后由数学程序验证；可选择提示或跳过。');
-    const suggestion = bg.mathLearning.historyPlan(scene.record, activeData().attempts, activeData().records);
+    const suggestion = project().records.find(item => item.recordId === scene.record.id)?.plan || bg.mathLearning.reviewSuggestion([]);
     $('show-hint').textContent = hintLevel ? `逐步提示（${hintLevel}/3）` : suggestion.suggestedHintCount === 1 ? '先给方向提示（0/3，可继续展开）' : '给一点提示（0/3）'; $('show-hint').disabled = hintLevel === 3;
     if (hintLevel) { $('practice-hint').hidden = false; message('practice-hint', bg.pedagogy.hints(scene.record)[hintLevel - 1]); }
     if (answerViewed) showAnswer();
@@ -655,7 +773,7 @@
   $('refresh-center').addEventListener('click', async () => { try { await client.refresh(); if (client.snapshot().user) await loadAccountData(); else renderData(); } catch (error) { message('center-status', errorMessage(error)); } });
   $('import-selected').addEventListener('click', () => void importSelected()); $('export-records').addEventListener('click', () => void exportData());
   $('clear-local').addEventListener('click', async () => { if (!confirm('清除这台浏览器的本机记录、备注、观看位置、复练与访客分析缓存？账户学习数据不受影响。')) return;
-    try { watchTracking = false; video.pause(); localStorage.setItem(CACHE_CLEAR_PENDING, '1'); store.clear(); annotationStore.clear(); annotationOwner = null; annotationEditor.close(); mathWorkbench.reset(); selectedLocal.clear(); if (scene && scene.scope === 'local') closeScene(); stopSession(); renderData();
+    try { watchTracking = false; video.pause(); localStorage.setItem(CACHE_CLEAR_PENDING, '1'); store.clear(); annotationStore.clear(); if (provenanceStore) provenanceStore.clear(); else localStorage.removeItem(PROVENANCE_KEY); annotationOwner = null; annotationEditor.close(); mathWorkbench.reset(); selectedLocal.clear(); if (scene && scene.scope === 'local') closeScene(); stopSession(); renderData();
       message('center-status', '本机学习记录已清除，正在确认访客分析缓存清除…');
       await clearGuestAnalysis(); message('center-status', '本机记录及访客分析缓存已清除，旧写回已失效。再次主动播放后才记录新位置。');
     } catch (error) { const text = `清除尚未全部确认：${errorMessage(error)}；可在账户设置重试访客缓存清除。`; message('center-status', text); message('cache-lifecycle-status', text); }
@@ -699,8 +817,8 @@
   $('skip-practice').addEventListener('click', () => { practiceEpoch += 1; $('practice-panel').hidden = true; message('scene-status', '已跳过本次复练；没有生成作答或错误记录。'); });
   $('mixed-practice').addEventListener('click', () => { try {
     const data = activeData(); if (!data.records.length) { message('center-status', '还没有可复练的数学记录。'); return; }
-    const practiceIds = new Set((data.flow?.purposes || []).filter((item) => item.purpose === 'practice').map((item) => item.recordId));
-    const groups = ['parabola', 'right-triangle', ...bg.mathLearning.TEMPLATE_IDS].map((template) => data.records.filter((record) => practiceIds.has(record.id) && record.template === template));
+    const eligible = project(data).queue.manual.map(item => item.record);
+    const groups = ['parabola', 'right-triangle', ...bg.mathLearning.TEMPLATE_IDS].map((template) => eligible.filter(record => record.template === template));
     if (!groups.some((group) => group.length)) { message('center-status', '请先在课程微闭环中把记录分类为练习题；解释笔记不会加入混练。'); return; }
     const items = []; for (let index = 0; index < Math.max(...groups.map((group) => group.length)); index += 1) {
       groups.forEach((group) => { if (group[index]) items.push(group[index]); });
@@ -714,8 +832,16 @@
   }, 10000);
   function destroy() { if (destroyed) return; destroyed = true; loadEpoch += 1; clearInterval(accountRefreshTimer); listeners.splice(0).forEach((remove) => remove()); pairing.destroy(); contextUI.destroy(); progressiveUI.destroy(); audioUI.destroy(); annotationEditor.close(); mathWorkbench.destroy(); flowUI?.destroy(); if (sampleController) sampleController.abort(); if (policyController) policyController.abort(); importer.reset(); closeScene(); client.invalidate(); }
   listen(window, 'pagehide', destroy);
-  listen(window, 'storage', (event) => { if (event.key === records.KEY || event.key === bg.webAnnotations.KEY) { stopSession(); closeScene(); annotationEditor.close(); mathWorkbench.reset(); renderData(); } });
-  if (flowStore && bg.learningFlowUI && $('learning-flow-workbench')) flowUI = bg.learningFlowUI.mount($('learning-flow-workbench'), { document, getState: () => ({ ...activeData(), scope: $('record-scope').value, user: client.snapshot().user, epoch: $('record-scope').value === 'account' ? client.snapshot().epoch : store.read().epoch }), getOwner: learningOwner, localStore: flowStore, recordsStore: store, annotationStore, accountClient: client, onChanged: () => $('record-scope').value === 'account' ? loadAccountData() : renderData() });
+  listen(window, 'storage', (event) => {
+    if ($('record-scope').value !== 'local') return;
+    if (event.key === null || [records.KEY, bg.webAnnotations.KEY, bg.learningFlowStore?.KEY, PROVENANCE_KEY].includes(event.key)) {
+      renderData();
+      if (annotationRecordId) message('center-status', '本机学习资料已更新；备注输入保留，保存遇修订冲突时请重新读取版本。');
+    }
+  });
+  listen(window, 'focus', () => { if (!isActive() || document.hidden) return; if (client.snapshot().user) void client.refresh().catch(() => {}); else renderData(); });
+  listen(document, 'visibilitychange', () => { if (!document.hidden && isActive()) { if (client.snapshot().user) void client.refresh().catch(() => {}); else renderData(); } });
+  if (flowStore && bg.learningFlowUI && $('learning-flow-workbench')) flowUI = bg.learningFlowUI.mount($('learning-flow-workbench'), { document, getState: () => ({ ...activeData(), scope: $('record-scope').value, user: client.snapshot().user, epoch: $('record-scope').value === 'account' ? client.snapshot().epoch : store.read().epoch }), getOwner: learningOwner, getSaveTarget, localStore: flowStore, recordsStore: store, annotationStore, accountClient: client, onChanged: () => $('record-scope').value === 'account' ? loadAccountData() : renderData() });
   renderData(); switchView('overview');
   void fetch('/api/deployment', { cache: 'no-store' }).then(async (response) => {
     if (!response.ok) throw new Error('运行入口状态读取失败。');
@@ -734,8 +860,35 @@
     message('deployment-notice', '运行入口状态尚未确认，请稍后刷新；本机手工数学与记录仍可使用。'); });
   if (localStorage.getItem(CACHE_CLEAR_PENDING)) message('cache-lifecycle-status', '此前访客缓存清除尚未确认；请在账户设置重试后继续访客分段分析。');
   client.refresh().catch((error) => { message('account-status', `账户服务暂不可用：${errorMessage(error)}。本机学习仍可用。`); });
-  return { setActive(value) { active = Boolean(value); if (!active) { candidateSelection += 1; stopSession(); } }, snapshot: mediaSnapshot, chooseFile, loadSample: sample, openSnapshot: openScene, saveSnapshot: async (input, purpose = 'unclassified') => { if (destroyed) throw new Error('学习工作台已关闭。'); const record = records.validateRecord(input); const owner = learningOwner(); if ($('record-scope').value === 'account') await client.saveRecord(record); else store.save(record, store.read().epoch); if (owner !== learningOwner()) throw new Error('学习范围已改变。'); if (purpose !== 'unclassified') await savePurpose(record.id, purpose); if ($('record-scope').value === 'account') await loadAccountData(); else renderData(); return record; }, stop: stopSession, switchView, destroy, context: { document, container, getState: activeData, getOwner: learningOwner, client, store } };
+  return { setActive(value) { active = Boolean(value); if (!active) { candidateSelection += 1; stopSession(); } }, snapshot: mediaSnapshot, chooseFile, loadSample: sample, openSnapshot: openScene, saveSnapshot: async (input, purpose = 'unclassified') => { if (destroyed) throw new Error('学习工作台已关闭。'); const record = records.validateRecord(input); const owner = learningOwner(); if ($('record-scope').value === 'account') await client.saveRecord(record); else store.save(record, store.read().epoch); if (owner !== learningOwner()) throw new Error('学习范围已改变。'); if (purpose !== 'unclassified') await savePurpose(record.id, purpose); if ($('record-scope').value === 'account') await loadAccountData(); else renderData(); return record; }, stop: stopSession, switchView, destroy, context: { document, container, getState: activeData, getOwner: learningOwner, getSaveTarget, getVisualSession, prepareRecognitionSession, refreshData: () => $('record-scope').value === 'account' ? loadAccountData() : Promise.resolve(renderData()), client, store } };
   }
   bg.learningApp = { mount };
-  if (root.document?.getElementById('learning-video')) bg.learningApp.page = mount(root.document.body);
+  if (root.document?.getElementById('learning-video')) {
+    let recognition = null, permissionGeneration = 0, scopeIdentity = '', closed = false;
+    const stopRecognition = () => { permissionGeneration += 1; recognition?.stop(); recognition?.refresh(); };
+    const page = mount(root.document.body, {
+      onMediaChange: stopRecognition, onOwnerChange: stopRecognition,
+      onScopeChange: target => { const next = `${target.scope}:${target.owner}:${target.epoch}`; if (scopeIdentity !== next) { scopeIdentity = next; stopRecognition(); } else recognition?.refresh(); },
+      onViewChange: view => { if (view !== 'import') stopRecognition(); else recognition?.refresh(); }
+    });
+    bg.learningApp.page = page;
+    const host = root.document.getElementById('recognition-workbench');
+    const stop = page.stop, destroy = page.destroy;
+    page.stop = (...args) => { stopRecognition(); return stop(...args); };
+    page.destroy = () => {
+      if (closed) return; closed = true; permissionGeneration += 1;
+      root.removeEventListener('pagehide', page.destroy);
+      root.document.getElementById('stop-analysis')?.removeEventListener('click', stopRecognition);
+      recognition?.destroy(); destroy();
+    };
+    root.document.getElementById('stop-analysis')?.addEventListener('click', stopRecognition);
+    root.addEventListener('pagehide', page.destroy);
+    if (host && bg.recognitionWorkbench) {
+      try { recognition = bg.recognitionWorkbench.mount(host, {
+        learning: page, video: root.document.getElementById('learning-video'),
+        isActive: () => !closed && page.snapshot().view === 'import', getPermissionGeneration: () => permissionGeneration
+      }); }
+      catch (error) { page.destroy(); host.textContent = `学习工作台初始化未确认：${error.message}。请刷新后重试。`; }
+    }
+  }
 })(globalThis);

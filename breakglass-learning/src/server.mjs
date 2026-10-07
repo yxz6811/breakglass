@@ -395,6 +395,31 @@ export function createLearningHandler({ dataDir, allowedOrigins = DEFAULT_ORIGIN
         return true;
       }
       const active = await authenticated(request, mutation);
+      if (url.pathname === '/api/learning/provenance' && request.method === 'GET') {
+        if (url.search) fail(400, 'invalid_request', '来源列表不接受额外查询。');
+        assertLive(active); send(200, { provenance: active.user.provenance || [], epoch: active.user.epoch }); return true;
+      }
+      const provenancePath = /^\/api\/learning\/provenance\/([^/]+)$/.exec(url.pathname);
+      if (provenancePath && request.method === 'PUT') {
+        if (url.search || !checks.exact(body, ['metadata','expectedRevision','expectedEpoch']) || !checks.epoch(body.expectedRevision)) {
+          fail(400, 'invalid_request', '来源保存需要固定字段、修订和当前数据版本。');
+        }
+        const id = pathId(provenancePath[1]);
+        const result = await mutate(active, body.expectedEpoch, user => {
+          const record = user.records.find(r => r.id === id); if (!record) fail(404, 'record_not_found', '来源的原学习记录不存在。');
+          let metadata; try { metadata = checks.provenanceRules.validateMetadata(body.metadata, record); }
+          catch { fail(400, 'invalid_provenance', '来源与原题、时间、数学或有限字段不一致。'); }
+          if (metadata.recordId !== id) fail(400, 'invalid_provenance', '来源父记录标识不一致。');
+          user.provenance ||= []; const existing = user.provenance.find(p => p.recordId === id);
+          if (existing && checks.provenanceRules.sameMetadata(existing, metadata)) return { provenance: existing, epoch: user.epoch };
+          if ((existing?.revision || 0) !== body.expectedRevision) fail(409, 'revision_conflict', '来源已更新，请保留输入并重新读取。');
+          if ((existing?.revision || 0) >= Number.MAX_SAFE_INTEGER - 1) fail(409, 'revision_exhausted', '来源修订次数已达上限。');
+          if (!existing && user.provenance.length >= 500) fail(409, 'provenance_limit', '来源记录数量已达上限。');
+          const provenance = { ...metadata, schemaVersion: '011.1', revision: (existing?.revision || 0) + 1, updatedAt: new Date(now()).toISOString() };
+          user.provenance = [...user.provenance.filter(p => p.recordId !== id), provenance]; return { provenance, epoch: user.epoch };
+        });
+        send(200, result); return true;
+      }
       const flowRoute = matchLearningFlow(url.pathname, request.method, body, pathId);
       if (flowRoute) {
         if (url.search) fail(400, 'invalid_request', '学习流程不接受查询参数。');
@@ -474,6 +499,7 @@ export function createLearningHandler({ dataDir, allowedOrigins = DEFAULT_ORIGIN
           user.attempts = user.attempts.filter((item) => item.recordId !== id);
           if (user.flow) user.flow = checks.pruneFlow(user.flow, user.records);
           if (user.annotations) user.annotations = user.annotations.filter((item) => item.recordId !== id);
+          if (user.provenance) user.provenance = user.provenance.filter((item) => item.recordId !== id);
           changedEpoch(user); return { ok: true, epoch: user.epoch };
         });
         send(200, result); return true;
@@ -481,7 +507,7 @@ export function createLearningHandler({ dataDir, allowedOrigins = DEFAULT_ORIGIN
       if (url.pathname === '/api/learning/records' && request.method === 'DELETE') {
         if (!checks.exact(body, ['expectedEpoch'])) fail(400, 'invalid_request', '清除记录需要当前数据版本。');
         const result = await mutate(active, body.expectedEpoch, (user) => {
-          user.records = []; user.attempts = []; if (user.annotations) user.annotations = []; if (user.flow) user.flow = checks.emptyFlow();
+          user.records = []; user.attempts = []; if (user.annotations) user.annotations = []; if (user.flow) user.flow = checks.emptyFlow(); if (user.provenance) user.provenance = [];
           changedEpoch(user); return { ok: true, epoch: user.epoch };
         });
         send(200, result); return true;
@@ -517,12 +543,13 @@ export function createLearningHandler({ dataDir, allowedOrigins = DEFAULT_ORIGIN
       }
       if (url.pathname === '/api/learning/export' && request.method === 'GET') {
         send(200, { schemaVersion: '1', user: publicUser(active.user), epoch: active.user.epoch,
-          records: active.user.records, watch: active.user.watch, attempts: active.user.attempts }); return true;
+          records: active.user.records, watch: active.user.watch, attempts: active.user.attempts,
+          ...(Object.hasOwn(active.user, 'provenance') ? { provenance: active.user.provenance } : {}) }); return true;
       }
       if (url.pathname === '/api/account/data' && request.method === 'DELETE') {
         if (!checks.exact(body, ['expectedEpoch'])) fail(400, 'invalid_request', '删除账户学习数据需要当前版本。');
         const result = await mutate(active, body.expectedEpoch, (user) => {
-          user.records = []; user.watch = []; user.attempts = []; if (user.annotations) user.annotations = []; if (user.flow) user.flow = checks.emptyFlow();
+          user.records = []; user.watch = []; user.attempts = []; if (user.annotations) user.annotations = []; if (user.flow) user.flow = checks.emptyFlow(); if (user.provenance) user.provenance = [];
           changedEpoch(user); return { ok: true, epoch: user.epoch };
         });
         send(200, result); return true;
