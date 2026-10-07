@@ -1,5 +1,7 @@
 # BreakGlass（破壁）
 
+> 011优化规划（2026-10-07）：结合外部旧 main 评审与当前 `94d2b38` 代码核对，新增[识别可信度与学习闭环优化方案](docs/BreakGlass-recognition-optimization-plan-2026-10-07.md)。优先处理在途识别撤销、新题证据进入概览/错题、公式程序换算与独立坐标校验，再做模型兼容、性能和发布一致性。见[规格](specs/011-recognition-reliability/spec.md)、[契约草案](specs/011-recognition-reliability/contracts.md)、[实施计划](specs/011-recognition-reliability/plan.md)和[待执行任务](specs/011-recognition-reliability/tasks.md)。本轮仅文档，草案未冻结、代码未修改、未增加真实模型验收；宪法仍为2.6.2，历史任务保留。
+
 > 010开发交付（2026-10-07）：用户指定 `extension/demo/index.html` 为统一主工作台，现已将既有视频/数学/分析/账号/学习记录与两微课、用途/帮助、新题作答、复练队列和实时实线图像接在同一页。[研究融合与竞争评估](docs/BreakGlass-evidence-learning-plan-2026-10-07.md)、[主工作台UI](docs/BreakGlass-demo-workspace-ui-plan-2026-10-07.md)、[任务清单](specs/010-evidence-guided-learning/tasks.md)记录实现顺序。两份宪法同步2.6.2实施记录；[运行说明](specs/010-evidence-guided-learning/quickstart.md)使用8765同源前门与4174唯一学习服务。真实模型、平台/地区发布、教师与学生效果独立待验；006–009旧验收保留。
 
 > 009最新交付（2026-10-07，治理2.5.0）：本机/账户备注和原因标签修订、20片段渐进分析与私有缓存、五种新增手工数学及粒子/基础诊断、可配置登记短音轨ASR、严格发布检查与试点运行准备。功能/入口见[009规划](docs/BreakGlass-learning-completion-2026-10-07.md)，完成项见[任务](specs/009-learning-completion/tasks.md)，实际范围见[验证记录](docs/BreakGlass-validation-learning-completion-2026-10-07.md)。真实AI/ASR质量、B站许可、正式托管/地区发布和真实学生效果仍须独立证据；不会以测试替身标为通过。
