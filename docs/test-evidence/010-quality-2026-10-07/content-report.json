@@ -1,0 +1,237 @@
+{
+  "ok": true,
+  "contentVersion": "010.1.0",
+  "baselineCommit": "e6aceb3e486bcf08ade7b0cd1939c6535a19f190",
+  "sourceCount": 4,
+  "lessonCount": 2,
+  "stageCount": 15,
+  "counterexampleCount": 4,
+  "misconceptionCount": 7,
+  "answers": [
+    {
+      "id": "p-predict-right2",
+      "kind": "vertex",
+      "derivedAnswer": {
+        "h": 2,
+        "k": 0
+      },
+      "evidence": "not-attempt"
+    },
+    {
+      "id": "p-example-right2",
+      "kind": "vertex",
+      "derivedAnswer": {
+        "h": 2,
+        "k": 0
+      },
+      "evidence": "not-attempt"
+    },
+    {
+      "id": "p-complete-negative-a",
+      "kind": "vertex",
+      "derivedAnswer": {
+        "h": 4,
+        "k": 2
+      },
+      "evidence": "completion-assisted"
+    },
+    {
+      "id": "p-practice-plus3",
+      "kind": "vertex",
+      "derivedAnswer": {
+        "h": -3,
+        "k": -1
+      },
+      "evidence": "eligible-actual-submission"
+    },
+    {
+      "id": "p-transfer-expanded-vertex",
+      "kind": "vertex",
+      "derivedAnswer": {
+        "h": -2,
+        "k": 3
+      },
+      "evidence": "eligible-actual-submission"
+    },
+    {
+      "id": "p-transfer-expand-coefficients",
+      "kind": "coefficient-conversion",
+      "derivedAnswer": {
+        "a": -2,
+        "b": 4,
+        "c": 1
+      },
+      "evidence": "eligible-actual-submission"
+    },
+    {
+      "id": "p-counter-sign",
+      "kind": "vertex",
+      "derivedAnswer": {
+        "h": -2,
+        "k": 1
+      },
+      "evidence": "not-attempt"
+    },
+    {
+      "id": "p-counter-domain",
+      "kind": "numeric",
+      "derivedAnswer": {
+        "value": 1
+      },
+      "evidence": "not-attempt"
+    },
+    {
+      "id": "t-predict-one-side",
+      "kind": "numeric",
+      "derivedAnswer": {
+        "value": 7.211102550927979
+      },
+      "evidence": "not-attempt"
+    },
+    {
+      "id": "t-example-3-4-5",
+      "kind": "numeric",
+      "derivedAnswer": {
+        "value": 5
+      },
+      "evidence": "not-attempt"
+    },
+    {
+      "id": "t-complete-5-12",
+      "kind": "numeric",
+      "derivedAnswer": {
+        "value": 13
+      },
+      "evidence": "completion-assisted"
+    },
+    {
+      "id": "t-practice-10-12",
+      "kind": "numeric",
+      "derivedAnswer": {
+        "value": 15.620499351813312
+      },
+      "evidence": "eligible-actual-submission"
+    },
+    {
+      "id": "t-transfer-one-side",
+      "kind": "similarity-comparison",
+      "derivedAnswer": {
+        "similar": false,
+        "AB": 9,
+        "AC": 8,
+        "BC": 12.041594578792296,
+        "scale": null
+      },
+      "evidence": "eligible-actual-submission"
+    },
+    {
+      "id": "t-transfer-uniform",
+      "kind": "similarity-comparison",
+      "derivedAnswer": {
+        "similar": true,
+        "AB": 9,
+        "AC": 12,
+        "BC": 15,
+        "scale": 1.5
+      },
+      "evidence": "eligible-actual-submission"
+    },
+    {
+      "id": "t-transfer-area",
+      "kind": "numeric",
+      "derivedAnswer": {
+        "value": 2.25
+      },
+      "evidence": "eligible-actual-submission"
+    },
+    {
+      "id": "t-practice-area-half",
+      "kind": "numeric",
+      "derivedAnswer": {
+        "value": 0.25
+      },
+      "evidence": "eligible-actual-submission"
+    },
+    {
+      "id": "t-transfer-condition",
+      "kind": "condition-choice",
+      "derivedAnswer": {
+        "value": "cannot-use-pythagoras"
+      },
+      "evidence": "eligible-actual-submission"
+    },
+    {
+      "id": "t-counter-non-right",
+      "kind": "condition-choice",
+      "derivedAnswer": {
+        "value": "cannot-use-pythagoras"
+      },
+      "evidence": "not-attempt"
+    },
+    {
+      "id": "t-counter-area-length",
+      "kind": "numeric",
+      "derivedAnswer": {
+        "value": 4
+      },
+      "evidence": "not-attempt"
+    }
+  ],
+  "teacherReview": "pending-external",
+  "studentValidation": "not-run",
+  "generatedAt": "2026-10-07T04:07:07.592Z",
+  "clientTimezone": "Asia/Shanghai",
+  "commands": [
+    "node scripts/verify-010-content.mjs",
+    "node --test tests/010-content.test.mjs tests/learning-pedagogy.test.js tests/learning-math-depth.test.js tests/learning-site-records.test.js",
+    "node --check scripts/verify-010-content.mjs",
+    "node --check tests/010-content.test.mjs",
+    "git diff --check"
+  ],
+  "tests": {
+    "total": 36,
+    "passed": 36,
+    "failed": 0,
+    "newContentTests": 13,
+    "log": "test.log"
+  },
+  "files": [
+    {
+      "file": "specs/010-evidence-guided-learning/quality/lessons.json",
+      "bytes": 29927,
+      "sha256": "02eed6a370f894ea766bac7c82aca6a72f79e2034c6a9962b1006e54f96f55f3",
+      "sha256LF": "02eed6a370f894ea766bac7c82aca6a72f79e2034c6a9962b1006e54f96f55f3"
+    },
+    {
+      "file": "scripts/verify-010-content.mjs",
+      "bytes": 16999,
+      "sha256": "6f161c0dfa886d61744f83f1fe92b6cc2975441737d672afdf6063682507dde1",
+      "sha256LF": "6f161c0dfa886d61744f83f1fe92b6cc2975441737d672afdf6063682507dde1"
+    },
+    {
+      "file": "tests/010-content.test.mjs",
+      "bytes": 6242,
+      "sha256": "106cee58106a7a0e13619fe12ab13799adb5c8fd9a129320c2330d94945db34c",
+      "sha256LF": "106cee58106a7a0e13619fe12ab13799adb5c8fd9a129320c2330d94945db34c"
+    },
+    {
+      "file": "learning-site/records.js",
+      "bytes": 14033,
+      "sha256": "b8947464dbc5e228ea238df1bb62a710617b4a6bf5b529e18a9084051946e38c",
+      "sha256LF": "edf8aaca39d87e637bcbda4d220ff45ab5ecf495002bfa774b5c8a2590ff1f3a"
+    },
+    {
+      "file": "extension/src/plugin/contracts.js",
+      "bytes": 15436,
+      "sha256": "b527e4ed5adbc6dbec10181095d875f0a6943be4c04458220a2ec91851353443",
+      "sha256LF": "fcf8a53c7ddb3182adb74565c0057f3e11f0cdaa2c7484a1ef4931da0a3cace2"
+    }
+  ],
+  "limitations": [
+    "offline math and finite fixture consistency only",
+    "not all natural-language pedagogy independently evaluated",
+    "no new workspace integration or real model/platform acceptance",
+    "no real teacher review or student trial"
+  ],
+  "hashEncoding": "sha256: observed working-tree bytes; sha256LF: UTF-8 text with CRLF normalized to LF"
+}

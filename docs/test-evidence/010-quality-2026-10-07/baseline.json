@@ -1,0 +1,147 @@
+{
+  "schemaVersion": 1,
+  "sourceCommit": "e6aceb3e486bcf08ade7b0cd1939c6535a19f190",
+  "observedAt": "2026-10-07T03:55:19.294Z",
+  "clientTimezone": "Asia/Shanghai",
+  "browser": "Codex In-app Browser",
+  "baseUrl": "http://127.0.0.1:18965",
+  "scope": "isolated-preimplementation-static-preset-ui",
+  "nodeVersion": "v24.21.0",
+  "configuration": {
+    "enableLocalMock": true,
+    "externalAttempt": "off",
+    "visionAdapter": "off",
+    "readerConfigured": false,
+    "accountApiRunning": false
+  },
+  "measurement": {
+    "clock": "Date.now around awaited browser action",
+    "includesAutomationOverhead": true,
+    "includesModelThinking": false,
+    "includesStateObservation": false,
+    "runsPerAction": 1,
+    "productLatency": null,
+    "humanCompletionTime": null
+  },
+  "actions": [
+    {
+      "action": "load-parabola-preset",
+      "elapsedMs": 293,
+      "uiActions": 1
+    },
+    {
+      "action": "seek-parabola-6s",
+      "elapsedMs": 285,
+      "uiActions": 1
+    },
+    {
+      "action": "wake-preset-curve",
+      "elapsedMs": 271,
+      "uiActions": 1
+    },
+    {
+      "action": "translate-parabola-right-2",
+      "elapsedMs": 19,
+      "uiActions": 1
+    },
+    {
+      "action": "navigate-geometry",
+      "elapsedMs": 104,
+      "uiActions": 1
+    },
+    {
+      "action": "load-triangle-preset-media",
+      "elapsedMs": 281,
+      "uiActions": 1
+    },
+    {
+      "action": "load-triangle-candidate",
+      "elapsedMs": 271,
+      "uiActions": 1
+    },
+    {
+      "action": "check-and-confirm-triangle",
+      "elapsedMs": 543,
+      "uiActions": 2
+    },
+    {
+      "action": "change-AB-6-keep-AC-4",
+      "elapsedMs": 302,
+      "uiActions": 2
+    }
+  ],
+  "observations": {
+    "parabolaOriginal": {
+      "a": 1,
+      "h": 0,
+      "k": 1
+    },
+    "parabolaChanged": {
+      "a": 1,
+      "h": 2,
+      "k": 1
+    },
+    "parabolaEquation": "y = 1 × (x − (2))² + (1)",
+    "triangleOriginalText": "∠A = 90° · AB = 3 · AC = 4 · BC = 5 cm",
+    "triangleChanged": {
+      "AB": 6,
+      "AC": 4,
+      "BCDisplay": "7.211",
+      "unit": "cm"
+    },
+    "mathematicalOutputMismatches": {
+      "count": 0,
+      "denominator": 2
+    },
+    "fullLearningWorkflow": {
+      "status": "not-available-in-old-main-demo",
+      "completionTimeMs": null
+    },
+    "realTeacherReview": "not-run",
+    "realStudentTrial": "not-run",
+    "realModelEvaluation": "not-run"
+  },
+  "toolAdaptationErrors": [
+    "runtime accessible name differed from original markup",
+    "formula text locator used before inspecting current formula element"
+  ],
+  "sourceFiles": [
+    {
+      "file": "extension/demo/index.html",
+      "bytes": 14571,
+      "sha256": "22b22f894e4b4675338229b62063172c129f155e9e92a3f7575e68a77e65d460",
+      "sha256LF": "7ead2ef7c0bd3a774d62824e869512e353522452fc6ed5bf60e9dc0843219072"
+    },
+    {
+      "file": "extension/demo/geometry.html",
+      "bytes": 22002,
+      "sha256": "43bf2e96e576dd1e9a241a0216541df9e735b967cbb2b009b0bcb7f55111b565",
+      "sha256LF": "9986c83b70db58731bde5d2cbc73e14065426616a148b8d05ce4577de5f4e0cf"
+    },
+    {
+      "file": "extension/src/page/main.js",
+      "bytes": 110861,
+      "sha256": "e18367632160bbfc68bc0a9950ad1eedc938fe75adbdcaae087eac567937a442",
+      "sha256LF": "c2bcb10630d21b00d6572e78d953a0a141805cb661031c0c6013ededb5767cb8"
+    },
+    {
+      "file": "extension/src/page/geometry.js",
+      "bytes": 52696,
+      "sha256": "38a896f2bfa6215ad8373d2138912188622fff719550f266d0dae17c9e2a9f3d",
+      "sha256LF": "4290456a9f8dd2175f1993952498fac71300a2c81d4d168274ef0d329b2a0c8d"
+    },
+    {
+      "file": "extension/assets/presets/demo-parabola.json",
+      "bytes": 857,
+      "sha256": "55633694c0b76fa49d2f149c2ebe9f0dd8c4259bd30e9c936e6673c35bf2ead6",
+      "sha256LF": "ec50d847659612a12466f2e9fa698088497922cf34fdf644d535ddf95c6507cf"
+    }
+  ],
+  "environment": {
+    "node": "v24.21.0",
+    "platform": "win32",
+    "arch": "x64",
+    "osRelease": "10.0.26200"
+  },
+  "hashEncoding": "sha256: observed working-tree bytes; sha256LF: UTF-8 text with CRLF normalized to LF"
+}
