@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>BreakGlass · 几何阅读</title>
+  <link rel="stylesheet" href="../src/ui/theme.css">
+  <link rel="stylesheet" href="../src/ui/dock.css">
+  <link rel="stylesheet" href="./demo.css">
+  <link rel="stylesheet" href="./geometry-lesson.css?v=20261006">
+  <script defer src="../src/lesson/reading.js"></script>
+  <script defer src="../src/geometry-lesson/reading.js"></script>
+  <script defer src="../src/geometry-lesson/solve.js"></script>
+  <script defer src="../src/geometry-lesson/session.js?v=20261006"></script>
+  <script defer src="../src/geometry-lesson/view.js"></script>
+  <script defer src="../src/geometry-lesson/request.js"></script>
+  <script defer src="../src/page/geometry-lesson.js?v=20261006"></script>
+</head>
+<body>
+  <main class="app-shell">
+    <nav class="workspace-nav" aria-label="工作台切换">
+      <a href="./index.html">曲线演示</a>
+      <a href="./geometry.html">几何实验</a>
+      <a href="./geometry-lesson.html" aria-current="page">几何阅读</a>
+    </nav>
+    <header class="app-header">
+      <div>
+        <p class="eyebrow">BREAKGLASS · 几何阅读</p>
+        <h1>让自己的视频里的图形可以被调节</h1>
+        <p class="lede">片子可以播放后自动阅读。破壁只取出已经看清的直角三角形、圆或线段。</p>
+      </div>
+      <span class="status-chip" id="source-label">等待自己的视频</span>
+    </header>
+    <section class="workspace" aria-label="几何阅读工作台">
+      <div class="video-column">
+        <div class="video-stage" id="video-stage">
+          <video id="lesson-video" controls playsinline preload="metadata" aria-label="自己的几何课程视频"></video>
+          <svg id="geometry-overlay" class="geometry-overlay" viewBox="0 0 16 9" hidden aria-label=""></svg>
+        </div>
+        <div class="transport" aria-label="阅读控制">
+          <p id="lesson-status" role="status" aria-live="polite">选择自己的视频。阅读地址填好后会自动开始。</p>
+          <label class="stage-pick stage-pick--ghost">选择视频
+            <input id="local-video" type="file" accept="video/*">
+          </label>
+          <button type="button" id="preset-video">选择预设</button>
+          <button type="button" id="wake-button" disabled>破壁</button>
+          <button type="button" id="lesson-next" disabled aria-label="下一个">下一个</button>
+          <button type="button" id="lesson-cancel">取消阅读</button>
+          <button type="button" id="reset-button" disabled>重置</button>
+          <button type="button" id="exit-button" disabled>退出</button>
+        </div>
+      </div>
+      <aside class="control-panel" aria-label="几何条件">
+        <label for="lesson-endpoint">阅读地址
+          <input id="lesson-endpoint" type="url" inputmode="url" autocomplete="off" spellcheck="false" placeholder="本机阅读地址">
+        </label>
+        <label for="lesson-note">课程说明
+          <textarea id="lesson-note" maxlength="8000"></textarea>
+        </label>
+        <p id="figure-note">选择自己的视频后会自动阅读。预设不会冒充这次阅读。</p>
+        <p class="lesson-readout">当前结果 <output id="derived-value">—</output></p>
+        <div class="parameter-row">
+          <label id="parameter-primary-label" for="parameter-primary">数值</label>
+          <output id="parameter-primary-value">—</output>
+          <input id="parameter-primary" type="range" min="0.1" max="10" step="any" value="1" disabled>
+        </div>
+        <div class="parameter-row">
+          <label id="parameter-secondary-label" for="parameter-secondary">另一条直角边</label>
+          <output id="parameter-secondary-value">—</output>
+          <input id="parameter-secondary" type="range" min="0.1" max="10" step="any" value="1" disabled>
+        </div>
+      </aside>
+    </section>
+  </main>
+</body>
+</html>

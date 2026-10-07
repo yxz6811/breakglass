@@ -48,12 +48,16 @@ function setup(options = {}) {
   return { clock, success, failure, calls, pending, handle };
 }
 
-test('URL only accepts local HTTP(S) root or /read, with no credentials, query or fragment', () => {
+test('URL accepts local /read or the yangxizhe.com demo path, with no credentials, query or fragment', () => {
   assert.equal(currentFrame.buildUrl(' http://127.0.0.1:8787 '), 'http://127.0.0.1:8787/read');
   assert.equal(currentFrame.buildUrl('http://localhost:8787/read'), 'http://localhost:8787/read');
   assert.equal(currentFrame.buildUrl('https://[::1]/'), 'https://[::1]/read');
+  assert.equal(currentFrame.buildUrl('https://yangxizhe.com/breakglass/read'), 'https://yangxizhe.com/breakglass/read');
+  assert.equal(currentFrame.buildUrl('https://www.yangxizhe.com/BreakGlass/read'), 'https://www.yangxizhe.com/BreakGlass/read');
   for (const url of [
-    '', undefined, 'https://example.com/read', 'file:///read', 'http://localhost/other',
+    '', undefined, 'https://example.com/read', 'https://yangxizhe.com/read',
+    'http://yangxizhe.com/breakglass/read', 'https://yangxizhe.com/breakglass/read/extra',
+    'file:///read', 'http://localhost/other',
     'http://localhost/read/', 'http://name:secret@localhost/', 'http://@localhost/',
     'http://localhost/?token=secret', 'http://localhost/?', 'http://localhost/#',
     'http://local\nhost/', 'http://localhost/read#frame'

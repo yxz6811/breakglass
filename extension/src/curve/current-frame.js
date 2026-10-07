@@ -47,6 +47,12 @@
     return value;
   }
 
+  /**
+   * 本机调试只接受回环上的 /read。
+   * yangxizhe.com 演示页只接受同源的 /breakglass/read，不改写成根路径。
+   * @param {string} raw
+   * @returns {string}
+   */
   function buildUrl(raw) {
     if (typeof raw !== 'string') throw invalid();
     const value = raw.trim();
@@ -56,11 +62,17 @@
     if (!authority || authority[1].includes('@')) throw invalid();
     let url;
     try { url = new URL(value); } catch { throw invalid(); }
-    if (!['http:', 'https:'].includes(url.protocol) ||
-        !['localhost', '127.0.0.1', '[::1]'].includes(url.hostname) ||
-        url.username || url.password || url.search || url.hash ||
-        !['/', '/read'].includes(url.pathname)) throw invalid();
-    url.pathname = '/read';
+    if (url.username || url.password || url.search || url.hash) throw invalid();
+    const local = ['localhost', '127.0.0.1', '[::1]'].includes(url.hostname);
+    if (local) {
+      if (!['http:', 'https:'].includes(url.protocol) || !['/', '/read'].includes(url.pathname)) throw invalid();
+      url.pathname = '/read';
+      return url.href;
+    }
+    const hosted = url.protocol === 'https:' &&
+      (url.hostname === 'yangxizhe.com' || url.hostname === 'www.yangxizhe.com') &&
+      (url.pathname === '/breakglass/read' || url.pathname === '/BreakGlass/read');
+    if (!hosted) throw invalid();
     return url.href;
   }
 

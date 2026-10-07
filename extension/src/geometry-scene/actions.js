@@ -57,7 +57,20 @@
     + '(?:[，,]\\s*(AB|AC|另一条(?:直角)?边|另一边)\\s*(?:不变|保持不变|保持原值)\\s*)?'
     + '(?:[，,]\\s*(解释(?:一下)?(?:变化)?|(?:BC|斜边)\\s*(?:会怎样|会怎么变|会如何变化|会变成多少|是多少)))?$', 'i');
   function localResult(status, reason) { return { status, actions: [], reason }; }
-  function unitCode(value, fallback) { return value === '厘米' ? 'cm' : value === '米' ? 'm' : value === '单位长度' ? 'unit' : value || fallback; }
+
+  /**
+   * 把问句里的单位收成场景白名单。正则不区分大小写，这里把 CM/M 收成 cm/m。
+   * @param {string | undefined} value
+   * @param {string} fallback 问句没写单位时沿用当前场景单位
+   * @returns {string}
+   */
+  function unitCode(value, fallback) {
+    const token = typeof value === 'string' ? value.toLowerCase() : '';
+    if (token === '厘米' || token === 'cm') return 'cm';
+    if (token === '米' || token === 'm') return 'm';
+    if (token === '单位长度' || token === 'unit') return 'unit';
+    return token || fallback;
+  }
 
   /**
    * A deliberately closed local command grammar, not AI or a general language interpreter.

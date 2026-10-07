@@ -6,7 +6,8 @@
 .app-header h1 { max-width: 660px; }
 .lede, #state-label, .source-note, .app-footer { color: var(--muted); }
 .lede { max-width: 640px; margin-bottom: 0; }
-.workspace { display: grid; grid-template-columns: minmax(0, 1fr) 310px; gap: var(--space-section); margin-top: var(--space-section); }
+.status-chip { border: 1px solid color-mix(in srgb, var(--accent) 42%, transparent); border-radius: var(--radius-pill); padding: 8px 13px; color: var(--accent); background: var(--control-bg); font-size: var(--text-xs); line-height: 1.5; white-space: nowrap; }
+.workspace { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; margin-top: var(--space-section); }
 .video-column, .control-panel { min-width: 0; border: 1px solid var(--line); border-radius: var(--radius-panel); background: var(--panel); box-shadow: var(--panel-shadow); }
 /* 提问记录增长时，视频面板保持内容高度。 */
 .video-column { padding: 14px; align-self: start; }
@@ -54,7 +55,6 @@ video { display: block; width: 100%; height: 100%; min-height: 540px; object-fit
   box-shadow: 0 0 0 4px rgba(255, 208, 138, 0.28);
   animation: stage-pulse 1.2s ease-in-out infinite;
 }
-#lesson-endpoint.is-needed { border-color: var(--warn); box-shadow: 0 0 0 3px color-mix(in srgb, var(--warn) 20%, transparent); }
 .stage-banner[data-mode='seeking'] { border-color: #ffd08a; }
 .stage-banner[data-mode='seeking'] .stage-banner__mark { background: #ffd08a; box-shadow: 0 0 0 4px rgba(255, 208, 138, 0.22); }
 .stage-banner[data-mode='ready'] { border-color: #ffd08a; }
@@ -81,6 +81,8 @@ video { display: block; width: 100%; height: 100%; min-height: 540px; object-fit
 .asset-empty p { margin: 0; color: var(--screen-warn); font-size: var(--text-sm); text-align: center; }
 .stage-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; }
 .stage-actions--bar { justify-content: flex-start; }
+/* 空画面中央已经有一组选择按钮，下面这组先藏起来，避免同一屏出现两次。 */
+.video-column:has(#asset-empty:not([hidden])) .stage-actions--bar { display: none; }
 .stage-actions--bar .stage-pick { min-width: 0; }
 .stage-pick { position: relative; display: inline-flex; align-items: center; justify-content: center; min-width: 148px; min-height: 44px; padding: 10px 16px; border: 1px solid transparent; border-radius: var(--radius-sm); background: var(--primary-bg); color: var(--primary-ink); font-size: var(--text-sm); font-weight: 600; pointer-events: auto; cursor: pointer; }
 .stage-pick:hover:not(:disabled) { background: var(--primary-bg); filter: brightness(1.06); }
@@ -92,13 +94,23 @@ video { display: block; width: 100%; height: 100%; min-height: 540px; object-fit
 .stage-pick:focus-within { outline: 2px solid var(--accent); outline-offset: 3px; }
 .asset-empty .stage-pick:focus-visible { outline-color: var(--screen-accent); }
 .transport { flex-wrap: wrap; padding: 14px 2px 0; color: var(--muted); font-size: var(--text-sm); }
-.lesson-row { display: flex; flex: 1 1 100%; flex-wrap: wrap; align-items: flex-end; gap: 10px; }
-.lesson-row label { display: flex; flex: 1 1 240px; flex-direction: column; gap: 6px; min-width: 0; font-size: var(--text-sm); }
-.lesson-row input, .lesson-row textarea { width: 100%; }
-#lesson-status { margin: 0; flex: 1 1 100%; }
+.lesson-row { display: flex; flex: 0 1 auto; flex-wrap: wrap; align-items: center; gap: 10px; }
+#lesson-status { margin: 0; }
+#lesson-status:empty { display: none; }
+#lesson-next:disabled { display: none; }
+#lesson-endpoint.is-needed { border-color: var(--warn); box-shadow: 0 0 0 3px color-mix(in srgb, var(--warn) 20%, transparent); }
 .target-readout { margin: 0; color: var(--ink); font-weight: 700; }
-.control-panel { padding: 24px; }
-.control-panel #state-label { min-height: 48px; font-size: 13px; line-height: 1.5; }
+.control-panel { padding: 14px 18px; }
+#state-label { min-height: 48px; font-size: 13px; line-height: 1.5; }
+.figure-dock { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--line); }
+.figure-dock__head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; }
+.figure-dock__head h2 { margin: 0; font-size: 20px; }
+.figure-dock .figure-picker { flex: 1 1 240px; max-width: 360px; margin: 0; }
+.figure-dock #figure-note { margin: 6px 0 0; color: var(--muted); font-size: 12px; line-height: 1.5; }
+.figure-dock__sliders { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 8px 20px; margin-top: 10px; }
+#parabola-parameters, #local-parameters { display: contents; }
+.figure-dock .parameter-row { margin-bottom: 0; }
+.figure-dock .source-note { min-height: 0; margin: 8px 0 0; padding-top: 8px; }
 .parameter-row { display: grid; grid-template-columns: 1fr auto; gap: 10px; margin-bottom: 28px; }
 .parameter-row label { font-size: 13px; }
 .parameter-row output { color: var(--accent); font-variant-numeric: tabular-nums; }
@@ -106,7 +118,8 @@ video { display: block; width: 100%; height: 100%; min-height: 540px; object-fit
 .panel-actions { justify-content: flex-start; flex-wrap: wrap; }
 .source-note { min-height: 40px; margin: 24px 0 0; padding-top: 16px; border-top: 1px solid var(--line); font-size: 12px; line-height: 1.5; }
 .app-footer { margin-top: 18px; font-size: 12px; }
-@media (max-width: 1050px) { .app-shell { width: min(720px, calc(100% - var(--space-page) * 2)); } .workspace { grid-template-columns: 1fr; } .video-stage, video { min-height: 420px; } }
+@media (max-width: 1050px) { .app-shell { width: min(720px, calc(100% - var(--space-page) * 2)); } .video-stage, video { min-height: 420px; } }
+@media (max-width: 720px) { .figure-dock__sliders { grid-template-columns: 1fr; } }
 /* ==========================================================================
    曲线等待条和动效：共享令牌见 ui/theme.css，工具栏见 ui/dock.css。
    规范见 docs/BreakGlass-visual-spec.md；放大算法见 src/ui/magnify.js。
@@ -173,15 +186,17 @@ video { display: block; width: 100%; height: 100%; min-height: 540px; object-fit
 /* ---------- 参数行（规范 §3.2）---------- */
 .control-panel .parameter-row { margin-bottom: 18px; }
 
-/* ---------- 旁边提问：记录区限高滚动，问与答用前缀区分，不只靠颜色 ---------- */
-.tutor { margin-top: var(--space-section); padding-top: 16px; border-top: 1px solid var(--line); }
-.tutor__title { margin: 0 0 6px; font-size: var(--text-body); }
-.tutor__hint { margin: 0 0 10px; color: var(--muted); font-size: 12px; line-height: 1.5; }
+/* ---------- 旁边提问：整宽长条，记录在输入条上方 ---------- */
+.tutor { display: flex; flex-direction: column; gap: 10px; margin: 0; padding: 0; border: 0; }
+.tutor__bar { display: flex; flex-wrap: nowrap; align-items: center; gap: 12px 16px; }
+.tutor__lead { flex: 0 0 148px; min-width: 0; }
+.tutor__title { margin: 0; font-size: var(--text-body); }
+.tutor__hint { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.5; }
 .tutor__log {
   display: grid;
   gap: 8px;
   max-height: 220px;
-  margin-bottom: 10px;
+  margin: 0;
   padding: 10px;
   overflow-y: auto;
   overscroll-behavior: contain;
@@ -196,14 +211,18 @@ video { display: block; width: 100%; height: 100%; min-height: 540px; object-fit
 .tutor__entry--user .tutor__who { color: var(--muted); }
 .tutor__entry--tutor .tutor__who { color: var(--accent); }
 .tutor__entry--note { color: var(--muted); font-size: 12px; }
-.tutor__examples { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
-.tutor__examples button { max-width: 100%; padding: 8px 12px; border-radius: var(--radius-pill); font-size: var(--text-xs); text-align: left; }
-.tutor__form { display: flex; gap: 8px; }
+.tutor__examples { display: flex; flex: 1 1 280px; flex-wrap: wrap; gap: 6px; min-width: 0; margin: 0; }
+.tutor__examples button { flex: none; max-width: 100%; padding: 8px 12px; border-radius: var(--radius-pill); font-size: var(--text-xs); text-align: left; white-space: nowrap; }
+.tutor__form { display: flex; flex: 1 1 240px; gap: 8px; min-width: min(100%, 220px); }
 .tutor__form input {
   flex: 1 1 auto;
   min-width: 0;
 }
 .tutor__form button { flex: none; font-weight: 700; }
+@media (max-width: 720px) {
+  .tutor__bar { flex-wrap: wrap; }
+  .tutor__lead, .tutor__examples, .tutor__form { flex: 1 1 100%; }
+}
 
 /* ---------- 降级（规范 §5.4）---------- */
 @media (prefers-reduced-motion: reduce) {

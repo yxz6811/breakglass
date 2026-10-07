@@ -54,7 +54,7 @@ npm start
 
 滑块初值保留模型给出的数值精度。`a` 的可调范围保持原来的正负号，步长按系数量级缩小；例如 `a = 0.0001` 使用 `0.00001` 步长，初值不会被舍入成零。范围两端都与初值相隔整数步，避免原生滑块把不在步栅格上的读数自动吸附成另一数值。
 
-页面取消、换片或断开连接后，服务会把取消信号传给正在进行的模型请求，终止尚未完成的本机 JPEG 解码，停止领取后续帧，也不向已经关闭的连接写响应。阅读预算截止同样会终止解码。实际模型是否已经停止计算取决于模型服务是否配合取消；本地服务不会重试或继续排队。
+页面取消、换片或断开连接后，服务会把取消信号传给正在进行的模型请求，终止尚未完成的本机 JPEG 解码，停止领取后续帧，也不向已经关闭的连接写响应。限流等待中取消同样不再问下一次。阅读预算截止同样会终止解码。实际模型是否已经停止计算取决于模型服务是否配合取消；本地服务不把失败帧重新排队。
 
 ## 失败时回什么
 
@@ -124,3 +124,20 @@ node --test tests/geometry-read.test.mjs tests/geometry-ask.test.mjs tests/serve
 复用本机无状态reader，新增`POST /learning/read`（单帧JPEG、最多640px宽/4MiB）与`POST /learning/summarize`（最多20条短结构观察/64KiB）。每类最多一个请求，单次模型调用、不自动重试；服务端开发截止各30s，扩展客户端25s。新预算与旧`/read`/003/005分开。
 
 继续使用本目录`.env.example`所示的供应商设置；未配置返回503，不伪装识别成功。模型密钥仅在reader，画面/观察内容不写日志或学习记录。006仅受控自制素材可启用，B站处理授权待确认。当前没有音频、字幕或整视频文件理解；后台摘要只覆盖所列画面观察。接口见[006契约](../specs/006-plugin-learning-layer/contracts/plugin-learning.md)，范围及实际替身/MV3/真实模型状态见[验证记录](../docs/BreakGlass-continuous-vision-validation-2026-10-06.md)。
+
+## 几何自动阅读（原则 XVIII，`POST /geometry/lesson`）
+
+已增加 `POST /geometry/lesson`，仍是本进程、本机回环和同一套模型环境。它不复用 `POST /read` 的抛物线结果，也不复用 `POST /geometry/read` 的单帧直角三角形，也不复用上面的 `/learning/read`。契约见 [geometry-lesson-service](../specs/006-auto-geometry-lesson/contracts/geometry-lesson-service.md)。这条规格目录名里的 006 与插件持续视觉的 `specs/006-plugin-learning-layer/` 不是同一切片。
+
+| 项目 | 边界 |
+| --- | --- |
+| 请求 | `schemaVersion: 1.0.0`、`readingId`、`videoId`、时长、源 `frameSize`、1～8 张间隔至少 1 秒的 JPEG。可选 `courseText` 最多 8000 字 |
+| 图形 | 一帧只接受一个直角三角形、圆或线段。长度来自画面标记，斜边由服务按 `Math.hypot` 计算。模型自报的斜边、像素比例和 3-4-5 填空都不进入结果 |
+| 体积与失败 | 整包 10 MiB，与 `/read` 相同。`/geometry/read` 和 `/geometry/ask` 仍是 4 MiB。未配置模型回 503。送去模型的帧全部连不上回 502。空的合格结果回 200，并在 `dropped` 里写明原因 |
+| 身份 | 响应回显 `readingId`、`videoId`、`duration`，并带 `origin: external`。`fixture-parabola` 直接拒绝 |
+
+下面的命令只跑替身。通过不代表真实模型、热缓存 20 次或任意视频已经验收：
+
+```bash
+node --test tests/geometry-lesson.test.mjs
+```

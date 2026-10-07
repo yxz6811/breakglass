@@ -93,6 +93,57 @@ test('click and Alt+B read one actual paused frame at any legal time and automat
   }
 });
 
+test('the demo page has no address field and sends the paused frame to the default local reader', async () => {
+  const h = await createHarness({ omitIds: ['lesson-endpoint'] });
+  try {
+    const calls = interceptReader(h);
+    h.elements['local-video'].files = [new Blob(['own video'], { type: 'video/mp4' })];
+    h.elements['local-video'].dispatch('change');
+    Object.assign(h.video, { duration: 14, videoWidth: 1920, videoHeight: 1080, paused: true, seeking: false, readyState: 2 });
+    h.video.currentTime = 3.5;
+    h.video.dispatch('loadedmetadata');
+    h.video.dispatch('loadeddata');
+    h.video.dispatch('pause');
+    await settle();
+    assert.equal(h.elements['lesson-endpoint'], undefined);
+    assert.equal(calls.length, 0, 'loading a video does not start recognition');
+    assert.equal(h.elements['wake-button'].disabled, false);
+    assert.match(pageText(h), /当前帧|抛物线/);
+    assert.equal(pageText(h).includes('不是同一份'), false);
+    await wake(h);
+    assert.equal(calls.length, 1);
+    assert.equal(calls[0].url, 'http://127.0.0.1:8787/read');
+    assert.equal(JSON.parse(calls[0].init.body).frames[0].time, 3.5);
+    assert.equal(h.overlay(), null);
+    assert.equal(h.video.currentTime, 3.5);
+    calls[0].resolve(response(resultFor(calls[0])));
+    await settle();
+    assert.ok(h.overlay());
+    assert.match(h.elements['source-label'].textContent, /当前帧识别/);
+    assert.equal(h.elements['source-label'].textContent.includes('预先准备的示例'), false);
+  } finally { h.win.dispatch('pagehide'); h.restore(); }
+});
+
+test('the hosted demo sends a paused own frame to the same-origin reader', async () => {
+  const h = await createHarness({ omitIds: ['lesson-endpoint'] });
+  try {
+    h.win.location = { protocol: 'https:', hostname: 'yangxizhe.com', origin: 'https://yangxizhe.com' };
+    const calls = interceptReader(h);
+    h.elements['local-video'].files = [new Blob(['own video'], { type: 'video/mp4' })];
+    h.elements['local-video'].dispatch('change');
+    Object.assign(h.video, { duration: 14, videoWidth: 1920, videoHeight: 1080, paused: true, seeking: false, readyState: 2 });
+    h.video.currentTime = 4.25;
+    h.video.dispatch('loadedmetadata');
+    h.video.dispatch('loadeddata');
+    h.video.dispatch('pause');
+    await settle();
+    await wake(h);
+    assert.equal(calls.length, 1);
+    assert.equal(calls[0].url, 'https://yangxizhe.com/breakglass/read');
+    assert.equal(JSON.parse(calls[0].init.body).frames[0].time, 4.25);
+  } finally { h.win.dispatch('pagehide'); h.restore(); }
+});
+
 test('a paused own video with no reader address prompts for configuration without capturing or uploading', async () => {
   const h = await createHarness();
   try {

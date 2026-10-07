@@ -2,6 +2,7 @@ import http from 'node:http';
 import { readLesson } from './read.mjs';
 import { readGeometry } from './geometry-scene.mjs';
 import { askGeometry } from './geometry-actions.mjs';
+import { readGeometryLesson } from './geometry-lesson.mjs';
 import { readLearning, learningError, LEARNING_BODY_LIMIT } from './learning.mjs';
 import { summarizeLearning, LEARNING_SUMMARY_BODY_LIMIT } from './learning-summary.mjs';
 
@@ -86,13 +87,16 @@ export function createReaderServer({ settings, pageRules, fetchImpl = fetch, log
     const cors = allowed ? { 'access-control-allow-origin': origin, vary: 'Origin' } : { vary: 'Origin' };
 
     if (url.pathname === '/health' && request.method === 'GET') {
-      const modelConfigured = Boolean(settings.baseUrl && settings.apiKey && settings.model);
+      const modelConfigured = Array.isArray(settings.models)
+        ? settings.models.length > 0
+        : Boolean(settings.baseUrl && settings.apiKey && settings.model);
       sendJson(response, 200, { ok: true, modelConfigured }, cors);
       return;
     }
     const geometry = url.pathname === '/geometry/read' || url.pathname === '/geometry/ask';
+    const geometryLesson = url.pathname === '/geometry/lesson';
     const learning = Object.hasOwn(learningSlots, url.pathname);
-    const structured = geometry || learning;
+    const structured = geometry || geometryLesson || learning;
     if (url.pathname !== '/read' && !structured) {
       sendJson(response, 404, { error: '没有这个地址。' }, cors);
       return;
@@ -167,6 +171,7 @@ export function createReaderServer({ settings, pageRules, fetchImpl = fetch, log
       }
       const handler = url.pathname === '/geometry/read' ? readGeometry
         : url.pathname === '/geometry/ask' ? askGeometry
+        : url.pathname === '/geometry/lesson' ? readGeometryLesson
         : url.pathname === '/learning/read' ? readLearning
         : url.pathname === '/learning/summarize' ? summarizeLearning : readLesson;
       const result = await handler(parsed, { settings, pageRules, fetchImpl, log, signal: cancelled.signal });
