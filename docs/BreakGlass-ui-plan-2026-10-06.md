@@ -1,5 +1,7 @@
 # BreakGlass 视频插件与学习网站 UI 规划
 
+> 2026-10-07主入口收口：用户指定 `extension/demo/index.html` 为统一工作台。全部BG-F01–F12/BG-U01–U13在同页的入口、动作、状态和UI-A36–43见[主工作台UI规划](BreakGlass-demo-workspace-ui-plan-2026-10-07.md)，[010任务](../specs/010-evidence-guided-learning/tasks.md)均待实施。本次不改变既有令牌或宣称当前demo已经拥有学习站功能；下文保留历史界面与验收。
+
 > 009最新交付（2026-10-07，治理2.5.0）：BG-U10备注/错因修订，BG-U03/U13渐进分析、私有缓存和可选短音轨，BG-U11五种新增手工数学/粒子/诊断，BG-U12试点配置状态。UI-A31–35及实际入口见[管理UI规划](BreakGlass-learning-management-ui-2026-10-06.md)，数据与范围见[009规划](BreakGlass-learning-completion-2026-10-07.md)、[契约](../specs/009-learning-completion/contracts.md)和[验证记录](BreakGlass-validation-learning-completion-2026-10-07.md)。下文历史界面与许可/真实模型/正式发布待验收项不因开发完成而勾选。
 
 > 008最新实施（治理2.4.0）：插件与网站本机账号显式配对、未来记录/观看同步、受限离线队列，网站短片段多帧＋登记作者字幕，以及参数预测/三级提示/独立程序变式。UI、风险及状态见[008连通学习规划](BreakGlass-connected-learning-2026-10-06.md)与[任务](../specs/008-connected-learning/tasks.md)。真实模型、B站许可、公网跨设备与真实学生效果仍独立待验；下文历史基线保留。

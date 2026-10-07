@@ -1,6 +1,8 @@
 # BreakGlass 学习管理网站 UI 与功能规划
 
-更新日期2026-10-07；当前治理2.5.0，007/008基线与新增[009任务](../specs/009-learning-completion/tasks.md)共同执行。最新补齐见[009规划](BreakGlass-learning-completion-2026-10-07.md)和[验证记录](BreakGlass-validation-learning-completion-2026-10-07.md)。用户要求参照[showcase介绍站](https://yangxizhe.com/breakglass/site/showcase.html)，具体实现以仓库[showcase.css](../site/showcase.css)及品牌SVG为视觉依据。沿用现有BG-F/BG-U/UI-A编号，不另建同义产品体系。
+> 2026-10-07最新入口决定：账号、记录、观看、概览和复练将复用现有模块接到 `extension/demo/index.html`，以[统一工作台UI](BreakGlass-demo-workspace-ui-plan-2026-10-07.md)及[010任务](../specs/010-evidence-guided-learning/tasks.md)为下一轮依据。当前learning-site已实现状态与下文UI-A31–35保留，主demo整合尚未实施，不通过iframe或新账号服务冒充完成。
+
+更新日期2026-10-07；当前治理2.6.0，007/008基线与新增[009任务](../specs/009-learning-completion/tasks.md)共同执行。最新补齐见[009规划](BreakGlass-learning-completion-2026-10-07.md)和[验证记录](BreakGlass-validation-learning-completion-2026-10-07.md)。用户要求参照[showcase介绍站](https://yangxizhe.com/breakglass/site/showcase.html)，具体实现以仓库[showcase.css](../site/showcase.css)及品牌SVG为视觉依据。沿用现有BG-F/BG-U/UI-A编号，不另建同义产品体系。
 
 ## 视觉与布局
 
