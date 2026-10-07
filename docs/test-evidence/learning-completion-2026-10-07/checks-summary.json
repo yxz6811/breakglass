@@ -1,0 +1,47 @@
+{
+  "status": "local-evidence-confirmed",
+  "node": {
+    "status": "passed",
+    "passed": 950,
+    "failed": 0,
+    "skipped": 0,
+    "cancelled": 0,
+    "environment": {
+      "platform": "win32",
+      "node": "v24.21.0",
+      "nativeFFmpegToolsOnPath": true
+    },
+    "observedDurationMs": 6593.3062,
+    "fileEnumeration": "rg --files tests breakglass-reader/tests breakglass-learning/tests -g '*.test.js' -g '*.test.mjs'",
+    "runner": "node --test --test-reporter=tap <enumerated test files>",
+    "timingScope": "Single run observation; not a model, P0 or latency acceptance metric.",
+    "additionalChecks": [
+      "Production supplier URLs require HTTPS or explicit loopback and reject invalid URLs.",
+      "Production construction enforces supplier routing; default development compatibility is retained.",
+      "Vision and ASR requests enforce redirect:error.",
+      "Synchronous private-scope checks reject natural session expiry and committed data epoch changes.",
+      "Capability invalidation during actual cache rename atomically rolls back the prior committed data; the rejected candidate is absent in memory, on disk and after restart."
+    ]
+  },
+  "staticChecks": {
+    "status": "passed",
+    "jsMjsFiles": 208,
+    "localReferences": 327,
+    "inlineScripts": "passed",
+    "gitDiffCheck": "passed",
+    "markdownFiles": 17,
+    "markdownLocalLinks": 225,
+    "initialCheckFalsePositive": "A simulated relative import inside a test string was parsed as an actual file reference. Constructing the same string via importLine resolved the false reference without changing the checker or assertions."
+  },
+  "evidence": {
+    "actualBrowserSummary": "browser-summary.json",
+    "nativeAudioSummary": "native-audio-summary.json",
+    "actualMV3Summary": "mv3-summary.json"
+  },
+  "realAI": false,
+  "realASR": false,
+  "bilibiliSupport": false,
+  "publicCloudDeployment": false,
+  "realLearningEffect": false,
+  "artifactScope": "Counts and commands only. Full test logs with private fixtures are not copied."
+}

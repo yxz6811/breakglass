@@ -1,0 +1,15 @@
+main { max-width: 920px; margin: 48px auto; padding: 24px; }
+h1 { font-size: clamp(28px, 4vw, 42px); }
+section { margin-top: 24px; padding: 24px; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius-panel); }
+nav { display: flex; gap: 16px; flex-wrap: wrap; }
+a, button { display: inline-flex; align-items: center; min-height: 44px; padding: 8px 16px; color: var(--accent); }
+button { cursor: pointer; margin: 4px; }
+li { margin-top: 16px; overflow-wrap: anywhere; }
+code { overflow-wrap: anywhere; }
+form { display: grid; gap: 12px; max-width: 640px; }
+input:not([type=checkbox]), select { min-height: 44px; padding: 8px 12px; color: var(--text); background: var(--panel); border: 1px solid var(--line); border-radius: 8px; font: inherit; }
+.check { display: flex; align-items: center; gap: 10px; min-height: 44px; }
+.check input { width: 20px; height: 20px; }
+button:disabled { opacity: .5; cursor: default; }
+input:focus-visible, select:focus-visible, button:focus-visible, a:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+@media (max-width: 600px) { main { margin: 12px auto; padding: 12px; } section { padding: 16px; } }

@@ -1,0 +1,104 @@
+{
+  "status": "passed",
+  "browser": "154.0.4258.37",
+  "actualMV3": true,
+  "invocation": "CDP Extensions.triggerAction (real action permission grant)",
+  "model": "explicit in-process test stub; not a real vision model",
+  "actualVideoCapture": true,
+  "visualCalls": 3,
+  "summaryCalls": 3,
+  "noUploadBeforeStart": true,
+  "reinjectionSingleOwner": true,
+  "localSaveAndClear": true,
+  "clearRevokesVisibleUnchangedSession": true,
+  "keyboardPointSelection": true,
+  "triangleDeterministicChangeAndRestore": true,
+  "parabolaRenderedParameterChange": true,
+  "unsupportedPageNoInjectionOrUpload": true,
+  "environment": {
+    "platform": "win32",
+    "release": "10.0.26200",
+    "node": "v24.21.0",
+    "cpu": "AMD Ryzen 5 9600X 6-Core Processor             "
+  },
+  "layouts": [
+    {
+      "width": 760,
+      "defaultCollapsed": true,
+      "launcherHeight": 44,
+      "video": {
+        "top": -349.390625,
+        "bottom": 51.109375
+      },
+      "panel": {
+        "top": 215.890625,
+        "bottom": 747.890625
+      },
+      "overlap": false
+    },
+    {
+      "width": 360,
+      "defaultCollapsed": true,
+      "launcherHeight": 44,
+      "video": {
+        "top": -226.796875,
+        "bottom": -51.296875
+      },
+      "panel": {
+        "top": 215.859375,
+        "bottom": 747.859375
+      },
+      "overlap": false
+    }
+  ],
+  "network": [
+    {
+      "path": "/learning/read",
+      "sourceId": "pilot-triangle-3-4-5",
+      "frameTime": 4,
+      "imageBytes": 26931,
+      "hasJpeg": true,
+      "observationCount": 0
+    },
+    {
+      "path": "/learning/summarize",
+      "sourceId": "pilot-triangle-3-4-5",
+      "imageBytes": 0,
+      "hasJpeg": false,
+      "observationCount": 1
+    },
+    {
+      "path": "/learning/read",
+      "sourceId": "pilot-triangle-3-4-5",
+      "frameTime": 4,
+      "imageBytes": 26931,
+      "hasJpeg": true,
+      "observationCount": 0
+    },
+    {
+      "path": "/learning/summarize",
+      "sourceId": "pilot-triangle-3-4-5",
+      "imageBytes": 0,
+      "hasJpeg": false,
+      "observationCount": 1
+    },
+    {
+      "path": "/learning/read",
+      "sourceId": "pilot-parabola",
+      "frameTime": 6,
+      "imageBytes": 61951,
+      "hasJpeg": true,
+      "observationCount": 0
+    },
+    {
+      "path": "/learning/summarize",
+      "sourceId": "pilot-parabola",
+      "imageBytes": 0,
+      "hasJpeg": false,
+      "observationCount": 1
+    }
+  ],
+  "errors": [],
+  "realModelVerified": false,
+  "bilibiliPermissionVerified": false
+}

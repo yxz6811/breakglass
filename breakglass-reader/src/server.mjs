@@ -3,6 +3,8 @@ import { readLesson } from './read.mjs';
 import { readGeometry } from './geometry-scene.mjs';
 import { askGeometry } from './geometry-actions.mjs';
 import { readGeometryLesson } from './geometry-lesson.mjs';
+import { readLearning, learningError, LEARNING_BODY_LIMIT } from './learning.mjs';
+import { summarizeLearning, LEARNING_SUMMARY_BODY_LIMIT } from './learning-summary.mjs';
 
 /**
  * 8 张 640 宽的 JPEG 加 8000 字课程正文，远小于这个上限。
@@ -76,6 +78,8 @@ function sendJson(response, status, payload, headers) {
  * @returns {http.Server}
  */
 export function createReaderServer({ settings, pageRules, fetchImpl = fetch, log = () => {} }) {
+  // New learning routes each have one slot; summary cannot block frame recognition.
+  const learningSlots = { '/learning/read': false, '/learning/summarize': false };
   return http.createServer(async (request, response) => {
     const url = new URL(request.url || '/', 'http://reader.local');
     const origin = request.headers.origin;
@@ -91,12 +95,14 @@ export function createReaderServer({ settings, pageRules, fetchImpl = fetch, log
     }
     const geometry = url.pathname === '/geometry/read' || url.pathname === '/geometry/ask';
     const geometryLesson = url.pathname === '/geometry/lesson';
-    if (url.pathname !== '/read' && !geometry && !geometryLesson) {
+    const learning = Object.hasOwn(learningSlots, url.pathname);
+    const structured = geometry || geometryLesson || learning;
+    if (url.pathname !== '/read' && !structured) {
       sendJson(response, 404, { error: '没有这个地址。' }, cors);
       return;
     }
     if (typeof origin === 'string' && !allowed) {
-      sendJson(response, 403, { ...(geometry ? { code: 'forbidden_origin' } : {}), error: '这个页面来源不在允许名单里。' }, cors);
+      sendJson(response, 403, { ...(structured ? { code: 'forbidden_origin' } : {}), error: '这个页面来源不在允许名单里。' }, cors);
       return;
     }
     if (request.method === 'OPTIONS') {
@@ -114,14 +120,22 @@ export function createReaderServer({ settings, pageRules, fetchImpl = fetch, log
       return;
     }
     if (request.method !== 'POST') {
-      sendJson(response, 405, { ...(geometry ? { code: 'unsupported_method' } : {}), error: '只接受 POST。' }, { ...cors, allow: 'POST, OPTIONS' });
+      sendJson(response, 405, { ...(structured ? { code: 'unsupported_method' } : {}), error: '只接受 POST。' }, { ...cors, allow: 'POST, OPTIONS' });
       return;
     }
     const contentType = String(request.headers['content-type'] || '').toLowerCase();
-    if ((geometry || geometryLesson) ? contentType.split(';')[0].trim() !== 'application/json' : !contentType.startsWith('application/json')) {
-      sendJson(response, 415, { ...(geometry ? { code: 'unsupported_media_type' } : {}), error: '请求要用 application/json。' }, cors);
+    if (structured ? contentType.split(';')[0].trim() !== 'application/json' : !contentType.startsWith('application/json')) {
+      sendJson(response, 415, { ...(structured ? { code: 'unsupported_media_type' } : {}), error: '请求要用 application/json。' }, cors);
       return;
     }
+
+    if (learning && learningSlots[url.pathname]) {
+      const busy = learningError(429, 'busy');
+      sendJson(response, busy.status, busy.payload, cors);
+      request.resume();
+      return;
+    }
+    if (learning) learningSlots[url.pathname] = true;
 
     const cancelled = new AbortController();
     const onDisconnect = () => cancelled.abort(new DOMException('阅读请求已断开。', 'AbortError'));
@@ -132,14 +146,16 @@ export function createReaderServer({ settings, pageRules, fetchImpl = fetch, log
     request.once('aborted', onDisconnect);
     response.once('close', onClose);
     try {
-      const body = await readBody(request, geometry ? 4 * 1024 * 1024 : BODY_LIMIT);
+      const bodyLimit = url.pathname === '/learning/summarize' ? LEARNING_SUMMARY_BODY_LIMIT
+        : learning ? LEARNING_BODY_LIMIT : geometry ? 4 * 1024 * 1024 : BODY_LIMIT;
+      const body = await readBody(request, bodyLimit);
       if (cancelled.signal.aborted) return;
       if (!body.ok) {
-        sendJson(response, body.status, { ...(geometry ? { code: body.status === 413 ? 'payload_too_large' : 'invalid_request' } : {}),
+        sendJson(response, body.status, { ...(structured ? { code: body.status === 413 ? 'payload_too_large' : 'invalid_request' } : {}),
           error: body.status === 413 ? '请求太大。' : '请求没有读完。' }, cors);
         if (body.status === 413) {
           // 几何端点先完成413传输，再关闭连接；不能把拒绝表现成网络重置。
-          if (geometry) {
+          if (structured) {
             request.resume();
             response.once('finish', () => request.destroy());
           } else request.destroy();
@@ -150,12 +166,14 @@ export function createReaderServer({ settings, pageRules, fetchImpl = fetch, log
       try {
         parsed = JSON.parse(body.text);
       } catch {
-        sendJson(response, 400, { ...(geometry ? { code: 'invalid_json' } : {}), error: '请求不是 JSON。' }, cors);
+        sendJson(response, 400, { ...(structured ? { code: 'invalid_json' } : {}), error: '请求不是 JSON。' }, cors);
         return;
       }
       const handler = url.pathname === '/geometry/read' ? readGeometry
         : url.pathname === '/geometry/ask' ? askGeometry
-          : url.pathname === '/geometry/lesson' ? readGeometryLesson : readLesson;
+        : url.pathname === '/geometry/lesson' ? readGeometryLesson
+        : url.pathname === '/learning/read' ? readLearning
+        : url.pathname === '/learning/summarize' ? summarizeLearning : readLesson;
       const result = await handler(parsed, { settings, pageRules, fetchImpl, log, signal: cancelled.signal });
       if (cancelled.signal.aborted) return;
       sendJson(response, result.status, result.payload, cors);
@@ -165,10 +183,11 @@ export function createReaderServer({ settings, pageRules, fetchImpl = fetch, log
         return;
       }
       log({ event: 'crashed' });
-      sendJson(response, 500, { ...(geometry ? { code: 'internal_error' } : {}), error: '阅读服务出错了。' }, cors);
+      sendJson(response, 500, { ...(structured ? { code: 'internal_error' } : {}), error: '阅读服务出错了。' }, cors);
     } finally {
       request.off('aborted', onDisconnect);
       response.off('close', onClose);
+      if (learning) learningSlots[url.pathname] = false;
     }
   });
 }

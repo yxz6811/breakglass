@@ -1,0 +1,24 @@
+{
+  "kind": "documentation-validation",
+  "date": "2026-10-07",
+  "baseCommit": "94d2b3861eb50b274438e9a65b23999093d92f39",
+  "implementationPerformed": false,
+  "markdownFilesChecked": [
+    "README.md",
+    "docs/BreakGlass-recognition-optimization-plan-2026-10-07.md",
+    "docs/BreakGlass-demo-workspace-ui-plan-2026-10-07.md",
+    "docs/BreakGlass-evidence-learning-plan-2026-10-07.md",
+    "specs/011-recognition-reliability/contracts.md",
+    "specs/011-recognition-reliability/plan.md",
+    "specs/011-recognition-reliability/spec.md",
+    "specs/011-recognition-reliability/tasks.md"
+  ],
+  "localLinksChecked": 114,
+  "missingLinks": 0,
+  "trailingWhitespace": 0,
+  "pendingTasks": 22,
+  "uniqueTaskIDs": true,
+  "governanceFilesUnchangedAt262": true,
+  "newModelCalls": 0,
+  "runtimeTestsRerun": false
+}

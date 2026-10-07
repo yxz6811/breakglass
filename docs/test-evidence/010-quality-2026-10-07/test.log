@@ -1,0 +1,44 @@
+✔ two media fingerprints and every limited exercise independently check out (37.4592ms)
+✔ video k=1 cannot be replaced by the hand-authored k=0 exploration (33.9353ms)
+✔ edited media fingerprints and duplicate task identities are rejected (63.6882ms)
+✔ sign, expanded representation and exact-expression errors are caught (92.4453ms)
+✔ missing right angle, mixed units and nonuniform area scaling fail (91.8688ms)
+✔ completion, prediction and examples cannot masquerade as independent submissions (120.8526ms)
+✔ correct answers cannot trigger a misconception diagnosis or same-question practice (61.3754ms)
+✔ three-place display is not the scalar answer tolerance or a new mathematical state (33.3857ms)
+✔ restricted-domain minimum and a 60-degree counterexample use actual conditions (30.4213ms)
+✔ oversized tolerances, expression code and invented external acceptance are rejected (64.1593ms)
+✔ valid video files still cannot be relabeled as another micro-lesson or pause point (29.9879ms)
+✔ an expanded-form exercise cannot silently fall back to its answer snapshot (30.8835ms)
+✔ tiny unequal length ratios remain non-similar even within an absolute epsilon (0.2721ms)
+✔ five manual templates have strict mathematical conditions and parameter budgets (1.5889ms)
+✔ answers are deterministic and physical concepts do not depend on irrelevant parameters (7.1413ms)
+✔ manual templates save and produce real answer receipts while video recognition remains two-template-only (13.6503ms)
+✔ predictions, progressive hints and twenty independent variants follow actual parameter mathematics (14.7732ms)
+✔ graphs only use actual judged answers, distinguish diagnostic receipts and show unknown states (1.0937ms)
+✔ hint fading and review suggestions respond to independent history and reset after help or errors (10.4807ms)
+✔ deterministic SVG contains finite program geometry and browser modules match server mathematics (7.1116ms)
+✔ 三层提示由思路到关系和代入，不直接给出斜边或顶点结果 (6.6649ms)
+✔ 预测变更使用实际数学：AB增且AC不变使BC增加，h加1使顶点右移 (2.3969ms)
+✔ 变式返回独立严格v1记录，新的非AI手工来源可保存且不得覆盖原题 (1.3286ms)
+✔ 两模板20个序号的变式数学都有效，答案取自新条件并区别原条件 (10.7444ms)
+✔ 学生解释独立保存原数学来源与快照，未评分且不生成作答或掌握结论 (2.8783ms)
+✔ 解释拒绝空白、超限、媒体地址、凭证、控制字符和复用ID，不静默截断内容 (0.8412ms)
+✔ 极端或无效数学明确拒绝预测变式，原记录完整保留 (2.3095ms)
+✔ 浏览器IIFE与CommonJS导出同一纯能力，无DOM或网络依赖 (4.3658ms)
+✔ personal pitfalls stay distinct from actual wrong answers and hints never count as independent (15.6967ms)
+✔ idempotent imports are atomic; conflicting ids and stale clear epochs do not write (1.4971ms)
+✔ minimal local data rejects media, malformed answers, false manual AI origins and invalid mathematics (1.0008ms)
+✔ file recovery is fingerprint-bound and the parabola vertex uses actual signed h/k (0.4688ms)
+✔ guest and account decisions agree at small-triangle and large signed-vertex tolerance boundaries (4.4551ms)
+✔ private pending-permission watch metadata is valid without granting AI or record-content permission (1.0509ms)
+✔ plugin package import keeps source/id and rejects misleading flags, extra media and oversized files (0.9087ms)
+✔ shared record contract preserves author fixtures and rejects fields before canonical copying (1.0803ms)
+ℹ tests 36
+ℹ suites 0
+ℹ pass 36
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 770.6627

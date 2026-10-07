@@ -67,7 +67,14 @@ test('演示页按依赖顺序加载本地脚本', () => {
     '../src/tutor/figures.js',
     '../src/tutor/parse.js',
     '../src/tutor/ask.js',
-    '../src/page/main.js'
+    '../src/page/main.js',
+    '../src/page/mount-context.js',
+    '../src/geometry-scene/validate.js', '../src/geometry-scene/solve.js', '../src/geometry-scene/actions.js',
+    '../src/geometry-session/session.js', '../src/geometry-scene/frame.js', '../src/geometry-scene/request.js',
+    '../src/geometry-scene/view.js', '../src/page/geometry.js',
+    '../src/plugin/math-learning.js', '../src/plugin/contracts.js', '../src/plugin/frame-sampler.js',
+    '../src/plugin/live-loop.js', '../src/plugin/overlay.js', '../src/plugin/particle-renderer.js',
+    '../src/plugin/video-context.js', './workspace.js'
   ]);
   for (const src of sources) {
     assert.doesNotMatch(src, /^(https?:)?\/\//);
@@ -100,11 +107,11 @@ test('RuntimeConfig 保持离线主路径并保留 1.5 秒回退', () => {
   assert.equal(/secret|api[_-]?key|token|authorization|https?:|upload|model/i.test(JSON.stringify(config)), false);
 });
 
-test('manifest 仍然没有主机权限、内容脚本与远程脚本', () => {
+test('006仅新增显式activeTab和本机reader权限，不放宽旧页面脚本策略', () => {
   const manifest = readJson('manifest.json');
   assert.equal(manifest.manifest_version, 3);
-  assert.deepEqual(manifest.permissions, []);
-  assert.deepEqual(manifest.host_permissions, []);
+  assert.deepEqual(manifest.permissions, ['activeTab', 'scripting', 'storage']);
+  assert.deepEqual(manifest.host_permissions, ['http://127.0.0.1:8787/*', 'http://127.0.0.1:4174/*']);
   assert.equal('content_scripts' in manifest, false);
   assert.equal(manifest.content_security_policy.extension_pages, "script-src 'self'; object-src 'self'");
 });
@@ -120,6 +127,10 @@ test('扩展不含远程地址或动态代码，005 仅保留本机 reader 文�
     if (relative === 'src/geometry-scene/request.js') {
       withoutSvgNamespace = withoutSvgNamespace.replaceAll('例如 http://127.0.0.1:8787。', '例如本机地址。');
     }
+    if (relative === 'src/background/service-worker.js') {
+      withoutSvgNamespace = withoutSvgNamespace.replaceAll('http://127.0.0.1:8787/learning/', 'LOCAL_READER/learning/');
+    }
+    if (relative === 'src/plugin/account-sync.js') withoutSvgNamespace = withoutSvgNamespace.replaceAll('http://127.0.0.1:4174/api/plugin', 'LOCAL_ACCOUNT/api/plugin');
     assert.doesNotMatch(withoutSvgNamespace, /https?:\/\//, '远程地址：' + file);
     assert.doesNotMatch(text, /\bXMLHttpRequest\b|WebSocket|EventSource|importScripts|\beval\s*\(|new\s+Function/, '动态或网络代码：' + file);
   }
@@ -155,8 +166,8 @@ test('覆盖层绝对定位并接入多画幅重算与测量', () => {
   assert.match(main, /viewBox/);
   assert.match(main, /contentRect.left - stageRect.left/);
   assert.match(main, /__breakglassAlignment/);
-  assert.equal(main.includes("addEventListener('fullscreenchange'"), true);
-  assert.equal(main.includes("addEventListener('orientationchange'"), true);
+  assert.match(main, /listen\(document, 'fullscreenchange', drawCurve\)/);
+  assert.match(main, /listen\(window, 'orientationchange', drawCurve\)/);
   assert.match(main, /ResizeObserver/);
   assert.match(main, /matchMedia/);
   assert.match(main, /alignment.mathPointToPage/);
@@ -165,7 +176,7 @@ test('覆盖层绝对定位并接入多画幅重算与测量', () => {
 test('入口不可用时不会注入未验证页面', () => {
   const manifest = readJson('manifest.json');
   assert.equal('content_scripts' in manifest, false);
-  assert.deepEqual(manifest.host_permissions, []);
+  assert.deepEqual(manifest.host_permissions, ['http://127.0.0.1:8787/*', 'http://127.0.0.1:4174/*']);
   assert.equal('web_accessible_resources' in manifest, false);
 });
 

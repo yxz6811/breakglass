@@ -1,0 +1,69 @@
+{
+  "geometry": {
+    "controls": "显示工具栏\n播放\n定位到目标时间\n保存帧 Alt+B\n恢复原题\n全屏\n退出 Esc\n尚无题目\n\n请先校对并确认条件，才能恢复原题。\n\nBREAKGLASS · 几何实验\n\n把这一帧，变成一次实验。\n\n校对直角三角形的条件，改变一条边，看懂答案为什么变。\n\n01 · 选择与暂停\n\n正在看的那道题\n3-4-5.mp4\n\n当前 4 / 12 秒 · 已暂停\n\n目标时间（秒）\n定位到此时间\n选择几何教学示例\n基础勾股 · 3–4–5\n长直角边 · 5–12–13\n迁移练习 · 8–15–17\n加载示例，定位题面\n\n自制无声教学示例 · AB = 3 cm、AC = 4 cm，A 为直角 · 第 4 秒题面，8 秒后展示计算。载入条件需人工确认，不代表视觉识别。\n\n选择本地录屏或固定机位视频\n\n支持一张清晰的直角三角形题面。视频留在本机；点击识别时才发送当前一帧。\n\n暂停并保存当前帧\n识别当前暂停帧\n本地 reader 地址\n\n识别地址固定为当前工作台的同源转发。素材许可确认、主动勾选启用和几何面板活动后，才可显式识别或发送模型问题；这里不填写模型密钥。\n\n当前工作台固定使用同源 reader 转发；不读取或记忆旧地址。\n\n载入 3–4–5 示例条件\n手工填写条件\n\n示例条件只对应 2–8 秒的暂停题面。定位到第 4 秒后可载入；仍需人工核对，不代表视觉识别。\n\n示例题面已停在第 4 秒。可载入示例条件并校对，或主动识别当前帧。\n\n02 · 对照原帧\n\n原题与条件\n尚无题目\n\n保存当前帧后，在这里对照题目。\n预设或手工场景可不关联视频。\n\n截图只用于核对，不用像素长度计算答案。\n\n03 · 改变与理解\n\n按题目条件重建\n待确认\n\n确认条件后才能实验。\n\n画板等比绘制，可能与“不按比例绘制”的原图外观不同。拖动 B / C 或输入边长，直角始终保持。\n\n随时可以退出，无需先答对理解题。\n\n退出实验\n回到原暂停时间，继续视频\n005 独立几何场景 · 预设、手工与真实识别分别验收 · Alt+B 保存当前帧 · Esc 退出实验",
+    "conditionLoadEnabled": true,
+    "reviewVisible": true
+  },
+  "reader": {
+    "geometry": {
+      "readonly": "",
+      "value": "http://127.0.0.1:18767"
+    },
+    "geometryForgetVisible": false,
+    "curve": {
+      "readonly": "",
+      "value": "http://127.0.0.1:18767/read"
+    },
+    "explicitOptIn": false
+  },
+  "curve": {
+    "opened": {
+      "equation": "y=1(x−(0))²+(1)",
+      "particleStageHidden": false,
+      "saveHidden": false,
+      "videoCount": 1
+    },
+    "changed": {
+      "equation": "y=1(x−(0.1))²+(1)",
+      "particleStageHidden": false,
+      "saveHidden": false,
+      "videoCount": 1
+    },
+    "reset": {
+      "equation": "y=1(x−(0))²+(1)",
+      "particleStageHidden": false,
+      "saveHidden": false,
+      "videoCount": 1
+    },
+    "playCleared": {
+      "equation": "",
+      "particleStageHidden": true,
+      "saveHidden": true,
+      "videoCount": 1
+    },
+    "exitCleared": {
+      "equation": "",
+      "particleStageHidden": true,
+      "saveHidden": true,
+      "videoCount": 1
+    },
+    "seekCleared": {
+      "equation": "",
+      "particleStageHidden": true,
+      "saveHidden": true,
+      "videoCount": 1
+    },
+    "hiddenCleared": {
+      "equation": "",
+      "particleStageHidden": true,
+      "saveHidden": true,
+      "videoCount": 1
+    },
+    "returnCleared": {
+      "equation": "",
+      "particleStageHidden": true,
+      "saveHidden": true,
+      "videoCount": 1
+    }
+  }
+}

@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>BreakGlass · 网站学习工作台</title>
+  <link rel="stylesheet" href="../extension/src/ui/theme.css"><link rel="stylesheet" href="site.css">
+</head>
+<body>
+  <a class="skip-link" href="#overview">跳到学习概览</a>
+  <aside class="site-sidebar" aria-label="学习管理栏目"><a class="brand" href="#overview" data-view="overview"><img src="/site/assets/breakglass-brand/logo-aperture-fracture.svg" width="36" height="36" alt=""><img class="wordmark" src="/site/assets/breakglass-brand/wordmark-aperture.svg" alt="BreakGlass" width="160" height="26"></a>
+    <p class="sidebar-caption">学习管理中心</p><nav aria-label="学习导航"><button type="button" data-view="overview" aria-current="page">学习概览</button><button type="button" data-view="watch">观看进度</button><button type="button" data-view="records">疑问与易错</button><button type="button" data-view="practice">理解复练</button><button type="button" data-view="import">本地视频工作台</button><button type="button" data-view="account">设置与账户</button></nav>
+    <p class="sidebar-note">插件是网课学习的主入口。<br>网站让学习记录可回顾。</p>
+  </aside>
+  <header class="site-header"><p id="top-identity">本机访客</p><div class="actions"><button id="view-local" type="button">查看本机记录</button><button type="button" data-view="account">账户设置</button></div></header>
+  <main>
+    <section id="overview" class="intro" data-page="overview"><p class="eyebrow">LEARNING OVERVIEW</p><h1>让每次理解，<br><span>都有迹可循。</span></h1><p id="overview-identity">你的学习概览来自当前范围真实保存的记录。</p>
+      <div id="dashboard-summary" class="stat-grid"></div><div class="overview-grid"><section class="panel"><h2>当前理解状态</h2><p class="muted">依据最近一次实际复练；观看或点击不代表掌握。</p><div id="dashboard-states"></div></section><section class="panel"><h2>最近学习动态</h2><div id="dashboard-activity"></div></section></div>
+      <div class="actions"><button class="primary" type="button" data-view="records">回顾疑问与易错</button><button type="button" data-view="import">选择本地视频</button></div>
+      <p id="deployment-notice" class="notice">当前是本机开发网站与账户服务，尚未作为上线云服务交付，地区、年龄和监护流程仍需独立发布验收。B 站处理许可待确认。</p>
+    </section>
+    <section id="import-workbench" class="panel" data-page="import" hidden aria-labelledby="import-title">
+      <h2 id="import-title">本地视频工作台</h2>
+      <div id="drop-zone" class="drop-zone"><label for="video-file">选择或拖入 MP4 / WebM 视频</label>
+        <input id="video-file" type="file" accept="video/mp4,video/webm,.mp4,.webm" aria-describedby="file-help file-status">
+        <p id="file-help" class="muted">≤64MiB、≤600秒、≤1920×1080。文件先在浏览器解码；选择文件不等于上传整文件。</p>
+      </div>
+      <div class="actions"><button id="sample-triangle" type="button">载入项目自制三角形视频</button><button id="sample-parabola" type="button">载入项目抛物线演示</button>
+        <button id="remove-file" type="button" disabled>移除当前文件 / 取消读取</button></div>
+      <p id="file-status" role="status" aria-live="polite">尚未选择视频。</p>
+      <p id="file-details" class="muted"></p>
+      <div class="video-stage"><video id="learning-video" controls playsinline preload="metadata" aria-label="本地教学视频"></video></div>
+      <section class="processing-info" aria-labelledby="processing-title"><h3 id="processing-title">识别材料与用途</h3>
+        <p id="policy-status" role="status">本地预览与手工探索可用；AI处理须由服务端核对素材登记。</p>
+        <p>开始持续识别只发送获准的当前稀疏画面与必要结构观察，不发送整视频、音频或账户密码。知识点与易错提醒来自已分析画面，条件需人工校对。</p>
+        <p id="model-status" class="muted">模型配置留空时识别不可用。模型地址、名称和密钥只在服务端 .env 配置，浏览器不接收或保存密钥。</p>
+        <div class="actions"><button id="start-analysis" class="primary" type="button" disabled>开始持续视觉识别</button>
+          <button id="stop-analysis" type="button" disabled>停止识别并清除未保存观察</button>
+          <button id="manual-explore" type="button" disabled>只探索手工数学条件</button></div>
+        <p id="session-status" role="status" aria-live="polite"></p>
+      </section>
+      <section id="recognition-workbench" aria-label="单帧数学条件核对"></section>
+      <section class="processing-info" aria-labelledby="context-title"><h3 id="context-title">把一小段连起来理解</h3>
+        <p>选择不超过30秒的片段，默认分析4张代表帧。可以结合已登记作者字幕；不会读取音轨，也不会上传整视频。候选总结可能遗漏未采样的细节。</p>
+        <div class="field-grid"><label>片段起点（秒）<input id="context-start" type="number" min="0" step="0.01" value="0"></label><label>片段终点（秒）<input id="context-end" type="number" min="0" step="0.01" value="1"></label></div>
+        <label class="record-select"><input id="use-author-subtitles" type="checkbox" checked disabled>结合登记作者字幕</label><p id="context-source" class="muted">等待素材登记核对。</p>
+        <div class="actions"><button id="analyze-context" type="button" disabled>分析这个片段</button><button id="cancel-context" type="button" disabled>停止并清除片段候选</button></div>
+        <p id="context-status" role="status" aria-live="polite">选择获准素材后可使用；模型留空时明确显示未配置。</p><div id="context-result" class="context-result"></div>
+      </section>
+    </section>
+    <section class="panel" data-page="import" hidden><div id="progressive-workbench" aria-label="渐进片段分析"></div><p id="cache-lifecycle-status" role="status"></p></section>
+    <section id="audio-workbench" class="panel" data-page="import" hidden aria-label="可选短音轨转写"></section>
+    <section id="account" class="panel" data-page="account" hidden aria-labelledby="account-title"><h2 id="account-title">当前账户</h2>
+      <p id="account-status" role="status" aria-live="polite">正在读取本机账户状态…</p>
+      <form id="account-form"><div class="field-grid"><label>用户名<input id="username" name="username" autocomplete="username" minlength="3" maxlength="32" required placeholder="3–32个字母、数字、中文或 ._-"></label>
+        <label>密码<input id="password" name="password" type="password" autocomplete="current-password" minlength="8" maxlength="128" required></label></div>
+        <div class="actions"><button id="login" class="primary" type="submit">登录 / 切换账户</button><button id="register" type="button">注册本机开发账户</button><button id="logout" type="button" disabled>退出当前账户</button></div>
+      </form>
+      <p class="muted">未登录时记录真实保存在这台浏览器。登录不会自动上传本机记录；退出或切换会清理旧账户的可见数据并停止当前识别会话。</p>
+      <section id="plugin-pairing" class="processing-info" aria-labelledby="pair-title"><h3 id="pair-title">连接学习插件</h3>
+        <p>登录后生成一次性配对码，在插件的账户设置中输入。配对只连接这台电脑的当前网站会话；退出、切换账户、撤销或服务重启后需要重新配对。</p>
+        <div class="actions"><button id="create-pairing" type="button" disabled>生成两分钟配对码</button><button id="revoke-pairings" type="button" disabled>撤销此账户全部插件连接</button></div>
+        <output id="pairing-code" class="pairing-code" aria-label="一次性插件配对码"></output><p id="pairing-status" role="status" aria-live="polite">先登录，再由你主动连接插件。</p>
+        <p class="muted">插件保存先留在本机。开启同步后，新记录与观看位置可写入此账户；配对前的记录需另行勾选导入。失败会显示“未确认”，不会计作已同步。</p>
+      </section>
+    </section>
+    <section id="learning-center" class="panel" data-page="records" hidden aria-labelledby="center-title"><h2 id="center-title">疑问与易错记录</h2>
+      <div class="field-grid"><label>查看范围<select id="record-scope"><option value="local">本机访客记录</option><option id="account-option" value="account" disabled>当前账户记录</option></select></label>
+        <label>记录类型<select id="record-kind"><option value="all">全部</option><option value="question">疑问</option><option value="pitfall">个人易错标记</option><option value="wrong">实际答错（有复练证据）</option></select></label>
+        <label>课程 / 来源<select id="record-source"><option value="all">全部来源</option></select></label></div>
+      <p id="center-status" role="status" aria-live="polite"></p>
+      <div class="actions"><button id="refresh-center" type="button">刷新记录</button><button id="import-selected" type="button" disabled>把选中的本机记录导入当前账户</button>
+        <button id="mixed-practice" type="button">混合复练</button><button id="export-records" type="button">导出当前范围数据</button>
+        <button id="clear-local" type="button">清除本机记录</button><button id="clear-account-records" type="button" disabled>清除当前账户学习记录</button></div>
+      <p class="muted">常见误区提示、个人易错标记与实际答错分别展示。只有提交过答案并经数学程序判定的错误，才进入“实际答错”。</p>
+      <div id="record-list" class="record-list"></div>
+      <div id="annotation-workbench" hidden></div>
+      <details class="plugin-import"><summary>手动导入插件导出的 JSON</summary>
+        <label for="plugin-json">选择插件记录包（≤256KiB、≤100条）</label><input id="plugin-json" type="file" accept="application/json,.json">
+        <p id="plugin-import-status" role="status">先审核来源与内容，选中后才存入本机；不会直接上传账号。</p><div id="plugin-preview"></div>
+        <button id="accept-plugin-records" type="button" disabled>把审核选中的记录存入本机</button>
+      </details>
+    </section>
+    <section id="watch-panel" class="panel" data-page="watch" hidden><h2>观看进度</h2><p class="muted">原视频不会永久保存。重新选择同一完整指纹和版本的文件后，才能定位原视频；相同标题或文件名不合并。播放进度不等于掌握程度。</p><div id="watch-list"></div></section>
+    <section id="practice-empty" class="panel" data-page="practice" hidden><h2>理解复练</h2><p>选择保存过数学条件的记录，回顾场景或跳过这次复练。</p><button type="button" data-view="records">选择需要回顾的记录</button></section>
+    <section id="scene-panel" class="panel" data-page="practice" hidden aria-labelledby="scene-title"><h2 id="scene-title" tabindex="-1">回顾数学场景</h2>
+      <p id="scene-context" class="muted"></p><div id="scene-stage" class="scene-stage"></div><div id="scene-parameters" class="field-grid"></div>
+      <p class="muted">二维数学主图始终保留。实线视图中的旋转只是观察视角；函数数学点仍在二维平面，不能据此改变几何条件。</p>
+      <div class="field-grid"><label>空间水平视角<input id="camera-yaw" type="range" min="-60" max="60" value="0"></label><label>空间俯仰视角<input id="camera-pitch" type="range" min="-45" max="45" value="0"></label></div><button id="camera-reset" type="button">恢复二维观察视角</button>
+      <div class="actions"><button id="scene-apply" type="button">应用参数探索</button><button id="scene-reset" type="button">恢复保存的条件</button><button id="scene-return" type="button" disabled>定位匹配视频</button><button id="scene-close" type="button">收起场景</button></div>
+      <p id="scene-status" role="status"></p>
+      <section id="practice-panel" aria-labelledby="practice-title"><h3 id="practice-title">可跳过的理解复练</h3>
+        <section class="processing-info" aria-labelledby="prediction-title"><h4 id="prediction-title">先想变化，再看图</h4><p id="prediction-question"></p><div id="prediction-options" class="actions"></div><p id="prediction-status" role="status"></p><button id="apply-prediction" type="button" disabled>在图中验证这个变化</button><p class="muted">这里练习理解变化，不生成正式作答或掌握结论；下面的复练仍使用保存的原条件。</p></section>
+        <p id="practice-question"></p><form id="practice-form"><div id="practice-number-field"><label>斜边 BC<input id="practice-number" type="number" step="any"></label></div>
+          <div id="practice-vertex-fields" class="field-grid" hidden><label>顶点横坐标 h<input id="practice-h" type="number" step="any"></label><label>顶点纵坐标 k<input id="practice-k" type="number" step="any"></label></div>
+          <label>我为什么这样想（可选，仅本次）<textarea id="self-explanation" rows="2" maxlength="1000"></textarea></label>
+          <div class="actions"><button id="submit-practice" class="primary" type="submit">提交答案并验证</button><button id="show-hint" type="button">给一点提示（0/3）</button><button id="show-answer" type="button">查看答案</button><button id="skip-practice" type="button">跳过这次复练</button></div>
+        </form><p id="practice-hint" class="muted" hidden></p><p id="practice-answer" hidden></p><p id="practice-status" role="status"></p>
+        <div class="actions"><button id="create-variant" type="button">换一道程序生成的变式</button><button id="save-explanation" type="button">把我的解释保存为疑问笔记</button></div><p id="pedagogy-status" role="status"></p>
+      </section>
+    </section>
+    <section id="learning-flow-workbench" class="panel" data-page="practice" hidden aria-label="课程微闭环与错因复练"></section>
+    <section id="math-workbench" class="panel" data-page="practice" hidden aria-label="数学深化与基础诊断"></section>
+    <section class="panel" data-page="account" hidden aria-labelledby="data-title"><h2 id="data-title">账户数据与模型设置</h2>
+      <p>本机记录与账户数据分别清除。删除账户数据必须得到服务确认；原文件只在当前浏览器预览。</p>
+      <button id="delete-account-data" type="button" disabled>删除当前账户全部学习数据</button>
+      <button id="clear-guest-cache" type="button">清除 / 重试本机访客分析缓存</button>
+      <details><summary>模型尚未配置时怎么办</summary><p>继续本地预览、手工数学探索和复练。要启用AI，请由开发者在服务器环境配置模型服务，再刷新素材处理状态；不要把密钥填入网页或学习记录。</p></details>
+      <p id="data-status" role="status"></p>
+    </section>
+  </main>
+  <footer id="deployment-footer">BreakGlass · 本机开发验证。实线图像和数学关系由程序绘制；真实模型效果与正式平台上线另行验证。</footer>
+  <script src="../extension/src/curve/evaluate.js"></script>
+  <script src="../extension/src/plugin/math-learning.js"></script>
+  <script src="../extension/src/geometry-scene/validate.js"></script><script src="../extension/src/geometry-scene/solve.js"></script><script src="../extension/src/geometry-scene/actions.js"></script>
+  <script src="../extension/src/geometry/content-rect.js"></script><script src="../extension/src/plugin/contracts.js"></script><script src="../extension/src/plugin/recognition-contracts.js"></script><script src="../extension/src/plugin/frame-sampler.js"></script><script src="../extension/src/plugin/live-loop.js"></script><script src="../extension/src/plugin/overlay.js"></script>
+  <script src="../extension/src/plugin/particle-renderer.js"></script><script src="../extension/src/plugin/video-context.js"></script><script src="account-client.js"></script><script src="records.js"></script><script src="provenance.js"></script><script src="pedagogy.js"></script><script src="annotations.js"></script><script src="annotation-editor.js"></script><script src="math-workbench.js"></script><script src="import.js"></script><script src="visual-session.js"></script><script src="pairing.js"></script><script src="context.js"></script><script src="analysis-cache.js"></script><script src="progressive.js"></script><script src="audio.js"></script><script src="learning-flow.js"></script><script src="learning-evidence.js"></script><script src="learning-flow-store.js"></script><script src="learning-flow-ui.js"></script><script src="live-particles.js"></script><script src="recognition-workbench.js"></script><script src="app.js"></script>
+</body>
+</html>

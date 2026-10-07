@@ -1,5 +1,6 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { loadModelProfile } from './model-profile.mjs';
 
 const SERVICE_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -112,7 +113,7 @@ function geometryBudget(value, fallback) {
  *   jsonMode: boolean, models: { baseUrl: string, apiKey: string, model: string, jsonMode: boolean }[],
  *   modelCursor: { next: number },
  *   timeoutMs: number, budgetMs: number, concurrency: number,
- *   geometryReadBudgetMs: number, geometryAskBudgetMs: number,
+ *   modelProfile: object, geometryReadBudgetMs: number, geometryAskBudgetMs: number,
  *   allowOrigin: (origin: string) => boolean, extensionDir: string }}
  */
 export function loadSettings(env) {
@@ -133,11 +134,14 @@ export function loadSettings(env) {
     jsonMode,
     models: loadModels(env, baseUrl, apiKey, model, jsonMode),
     modelCursor: { next: 0 },
+    modelProfile: loadModelProfile(env),
     timeoutMs: intInRange(env.READER_MODEL_TIMEOUT_MS, 60000, 1000, PAGE_DEADLINE_MS),
     budgetMs: intInRange(env.READER_BUDGET_MS, 240000, 1000, PAGE_DEADLINE_MS - 20000),
     concurrency: intInRange(env.READER_CONCURRENCY, 2, 1, 8),
     geometryReadBudgetMs: geometryBudget(env.READER_GEOMETRY_READ_BUDGET_MS, 30000),
     geometryAskBudgetMs: geometryBudget(env.READER_GEOMETRY_ASK_BUDGET_MS, 10000),
+    learningReadBudgetMs: geometryBudget(env.READER_LEARNING_READ_BUDGET_MS, 30000),
+    learningSummaryBudgetMs: geometryBudget(env.READER_LEARNING_SUMMARY_BUDGET_MS, 30000),
     allowOrigin: listed.length > 0
       ? (origin) => listed.includes(origin)
       : (origin) => DEFAULT_ORIGINS.some((pattern) => pattern.test(origin)),

@@ -1,0 +1,218 @@
+{
+  "schemaVersion": "1",
+  "kind": "planning-source-review",
+  "date": "2026-10-07",
+  "timezone": "Asia/Shanghai",
+  "implementationPerformed": false,
+  "newModelCalls": 0,
+  "newBrowserReproduction": false,
+  "thirdPartyMediaDownloaded": false,
+  "currentRepository": {
+    "branch": "规划26年10月6",
+    "commit": "94d2b3861eb50b274438e9a65b23999093d92f39",
+    "constitutionVersion": "2.6.2",
+    "reviewedCode": [
+      {
+        "path": "extension/demo/workspace.js",
+        "workingFileSHA256": "220dd09be2580a052e38a0aa6af5824dce2e30c295a36d918887758095e1b9b2",
+        "matchesHEADIgnoringCRLF": true
+      },
+      {
+        "path": "extension/src/page/main.js",
+        "workingFileSHA256": "bbcab9e6b5291840970d0e6890f5bf2608f9a3d5c82bd63e832069c39c9d4640",
+        "matchesHEADIgnoringCRLF": true
+      },
+      {
+        "path": "extension/src/page/geometry.js",
+        "workingFileSHA256": "deea16a6c3e589fdb05ce763df97bc2aa3249f02dbe7e773ee796b7aa595efed",
+        "matchesHEADIgnoringCRLF": true
+      },
+      {
+        "path": "learning-site/app.js",
+        "workingFileSHA256": "29c26f96be9beaa7316676e5f4622c7832387f36aec1ce4cfca557b5725e129d",
+        "matchesHEADIgnoringCRLF": true
+      },
+      {
+        "path": "learning-site/learning-flow.js",
+        "workingFileSHA256": "9dad71ea181d26e9860c5ceda01c0e5c5fd7d5a90e25cecc91d46f0d990c690c",
+        "matchesHEADIgnoringCRLF": true
+      },
+      {
+        "path": "learning-site/learning-flow-store.js",
+        "workingFileSHA256": "d780adbf9ef08d0a9d38b67daa077e4a1f65441a9b291f1e6a3071605b1eb188",
+        "matchesHEADIgnoringCRLF": true
+      },
+      {
+        "path": "learning-site/progressive.js",
+        "workingFileSHA256": "f75d9fa095172e951c24160f3052583cd83426090aef7e7c0d7854a80974facd",
+        "matchesHEADIgnoringCRLF": true
+      },
+      {
+        "path": "extension/src/plugin/frame-sampler.js",
+        "workingFileSHA256": "1b32e051aba9a5055d7d41a9d6abbcff1772f0195b02581c69dda8504210001f",
+        "matchesHEADIgnoringCRLF": true
+      },
+      {
+        "path": "breakglass-reader/src/read.mjs",
+        "workingFileSHA256": "874ad7ce8e51e0e345fa238cfdca1c55af3c90a4cec76eeb3fcf3b2ed45d4438",
+        "matchesHEADIgnoringCRLF": true
+      },
+      {
+        "path": "breakglass-reader/src/model.mjs",
+        "workingFileSHA256": "dbd1ec1d2e6fad7a2ac7cf6cecb827c80d890d1426bf4dd1888e815e6b42cc9c",
+        "matchesHEADIgnoringCRLF": true
+      },
+      {
+        "path": "breakglass-reader/src/geometry-model.mjs",
+        "workingFileSHA256": "020b2257f4bd28dfce59fa25bf74072570ddbe297befc96f515d1d893a214af1",
+        "matchesHEADIgnoringCRLF": true
+      },
+      {
+        "path": "breakglass-reader/src/geometry.mjs",
+        "workingFileSHA256": "5d64aa53bb1c6496e729bad398d0e6301e92fe7e37781be11ffe5ceaf59d4078",
+        "matchesHEADIgnoringCRLF": true
+      },
+      {
+        "path": "breakglass-reader/src/locate.mjs",
+        "workingFileSHA256": "99c0a931f382ca477c299e13886ef637e7c305ceae5878b69a3d2ef9579101a8",
+        "matchesHEADIgnoringCRLF": true
+      },
+      {
+        "path": "breakglass-reader/src/learning-context.mjs",
+        "workingFileSHA256": "941004778be3edb54b28d613193e89893b7583c70f8c1e32648c4ed75ad75c0f",
+        "matchesHEADIgnoringCRLF": true
+      },
+      {
+        "path": "scripts/learning-site.mjs",
+        "workingFileSHA256": "97abd0d3361086b2310f499bccee67a2168edda1fe010d3728cefbffad4e7f21",
+        "matchesHEADIgnoringCRLF": true
+      }
+    ]
+  },
+  "externalSource": {
+    "url": "https://home.agent-wiki.cn:18070/",
+    "reportUrl": "https://home.agent-wiki.cn:18070/report.html",
+    "releaseUrl": "https://home.agent-wiki.cn:18070/release.json",
+    "title": "BreakGlass 破壁 · 项目展示与运行核验",
+    "reportedTestDate": "2026-10-05",
+    "auditedCommit": "af0c3c628f3b9db5c6f84bb859f487aa0a85bf10",
+    "builtAt": "2026-10-05T07:31:53.226Z",
+    "workspaceDirty": true,
+    "htmlRawSHA256": "ec4447981316cd804436452dd20cccb06d8968b7a273588314bace16e3863980",
+    "downloadsReviewed": [
+      {
+        "name": "results.json",
+        "rawSHA256": "5ab162caa487b7f3aa55fcf80d3b017afd377c8dafaf9b8ea2ba225851528830",
+        "matchesPublishedDigest": true
+      },
+      {
+        "name": "kimi-k3-original.json",
+        "rawSHA256": "96950a7ec1b9ae6dda1440b3c84fed04879581657153f00fa807aece8d7feaf5",
+        "matchesPublishedDigest": true
+      },
+      {
+        "name": "kimi-k3-compatible.json",
+        "rawSHA256": "09ca375c902a6adb69363fce49a28165fa537faaecefe8e843e32a55c1a189c4",
+        "matchesPublishedDigest": true
+      },
+      {
+        "name": "static-comparison.json",
+        "rawSHA256": "3196d397959ca024513b2214c4bcf0a39121ff30bce1aadc66ab0075a445ec69",
+        "matchesPublishedDigest": true
+      },
+      {
+        "name": "real-video-results.json",
+        "rawSHA256": "a83b08d62bbe4bf388184830a68a556ddc2d5d6764a746949b964eb571d230d4",
+        "matchesPublishedDigest": true
+      }
+    ],
+    "independentAuthenticationOfReport": false,
+    "limitations": [
+      "Different historical main commit, not a current-version reproduction.",
+      "Only five JSON download digests checked; screenshots, videos and other listed files were not downloaded or verified.",
+      "Matching digests do not validate test methodology, source authorship, media rights or conclusions."
+    ]
+  },
+  "externalObservations": {
+    "attribution": "Third-party reported observations only",
+    "realVideoSources": 3,
+    "reviewedCases": 10,
+    "rawReaderLogCalls": 12,
+    "formulaCorrectCases": 5,
+    "wrongAlignmentCases": 6,
+    "alignmentNotCapturedCases": 1,
+    "formulaOrAlignmentNotCheckedCases": 1,
+    "originalTemperatureRejected": true,
+    "compatibleSyntheticElapsedMs": {
+      "curve": 67302,
+      "triangle": 12779
+    },
+    "staticComparisonFiles": 61,
+    "casesReturningNonNullResult": 8,
+    "casesWithListedCurveParameters": 7,
+    "uncheckedPreplayCases": 1
+  },
+  "currentCodeFindings": [
+    {
+      "id": "R01",
+      "type": "code-observation",
+      "finding": "Reader checkbox change has no unified in-flight cancellation hook; geometry success does not re-check canSend."
+    },
+    {
+      "id": "R02",
+      "type": "code-observation",
+      "finding": "Main dashboard and wrong-record filter consume legacy attempts while flow receipts are stored separately."
+    },
+    {
+      "id": "R03",
+      "type": "code-observation-and-validation-gap",
+      "finding": "Ink locator assumes equal x/y scales; anchor residual proves self-consistency, not independent ground truth."
+    },
+    {
+      "id": "R04",
+      "type": "code-observation",
+      "finding": "Curve path accepts model vertex coefficients; no deterministic general-form conversion exists in that path."
+    },
+    {
+      "id": "R05",
+      "type": "semantic-gap",
+      "finding": "Old curve rendering sends confirmed true to shared exploration without a separate student confirmation event."
+    },
+    {
+      "id": "R06",
+      "type": "code-observation",
+      "finding": "Both model entry points send temperature zero; legacy curve response JSON parsing has no upstream byte cap."
+    },
+    {
+      "id": "R11",
+      "type": "code-observation-and-validation-gap",
+      "finding": "Local storage change listener omits learning-flow key; initialization destruction needs dedicated coverage."
+    },
+    {
+      "id": "C03-owner",
+      "type": "code-observation",
+      "finding": "Classic local visual session owner may be null; proposed new channel needs server-established owner/epoch binding."
+    }
+  ],
+  "priorValidation": {
+    "file": "docs/test-evidence/010-implementation-2026-10-07/final-validation.json",
+    "tests": {
+      "command": "node --test --test-reporter=tap",
+      "tests": 1036,
+      "pass": 1036,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0,
+      "todo": 0
+    },
+    "rerunDuringPlanning": false,
+    "limitations": "Existing test evidence is not evidence that newly identified gaps are repaired."
+  },
+  "planningOutputs": [
+    "docs/BreakGlass-recognition-optimization-plan-2026-10-07.md",
+    "specs/011-recognition-reliability/spec.md",
+    "specs/011-recognition-reliability/contracts.md",
+    "specs/011-recognition-reliability/plan.md",
+    "specs/011-recognition-reliability/tasks.md"
+  ]
+}

@@ -46,9 +46,9 @@ npm start
 ## 一帧怎么读
 
 1. 读出 JPEG 宽高，和请求里的源尺寸比一下比例，对不上就丢掉。
-2. 问模型（温度 0）：有没有一条能对上坐标轴的抛物线；顶点式 `a`、`h`、`k`；至少 3 个「数学坐标 ↔ 图片像素」的锚点；曲线画出的横坐标两端；一句讲解。智谱地址默认在 `glm-4.6v-flash`、`glm-4v-flash`、`glm-4.1v-thinking-flash` 之间轮询；当前模型限流、不可用或回答读不懂时，立刻改问池里的下一个。池里只剩一个模型时，429 或 503 才先等 3 秒、再等 5 秒。模型明确回答没有抛物线时不再换。取消和整次超时也不再换。
-   方程参数和横坐标端点只接受有限的 JSON number；布尔值、`null`、数字字符串不会自动转换成数字。
-3. 有本机 `ffmpeg` 时先把 JPEG 解成 RGB，在画面里寻找和方程重合的笔画。彩色线、深色底上的浅色线，以及横纵比例不同的坐标轴都可以；曲线只画出顶点附近的一段时，按实际重合的那一段定位。成功时用实际像素得到的区域。没有 ffmpeg、解码失败或找不到线时，再用模型锚点拟合坐标映射。锚点最远偏离超过 JPEG 短边 2% 时，说明读数不一致，整帧丢掉。模型的横坐标端点仅在锚点路径使用，并须通过上述数字类型检查。这些检查不能证明模型整体看准了画面。
+2. 问模型一次（默认温度 0，不重试）：有没有一条有明确数值依据且能对上坐标轴的抛物线；一般式 `a/b/c` 或顶点式 `a/h/k`；至少 3 个「数学坐标 ↔ 图片像素」的锚点；曲线画出的横坐标两端；一句讲解。一般式由程序按 `h=-b/(2a)`、`k=c-b²/(4a)` 换算，不要求模型自行配方。题面数值不清或仅有无刻度外形时应拒绝，不猜成 `y=x²`，课程文字不能补截图缺失数学标注。
+   公式只接受严格 general/vertex 字段和兼容旧 `{a,h,k}`。每原始及换算后系数绝对值不超过 `1e6`，`abs(a)>=1e-6`，并继续页面有限域校验；accessor、原型/未知字段、字符串、非有限值和溢出拒绝。这是候选合法性校验，不能证明模型读对题面。
+3. 有本机 `ffmpeg` 时先把 JPEG 解成 RGB，在画面里寻找和方程重合的细线；成功时用实际像素得到的区域。没有 ffmpeg、解码失败或找不到线时，再用模型锚点拟合坐标映射。锚点最远偏离超过 JPEG 短边 2% 时，说明读数不一致，整帧丢掉。模型的横坐标端点仅在锚点路径使用，并须通过上述数字类型检查。这些检查不能证明模型整体看准了画面。
 4. 把要画的那段曲线放进画面，算出 `domain`、`range`，区域乘回源像素。
 5. 拼成点，交给扩展自己的 `validateLessonReading` 再查一遍，过了才回。
 
@@ -86,6 +86,16 @@ npm test
 
 JPEG 取消测试使用受控子进程替身。真实 RGB 解码及像素定位用例需要本机 `ffmpeg`；没有该依赖时只能验证锚点路径，不能宣称像素定位用例通过。
 
+## 011 reader能力配置与响应读取
+
+服务端 `recognition-profile-v1` 同时用于旧曲线、几何及复用几何入口的学习read/context/summary。`.env.example` 列出有限选项：`READER_TEMPERATURE_POLICY=fixed|omit`、`READER_TEMPERATURE` 严格0～2（默认0）、可选有限 `READER_REASONING_EFFORT` 与 `READER_IMAGE_TRANSPORT=inline|public-url`。默认仍发送temperature=0；omit不发送它，未配置reasoning不发送。未知值拒绝，基础地址/密钥/模型留空不调用供应商，不重试、不自动挑选其他模型。
+
+能力配置须依据具体供应商入口核对。当前画面以inline JPEG data URL发送；public-url策略收到它会在调用前明确拒绝，不自动托管或公开画面。这些选项不证明任意同名模型兼容。JSON mode只控制请求输出选项，仍须严格数学和身份校验。非秘密profile identity用于网关缓存版本，密钥不进入该identity；ASR配置独立。
+
+两模型入口共用64KiB上游响应限制：真实字节流在JSON解析前累计，超限即取消；仅提供json的测试替身也检查UTF-8长度。abort race结束不配合取消的等待，迟到响应不解析为成功。旧曲线保留容忍代码块的内容解析，几何/学习保留纯JSON严格解析；旧公开错误code/envelope和各时间预算保持。配置/传输失败只返回安全原因，错误不暴露完整供应商内容。
+
+相关测试：`node --test breakglass-reader/tests/equation-normalise.test.mjs breakglass-reader/tests/model-profile.test.mjs breakglass-reader/tests/provider-payload.test.mjs`（从仓库根执行）。使用自制系数、Web可读流和不联网替身，不等于真实模型、无刻度拒绝质量、像素标定或四画幅2%验收通过。011新共享识别通道、可信定位和sidecar由独立模块实施，此处不宣称已经完成。
+
 ## 005 当前帧直角三角形（独立接口）
 
 已增加 `POST /geometry/read` 与 `POST /geometry/ask`，使用同一进程、来源白名单和模型环境配置；既有 `/read` 的请求、抛物线响应与 10 MiB 上限保持不变。契约见 [005 scene-actions](../specs/005-insitu-right-triangle/contracts/scene-actions.md)。这些接口已经过本地替身模型和 HTTP 管线测试，**尚未使用真实模型验证当前几何帧**；不能称为任意视频识别。
@@ -109,9 +119,15 @@ node --test tests/geometry-read.test.mjs tests/geometry-ask.test.mjs tests/serve
 
 当前测试使用本机 HTTP 服务和不联网的模型替身，覆盖坐标映射、严格字段/数值、4 MiB、取消/迟到、独立截止、来源/PNA、未配置模型和 `/read` 回归。真实候选正确率、10～15 份素材、浏览器校对及学习闭环按 [005 quickstart](../specs/005-insitu-right-triangle/quickstart.md) 另记；本服务不保存原题快照或判定用户已理解。
 
-## 006 几何自动阅读（独立接口）
+## 006 持续视觉与画面摘要（2026-10-06）
 
-已增加 `POST /geometry/lesson`，仍是本进程、本机回环和同一套模型环境。它不复用 `POST /read` 的抛物线结果，也不复用 `POST /geometry/read` 的单帧直角三角形。契约见 [006 geometry-lesson-service](../specs/006-auto-geometry-lesson/contracts/geometry-lesson-service.md)。
+复用本机无状态reader，新增`POST /learning/read`（单帧JPEG、最多640px宽/4MiB）与`POST /learning/summarize`（最多20条短结构观察/64KiB）。每类最多一个请求，单次模型调用、不自动重试；服务端开发截止各30s，扩展客户端25s。新预算与旧`/read`/003/005分开。
+
+继续使用本目录`.env.example`所示的供应商设置；未配置返回503，不伪装识别成功。模型密钥仅在reader，画面/观察内容不写日志或学习记录。006仅受控自制素材可启用，B站处理授权待确认。当前没有音频、字幕或整视频文件理解；后台摘要只覆盖所列画面观察。接口见[006契约](../specs/006-plugin-learning-layer/contracts/plugin-learning.md)，范围及实际替身/MV3/真实模型状态见[验证记录](../docs/BreakGlass-continuous-vision-validation-2026-10-06.md)。
+
+## 几何自动阅读（原则 XVIII，`POST /geometry/lesson`）
+
+已增加 `POST /geometry/lesson`，仍是本进程、本机回环和同一套模型环境。它不复用 `POST /read` 的抛物线结果，也不复用 `POST /geometry/read` 的单帧直角三角形，也不复用上面的 `/learning/read`。契约见 [geometry-lesson-service](../specs/006-auto-geometry-lesson/contracts/geometry-lesson-service.md)。这条规格目录名里的 006 与插件持续视觉的 `specs/006-plugin-learning-layer/` 不是同一切片。
 
 | 项目 | 边界 |
 | --- | --- |

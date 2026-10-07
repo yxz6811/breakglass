@@ -165,10 +165,10 @@ test('17 识别适配（需先改 config）来源为「识别结果」且不显�
   }
 });
 
-test('18 P0 全程仅包内请求，005 本机 reader 例外不扩大权限', async () => {
+test('18 P0 全程仅包内请求，006最小权限不使旧路径发新请求', async () => {
   const manifest = require('../extension/manifest.json');
-  assert.deepEqual(manifest.permissions, []);
-  assert.deepEqual(manifest.host_permissions, []);
+  assert.deepEqual(manifest.permissions, ['activeTab', 'scripting', 'storage']);
+  assert.deepEqual(manifest.host_permissions, ['http://127.0.0.1:8787/*', 'http://127.0.0.1:4174/*']);
   const seen = [];
   const original = global.fetch;
   // 用会读取包内样例的识别路径来抓真实调用；off 主路径不读文件，抓不到。
@@ -203,6 +203,13 @@ test('18 P0 全程仅包内请求，005 本机 reader 例外不扩大权限', as
       } else if (relative === 'src/geometry-scene/request.js') {
         text = text.replaceAll('例如 http://127.0.0.1:8787。', '例如本机地址。');
       }
+      // 006 reader/fixture and 007 explicit local management navigation only.
+      if (relative === 'manifest.json') text = text.replaceAll('http://127.0.0.1:8787/*', 'LOCAL_READER').replaceAll('http://127.0.0.1:4174/*', 'LOCAL_ACCOUNT');
+      if (relative === 'src/plugin/account-sync.js') text = text.replaceAll('http://127.0.0.1:4174/api/plugin', 'LOCAL_ACCOUNT/api/plugin');
+      if (relative === 'src/background/service-worker.js') text = text.replaceAll('http://127.0.0.1:8787/learning/', 'LOCAL_READER/learning/');
+      if (relative === 'plugin/status.html') text = text
+        .replaceAll('http://localhost:4173/learning-lab/lesson.html', 'CONTROLLED_LESSON')
+        .replaceAll('http://localhost:4174/learning-site/index.html', 'LOCAL_MANAGEMENT');
       assert.doesNotMatch(text, /https?:\/\//, '不得出现远程地址：' + file);
     }
     const { buildUrl } = require('../extension/src/geometry-scene/request.js');

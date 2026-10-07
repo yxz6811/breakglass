@@ -97,7 +97,14 @@ function element(tagName) {
       list.push(handler);
       listeners.set(type, list);
     },
-    removeEventListener() {},
+    removeEventListener(type, handler) {
+      const list = listeners.get(type) || [];
+      const index = list.indexOf(handler);
+      if (index >= 0) list.splice(index, 1);
+    },
+    listenerCount(type) {
+      return type ? (listeners.get(type) || []).length : [...listeners.values()].reduce((sum, list) => sum + list.length, 0);
+    },
     dispatch(type, event) {
       for (const handler of (listeners.get(type) || []).slice()) {
         handler(Object.assign({ target: node, preventDefault() {} }, event || {}));
@@ -237,6 +244,9 @@ function createWindow() {
       const index = list.indexOf(handler);
       if (index >= 0) list.splice(index, 1);
     },
+    listenerCount(type) {
+      return type ? (listeners.get(type) || []).length : [...listeners.values()].reduce((sum, list) => sum + list.length, 0);
+    },
     dispatch(type, event) {
       for (const handler of (listeners.get(type) || []).slice()) handler(event || {});
     },
@@ -264,6 +274,7 @@ function createWindow() {
   return {
     win,
     timers,
+    frames,
     mediaQueries,
     observers,
     now: () => nowMs,
@@ -326,6 +337,8 @@ async function createHarness(options = {}) {
   }
   const documentListeners = new Map();
   const documentStub = {
+    hidden: false,
+    visibilityState: 'visible',
     querySelector(selector) {
       const match = /^#(.+)$/.exec(selector);
       return match ? elements[match[1]] || null : null;
@@ -337,7 +350,14 @@ async function createHarness(options = {}) {
       list.push(handler);
       documentListeners.set(type, list);
     },
-    removeEventListener() {},
+    removeEventListener(type, handler) {
+      const list = documentListeners.get(type) || [];
+      const index = list.indexOf(handler);
+      if (index >= 0) list.splice(index, 1);
+    },
+    listenerCount(type) {
+      return type ? (documentListeners.get(type) || []).length : [...documentListeners.values()].reduce((sum, list) => sum + list.length, 0);
+    },
     dispatch(type, event) {
       for (const handler of (documentListeners.get(type) || []).slice()) {
         handler(Object.assign({ preventDefault() {} }, event || {}));
@@ -349,7 +369,9 @@ async function createHarness(options = {}) {
     window: globalThis.window,
     document: globalThis.document,
     getComputedStyle: globalThis.getComputedStyle,
-    fetch: globalThis.fetch
+    fetch: globalThis.fetch,
+    location: globalThis.location,
+    sessionStorage: globalThis.sessionStorage
   };
   const fake = createWindow();
   let config = {
@@ -364,9 +386,15 @@ async function createHarness(options = {}) {
 
   globalThis.window = fake.win;
   globalThis.document = documentStub;
+  if (options.pageOptions) {
+    documentStub.body = { dataset: { unifiedWorkspace: true } };
+    globalThis.location = { hostname: 'localhost' };
+  }
+  if (options.storage) globalThis.sessionStorage = options.storage;
   globalThis.getComputedStyle = options.getComputedStyle || (() => ({ objectFit: 'contain', objectPosition: '50% 50%' }));
-  globalThis.fetch = (url) => {
+  const defaultFetch = (url) => {
     if (String(url).indexOf('config.json') >= 0) {
+      if (options.configPromise) return Promise.resolve(options.configPromise).then((value) => ({ ok: true, status: 200, json: async () => value }));
       return Promise.resolve({ ok: true, status: 200, json: async () => ({ ...config }) });
     }
     if (options.packagedVideoErrors && String(url).indexOf('breakglass-demo-9s.mp4') >= 0) {
@@ -374,6 +402,7 @@ async function createHarness(options = {}) {
     }
     return assetFetch(url);
   };
+  globalThis.fetch = (url, init) => options.fetchImpl ? options.fetchImpl(url, init, defaultFetch) : defaultFetch(url, init);
   if (options.packagedVideoErrors) {
     const probe = elements['demo-video'];
     let src = '';
@@ -389,6 +418,9 @@ async function createHarness(options = {}) {
   }
 
   vm.runInThisContext(mainSource, { filename: 'main.js' });
+  const page = options.pageOptions
+    ? fake.win.BreakGlass.curvePage.createCurvePage({ ...options.pageOptions, document: documentStub, window: fake.win, video: elements['demo-video'], stage: elements['video-stage'] })
+    : fake.win.BreakGlass.curvePage.page;
   await flush();
 
   const video = elements['demo-video'];
@@ -398,12 +430,15 @@ async function createHarness(options = {}) {
     stage: elements['video-stage'],
     document: documentStub,
     win: fake.win,
+    page,
     advance: fake.advance,
     frame: fake.frame,
     flush,
     now: fake.now,
     mediaQueries: fake.mediaQueries,
     observers: fake.observers,
+    timers: fake.timers,
+    frames: fake.frames,
     canvasCaptures,
     canvasEncodes,
     overlay() { return elements['video-stage'].children.find((child) => child.tagName === 'SVG') || null; },
@@ -425,6 +460,8 @@ async function createHarness(options = {}) {
       globalThis.document = previous.document;
       globalThis.getComputedStyle = previous.getComputedStyle;
       globalThis.fetch = previous.fetch;
+      globalThis.location = previous.location;
+      globalThis.sessionStorage = previous.sessionStorage;
     }
   };
 }

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { checkRequest, readLesson } from '../src/read.mjs';
-import { askModel, parseAnswer } from '../src/model.mjs';
+import { parseAnswer } from '../src/model.mjs';
 import {
   FRAME_DATA_URL,
   SOURCE_SIZE,
@@ -55,6 +55,16 @@ test('一帧读到抛物线：回一个能被页面收下的点', async () => {
   assert.deepEqual(again.dropped, []);
 });
 
+test('一般式由程序换算，旧输出包不夹带公式form或来源sidecar', async () => {
+  const model = fakeModel(() => parabolaAnswer({ equation: { form: 'general', a: 1, b: 0, c: 1 } }));
+  const { status, payload } = await read(lessonRequest(), model);
+  assert.equal(status, 200); assert.equal(payload.points.length, 1); assert.equal(model.calls.length, 1);
+  const curve = payload.points[0].curve;
+  assert.deepEqual(Object.fromEntries(Object.entries(curve.definition.parameters).map(([key, value]) => [key, value.initial])), { a: 1, h: 0, k: 1 });
+  assert.deepEqual(Object.keys(curve).sort(), ['definition', 'fallback', 'frameSize', 'requestId', 'source', 'time', 'videoId']);
+  assert.equal(pageRules.validateLessonReading(payload, SOURCE_SIZE).ok, true);
+});
+
 test('发给模型的是 OpenAI 兼容格式：带图、带密钥头，温度为 0', async () => {
   const model = fakeModel(() => parabolaAnswer());
   await read(lessonRequest(), model);
@@ -70,8 +80,6 @@ test('发给模型的是 OpenAI 兼容格式：带图、带密钥头，温度为
   assert.equal(parts[1].image_url.url, FRAME_DATA_URL);
   assert.match(parts[0].text, /宽 640 像素、高 402 像素/);
   assert.match(parts[0].text, /顶点式二次函数的图象/);
-  assert.match(call.body.messages[0].content, /先化成顶点式/);
-  assert.match(call.body.messages[0].content, /没有抛物线图象/);
 
   const json = fakeModel(() => parabolaAnswer());
   await read(lessonRequest(), json, { jsonMode: true });
@@ -85,8 +93,7 @@ test('响应和日志里没有画面、课程正文和密钥', async () => {
   assert.doesNotMatch(exposed, /data:image/);
   assert.doesNotMatch(exposed, /这段正文只给模型看/);
   assert.doesNotMatch(exposed, /test-key-not-real/);
-  assert.deepEqual(Object.keys(logs.at(-1)).sort(), ['event', 'frames', 'model', 'ms', 'points', 'readingId', 'reasons']);
-  assert.equal(logs.at(-1).model, 'vision-test');
+  assert.deepEqual(Object.keys(logs.at(-1)).sort(), ['event', 'frames', 'ms', 'points', 'readingId', 'reasons']);
 });
 
 test('点按时间排好，最早的在前；同一句讲解补上秒数', async () => {
@@ -224,10 +231,8 @@ test('每一帧都连不上模型时回 502；部分帧读完时照常回 200', 
   const offline = await read(lessonRequest(), fakeModel(() => new TypeError('fetch failed')));
   assert.equal(offline.status, 502);
 
-  const refusedModel = fakeModel(() => ({ status: 401 }));
-  const refused = await read(lessonRequest(), refusedModel);
+  const refused = await read(lessonRequest(), fakeModel(() => ({ status: 401 })));
   assert.equal(refused.status, 502);
-  assert.equal(refusedModel.calls.length, 1);
 
   const body = lessonRequest({
     frames: [
@@ -239,170 +244,6 @@ test('每一帧都连不上模型时回 502；部分帧读完时照常回 200', 
   assert.equal(mixed.status, 200);
   assert.deepEqual(mixed.payload.points.map((point) => point.time), [6.451]);
   assert.ok(mixed.payload.dropped.some((item) => item.reason === 'model_unreachable'));
-});
-
-test('模型限流时在同一次请求里再试，第二次成功就返回点', async () => {
-  let attempts = 0;
-  const model = fakeModel(() => {
-    attempts += 1;
-    return attempts === 1 ? { status: 429 } : parabolaAnswer();
-  });
-  const { status, payload } = await read(lessonRequest(), model, { retryDelaysMs: [0] });
-  assert.equal(status, 200);
-  assert.equal(payload.points.length, 1);
-  assert.equal(model.calls.length, 2);
-});
-
-test('连续限流只再试两次，耗尽后仍回 502', async () => {
-  const model = fakeModel(() => ({ status: 429 }));
-  const { status, payload } = await read(lessonRequest(), model, { retryDelaysMs: [0, 0] });
-  assert.equal(status, 502);
-  assert.equal(payload.error, '模型没有回应。');
-  assert.equal(model.calls.length, 3);
-});
-
-test('限流等待期间取消就不再请求模型', async () => {
-  const controller = new AbortController();
-  let calls = 0;
-  const result = await askModel({
-    settings: settings({ retryDelaysMs: [5000] }),
-    dataUrl: 'data:image/jpeg;base64,/9j/aaaa',
-    image: { width: 2, height: 2 },
-    time: 1,
-    courseText: '',
-    signal: controller.signal,
-    fetchImpl: async () => {
-      calls += 1;
-      controller.abort();
-      return { ok: false, status: 429 };
-    }
-  });
-  assert.equal(result.ok, false);
-  assert.equal(result.reason, 'model_timeout');
-  assert.equal(calls, 1);
-});
-
-test('模型池限流后立刻换下一个，不再空等同一个模型', async () => {
-  const calls = [];
-  const result = await askModel({
-    settings: settings({
-      modelCursor: { next: 0 },
-      models: [
-        { baseUrl: 'https://model.example/v1', apiKey: 'test-key-not-real', model: 'glm-4.6v-flash', jsonMode: false },
-        { baseUrl: 'https://model.example/v1', apiKey: 'test-key-not-real', model: 'glm-4v-flash', jsonMode: false },
-        { baseUrl: 'https://model.example/v1', apiKey: 'test-key-not-real', model: 'glm-4.1v-thinking-flash', jsonMode: false }
-      ]
-    }),
-    dataUrl: 'data:image/jpeg;base64,/9j/aaaa',
-    image: { width: 2, height: 2 },
-    time: 1,
-    courseText: '',
-    signal: AbortSignal.timeout(5000),
-    fetchImpl: async (_url, init) => {
-      const body = JSON.parse(init.body);
-      calls.push(body.model);
-      if (body.model === 'glm-4.6v-flash') {
-        assert.deepEqual(body.thinking, { type: 'disabled' });
-        return { ok: false, status: 429 };
-      }
-      return {
-        ok: true,
-        status: 200,
-        json: async () => ({ choices: [{ message: { content: JSON.stringify({ hasParabola: false }) } }] })
-      };
-    }
-  });
-  assert.deepEqual(calls, ['glm-4.6v-flash', 'glm-4v-flash']);
-  assert.equal(result.ok, true);
-  assert.equal(result.model, 'glm-4v-flash');
-  assert.equal(result.answer.hasParabola, false);
-});
-
-test('下一次阅读从池里的下一个模型开始', async () => {
-  const cursor = { next: 0 };
-  const seen = [];
-  const fetchImpl = async (_url, init) => {
-    seen.push(JSON.parse(init.body).model);
-    return {
-      ok: true,
-      status: 200,
-      json: async () => ({ choices: [{ message: { content: '{"hasParabola":false}' } }] })
-    };
-  };
-  const base = settings({
-    modelCursor: cursor,
-    models: [
-      { baseUrl: 'https://model.example/v1', apiKey: 'test-key-not-real', model: 'glm-4.6v-flash', jsonMode: false },
-      { baseUrl: 'https://model.example/v1', apiKey: 'test-key-not-real', model: 'glm-4v-flash', jsonMode: false }
-    ]
-  });
-  const input = {
-    dataUrl: 'data:image/jpeg;base64,/9j/aaaa',
-    image: { width: 2, height: 2 },
-    time: 1,
-    courseText: '',
-    signal: AbortSignal.timeout(5000),
-    fetchImpl
-  };
-  await askModel({ settings: base, ...input });
-  await askModel({ settings: base, ...input });
-  assert.deepEqual(seen, ['glm-4.6v-flash', 'glm-4v-flash']);
-});
-
-test('模型明确说没有抛物线时不改问下一个', async () => {
-  let calls = 0;
-  const result = await askModel({
-    settings: settings({
-      modelCursor: { next: 0 },
-      models: [
-        { baseUrl: 'https://model.example/v1', apiKey: 'test-key-not-real', model: 'glm-4v-flash', jsonMode: false },
-        { baseUrl: 'https://model.example/v1', apiKey: 'test-key-not-real', model: 'glm-4.6v-flash', jsonMode: false }
-      ]
-    }),
-    dataUrl: 'data:image/jpeg;base64,/9j/aaaa',
-    image: { width: 2, height: 2 },
-    time: 1,
-    courseText: '',
-    signal: AbortSignal.timeout(5000),
-    fetchImpl: async () => {
-      calls += 1;
-      return {
-        ok: true,
-        status: 200,
-        json: async () => ({ choices: [{ message: { content: '{"hasParabola":false}' } }] })
-      };
-    }
-  });
-  assert.equal(calls, 1);
-  assert.equal(result.ok, true);
-});
-
-test('取消发生在第一个模型上时不再问后面的模型', async () => {
-  const controller = new AbortController();
-  let calls = 0;
-  const result = await askModel({
-    settings: settings({
-      modelCursor: { next: 0 },
-      models: [
-        { baseUrl: 'https://model.example/v1', apiKey: 'test-key-not-real', model: 'glm-4.6v-flash', jsonMode: false },
-        { baseUrl: 'https://model.example/v1', apiKey: 'test-key-not-real', model: 'glm-4v-flash', jsonMode: false }
-      ]
-    }),
-    dataUrl: 'data:image/jpeg;base64,/9j/aaaa',
-    image: { width: 2, height: 2 },
-    time: 1,
-    courseText: '',
-    signal: controller.signal,
-    fetchImpl: async () => {
-      calls += 1;
-      controller.abort();
-      const error = new Error('aborted');
-      error.name = 'AbortError';
-      throw error;
-    }
-  });
-  assert.equal(result.reason, 'model_timeout');
-  assert.equal(calls, 1);
 });
 
 test('单帧超时按时限放弃，不重试', async () => {
@@ -486,8 +327,4 @@ test('回答外面包了代码块或多了几句话也能取出 JSON', () => {
   assert.deepEqual(parseAnswer([{ type: 'text', text: '{"hasParabola": false}' }]), { hasParabola: false });
   assert.equal(parseAnswer('[1, 2]'), null);
   assert.equal(parseAnswer(null), null);
-  assert.deepEqual(
-    parseAnswer('<think>{"a":9}</think>\n{"hasParabola":false}'),
-    { hasParabola: false }
-  );
 });

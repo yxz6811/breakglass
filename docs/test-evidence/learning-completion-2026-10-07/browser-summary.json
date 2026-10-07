@@ -1,0 +1,126 @@
+{
+  "status": "passed",
+  "scope": "009 actual browser learning workflow, private cache and account metadata",
+  "actualBrowser": true,
+  "actualMediaDecode": true,
+  "actualAccountHTTP": true,
+  "actualMV3": false,
+  "model": "explicit injected vision transport stub",
+  "realAI": false,
+  "bilibiliSupport": false,
+  "publicCloudDeployment": false,
+  "realLearningEffect": false,
+  "realASR": false,
+  "checks": {
+    "fiveManualTemplatesActualLocalSaveAnswersAndExploration": true,
+    "mixedPracticeRotatesFiveManualTemplatesWithoutCreatingAnswers": true,
+    "sevenLearningNodesReflectActualReceiptsAndIndependentVariant": true,
+    "localAnnotationChangesOnlyMetadata": true,
+    "accountManualTemplateActualSaveAndJudgment": true,
+    "accountAnnotation409PreservesInputAndOriginalMath": true,
+    "actualKnownMediaProgressiveDecodePrivateCacheHitAndClear": true,
+    "unconfiguredAudioFailsBeforeAnyExtractionOrSupplierCall": true,
+    "unknownFingerprintIsPreviewOnlyAndSendsZeroAIInputs": true,
+    "accountSwitchAndDeleteDoNotLeakPreviousRecordsOrAnnotations": true,
+    "desktopMobileLayoutAndConsole": true,
+    "unavailableWebGLKeepsMathAndActualPracticeUsable": true
+  },
+  "screenshots": [
+    "completion-line.png",
+    "completion-circle.png",
+    "completion-sine.png",
+    "completion-similar-triangles.png",
+    "completion-cuboid.png"
+  ],
+  "errors": [],
+  "expectedHTTPFailures": [
+    {
+      "route": "/api/annotations/:recordId",
+      "status": 409
+    },
+    {
+      "route": "/api/audio/session",
+      "status": 503
+    }
+  ],
+  "calls": {
+    "context": 2,
+    "read": 0,
+    "summary": 0,
+    "audioExtract": 0
+  },
+  "environment": {
+    "platform": "win32",
+    "node": "v24.21.0",
+    "browser": "151.0.7922.34"
+  },
+  "contextCoverage": [
+    {
+      "times": [
+        0,
+        3.999667,
+        7.999333,
+        11.999
+      ],
+      "frameCount": 4,
+      "authorCueCount": 3,
+      "audio": false,
+      "wholeVideo": false
+    },
+    {
+      "times": [
+        0,
+        3.999667,
+        7.999333,
+        11.999
+      ],
+      "frameCount": 4,
+      "authorCueCount": 3,
+      "audio": false,
+      "wholeVideo": false
+    }
+  ],
+  "particleChecks": [
+    {
+      "template": "line",
+      "svgPresent": true,
+      "canvasPresent": true,
+      "webGL": true,
+      "cameraReset": true,
+      "bufferUpdateVerified": true
+    },
+    {
+      "template": "circle",
+      "svgPresent": true,
+      "canvasPresent": true,
+      "webGL": true,
+      "cameraReset": true,
+      "bufferUpdateVerified": true
+    },
+    {
+      "template": "sine",
+      "svgPresent": true,
+      "canvasPresent": true,
+      "webGL": true,
+      "cameraReset": true,
+      "bufferUpdateVerified": true
+    },
+    {
+      "template": "similar-triangles",
+      "svgPresent": true,
+      "canvasPresent": true,
+      "webGL": true,
+      "cameraReset": true,
+      "bufferUpdateVerified": true
+    },
+    {
+      "template": "cuboid",
+      "svgPresent": true,
+      "canvasPresent": true,
+      "webGL": true,
+      "cameraReset": true,
+      "bufferUpdateVerified": true
+    }
+  ],
+  "artifactScope": "Redacted summary and selected anonymous mathematical screenshots only. No account store, browser profile, media, password, cookie, pairing code or token included."
+}

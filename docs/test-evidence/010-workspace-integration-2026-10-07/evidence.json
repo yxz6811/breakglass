@@ -1,0 +1,72 @@
+{
+  "date": "2026-10-07",
+  "timezone": "Asia/Shanghai",
+  "baseCommit": "4a2adcf4a69d1eac9014c5de513292326476771f",
+  "workingTree": "uncommitted shared 010 implementation",
+  "browser": "Codex In-app Browser",
+  "origin": "http://127.0.0.1:18767",
+  "server": "real temporary learning gateway + real front door with fixed-target test injection",
+  "modelConfigured": false,
+  "supplierCalls": 0,
+  "tests": {
+    "command": "node --test tests/workspace-integration.test.mjs tests/workspace-local-boundaries.test.mjs tests/workspace-particle-fallback.test.mjs tests/learning-flow.test.js",
+    "pass": 47,
+    "fail": 0,
+    "http": 6,
+    "boundaries": 17,
+    "linesAndFallback": 10,
+    "pureFlow": 14
+  },
+  "browserCorePaths": {
+    "pass": 4,
+    "total": 4,
+    "everyStageRepeatedFourTimes": false
+  },
+  "timing": {
+    "warmupCount": 5,
+    "count": 50,
+    "p95Ms": 2.300000011920929,
+    "maxMs": 2.5,
+    "definition": "real input to synchronous formula/SVG/line renderer update, excludes tool overhead and pixel presentation",
+    "template": "parabola",
+    "parameter": "h",
+    "values": [
+      0,
+      0.1
+    ]
+  },
+  "panelSwitches": 20,
+  "viewports": [
+    {
+      "width": 1280,
+      "height": 800
+    },
+    {
+      "width": 360,
+      "height": 800
+    }
+  ],
+  "screenshots": {
+    "width": 1280,
+    "height": 1080
+  },
+  "fullscreenNativeState": "unverified; DOM bridge did not expose fullscreen state",
+  "environmentFallback": "actual modules under injected WebGL/reduced-motion conditions",
+  "realModel": "not executed",
+  "teacherAndStudents": "not executed",
+  "mv3": "not newly executed",
+  "browserMigrationImport": "not executed",
+  "sha256": {
+    "learning-site/learning-flow-ui.js": "777f34610a18267600b58407ba9df4ff39fa164f0b05f1de28c8b5cbfb80898a",
+    "learning-site/learning-flow-store.js": "d780adbf9ef08d0a9d38b67daa077e4a1f65441a9b291f1e6a3071605b1eb188",
+    "learning-site/live-particles.js": "4a34520598c5569d4844d06958d2191ebe2418338c02dc92482fcc7956930278",
+    "extension/src/plugin/particle-renderer.js": "0e3b2d79415c44ad1aa9fb1792fabc2c0171ae41d68466c9efc48f4d3e1d5d79",
+    "extension/src/page/main.js": "576a31fb34a980fa286c3e491bf5ef7dd49b0d3843e0716336fae252cbdb9457",
+    "learning-site/app.js": "1f0ae6046880a36329184bff404a5e4f340975c414b2a55e6d23de00808d88d2",
+    "scripts/workspace-integration-fixture.mjs": "52e929fade8ecd7d6dd0667ab38b1941e542f13c0b05ea20744ef177adfb07ce",
+    "scripts/verify-workspace-integration.mjs": "c7118471736b331cebf4326b0f7a506bd3ef134e095c6dbb2fd24bf3347f2ae0",
+    "tests/workspace-integration.test.mjs": "f4450cb7301434ee291db8e07b3b4db50a18a11bba298c3f4e09e0af72cf1680",
+    "tests/workspace-local-boundaries.test.mjs": "2c1b614fe03138575452c086e962283c6bfb8ae8b879ba3744890ab35aa1f7a7",
+    "tests/workspace-particle-fallback.test.mjs": "9f84244b38bc42845ec35ed579eabd0ac1980e4e64c736ad929f9927b8175888"
+  }
+}

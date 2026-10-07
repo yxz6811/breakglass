@@ -1,8 +1,20 @@
 # BreakGlass 视频沉浸学习产品规划
 
+> 2026-10-07最新规划：根据用户要求融合学习研究，并以 `extension/demo/index.html` 为本轮统一工作台，将已有与新增功能在同页实现。详见[研究融合/实现顺序/竞争评估](BreakGlass-evidence-learning-plan-2026-10-07.md)、[主工作台UI](BreakGlass-demo-workspace-ui-plan-2026-10-07.md)和[010任务](../specs/010-evidence-guided-learning/tasks.md)。这是下一轮规划，010实现项尚未执行；下文插件产品方向、学习站复用模块、许可和独立验收继续适用。
+
+> 009最新交付（2026-10-07，治理2.5.0）：记录备注/原因标签可修订，获准素材可显式渐进分段并复用私有缓存；新增五种手工数学、粒子、真实作答与窄题型诊断；登记短音轨可配置ASR；提供严格试点配置检查和运行入口。功能仍对应BG-F01–F12/BG-U01–U13，新增UI-A31–35见[009规划](BreakGlass-learning-completion-2026-10-07.md)与[管理UI规划](BreakGlass-learning-management-ui-2026-10-06.md)。[009任务](../specs/009-learning-completion/tasks.md)按真实证据更新；视觉候选不扩大，B站许可、真实模型/长课、正式发布和学生效果另验。下方006–008与初始规划保留为历史范围。
+
+> 008最新实施（治理2.4.0）：插件与网站本机账号显式配对、未来记录/观看同步、受限离线队列，网站短片段多帧＋登记作者字幕，以及参数预测/三级提示/独立程序变式。UI、风险及状态见[008连通学习规划](BreakGlass-connected-learning-2026-10-06.md)与[任务](../specs/008-connected-learning/tasks.md)。真实模型、B站许可、公网跨设备与真实学生效果仍独立待验；下文历史基线保留。
+
+
+> 007最新实施：用户要求继续写代码、模型留空可配置，并以showcase视觉建设当前账号管理网站。治理2.3.0；管理网站采用局部暗色品牌主题，观看位置与实际复练状态分开展示。详细映射见[管理网站UI规划](BreakGlass-learning-management-ui-2026-10-06.md)，实际状态见[007任务](../specs/007-learning-site-and-particles/tasks.md)。下文旧规划表与里程碑不自动表示已验收。
+
+> 2026-10-06 最新决定：用户已授权实施；主流程改为视觉模型持续识别当前视频画面，并在后台滚动总结已分析内容。作者知识层是可选加速/测试，平台业务接口不是核心依赖。问题、解决措施、降级和验收见 [持续视觉规划](BreakGlass-continuous-vision-plan-2026-10-06.md) BG-VR01–14，治理见 Constitution 2.2.0 原则 XIV；B站处理授权待确认。下文原基线与历史阶段判断不代表最新功能已经完成。
+
+
 > 日期：2026-10-06。状态：产品目标与实施规划；本次交付为文档，不表示新增功能已实现、服务已接通或学习效果已验证。
 >
-> 仓库基线：`main@d4b6e0bfdffff2b2584a537b1e0ff87e4d7e2ae9`，包含 PR #63；本轮文档差异另行记录。治理依据：[Spec Constitution 2.1.0](../.specify/memory/constitution.md)、[产品 Constitution 2.1.0](BreakGlass-constitution.md) 原则 XI/XII/XIII 及 [AGENTS.md](../AGENTS.md)。
+> 仓库基线：`main@d4b6e0bfdffff2b2584a537b1e0ff87e4d7e2ae9`，包含 PR #63；本轮文档差异另行记录。治理依据：[Spec Constitution 2.2.0](../.specify/memory/constitution.md)、[产品 Constitution 2.2.0](BreakGlass-constitution.md) 原则 XI/XII/XIII 及 [AGENTS.md](../AGENTS.md)。
 >
 > 配套交付：[UI 规划](BreakGlass-ui-plan-2026-10-06.md)、[素材权利与风险规划](BreakGlass-rights-and-risk-plan-2026-10-06.md)。功能使用同一组 `BG-F01`–`BG-F12`，界面使用 `BG-U01`–`BG-U13`；实施时逐项对应状态、数据、动作和验收，不创建另一组同义编号。风险按宪法原则 XII 的地区发布门槛处理。
 
@@ -24,7 +36,7 @@ BreakGlass 的主要入口是浏览器插件。学生观看支持平台的网课
 
 | 能力 | 已有依据 | 本规划需要补齐的部分 |
 | --- | --- | --- |
-| 扩展入口 | [manifest](../extension/manifest.json) 为 Chrome MV3，权限和主机权限为空；当前打开扩展演示页 | 支持站点适配、逐站授权、播放器识别、退出清理；尚无第三方视频注入验收 |
+| 扩展入口 | [manifest](../extension/manifest.json)为MV3；006新增activeTab/scripting/storage及固定loopback请求桥，显式注入固定受控教学页；旧演示入口保留 | 已有受控自制视频、模型替身的Edge MV3验证；真实模型、获准平台/布局/全屏等仍独立验收，未列B站支持 |
 | 抛物线 | [求值](../extension/src/curve/evaluate.js)、[校验](../extension/src/curve/validate.js)、[当前帧识别](../extension/src/curve/current-frame.js) 与独立缓存唤醒 | 函数概念更深的解释、平台视频时空绑定和新热点 UI；真实模型与像素证据继续独立补齐 |
 | 直角三角形 | [确定性解算](../extension/src/geometry-scene/solve.js)、[场景校验](../extension/src/geometry-scene/validate.js)、[动作](../extension/src/geometry-scene/actions.js)、[视图](../extension/src/geometry-scene/view.js) | 复用条件校对与不可变原题快照；不将预设、手工条件算成自动识别成功 |
 | 阅读与提问 | [003](../specs/003-preplay-lesson-points/spec.md)、[005](../specs/005-insitu-right-triangle/spec.md)、本地无状态 [reader](../breakglass-reader/) | 新模式的分段任务、部分就绪、缓存及取消契约；已有路径不自动升级为云任务 |
@@ -35,7 +47,7 @@ BreakGlass 的主要入口是浏览器插件。学生观看支持平台的网课
 
 ## 3. 范围与兼容约束
 
-本轮将插件优先的双入口（支持站点网课插件、网站用户视频导入）、分段预处理、时空热点、参数化呈现、受限账号与学习记录纳入产品规划。后续实施须有独立 Spec/Plan/Tasks、版本化契约、真实依赖与验收记录；本次不改业务代码、建立服务、部署或新增扩展权限。
+本轮将插件优先的双入口（支持站点网课插件、网站用户视频导入）、分段预处理、时空热点、参数化呈现、受限账号与学习记录纳入产品规划。后续实施须有独立 Spec/Plan/Tasks、版本化契约、真实依赖与验收记录；此前仅交付文档；后续用户已授权按006实现持续视觉首切片，生产服务/账号/部署仍须对应契约与独立验收。
 
 既有 `001`–`005` 及当前帧增强保留自己的来源、请求、状态和数据约束，不由新规划重新解释：
 

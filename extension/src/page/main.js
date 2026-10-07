@@ -1,5 +1,45 @@
-(function () {
+(function (root) {
   'use strict';
+  function toLearningScene(figure) {
+    const p = figure.parameters;
+    if (figure.kind !== 'sine') return { template: figure.kind, snapshot: { ...p } };
+    // The older graph allows zero amplitude; it is a constant, with no minimum period.
+    if (p.a === 0) return { template: 'line', snapshot: { m: 0, b: p.k }, degeneracy: 'zero-amplitude-sine' };
+    return { template: 'sine', snapshot: { A: Math.abs(p.a), omega: 1,
+      phi: (-p.h + (p.a < 0 ? Math.PI : 0)) % (2 * Math.PI), k: p.k } };
+  }
+  function createCurvePage(options = {}) {
+  const document = options.document || root.document;
+  const window = options.window || root.window || root;
+  let active = true; let disposed = false; let borrowedMedia = null;
+  let readerGeneration = 0; let currentFrameIdentity = null; let currentFrameConfirmed = false;
+  const lifecycleAbort = new AbortController();
+  const listeners = [];
+  function listen(target, ...args) { target.addEventListener(...args); listeners.push(() => target.removeEventListener(...args)); }
+  const isActive = () => !disposed && active && (!options.isActive || options.isActive());
+  const canSend = () => isActive() && document.visibilityState !== 'hidden' && (!options.canRead || options.canRead());
+  const readerIdentity = () => ({ readerSequence: readerGeneration, permission: options.getPermissionGeneration?.() ?? 0,
+    generation: borrowedMedia?.generation ?? 0, owner: borrowedMedia?.owner ?? null, epoch: borrowedMedia?.epoch ?? null,
+    sourceId: borrowedMedia?.source?.id ?? null, sourceVersion: borrowedMedia?.source?.version ?? null });
+  const readerStillCurrent = (identity) => {
+    const current = readerIdentity();
+    return canSend() && identity && Object.keys(current).every((key) => current[key] === identity[key]);
+  };
+  let lastInputTiming = null; let inputSequence = 0;
+  function measureInput(change) {
+    const clock = () => root.performance?.now ? root.performance.now() : Date.now();
+    const started = clock();
+    try { return change(); }
+    finally {
+      lastInputTiming = { durationMs: Math.max(0, clock() - started), seq: ++inputSequence,
+        kind: 'DOM+particle synchronous update, not pixel presentation' };
+      if (options.container?.dataset) {
+        options.container.dataset.inputDurationMs = String(lastInputTiming.durationMs);
+        options.container.dataset.inputSeq = String(lastInputTiming.seq);
+        options.container.dataset.inputTimingKind = lastInputTiming.kind;
+      }
+    }
+  }
 
   const {
     geometry,
@@ -17,8 +57,8 @@
   const tutorApi = window.BreakGlass.tutor || null;
   const tutorFigures = window.BreakGlass.tutorFigures || null;
   const $ = (selector) => document.querySelector(selector);
-  const video = $('#demo-video');
-  const stage = $('#video-stage');
+  const video = options.video || $('#demo-video');
+  const stage = options.stage || $('#video-stage');
   const targetInput = $('#target-time');
   const playToggle = $('#play-toggle');
   const jumpTarget = $('#jump-target');
@@ -64,6 +104,12 @@
   const lessonCancel = $('#lesson-cancel');
   const lessonNext = $('#lesson-next');
   const lessonEndpoint = $('#lesson-endpoint');
+  const fixedReaderEndpoint = options.video && typeof options.fixedReaderEndpoint === 'string' ? options.fixedReaderEndpoint : '';
+  if (fixedReaderEndpoint && lessonEndpoint) {
+    lessonEndpoint.value = fixedReaderEndpoint;
+    lessonEndpoint.readOnly = true;
+    lessonEndpoint.setAttribute('readonly', '');
+  }
   const lessonNote = $('#lesson-note');
   const stageBanner = $('#stage-banner');
   const stageBannerTitle = $('#stage-banner-title');
@@ -98,13 +144,6 @@
    * @type {number}
    */
   const PACKAGED_DEMO_TARGET_SECONDS = 6;
-
-  /**
-   * 演示页不放阅读地址时，破壁仍把当前暂停帧交给本机 reader。
-   * 有输入框时以输入框为准，空着就提示填写，不用这个默认值顶上。
-   * @type {string}
-   */
-  const DEFAULT_READER_URL = 'http://127.0.0.1:8787/read';
 
   let config = null;
   let presetResult = null;
@@ -204,6 +243,8 @@
    * @returns {Promise<void>}
    */
   async function choosePackagedVideo() {
+    if (disposed) return;
+    if (options.onSelectSample) return options.onSelectSample(PACKAGED_VIDEO_URL, 'parabola-demo.mp4');
     if (bootFailure || !video) return;
     invalidateFrameRead();
     resetLesson();
@@ -216,6 +257,7 @@
     mediaPending = true;
     if (video.setAttribute && packagedPreset) video.setAttribute('data-video-id', packagedPreset.videoId);
     const attached = await attachPackagedVideo();
+    if (disposed) return;
     if (!attached) {
       mediaPending = false;
       if (!bootFailure) setStatus('预先准备的片子没有加载出来。');
@@ -231,14 +273,15 @@
    * @returns {Promise<boolean>} 是否已把地址交给演示 video
    */
   async function attachPackagedVideo() {
+    if (options.video) return Boolean(borrowedMedia?.selection);
     if (localVideoUrl || bootFailure) return Boolean(localVideoUrl);
     try {
-      const response = await fetch(PACKAGED_VIDEO_URL, { method: 'HEAD' });
+      const response = await fetch(PACKAGED_VIDEO_URL, { method: 'HEAD', signal: lifecycleAbort.signal });
       if (response.status === 404 || response.status === 410) return false;
     } catch {
       // 断网时 HEAD 失败，不代表扩展包里没有这个文件。
     }
-    if (localVideoUrl || bootFailure) return Boolean(localVideoUrl);
+    if (disposed || localVideoUrl || bootFailure) return !disposed && Boolean(localVideoUrl);
     video.src = PACKAGED_VIDEO_URL;
     return true;
   }
@@ -249,6 +292,7 @@
    * @param {File} file
    */
   function useLocalVideo(file) {
+    if (options.onSelectFile) return options.onSelectFile(file);
     if (!file || !video || typeof URL.createObjectURL !== 'function') return;
     if (file.type && file.type.indexOf('video/') !== 0) {
       setStatus('请选择一个视频文件。');
@@ -513,6 +557,7 @@
     figureKind = 'parabola';
     localFigure = null;
     figureOutsideWindow = false;
+    options.onScene?.(null);
   }
 
   function unavailableFigureMapping() {
@@ -651,6 +696,7 @@
    */
   function videoMatches() {
     if (!presetResult) return false;
+    if (options.video && !usingLessonCurve && borrowedMedia?.sample !== 'parabola') return false;
     if (localVideoUrl && !usingLessonCurve) return false;
     if (!video || typeof video.getAttribute !== 'function') return true;
     const marked = video.getAttribute('data-video-id');
@@ -818,6 +864,7 @@
    */
   function syncStageBanner() {
     if (!stageBanner) return;
+    if (!isActive()) { stageBanner.hidden = true; return; }
     const state = sessionState();
     const waiting = Boolean(state && state.status === 'waiting');
     const failed = Boolean(state && state.status === 'recoverable-error');
@@ -854,15 +901,15 @@
       mode = 'open';
       title = '破壁已打开';
       detail = usingCurrentFrame
-        ? '这是当前暂停帧识别出的抛物线。拖动控制点或下方的滑块，也可以提问。'
+        ? '这是当前暂停帧识别出的抛物线。拖动控制点或滑块，也可以提问。'
         : usingLessonCurve
-        ? '这是这次阅读找到的曲线。拖画面上的点，或拖下方的滑块。'
-        : '曲线已经盖在画面上。拖画面上的点，或拖下方的滑块。';
+        ? '这是这次阅读找到的曲线。拖画面上的点，或拖右边的滑块。'
+        : '曲线已经盖在画面上。拖画面上的点，或拖右边的滑块。';
     } else if (lesson && lesson.seeking) {
       mode = 'seeking';
       title = '正在停到这一帧';
       detail = '停稳之后才能破壁。';
-    } else if (lessonEndpoint && localVideoUrl && canReadCurrentFrame() && !String(lessonEndpoint.value || '').trim()) {
+    } else if (localVideoUrl && canReadCurrentFrame() && (!lessonEndpoint || !String(lessonEndpoint.value || '').trim())) {
       mode = 'need-address';
       title = '填入本机阅读地址';
       detail = '配置本地 reader 后，暂停并点破壁识别当前帧。视频文件保留在浏览器里。';
@@ -882,7 +929,7 @@
       mode = 'ready';
       title = '可以破壁';
       detail = '点顶栏的破壁，或按 Alt+B。曲线还没出现。';
-      if (offersCurrentFrameRead() && !(atTarget() && videoMatches())) detail = '点破壁或按 Alt+B，只识别当前暂停帧的抛物线。';
+      if (localVideoUrl && !(atTarget() && videoMatches())) detail = '点破壁或按 Alt+B，只识别当前暂停帧的抛物线。';
       if (lesson && lesson.phase === 'reading') detail += '画面还在继续看。';
     } else if (awaitingEndpoint) {
       mode = 'need-address';
@@ -1164,7 +1211,11 @@
 
   function drawCurve() {
     try {
-      return drawCurveUnsafe();
+      const result = drawCurveUnsafe();
+      const figure = activeFigure();
+      if (result === true && figure && overlay && isActive()) options.onScene?.({ ...toLearningScene(figure), origin: 'exploration', confirmed: !options.video || !usingCurrentFrame || currentFrameConfirmed, requiresConfirmation: Boolean(options.video && usingCurrentFrame && !currentFrameConfirmed), sourceId: borrowedMedia?.source?.id || null, sourceVersion: borrowedMedia?.source?.version || null });
+      else options.onScene?.(null);
+      return result;
     } catch {
       cancelPresentation();
       dragging = false;
@@ -1425,7 +1476,7 @@
     const waiting = Boolean(sessionState() && sessionState().status === 'waiting');
     const ready = cachedCurveReady();
     wakeButton.disabled = waiting || Boolean(frameRead) || Boolean(overlay) ||
-      !(ready || (offersCurrentFrameRead() && !(lesson && lesson.seeking)));
+      !(ready || (canReadCurrentFrame() && !(lesson && lesson.seeking)));
     const playLabel = video.paused ? '播放' : '暂停';
     playToggle.setAttribute('aria-label', playLabel + '视频');
     if (playTip) playTip.textContent = playLabel;
@@ -1462,7 +1513,7 @@
         else if (overlay) reason = '交互层已经出现，不需要再次破壁。';
         else if (lesson && lesson.seeking) reason = lessonWakeStatus();
         else if (!video.paused) reason = '请先暂停视频。';
-        else if (localVideoUrl && !canReadCurrentFrame() && !(atTarget() && videoMatches())) reason = '当前画面尚未解码、正在定位或时间无效，请等暂停帧就绪。';
+        else if (localVideoUrl && !canReadCurrentFrame()) reason = '当前画面尚未解码、正在定位或时间无效，请等暂停帧就绪。';
         else if (lessonBlocksWake()) reason = lessonWakeStatus();
         else if (!hasFrameSize()) reason = pickStatus();
         else if (materialMessage()) reason = materialMessage();
@@ -1510,7 +1561,7 @@
     currentFrameWakeStartedAt = null;
     wakeStartedAt = null;
     wakeButton.disabled = Boolean(frameRead) || !(cachedCurveReady() ||
-      (offersCurrentFrameRead() && !(lesson && lesson.seeking)));
+      (canReadCurrentFrame() && !(lesson && lesson.seeking)));
     syncFrameReadControls();
     markGuide();
   }
@@ -1545,8 +1596,8 @@
       }
       setSource(result);
       setStatus(timedOut
-        ? '已改用预先准备的示例。拖画面上的点，或拖下方的滑块。'
-        : '拖画面上的点，或拖下方的滑块，也可以在下面提问。按 Esc 退出。');
+        ? '已改用预先准备的示例。拖画面上的点，或拖右边的滑块。'
+        : '拖画面上的点，或拖右边的滑块，也可以在下面提问。按 Esc 退出。');
       syncControls();
       return;
     }
@@ -1588,8 +1639,8 @@
   }
 
   function wake() {
-    if (frameRead || overlay) return;
-    if (localVideoUrl && !cachedCurveReady()) {
+    if (!isActive() || frameRead || overlay) return;
+    if ((localVideoUrl || (options.video && borrowedMedia?.selection)) && !cachedCurveReady()) {
       readCurrentFrame();
       return;
     }
@@ -1652,6 +1703,8 @@
     presetResult = result;
     usingLessonCurve = Boolean(fromLesson);
     usingCurrentFrame = Boolean(fromCurrentFrame);
+    currentFrameIdentity = null;
+    currentFrameConfirmed = false;
     if (!usingCurrentFrame) currentFrameSource = '';
     targetInput.value = String(fromLesson ? result.time : PACKAGED_DEMO_TARGET_SECONDS);
     const live = fromLesson ? { ...config, externalAttempt: 'off', visionAdapter: 'off' } : config;
@@ -1674,39 +1727,8 @@
     window.__breakglassWakeMounts = wakeMounts;
   }
 
-  /**
-   * 自己的片子已经暂停出画面时，破壁去识别这一帧。
-   * 不要求页面上有阅读地址框；框不存在时用本机默认 reader。
-   * @returns {boolean}
-   */
-  function offersCurrentFrameRead() {
-    return canReadCurrentFrame();
-  }
-
-  /**
-   * 挂在 yangxizhe.com 上时，暂停帧交给同源的阅读入口。
-   * 其他页面仍用本机 reader，不把帧发到任意公网地址。
-   * @returns {string}
-   */
-  function hostedReaderUrl() {
-    const page = typeof window !== 'undefined' ? window.location : null;
-    if (!page || page.protocol !== 'https:') return '';
-    if (page.hostname !== 'yangxizhe.com' && page.hostname !== 'www.yangxizhe.com') return '';
-    return new URL('/breakglass/read', page.origin).href;
-  }
-
-  /**
-   * 有地址框时只用框里的值。没有框时用这次浏览记过的地址，
-   * 在 yangxizhe.com 上用同源阅读入口，否则用本机默认 reader。
-   * @returns {string}
-   */
-  function currentFrameAddress() {
-    if (lessonEndpoint) return String(lessonEndpoint.value || '').trim();
-    return readStoredEndpoint() || hostedReaderUrl() || DEFAULT_READER_URL;
-  }
-
   function canReadCurrentFrame() {
-    return Boolean(localVideoUrl && config && currentFrameApi && !bootFailure && !videoBroken && !mediaPending &&
+    return Boolean((localVideoUrl || borrowedMedia?.selection) && canSend() && config && currentFrameApi && !bootFailure && !videoBroken && !mediaPending &&
       video.paused && !video.seeking && video.readyState >= 2 &&
       Number.isSafeInteger(video.videoWidth) && video.videoWidth > 0 &&
       Number.isSafeInteger(video.videoHeight) && video.videoHeight > 0 &&
@@ -1723,10 +1745,17 @@
   }
 
   function frameReadStillCurrent(owner) {
-    return frameRead === owner && owner.epoch === frameMediaEpoch && owner.videoId === localVideoIdentity &&
+    return frameRead === owner && readerStillCurrent(owner.identity) && owner.epoch === frameMediaEpoch && owner.videoId === localVideoIdentity &&
       owner.src === video.src && canReadCurrentFrame() && owner.time === video.currentTime &&
       owner.duration === video.duration && owner.frameSize.width === video.videoWidth &&
       owner.frameSize.height === video.videoHeight;
+  }
+
+  function acceptFrameResponse(owner) {
+    if (frameReadStillCurrent(owner)) return true;
+    // An omitted caller cancellation must not leave the retired request busy.
+    if (frameRead === owner) { invalidateFrameRead(); if (!disposed) syncControls(); }
+    return false;
   }
 
   function invalidateFrameRead() {
@@ -1774,12 +1803,13 @@
   }
 
   function readCurrentFrame() {
+    if (!canSend()) { setStatus('识别尚未获准或未主动启用；可以在学习工作台查看处理状态。'); return; }
     if (!canReadCurrentFrame() || (lesson && lesson.seeking)) {
       setStatus(wakeBlockedStatus());
       return;
     }
     let url;
-    try { url = currentFrameApi.buildUrl(currentFrameAddress()); }
+    try { url = currentFrameApi.buildUrl(fixedReaderEndpoint || (lessonEndpoint ? lessonEndpoint.value : '')); }
     catch {
       failFrameRead({ message: '请填入本机 reader 阅读地址（根地址或 /read），再点破壁识别当前帧。' });
       if (lessonEndpoint && lessonEndpoint.focus) lessonEndpoint.focus();
@@ -1798,6 +1828,7 @@
     }
     const owner = {
       src: video.src, videoId: localVideoIdentity, epoch: frameMediaEpoch,
+      identity: readerIdentity(),
       readingId: 'current-read-' + (++frameReadSerial), time: video.currentTime,
       duration: video.duration, frameSize: { width: video.videoWidth, height: video.videoHeight }, handle: null
     };
@@ -1819,9 +1850,10 @@
     owner.handle = currentFrameApi.startRead({
       url, body, clock: localClock, fetchImpl: (address, init) => fetch(address, init),
       onSuccess(point) {
-        if (!frameReadStillCurrent(owner)) return;
+        if (!acceptFrameResponse(owner)) return;
         frameRead = null;
         mountWake(point.curve, true, true);
+        currentFrameIdentity = owner.identity;
         currentFrameSource = owner.src;
         if (video.setAttribute) video.setAttribute('data-video-id', point.curve.videoId);
         renderLesson();
@@ -1829,11 +1861,12 @@
         wake();
       },
       onFailure(failure) {
-        if (!frameReadStillCurrent(owner)) return;
+        if (!acceptFrameResponse(owner)) return;
         frameRead = null;
         failFrameRead(failure);
       }
     });
+    if (!readerStillCurrent(owner.identity)) owner.handle.cancel();
   }
 
   /**
@@ -1915,6 +1948,30 @@
     }
   }
 
+  // This is an internal mount hook; changing permission never starts a new read.
+  function stopReader() {
+    readerGeneration += 1;
+    invalidateFrameRead();
+    if (endpointWait != null) { window.clearTimeout(endpointWait); endpointWait = null; }
+    stopLessonWork();
+    if (lesson) { lesson.phase = 'ready'; lesson.cancelled = true; renderLesson(); }
+    if (options.video && usingCurrentFrame && !currentFrameConfirmed) {
+      removeOverlay({ pauseVideo: false });
+      if (wakeHandle) wakeHandle.dispose();
+      wakeHandle = null; controller = null; presetResult = null;
+      usingCurrentFrame = false; usingLessonCurve = false; currentFrameIdentity = null;
+    }
+    if (!disposed) syncControls();
+  }
+
+  function confirmScene() {
+    if (!usingCurrentFrame || currentFrameConfirmed || !overlay || !readerStillCurrent(currentFrameIdentity)) return false;
+    currentFrameConfirmed = true;
+    const rendered = drawCurve() === true;
+    if (!rendered) currentFrameConfirmed = false;
+    return rendered;
+  }
+
   /**
    * 换片子时丢掉上一支片子的阅读。挂着的阅读曲线换回 demo-parabola。
    */
@@ -1946,6 +2003,7 @@
    * @returns {string}
    */
   function readStoredEndpoint() {
+    if (fixedReaderEndpoint) return '';
     try {
       if (typeof sessionStorage === 'undefined' || !sessionStorage || typeof sessionStorage.getItem !== 'function') return '';
       return String(sessionStorage.getItem('breakglass.lessonEndpoint') || '').trim();
@@ -1958,7 +2016,7 @@
    * 记住这一栏里的地址，刷新后还能接着看。空字符串会清掉上次的记录。
    */
   function rememberEndpoint() {
-    if (!lessonEndpoint) return;
+    if (fixedReaderEndpoint || !lessonEndpoint) return;
     const url = String(lessonEndpoint.value || '').trim();
     try {
       if (typeof sessionStorage === 'undefined' || !sessionStorage) return;
@@ -1973,7 +2031,7 @@
    * 输入框还是空的时候，用这次浏览里填过的地址补上。
    */
   function restoreEndpoint() {
-    if (!lessonEndpoint || String(lessonEndpoint.value || '').trim()) return;
+    if (fixedReaderEndpoint || !lessonEndpoint || String(lessonEndpoint.value || '').trim()) return;
     const saved = readStoredEndpoint();
     if (saved) lessonEndpoint.value = saved;
   }
@@ -1981,21 +2039,23 @@
   /**
    * 片子有时长、且不是 9 秒片时开始阅读。空白地址不发请求，并在画面上说明。
    * 同一支片子、同一个地址已经在看时，不重新开始。
-   * 页面上没有阅读地址输入框时不进入阅读，也不提示去填写。
    */
   function maybeStartLesson() {
-    if (!lessonApi || !localClock || !packagedPreset || !video || !lessonEndpoint) return;
+    if (options.video) return; // The unified media owner controls continuous analysis; this panel reads only explicit frames.
+    if (!canSend()) return;
+    if (!lessonApi || !localClock || !packagedPreset || !video) return;
     const src = String(video.src || '');
     if (!src || isPreparedSource(src)) return;
     const duration = Number(video.duration);
     if (!Number.isFinite(duration) || duration <= 0) return;
-    const url = lessonEndpoint ? String(lessonEndpoint.value || '').trim() : '';
+    const url = fixedReaderEndpoint || (lessonEndpoint ? String(lessonEndpoint.value || '').trim() : '');
     if (lesson && lesson.src === src && lesson.endpoint === url) return;
     resetLesson();
     lessonSerial += 1;
     const course = askApi ? askApi.prepareCourse(lessonNote ? lessonNote.value : '') : { message: '' };
     lesson = {
       src,
+      identity: readerIdentity(),
       readingId: 'reading-' + lessonSerial,
       videoId: 'local-binding-' + lessonSerial,
       duration,
@@ -2025,13 +2085,13 @@
     }
     const owner = lesson;
     owner.timer = localClock.schedule(askApi.DEADLINE_MS, () => {
-      if (lesson !== owner) return;
+      if (lesson !== owner || !readerStillCurrent(owner.identity)) return;
       owner.timer = null;
       if (owner.points.length === 0) fallbackToPrepared('timeout');
       else finishLesson();
     });
     captureFrames(lessonApi.sampleTimes(duration)).then((frames) => {
-      if (lesson !== owner || owner.phase !== 'reading') return;
+      if (lesson !== owner || owner.phase !== 'reading' || !readerStillCurrent(owner.identity)) return;
       if (frames.length === 0) {
         lessonFailed(owner, 'unavailable');
         return;
@@ -2052,7 +2112,7 @@
         fetchImpl: (address, init) => fetch(address, init),
         clock: localClock,
         onSuccess: (payload) => {
-          if (lesson !== owner || owner.phase !== 'reading') return;
+          if (lesson !== owner || owner.phase !== 'reading' || !readerStillCurrent(owner.identity)) return;
           lessonAskHandle = null;
           (Array.isArray(payload.points) ? payload.points : []).forEach((point) => offerLessonPoint(point));
           if (lesson !== owner) return;
@@ -2061,6 +2121,9 @@
         },
         onFailure: (code) => lessonFailed(owner, code)
       });
+      if (lesson !== owner || owner.phase !== 'reading' || !readerStillCurrent(owner.identity)) {
+        lessonAskHandle?.cancel(); lessonAskHandle = null;
+      }
     });
   }
 
@@ -2269,7 +2332,7 @@
    * @param {string} code
    */
   function lessonFailed(owner, code) {
-    if (lesson !== owner || owner.phase !== 'reading') return;
+    if (lesson !== owner || owner.phase !== 'reading' || !readerStillCurrent(owner.identity)) return;
     lessonAskHandle = null;
     if (owner.points.length > 0) {
       finishLesson('外部阅读没有返回可用结果。');
@@ -2377,6 +2440,7 @@
   async function boot() {
     try {
       const loaded = await preset.loadPreset();
+      if (disposed) return;
       const currentFrameOnly = !loaded.ok && loaded.code === 'preset_disabled' &&
         loaded.config && loaded.config.enableLocalMock === false;
       if (!loaded.ok && !currentFrameOnly) throw new Error(loaded.message);
@@ -2400,8 +2464,9 @@
       restoreEndpoint();
       maybeStartLesson();
     } catch (error) {
+      if (disposed) return;
       bootFailure = error.message || '配置加载失败。';
-      if (video && !localVideoUrl) {
+      if (video && !localVideoUrl && !options.video) {
         if (video.removeAttribute) video.removeAttribute('src');
         video.src = '';
       }
@@ -2411,14 +2476,14 @@
     syncControls();
   }
 
-  video.addEventListener('resize', syncControls);
-  video.addEventListener('seeking', () => {
+  listen(video, 'resize', syncControls);
+  listen(video, 'seeking', () => {
     invalidateFrameRead();
     if (overlay) removeOverlay({ pauseVideo: false });
     syncControls();
   });
-  video.addEventListener('loadeddata', syncControls);
-  video.addEventListener('loadedmetadata', () => {
+  listen(video, 'loadeddata', syncControls);
+  listen(video, 'loadedmetadata', () => {
     mediaPending = false;
     videoBroken = false;
     assetEmpty.hidden = true;
@@ -2427,15 +2492,15 @@
     maybeStartLesson();
   });
   // 只有阅读点的定位在等这一下。其它跳转照旧由 timeupdate / pause 同步。
-  video.addEventListener('seeked', () => {
+  listen(video, 'seeked', () => {
     if (lesson && lesson.seeking) settleLessonSeek();
     syncControls();
   });
-  video.addEventListener('timeupdate', syncControls);
-  video.addEventListener('play', () => { invalidateFrameRead(); syncControls(); });
-  video.addEventListener('pause', syncControls);
-  video.addEventListener('ended', syncControls);
-  video.addEventListener('error', () => {
+  listen(video, 'timeupdate', syncControls);
+  listen(video, 'play', () => { invalidateFrameRead(); syncControls(); });
+  listen(video, 'pause', syncControls);
+  listen(video, 'ended', syncControls);
+  listen(video, 'error', () => {
     if (bootFailure) return;
     invalidateFrameRead();
     if (lessonFallbackReason && isPreparedSource(video.src) && lessonStatus) {
@@ -2450,17 +2515,17 @@
   });
   const localVideoInput = $('#local-video');
   if (localVideoInput) {
-    localVideoInput.addEventListener('change', () => {
+    listen(localVideoInput, 'change', () => {
       const file = localVideoInput.files && localVideoInput.files[0];
       if (file) useLocalVideo(file);
     });
   }
   const pickVideoButton = $('#pick-video');
   if (pickVideoButton && localVideoInput) {
-    pickVideoButton.addEventListener('click', () => { localVideoInput.click(); });
+    listen(pickVideoButton, 'click', () => { localVideoInput.click(); });
   }
-  if (lessonEndpoint) {
-    lessonEndpoint.addEventListener('input', () => {
+  if (lessonEndpoint && !fixedReaderEndpoint) {
+    listen(lessonEndpoint, 'input', () => {
       invalidateFrameRead();
       syncControls();
       rememberEndpoint();
@@ -2470,7 +2535,7 @@
         maybeStartLesson();
       }, 300);
     });
-    lessonEndpoint.addEventListener('change', () => {
+    listen(lessonEndpoint, 'change', () => {
       invalidateFrameRead();
       syncControls();
       rememberEndpoint();
@@ -2482,16 +2547,20 @@
     });
   }
   const presetVideoButton = $('#preset-video');
-  if (presetVideoButton) presetVideoButton.addEventListener('click', () => { choosePackagedVideo(); });
+  if (presetVideoButton) listen(presetVideoButton, 'click', () => { choosePackagedVideo(); });
   const presetAgain = document.querySelector('[data-choose-preset]');
-  if (presetAgain) presetAgain.addEventListener('click', () => { choosePackagedVideo(); });
-  window.addEventListener('resize', drawCurve);
-  document.addEventListener('fullscreenchange', drawCurve);
-  document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'hidden') cancelPresentation();
+  if (presetAgain) listen(presetAgain, 'click', () => { choosePackagedVideo(); });
+  listen(window, 'resize', drawCurve);
+  listen(document, 'fullscreenchange', drawCurve);
+  listen(document, 'visibilitychange', () => {
+    if (document.visibilityState === 'hidden') { stopReader(); cancelPresentation(); }
   });
-  window.addEventListener('orientationchange', drawCurve);
-  window.addEventListener('pagehide', () => {
+  listen(window, 'orientationchange', drawCurve);
+  function destroy() {
+    if (disposed) return; disposed = true;
+    lifecycleAbort.abort();
+    stopReader();
+    listeners.splice(0).forEach((remove) => remove());
     invalidateFrameRead();
     if (endpointWait != null) {
       window.clearTimeout(endpointWait);
@@ -2512,11 +2581,13 @@
     const docks = window.BreakGlassUI && window.BreakGlassUI.docks;
     if (Array.isArray(docks)) {
       docks.forEach((dock) => {
-        if (dock && typeof dock.destroy === 'function') dock.destroy();
+        if (dock && (!options.video || dock.root === $('#demo-toolbar')) && typeof dock.destroy === 'function') dock.destroy();
       });
     }
-  });
-  document.addEventListener('keydown', (event) => {
+  }
+  listen(window, 'pagehide', destroy);
+  listen(document, 'keydown', (event) => {
+    if (!isActive()) return;
     // 在提问框里按 Esc 只清空草稿，不拆掉正在提问的曲线。
     if (event.key === 'Escape' && tutorInput && event.target === tutorInput) {
       tutorInput.value = '';
@@ -2538,22 +2609,22 @@
       else if (status === 'waiting') cancelWaiting();
     }
   });
-  stage.addEventListener('click', (event) => {
+  listen(stage, 'click', (event) => {
     if (!overlay || overlay.contains(event.target)) return;
     // 原生控制条属于 video。点它只操作播放器，不把交互层拆掉。
     if (event.target === video || (video.contains && video.contains(event.target))) return;
     removeOverlay();
   });
-  playToggle.addEventListener('click', () => {
+  listen(playToggle, 'click', () => {
     if (video.paused) {
       invalidateFrameRead();
       if (overlay) removeOverlay({ pauseVideo: false });
       syncControls();
-      video.play().catch(() => setStatus('视频当前无法播放。'));
+      video.play().catch(() => { if (!disposed) setStatus('视频当前无法播放。'); });
     }
     else video.pause();
   });
-  jumpTarget.addEventListener('click', () => {
+  listen(jumpTarget, 'click', () => {
     if (!video.videoWidth) {
       setStatus(pickStatus());
       return;
@@ -2569,16 +2640,16 @@
     video.pause();
     syncControls();
   });
-  targetInput.addEventListener('input', () => {
+  listen(targetInput, 'input', () => {
     if (!Number.isFinite(targetTime())) return;
     syncControls();
   });
-  wakeButton.addEventListener('click', wake);
-  if (lessonNext) lessonNext.addEventListener('click', lessonGoNext);
-  if (lessonCancel) lessonCancel.addEventListener('click', cancelLesson);
-  cancelButton.addEventListener('click', cancelWaiting);
-  retryButton.addEventListener('click', wake);
-  resetButton.addEventListener('click', () => {
+  listen(wakeButton, 'click', wake);
+  if (lessonNext) listen(lessonNext, 'click', lessonGoNext);
+  if (lessonCancel) listen(lessonCancel, 'click', cancelLesson);
+  listen(cancelButton, 'click', cancelWaiting);
+  listen(retryButton, 'click', wake);
+  listen(resetButton, 'click', () => {
     if (figuresApi) {
       const outcome = resetFigureParameters();
       if (outcome.ok && outcome.figure && tutorLog && tutorLog.children.length) {
@@ -2591,20 +2662,20 @@
     if (controller) controller.reset();
     if (drawCurve()) setStatus('已恢复本次结果的初始参数。');
   });
-  exitButton.addEventListener('click', () => {
+  listen(exitButton, 'click', () => {
     invalidateFrameRead();
     removeOverlay();
     syncControls();
   });
   if (tutorForm) {
-    tutorForm.addEventListener('submit', (event) => {
+    listen(tutorForm, 'submit', (event) => {
       event.preventDefault();
       submitTutor();
     });
   }
   // 示例只填进输入框，不替用户送出；用户可以先改数再问。
   if (tutorExamples) {
-    tutorExamples.addEventListener('click', (event) => {
+    listen(tutorExamples, 'click', (event) => {
       const target = event.target;
       const button = target && typeof target.closest === 'function' ? target.closest('[data-tutor-example]') : target;
       const text = button && button.dataset ? button.dataset.tutorExample : '';
@@ -2616,25 +2687,27 @@
   // 滑块按参数逐个调节（会话层 setParameter）；控制点拖动仍走 updateParameter。
   sliderRows.forEach((row) => {
     if (!row.input) return;
-    row.input.addEventListener('input', () => {
+    listen(row.input, 'input', () => {
       if (!controller || figureKind !== 'parabola') return;
-      if (figuresApi) { updateFigureParameters({ [row.name]: Number(row.input.value) }); return; }
-      controller.setParameter(row.name, Number(row.input.value));
-      drawCurve();
+      measureInput(() => {
+        if (figuresApi) { updateFigureParameters({ [row.name]: Number(row.input.value) }); return; }
+        controller.setParameter(row.name, Number(row.input.value));
+        drawCurve();
+      });
     });
   });
-  if (figureSelect) figureSelect.addEventListener('change', () => {
+  if (figureSelect) listen(figureSelect, 'change', () => {
     const selected = selectFigure(figureSelect.value);
     if (!selected.ok) syncFigureControls();
   });
   figureRows.forEach((row) => {
     if (!row.input) return;
-    row.input.addEventListener('input', () => {
+    listen(row.input, 'input', () => {
       if (figureKind === 'parabola' || !row.name) return;
-      updateFigureParameters({ [row.name]: Number(row.input.value) });
+      measureInput(() => updateFigureParameters({ [row.name]: Number(row.input.value) }));
     });
   });
-  fullscreenButton.addEventListener('click', () => {
+  listen(fullscreenButton, 'click', () => {
     if (document.fullscreenElement) {
       if (document.exitFullscreen) document.exitFullscreen();
       return;
@@ -2644,4 +2717,26 @@
   });
 
   boot();
-})();
+  return {
+    stopReader, confirmScene,
+    setActive(value) {
+      if (disposed) return; active = Boolean(value);
+      if (!active) { stopReader(); removeOverlay({ pauseVideo: false }); } else syncControls();
+    },
+    onMediaChange(value) {
+      if (disposed) return;
+      const changed = borrowedMedia?.generation !== value.generation || borrowedMedia?.owner !== value.owner || borrowedMedia?.epoch !== value.epoch ||
+        borrowedMedia?.source?.id !== value.source?.id || borrowedMedia?.source?.version !== value.source?.version;
+      borrowedMedia = value; localVideoIdentity = value.source?.id || 'no-current-video';
+      if (changed) { stopReader(); resetLesson(); removeOverlay({ pauseVideo: false }); }
+      videoBroken = false; mediaPending = !value.selection;
+      if (assetEmpty) assetEmpty.hidden = Boolean(value.selection); syncControls();
+    },
+    getSnapshot: () => ({ ...figureSnapshot(), lastInputTiming: lastInputTiming && { ...lastInputTiming } }), destroy
+  };
+  }
+  const bg = (root.window || root).BreakGlass;
+  bg.curvePage = { createCurvePage, toLearningScene, mount: (container, options = {}) => createCurvePage({ ...options, container }) };
+  const unified = root.document?.body?.dataset?.unifiedWorkspace && ['localhost', '127.0.0.1'].includes(root.location?.hostname);
+  if (!unified && root.document?.querySelector('#demo-video')) bg.curvePage.page = createCurvePage();
+})(globalThis);

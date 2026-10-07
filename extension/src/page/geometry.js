@@ -11,7 +11,11 @@
     const BG = options.BreakGlass || root.BreakGlass;
     const session = BG.geometrySession.createGeometrySession();
     const node = (id) => document.getElementById(id);
-    const video = node('geometry-video');
+    const video = options.video || node('geometry-video');
+    const fixedReaderEndpoint = options.video && typeof options.fixedReaderEndpoint === 'string' ? options.fixedReaderEndpoint : '';
+    let active = true; let borrowedMedia = null;
+    const isActive = () => !disposed && active && (!options.isActive || options.isActive());
+    const canSend = () => isActive() && !suspended && !document.hidden && document.visibilityState !== 'hidden' && (!options.canRead || options.canRead());
     const listeners = [];
     let sequence = 0;
     let videoId = null;
@@ -39,6 +43,8 @@
     let playToken = 0;
     let fullscreenToken = 0;
     let pendingReturn = null;
+    let readerGeneration = 0;
+    let candidatePermission = null;
     const addressKey = 'breakglass.geometryReader';
     const logLimit = 40;
     const format = BG.geometryView.formatNumber;
@@ -101,6 +107,22 @@
       node('frame-surface').style.minHeight = '';
       node('frame-note').textContent = '截图只用于核对，不用像素长度计算答案。';
     }
+    function readerIdentity() {
+      let permission;
+      try { permission = options.getPermissionGeneration ? options.getPermissionGeneration() : 0; }
+      catch { return null; }
+      if (!Number.isSafeInteger(permission) || permission < 0) return null;
+      const source = borrowedMedia?.source;
+      return { permission, readerGeneration, mediaEpoch, mediaGeneration: borrowedMedia?.generation,
+        owner: borrowedMedia?.owner, epoch: borrowedMedia?.epoch, scope: borrowedMedia?.scope,
+        kind: source?.kind, sourceId: source?.id, version: source?.version, analysisVersion: source?.analysisVersion,
+        videoId, src: video.currentSrc || video.src || '' };
+    }
+    function readerCurrent(expected) {
+      if (!expected || !canSend()) return false;
+      const current = readerIdentity();
+      return Boolean(current && Object.keys(expected).every(key => current[key] === expected[key]));
+    }
     function cancelRead(message) {
       ++readToken; readRequest?.cancel(); readRequest = null;
       readPending = false;
@@ -129,8 +151,30 @@
       node('geometry-retry').hidden = true;
       node('ask-retry').hidden = true;
     }
+    function stopReader(reason) {
+      if (disposed) return;
+      ++readerGeneration;
+      const hadWork = readPending || askPending;
+      cancelRead(); cancelAsk(); discardRetries();
+      const state = session.getState();
+      const withdrawn = state.phase === 'review' && state.scene?.originSource === 'vision';
+      candidatePermission = null;
+      if (withdrawn) {
+        session.invalidate(); binding = null; captured = null;
+        clearSceneFeedback(); clearFramePreview(); node('frame-markers').hidden = true; render();
+      }
+      if (reason || hadWork || withdrawn) status(reason || '识别已停止，未确认的候选已失效；视频与已确认条件保留。');
+    }
     function rememberAddress(restore = false) {
       const field = node('reader-url');
+      if (fixedReaderEndpoint) {
+        field.value = fixedReaderEndpoint;
+        field.readOnly = true;
+        field.setAttribute('readonly', '');
+        node('reader-memory-note').textContent = '当前工作台固定使用同源 reader 转发；不读取或记忆旧地址。';
+        node('reader-forget').hidden = true;
+        return;
+      }
       let restored = false;
       try {
         const storage = window.sessionStorage;
@@ -171,7 +215,7 @@
       const busy = readPending || askPending;
       node('geometry-toolbar').setAttribute('data-hold', String(busy));
       node('geometry-source').textContent = sourceText(state.scene, state.phase === 'confirmed');
-      node('geometry-banner').hidden = false;
+      node('geometry-banner').hidden = !isActive();
       node('geometry-banner').setAttribute('data-mode', busy ? 'waiting' : node('page-status').classList.contains('is-error') ? 'error' : state.phase === 'confirmed' ? 'ready' : 'idle');
       node('geometry-banner-title').textContent = readPending ? '正在识别这一帧' : askPending ? '正在等待动作提议' : state.phase === 'confirmed' ? '条件已确认，可以实验' : state.phase === 'review' ? '先校对，再开始' : videoId ? '暂停在清晰题面上' : '选择视频，或从预设开始';
       node('geometry-banner-detail').textContent = readPending ? '可取消；识别结果须经人工确认。' : askPending ? '答案由程序计算；可取消本次提问。' : node('page-status').textContent;
@@ -182,7 +226,7 @@
       node('geometry-reset-reason').textContent = state.phase === 'confirmed' ? '' : '请先校对并确认条件，才能恢复原题。';
       for (const name of ['change', 'query', 'explain', 'restore']) node(`ask-example-${name}`).disabled = state.phase !== 'confirmed' || busy;
       node('ask-log-clear').disabled = !node('ask-log').children.length;
-      node('reader-forget').disabled = !node('reader-url').value.trim();
+      node('reader-forget').disabled = Boolean(fixedReaderEndpoint) || !node('reader-url').value.trim();
     }
     function resetQuiz() {
       node('quiz-answer').value = '';
@@ -221,7 +265,8 @@
       syncRanges(state);
       syncGuide();
       updateVideoButtons();
-      if (!confirmed) { view.clear(); return; }
+      if (!confirmed) { view.clear(); if (isActive()) options.onScene?.(null); return; }
+      if (isActive()) options.onScene?.({ template: 'right-triangle', snapshot: { AB: state.scene.lengths.AB, AC: state.scene.lengths.AC, unit: state.scene.unit }, origin: 'exploration', confirmed: true, sourceId: borrowedMedia?.source?.id || null, sourceVersion: borrowedMedia?.source?.version || null });
       if (!labelMap.hidden) for (const key of ['A', 'B', 'C']) {
         const term = document.createElement('dt'); term.textContent = key;
         const description = document.createElement('dd'); description.textContent = state.scene.labels[key];
@@ -241,9 +286,10 @@
       for (const name of ['label-a', 'label-b', 'label-c', 'candidate-ab', 'candidate-ac', 'experiment-ab', 'experiment-ac']) node(name).removeAttribute('aria-invalid');
       node('review-error').hidden = true;
     }
-    function showReview(scene, blank = false) {
+    function showReview(scene, blank = false, permission = null) {
       const checked = session.setCandidate(scene);
       if (!checked.ok) { status(checked.message || '候选结构不合法。', true); return; }
+      candidatePermission = permission;
       cancelAsk();
       clearSceneFeedback();
       clearErrors(); resetQuiz();
@@ -268,7 +314,7 @@
       if (!result.ok) { status(result.message || '当前帧无法保存。', true); return null; }
       const preserve = preserveConfirmed && session.getState().phase === 'confirmed' && binding && BG.geometryFrame.isFrameCurrent(video, binding, videoId);
       cancelRead(); cancelAsk(); discardRetries();
-      if (!preserve) { session.invalidate(); clearSceneFeedback(); resetQuiz(); }
+      if (!preserve) { session.invalidate(); candidatePermission = null; clearSceneFeedback(); resetQuiz(); }
       captured = result;
       if (!preserve) binding = { ...result.context };
       node('frame-preview').src = result.preview;
@@ -296,6 +342,9 @@
       event.preventDefault(); clearErrors();
       const state = session.getState();
       if (state.phase !== 'review') return;
+      if (state.scene.originSource === 'vision' && (!candidatePermission || candidatePermission.requestId !== state.scene.requestId || !readerCurrent(candidatePermission.identity))) {
+        stopReader('该识别候选的许可或来源已变化，请重新启用并识别，或显式手工填写。'); return;
+      }
       const labels = { A: node('label-a').value.trim(), B: node('label-b').value.trim(), C: node('label-c').value.trim() };
       const lengths = { AB: Number(node('candidate-ab').value), AC: Number(node('candidate-ac').value) };
       let invalid = false;
@@ -320,6 +369,7 @@
       const scene = { ...original, labels, lengths, vertices, unit: node('candidate-unit').value, ...(changed ? { source: 'manual', editedByUser: true } : {}) };
       const result = session.confirm(scene);
       if (!result.ok) { node('review-error').textContent = result.message || '这些条件无法建立有效模型，请检查数值。'; node('review-error').hidden = false; node('review-error').focus?.(); if (vertices) { node('position-error').textContent = '请检查顶点是否重复、共线或超出原帧。'; node('position-panel').open = true; } return; }
+      candidatePermission = null;
       BG.geometryView.renderFrameMarkers(node('frame-markers'), scene, document);
       render(); resetQuiz();
       node('explanation').textContent = `已确认原题。BC = √(AB² + AC²) = ${format(session.getState().result.BC)}，由本地确定性计算得到。`;
@@ -352,7 +402,7 @@
       updateVideoButtons();
     }
     function endpoint(kind) {
-      const value = node('reader-url').value.trim();
+      const value = fixedReaderEndpoint || node('reader-url').value.trim();
       if (!value) { node('reader-error').textContent = '请填写本地 reader 地址；也可选择不调用模型的本地指令。'; node('reader-url').focus?.(); return null; }
       try { BG.geometryRequest.buildUrl(value, kind); }
       catch (error) { node('reader-error').textContent = error.message; node('reader-url').focus?.(); return null; }
@@ -360,12 +410,15 @@
       return value;
     }
     function recognize() {
+      if (!canSend()) { status('识别尚未获准或未主动启用；请先在学习工作台核对处理状态。', true); return; }
       if (disposed || readPending || askPending || !videoId || !video.paused || video.seeking) return;
       const url = endpoint('read'); if (!url) return;
+      const identity = readerIdentity();
       cancelRead(); cancelAsk();
       // Re-reading the same confirmed frame may fail; preserve its valid conditions.
       // An explicit save/new frame instead starts a fresh scene and clears the old snapshot.
       const frame = capture(true); if (!frame) return;
+      if (!readerCurrent(identity)) { stopReader('识别许可或来源已变化，本次帧未发送。'); return; }
       const token = ++readToken;
       readPending = true;
       node('recognize-frame').disabled = true;
@@ -379,18 +432,23 @@
         onSuccess(payload) {
           completed = true;
           if (disposed || token !== readToken) return;
+          if (!readerCurrent(identity)) { stopReader('识别许可或来源已变化，旧结果已丢弃。'); return; }
           if (!BG.geometryFrame.isFrameCurrent(video, frame.context, videoId)) { cancelRead('当前帧或源尺寸已变化，旧识别结果已拒绝。请重新保存当前帧。'); return; }
           cancelRead();
           if (payload.status !== 'candidate' || !payload.scene) { failRead(frame.context, '这一帧没有可执行的完整条件。请重试或显式选择手工填写。'); return; }
           const checked = BG.geometryScene.validateScene(payload.scene, frame.context);
           if (!checked.ok) { failRead(frame.context, checked.message || '识别候选与当前帧不匹配。'); return; }
           discardRetries(); binding = { ...frame.context };
-          showReview(checked.scene);
+          showReview(checked.scene, false, { identity, requestId: checked.scene.requestId });
+          if (!readerCurrent(identity)) { stopReader('识别许可或来源已变化，旧候选已失效。'); return; }
           status('已取得真实识别候选，请对照原帧校对。结构合法不代表题意已经正确。');
         },
-        onFailure(error) { completed = true; if (disposed || token !== readToken) return; cancelRead(); failRead(frame.context, `识别未完成：${errorText(error)}。视频与有效条件保留，可重试或手工填写。`); }
+        onFailure(error) { completed = true; if (disposed || token !== readToken) return; if (!readerCurrent(identity)) { stopReader(); return; } cancelRead(); failRead(frame.context, `识别未完成：${errorText(error)}。视频与有效条件保留，可重试或手工填写。`); }
       });
-      readRequest = completed ? null : handle;
+      if (!completed) {
+        if (token !== readToken || !readerCurrent(identity)) { handle.cancel(); if (token === readToken) stopReader(); }
+        else readRequest = handle;
+      }
     }
     function failRead(context, message) {
       readFailure = context;
@@ -417,7 +475,10 @@
         status(result.ok ? '本地受限指令已执行，画板与回答使用同一计算结果。' : '本地指令未执行，条件保持不变。', !result.ok);
         return;
       }
+      if (!canSend()) { finishQuestion('模型提问尚未获准或未主动启用。', true); return; }
       const url = endpoint('ask'); if (!url) { finishQuestion('未调用模型：请检查本地 reader 地址。', true); return; }
+      const identity = readerIdentity();
+      if (!readerCurrent(identity)) { stopReader('模型提问的许可或来源已变化，本次问题未发送。'); return; }
       const token = ++askToken;
       const body = { schemaVersion: '1.0.0', actionRequestId: id('geometry-ask'), scene: state.scene, text };
       node('ask-submit').disabled = true; node('ask-cancel').hidden = false; node('ask-form').setAttribute('aria-busy', 'true');
@@ -429,6 +490,7 @@
         onSuccess(payload) {
           completed = true;
           if (disposed || token !== askToken) return;
+          if (!readerCurrent(identity)) { stopReader('模型提问的许可或来源已变化，旧动作已丢弃。'); return; }
           const current = session.getContext();
           if (!current || current.sceneRevision !== context.sceneRevision || current.requestId !== context.requestId || (binding && !BG.geometryFrame.isFrameCurrent(video, binding, videoId))) { cancelAsk('条件或视频已改变，旧提议未执行。'); return; }
           askRequest = null; askPending = false; node('ask-cancel').hidden = true; node('ask-form').setAttribute('aria-busy', 'false');
@@ -439,9 +501,12 @@
           status(result.ok ? '模型提议已通过校验并在本地执行。' : '模型提议未执行，条件保持不变。', !result.ok);
           render();
         },
-        onFailure(error) { completed = true; if (disposed || token !== askToken) return; askRequest = null; askPending = false; node('ask-cancel').hidden = true; node('ask-form').setAttribute('aria-busy', 'false'); failAsk(text, context, `提问未完成：${errorText(error)}。画板保持不变。`); }
+        onFailure(error) { completed = true; if (disposed || token !== askToken) return; if (!readerCurrent(identity)) { stopReader(); return; } askRequest = null; askPending = false; node('ask-cancel').hidden = true; node('ask-form').setAttribute('aria-busy', 'false'); failAsk(text, context, `提问未完成：${errorText(error)}。画板保持不变。`); }
       });
-      askRequest = completed ? null : handle;
+      if (!completed) {
+        if (token !== askToken || !readerCurrent(identity)) { handle.cancel(); if (token === askToken) stopReader(); }
+        else askRequest = handle;
+      }
     }
     function failAsk(text, context, message) {
       askFailure = { text, context };
@@ -452,7 +517,7 @@
       if (disposed) return;
       const saved = binding;
       ++mediaEpoch; ++playToken; playPending = false; pendingReturn = null; returning = false;
-      cancelRead(); cancelAsk(); discardRetries(); session.invalidate(); view.clear(); binding = null; captured = null;
+      cancelRead(); cancelAsk(); discardRetries(); session.invalidate(); view.clear(); binding = null; captured = null; candidatePermission = null;
       clearSceneFeedback();
       clearFramePreview();
       node('frame-markers').hidden = true;
@@ -483,6 +548,7 @@
     function invalidateFrame() {
       if (disposed || returning) return;
       ++mediaEpoch; pendingReturn = null;
+      candidatePermission = null;
       cancelRead(); cancelAsk();
       discardRetries();
       if (binding || captured) { session.invalidate(); binding = null; captured = null; clearSceneFeedback(); clearFramePreview(); node('frame-markers').hidden = true; render(); status('视频或时间已变化，旧场景已退出。请在新帧重新确认。'); }
@@ -616,6 +682,7 @@
       BG.geometryView.renderFrameMarkers(node('frame-markers'), valid.scene, document);
     }
     function replaceVideo(src, name, clip = null, objectUrl = null) {
+      if (options.onSelectSample && clip) return options.onSelectSample(src, `${clip.id}.mp4`, clip);
       exit(); video.pause();
       if (videoUrl) window.URL.revokeObjectURL(videoUrl);
       videoUrl = objectUrl;
@@ -644,6 +711,7 @@
     listen(node('local-video'), 'change', () => {
       const file = node('local-video').files?.[0]; if (!file) return;
       if (file.type && !file.type.startsWith('video/')) { status('请选择视频文件。当前视频与有效条件保持不变。', true); return; }
+      if (options.onSelectFile) { options.onSelectFile(file); return; }
       const url = window.URL.createObjectURL(file);
       replaceVideo(url, file.name, null, url);
     });
@@ -681,13 +749,15 @@
       if (!askFailure || !current || node('ask-mode').value !== 'model' || !BG.geometryRequest.sameContext(current, askFailure.context)) return;
       ask({ preventDefault() {} }, askFailure.text);
     });
-    listen(node('reader-url'), 'change', () => { cancelRead(); cancelAsk('reader 地址已改变，先前的提问已取消。'); discardRetries(); rememberAddress(); updateVideoButtons(); });
-    listen(node('reader-url'), 'blur', () => rememberAddress());
-    listen(node('reader-url'), 'input', () => { cancelRead(); cancelAsk(); discardRetries(); node('reader-error').textContent = ''; });
-    listen(node('reader-forget'), 'click', () => {
-      cancelRead(); cancelAsk('reader 地址已清空，先前的提问已取消。'); discardRetries();
-      node('reader-url').value = ''; node('reader-error').textContent = ''; rememberAddress(); node('reader-url').focus?.();
-    });
+    if (!fixedReaderEndpoint) {
+      listen(node('reader-url'), 'change', () => { cancelRead(); cancelAsk('reader 地址已改变，先前的提问已取消。'); discardRetries(); rememberAddress(); updateVideoButtons(); });
+      listen(node('reader-url'), 'blur', () => rememberAddress());
+      listen(node('reader-url'), 'input', () => { cancelRead(); cancelAsk(); discardRetries(); node('reader-error').textContent = ''; });
+      listen(node('reader-forget'), 'click', () => {
+        cancelRead(); cancelAsk('reader 地址已清空，先前的提问已取消。'); discardRetries();
+        node('reader-url').value = ''; node('reader-error').textContent = ''; rememberAddress(); node('reader-url').focus?.();
+      });
+    }
     listen(node('geometry-play'), 'click', togglePlay);
     listen(node('geometry-jump'), 'click', seekTarget);
     listen(node('geometry-seek'), 'click', seekTarget);
@@ -737,7 +807,12 @@
     listen(video, 'timeupdate', () => { if (binding && !returning && !BG.geometryFrame.isFrameCurrent(video, binding, videoId)) invalidateFrame(); updateVideoButtons(); });
     listen(video, 'error', () => { mediaFailed = true; pendingClipSeek = null; invalidateFrame(); status(selectedClip ? '教学示例无法加载，请重新加载或选择本地视频。' : '视频无法加载，请重新选择文件。', true); });
     listen(document, 'fullscreenchange', updateVideoButtons);
+    listen(document, 'visibilitychange', () => {
+      if (document.hidden || document.visibilityState === 'hidden') stopReader('页面已隐藏，识别与模型提问已停止；视频与已确认条件保留。');
+      else updateVideoButtons();
+    });
     listen(document, 'keydown', (event) => {
+      if (!isActive()) return;
       const target = event.target;
       const editing = ['INPUT', 'TEXTAREA', 'SELECT'].includes(target?.tagName) || target?.isContentEditable;
       if (event.altKey && !event.ctrlKey && !event.metaKey && !event.repeat && String(event.key).toLowerCase() === 'b' && !editing) {
@@ -755,8 +830,7 @@
       // A cached page still owns its scene, drafts, listeners and local video URL.
       ++mediaEpoch; ++playToken; ++fullscreenToken;
       pendingReturn = null; returning = false; playPending = false; fullscreenPending = false;
-      cancelRead(readPending ? '离开页面时已取消识别，视频与有效条件保留。' : undefined);
-      cancelAsk(askPending ? '离开页面时已取消提问，迟到动作不会执行。' : undefined);
+      stopReader(readPending || askPending ? '离开页面时已取消请求，视频与有效条件保留。' : undefined);
       video.pause(); updateVideoButtons();
     }
     function resume(event) {
@@ -768,7 +842,7 @@
     }
     function dispose() {
       if (disposed) return;
-      cancelRead(); cancelAsk(); disposed = true; ++mediaEpoch; pendingReturn = null;
+      stopReader(); disposed = true; ++mediaEpoch; pendingReturn = null;
       listeners.splice(0).forEach((remove) => remove()); session.dispose(); view.dispose();
       const docks = window.BreakGlassUI?.docks || [];
       for (const dock of docks) if (dock.root === node('geometry-toolbar')) dock.destroy();
@@ -777,9 +851,18 @@
     listen(window, 'pagehide', (event) => { if (event.persisted) suspend(); else dispose(); });
     listen(window, 'pageshow', resume);
     rememberAddress(true); clearLog(); clipDescription(); render(); updateVideoButtons();
-    return { session, capture, render, exit, dispose };
+    return { session, capture, render, exit, dispose, destroy: dispose, stopReader,
+      setActive(value) { active = Boolean(value); if (!active) { stopReader(); pendingReturn = null; returning = false; } else updateVideoButtons(); },
+      onMediaChange(value) {
+        const changed = ['generation', 'owner', 'epoch', 'scope'].some(key => borrowedMedia?.[key] !== value[key]) ||
+          ['kind', 'id', 'version', 'analysisVersion'].some(key => borrowedMedia?.source?.[key] !== value.source?.[key]);
+        borrowedMedia = value; if (changed) { ++mediaEpoch; exit(); }
+        videoId = value.source?.id || null; selectedClip = value.clip || null; pendingClipSeek = null; mediaFailed = false;
+        node('video-name').textContent = value.selection?.name || '尚未选择视频'; if (selectedClip) node('geometry-target').value = String(selectedClip.target); updateVideoButtons();
+      },
+      getSnapshot() { const state = session.getState(); return state.phase === 'confirmed' ? { template: 'right-triangle', snapshot: { AB: state.scene.lengths.AB, AC: state.scene.lengths.AC, unit: state.scene.unit } } : null; } };
   }
-  const api = { createGeometryPage, clips };
+  const api = { createGeometryPage, clips, mount: (container, options = {}) => createGeometryPage(options) };
   root.BreakGlass = root.BreakGlass || {};
   root.BreakGlass.geometryPage = api;
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
