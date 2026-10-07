@@ -1,0 +1,6233 @@
+TAP version 13
+# Subtest: annotation sidecar is account-private, revision-locked and idempotent without changing original math or evidence
+ok 1 - annotation sidecar is account-private, revision-locked and idempotent without changing original math or evidence
+  ---
+  duration_ms: 336.8372
+  type: 'test'
+  ...
+# Subtest: all five extended manual templates persist and are judged by the server while annotations cannot alter their conditions
+ok 2 - all five extended manual templates persist and are judged by the server while annotations cannot alter their conditions
+  ---
+  duration_ms: 196.39
+  type: 'test'
+  ...
+# Subtest: annotation rejects media, credentials, unknown math/evidence fields, malformed revisions and tag overflow
+ok 3 - annotation rejects media, credentials, unknown math/evidence fields, malformed revisions and tag overflow
+  ---
+  duration_ms: 163.3992
+  type: 'test'
+  ...
+# Subtest: record deletion and both clear paths remove annotations; old epochs cannot recreate a deleted record annotation
+ok 4 - record deletion and both clear paths remove annotations; old epochs cannot recreate a deleted record annotation
+  ---
+  duration_ms: 152.3698
+  type: 'test'
+  ...
+# Subtest: legacy account storage opens unchanged; sidecar persists without exporting fields into original v1 records
+ok 5 - legacy account storage opens unchanged; sidecar persists without exporting fields into original v1 records
+  ---
+  duration_ms: 146.9578
+  type: 'test'
+  ...
+# Subtest: internal scope checks and awaited revocation reject deletion/logout/account-switch late analysis identities
+ok 6 - internal scope checks and awaited revocation reject deletion/logout/account-switch late analysis identities
+  ---
+  duration_ms: 148.8832
+  type: 'test'
+  ...
+# Subtest: synchronous private scope guard rejects expiry between async validation and cache commit before any session sweep
+ok 7 - synchronous private scope guard rejects expiry between async validation and cache commit before any session sweep
+  ---
+  duration_ms: 129.69
+  type: 'test'
+  ...
+# Subtest: secure deployment cookie flag marks creation and expiry without changing the default development cookie
+ok 8 - secure deployment cookie flag marks creation and expiry without changing the default development cookie
+  ---
+  duration_ms: 80.1813
+  type: 'test'
+  ...
+# Subtest: production approval hook runs after correct credentials, sees only public identity and refuses unapproved login
+ok 9 - production approval hook runs after correct credentials, sees only public identity and refuses unapproved login
+  ---
+  duration_ms: 182.5744
+  type: 'test'
+  ...
+# Subtest: HTTP exercise creation requires explicitly classified practice; reflection and old titles never grant it
+ok 10 - HTTP exercise creation requires explicitly classified practice; reflection and old titles never grant it
+  ---
+  duration_ms: 308.9947
+  type: 'test'
+  ...
+# Subtest: HTTP clients cannot inject answer facts, help context, provenance, identities or mathematical fields
+ok 11 - HTTP clients cannot inject answer facts, help context, provenance, identities or mathematical fields
+  ---
+  duration_ms: 160.8459
+  type: 'test'
+  ...
+# Subtest: HTTP help actions have strict types and levels, accumulate, and lock after an independent or assisted submission
+ok 12 - HTTP help actions have strict types and levels, accumulate, and lock after an independent or assisted submission
+  ---
+  duration_ms: 285.132
+  type: 'test'
+  ...
+# Subtest: HTTP rejects cross-template recipes, invalid stages and indices, malformed answers, and false mathematical candidates
+ok 13 - HTTP rejects cross-template recipes, invalid stages and indices, malformed answers, and false mathematical candidates
+  ---
+  duration_ms: 143.0987
+  type: 'test'
+  ...
+# Subtest: legacy account without flow reopens unchanged, defaults to empty flow, and acquires sidecars only on explicit writes
+ok 14 - legacy account without flow reopens unchanged, defaults to empty flow, and acquires sidecars only on explicit writes
+  ---
+  duration_ms: 175.2376
+  type: 'test'
+  ...
+# Subtest: corrupt database flow is rejected on HTTP restart without overwriting math, help facts or evidence
+ok 15 - corrupt database flow is rejected on HTTP restart without overwriting math, help facts or evidence
+  ---
+  duration_ms: 354.5333
+  type: 'test'
+  ...
+# Subtest: HTTP at the 2000-exercise limit rejects a new exercise atomically rather than retaining its orphan context
+ok 16 - HTTP at the 2000-exercise limit rejects a new exercise atomically rather than retaining its orphan context
+  ---
+  duration_ms: 595.1594
+  type: 'test'
+  ...
+# Subtest: 网站登录和CSRF才可签发120秒一次性码，token只用于显式插件配对且不持久化
+ok 17 - 网站登录和CSRF才可签发120秒一次性码，token只用于显式插件配对且不持久化
+  ---
+  duration_ms: 222.1148
+  type: 'test'
+  ...
+# Subtest: 插件Origin与专用头精确绑定，无Origin后台合法而网站、其他扩展和缺头均拒绝
+ok 18 - 插件Origin与专用头精确绑定，无Origin后台合法而网站、其他扩展和缺头均拒绝
+  ---
+  duration_ms: 113.2443
+  type: 'test'
+  ...
+# Subtest: 配对码并发重用仅成功一次，新码失效旧码，过期和无效代码不能连接
+ok 19 - 配对码并发重用仅成功一次，新码失效旧码，过期和无效代码不能连接
+  ---
+  duration_ms: 112.4468
+  type: 'test'
+  ...
+# Subtest: 配对记录同值PUT幂等、冲突保留原值，并在网站当前账户立即可见
+ok 20 - 配对记录同值PUT幂等、冲突保留原值，并在网站当前账户立即可见
+  ---
+  duration_ms: 165.6156
+  type: 'test'
+  ...
+# Subtest: 两账户连接读取和同ID写入隔离；单账户全局撤销不影响另一个账户
+ok 21 - 两账户连接读取和同ID写入隔离；单账户全局撤销不影响另一个账户
+  ---
+  duration_ms: 155.16
+  type: 'test'
+  ...
+# Subtest: 父网页登录退出、切账号或过期使旧插件连接和待配对代码失效
+ok 22 - 父网页登录退出、切账号或过期使旧插件连接和待配对代码失效
+  ---
+  duration_ms: 189.5994
+  type: 'test'
+  ...
+# Subtest: 删除推进账户epoch拒绝插件旧记录及观看重放，不得复活已清除数据
+ok 23 - 删除推进账户epoch拒绝插件旧记录及观看重放，不得复活已清除数据
+  ---
+  duration_ms: 131.6712
+  type: 'test'
+  ...
+# Subtest: 插件观看数据按同一来源结构保存；pending只允许私人位置而不许素材识别记录
+ok 24 - 插件观看数据按同一来源结构保存；pending只允许私人位置而不许素材识别记录
+  ---
+  duration_ms: 96.4702
+  type: 'test'
+  ...
+# Subtest: 插件权限拒绝作答、导出、账户管理和删除，断开只撤销当前连接
+ok 25 - 插件权限拒绝作答、导出、账户管理和删除，断开只撤销当前连接
+  ---
+  duration_ms: 120.2871
+  type: 'test'
+  ...
+# Subtest: 配对和连接共享每IP分钟20次额度，过期窗口恢复且不无限保留代码
+ok 26 - 配对和连接共享每IP分钟20次额度，过期窗口恢复且不无限保留代码
+  ---
+  duration_ms: 126.049
+  type: 'test'
+  ...
+# Subtest: 插件连接2KiB与记录64KiB请求限额、扩展预检固定且网站预检不获插件权限
+ok 27 - 插件连接2KiB与记录64KiB请求限额、扩展预检固定且网站预检不获插件权限
+  ---
+  duration_ms: 79.9241
+  type: 'test'
+  ...
+# Subtest: 服务重启令牌和码失效但学习记录持久化，重新登录配对恢复当前账户
+ok 28 - 服务重启令牌和码失效但学习记录持久化，重新登录配对恢复当前账户
+  ---
+  duration_ms: 173.3611
+  type: 'test'
+  ...
+# Subtest: 每账户最多16个插件连接，达上限不驱逐已有连接，撤销后可重新配对
+ok 29 - 每账户最多16个插件连接，达上限不驱逐已有连接，撤销后可重新配对
+  ---
+  duration_ms: 165.0282
+  type: 'test'
+  ...
+# Subtest: 原子提交前权限失效时丢弃已写临时快照，磁盘旧状态保持且临时文件清理
+ok 30 - 原子提交前权限失效时丢弃已写临时快照，磁盘旧状态保持且临时文件清理
+  ---
+  duration_ms: 44.5494
+  type: 'test'
+  ...
+# Subtest: 真实注册登录退出使用HttpOnly cookie、CSRF和盐化scrypt持久化，不泄露凭据
+ok 31 - 真实注册登录退出使用HttpOnly cookie、CSRF和盐化scrypt持久化，不泄露凭据
+  ---
+  duration_ms: 289.9261
+  type: 'test'
+  ...
+# Subtest: 用户名密码固定约束、Origin和CSRF拒绝保护所有写入
+ok 32 - 用户名密码固定约束、Origin和CSRF拒绝保护所有写入
+  ---
+  duration_ms: 132.0281
+  type: 'test'
+  ...
+# Subtest: 账户之间完全隔离，同id独立保存、幂等PUT与冲突409
+ok 33 - 账户之间完全隔离，同id独立保存、幂等PUT与冲突409
+  ---
+  duration_ms: 234.7796
+  type: 'test'
+  ...
+# Subtest: 删除推进账户epoch，串行并发迟到写入不得复活记录，账号互不影响
+ok 34 - 删除推进账户epoch，串行并发迟到写入不得复活记录，账号互不影响
+  ---
+  duration_ms: 157.5326
+  type: 'test'
+  ...
+# Subtest: 程序判定直角三角形和顶点复练，区分提示后正确与独立正确，不篡改个人标记
+ok 35 - 程序判定直角三角形和顶点复练，区分提示后正确与独立正确，不篡改个人标记
+  ---
+  duration_ms: 93.0049
+  type: 'test'
+  ...
+# Subtest: 观看、最小导出及账户学习数据清除，无原视频/截图/凭据
+ok 36 - 观看、最小导出及账户学习数据清除，无原视频/截图/凭据
+  ---
+  duration_ms: 119.2139
+  type: 'test'
+  ...
+# Subtest: 媒体地址、未知字段、pending来源、越界时间和记录身份均拒绝
+ok 37 - 媒体地址、未知字段、pending来源、越界时间和记录身份均拒绝
+  ---
+  duration_ms: 100.2259
+  type: 'test'
+  ...
+# Subtest: pending素材可明确保存私人观看元数据，不能放行数学记录或AI处理
+ok 38 - pending素材可明确保存私人观看元数据，不能放行数学记录或AI处理
+  ---
+  duration_ms: 155.247
+  type: 'test'
+  ...
+# Subtest: 同用户名同密码并发注册只有一个账户落盘，其他请求冲突且不覆盖凭据
+ok 39 - 同用户名同密码并发注册只有一个账户落盘，其他请求冲突且不覆盖凭据
+  ---
+  duration_ms: 110.1704
+  type: 'test'
+  ...
+# Subtest: 完整文件指纹来源只保存数学快照与观看元数据，手工来源不能伪装AI视觉
+ok 40 - 完整文件指纹来源只保存数学快照与观看元数据，手工来源不能伪装AI视觉
+  ---
+  duration_ms: 106.3502
+  type: 'test'
+  ...
+# Subtest: 重启保留账户和记录，运行时会话失效，凭据正确后可重新登录
+ok 41 - 重启保留账户和记录，运行时会话失效，凭据正确后可重新登录
+  ---
+  duration_ms: 205.5686
+  type: 'test'
+  ...
+# Subtest: 登录失败限流，缺少登录不可越权读取或写入
+ok 42 - 登录失败限流，缺少登录不可越权读取或写入
+  ---
+  duration_ms: 280.5404
+  type: 'test'
+  ...
+# Subtest: 请求体上限与CORS预检固定，非API回交宿主，未知API拒绝
+ok 43 - 请求体上限与CORS预检固定，非API回交宿主，未知API拒绝
+  ---
+  duration_ms: 89.6692
+  type: 'test'
+  ...
+# Subtest: 数据目录拒绝仓库内路径，损坏数据失败关闭且不覆盖原文件
+ok 44 - 数据目录拒绝仓库内路径，损坏数据失败关闭且不覆盖原文件
+  ---
+  duration_ms: 86.4362
+  type: 'test'
+  ...
+# Subtest: 原子存储写入顺序稳定，失败事务不改变已有状态
+ok 45 - 原子存储写入顺序稳定，失败事务不改变已有状态
+  ---
+  duration_ms: 131.5919
+  type: 'test'
+  ...
+# Subtest: 受限动作回固定身份和修订context，不上传新帧，不使用模型答案
+ok 46 - 受限动作回固定身份和修订context，不上传新帧，不使用模型答案
+  ---
+  duration_ms: 55.816
+  type: 'test'
+  ...
+# Subtest: 查询与恢复只回白名单，不需要上传原题快照，歧义和超范围不执行
+ok 47 - 查询与恢复只回白名单，不需要上传原题快照，歧义和超范围不执行
+  ---
+  duration_ms: 107.5427
+  type: 'test'
+  ...
+# Subtest: 未确认场景、身份混淆、未知字段与超长问题在上游前拒绝
+ok 48 - 未确认场景、身份混淆、未知字段与超长问题在上游前拒绝
+  ---
+  duration_ms: 29.3014
+  type: 'test'
+  ...
+# Subtest: 模型未知字段、双set、改斜边、单位冲突、混合restore、派生溢出全部拒绝
+ok 49 - 模型未知字段、双set、改斜边、单位冲突、混合restore、派生溢出全部拒绝
+  ---
+  duration_ms: 79.7886
+  type: 'test'
+  ...
+# Subtest: 问答独立4MiB、未配置503、方法和格式检查不进入上游
+ok 50 - 问答独立4MiB、未配置503、方法和格式检查不进入上游
+  ---
+  duration_ms: 49.2515
+  type: 'test'
+  ...
+# Subtest: 不配合取消的provider在截止后504，不重试且迟到动作不会成功
+ok 51 - 不配合取消的provider在截止后504，不重试且迟到动作不会成功
+  ---
+  duration_ms: 48.0818
+  type: 'test'
+  ...
+# Subtest: 真实HTTP替身管线：只发一张JPEG，坐标映射回源尺寸并保持服务身份
+ok 52 - 真实HTTP替身管线：只发一张JPEG，坐标映射回源尺寸并保持服务身份
+  ---
+  duration_ms: 63.0469
+  type: 'test'
+  ...
+# Subtest: 无适用图与不清楚条件诚实返回，未知模型字段或BC不能伪造candidate
+ok 53 - 无适用图与不清楚条件诚实返回，未知模型字段或BC不能伪造candidate
+  ---
+  duration_ms: 95.4958
+  type: 'test'
+  ...
+# Subtest: 严格几何字段/数值/JPEG画幅校验在模型调用前发生
+ok 54 - 严格几何字段/数值/JPEG画幅校验在模型调用前发生
+  ---
+  duration_ms: 32.3292
+  type: 'test'
+  ...
+# Subtest: 几何独立4MiB返回413且不调模型，/read仍接受4MiB以上且保持原响应
+ok 55 - 几何独立4MiB返回413且不调模型，/read仍接受4MiB以上且保持原响应
+  ---
+  duration_ms: 288.005
+  type: 'test'
+  ...
+# Subtest: 未配模型503、未知地址404、来源403、几何PNA预检与旧路由一致
+ok 56 - 未配模型503、未知地址404、来源403、几何PNA预检与旧路由一致
+  ---
+  duration_ms: 9.7461
+  type: 'test'
+  ...
+# Subtest: 独立预算严格解析，无效值回默认且不改变旧/read预算
+ok 57 - 独立预算严格解析，无效值回默认且不改变旧/read预算
+  ---
+  duration_ms: 0.5823
+  type: 'test'
+  ...
+# Subtest: 客户端关闭立即取消，不配合取消的模型不阻塞服务或产出迟到candidate
+ok 58 - 客户端关闭立即取消，不配合取消的模型不阻塞服务或产出迟到candidate
+  ---
+  duration_ms: 19.231
+  type: 'test'
+  ...
+# Subtest: 模型看准时，算出的区域让页面把红点画回原处
+ok 59 - 模型看准时，算出的区域让页面把红点画回原处
+  ---
+  duration_ms: 2.4669
+  type: 'test'
+  ...
+# Subtest: 锚点前后不一致时整帧丢掉
+ok 60 - 锚点前后不一致时整帧丢掉
+  ---
+  duration_ms: 0.3989
+  type: 'test'
+  ...
+# Subtest: y 轴读反、点太少或全在一条线上都不拟合
+ok 61 - y 轴读反、点太少或全在一条线上都不拟合
+  ---
+  duration_ms: 0.1775
+  type: 'test'
+  ...
+# Subtest: 曲线伸出画面顶端时收窄横坐标，区域留在画面里
+ok 62 - 曲线伸出画面顶端时收窄横坐标，区域留在画面里
+  ---
+  duration_ms: 0.2248
+  type: 'test'
+  ...
+# Subtest: 顶点在画面外、或画出的范围无效时不给区域
+ok 63 - 顶点在画面外、或画出的范围无效时不给区域
+  ---
+  duration_ms: 0.8362
+  type: 'test'
+  ...
+# Subtest: 开口向下也能放进画面
+ok 64 - 开口向下也能放进画面
+  ---
+  duration_ms: 0.1491
+  type: 'test'
+  ...
+# Subtest: 滑块范围围着读数，a 为负时也包住初值
+ok 65 - 滑块范围围着读数，a 为负时也包住初值
+  ---
+  duration_ms: 0.1106
+  type: 'test'
+  ...
+# Subtest: 小系数保留初值和有效步长，正负开口的范围都不跨零
+ok 66 - 小系数保留初值和有效步长，正负开口的范围都不跨零
+  ---
+  duration_ms: 0.3765
+  type: 'test'
+  ...
+# Subtest: 原生 range 的 min/max 都与精确初值相隔整数步，避免自动吸附改写初值
+ok 67 - 原生 range 的 min/max 都与精确初值相隔整数步，避免自动吸附改写初值
+  ---
+  duration_ms: 0.365
+  type: 'test'
+  ...
+# Subtest: 从页面那样的 data URL 读出 JPEG 宽高
+ok 68 - 从页面那样的 data URL 读出 JPEG 宽高
+  ---
+  duration_ms: 1.823
+  type: 'test'
+  ...
+# Subtest: 不是 JPEG data URL 的一律读不出
+ok 69 - 不是 JPEG data URL 的一律读不出
+  ---
+  duration_ms: 0.1679
+  type: 'test'
+  ...
+# Subtest: 跳过 APP 段，读到帧头里的宽高
+ok 70 - 跳过 APP 段，读到帧头里的宽高
+  ---
+  duration_ms: 0.1316
+  type: 'test'
+  ...
+# Subtest: 没有帧头就先碰到扫描段时读不出
+ok 71 - 没有帧头就先碰到扫描段时读不出
+  ---
+  duration_ms: 0.0835
+  type: 'test'
+  ...
+# Subtest: 宽高比例和源尺寸一致才算同一帧
+ok 72 - 宽高比例和源尺寸一致才算同一帧
+  ---
+  duration_ms: 0.1008
+  type: 'test'
+  ...
+# Subtest: JPEG 解码取消会终止子进程并忽略迟到输出
+ok 73 - JPEG 解码取消会终止子进程并忽略迟到输出
+  ---
+  duration_ms: 2.769
+  type: 'test'
+  ...
+# Subtest: 已经取消的 JPEG 解码不启动 ffmpeg
+ok 74 - 已经取消的 JPEG 解码不启动 ffmpeg
+  ---
+  duration_ms: 1.4046
+  type: 'test'
+  ...
+# Subtest: 学习视觉 HTTP 替身只调用一次，单 JPEG、固定候选、身份由服务填写且日志不含内容
+ok 75 - 学习视觉 HTTP 替身只调用一次，单 JPEG、固定候选、身份由服务填写且日志不含内容
+  ---
+  duration_ms: 79.956
+  type: 'test'
+  ...
+# Subtest: 直角三角形结构化替身候选通过，BC 不来自模型输出
+ok 76 - 直角三角形结构化替身候选通过，BC 不来自模型输出
+  ---
+  duration_ms: 2.1825
+  type: 'test'
+  ...
+# Subtest: 无对象与条件不清返回明确状态，不伪装成功或套用预设
+ok 77 - 无对象与条件不清返回明确状态，不伪装成功或套用预设
+  ---
+  duration_ms: 5.6574
+  type: 'test'
+  ...
+# Subtest: 请求严格字段、授权和 JPEG 校验在模型调用前拒绝
+ok 78 - 请求严格字段、授权和 JPEG 校验在模型调用前拒绝
+  ---
+  duration_ms: 3.3988
+  type: 'test'
+  ...
+# Subtest: 未知字段、缺条件、伪造身份、代码与非有限/越界数学模型结果拒绝，绝不重试
+ok 79 - 未知字段、缺条件、伪造身份、代码与非有限/越界数学模型结果拒绝，绝不重试
+  ---
+  duration_ms: 16.7666
+  type: 'test'
+  ...
+# Subtest: 摘要只发送固定观察列表，时间由程序去重排序，输出明确限于画面观察
+ok 80 - 摘要只发送固定观察列表，时间由程序去重排序，输出明确限于画面观察
+  ---
+  duration_ms: 11.1542
+  type: 'test'
+  ...
+# Subtest: 摘要拒绝帧/字幕等额外字段、非法观察与待授权材料，不调用模型
+ok 81 - 摘要拒绝帧/字幕等额外字段、非法观察与待授权材料，不调用模型
+  ---
+  duration_ms: 0.5095
+  type: 'test'
+  ...
+# Subtest: 摘要拒绝模型伪造时间/身份/额外字段及超限输出
+ok 82 - 摘要拒绝模型伪造时间/身份/额外字段及超限输出
+  ---
+  duration_ms: 1.9853
+  type: 'test'
+  ...
+# Subtest: 摘要提示注入只作为不可信观察数据发送，不能改变 system 或输出契约
+ok 83 - 摘要提示注入只作为不可信观察数据发送，不能改变 system 或输出契约
+  ---
+  duration_ms: 0.4773
+  type: 'test'
+  ...
+# Subtest: 学习端点4MiB/摘要64KiB各自413，无上游调用；严格媒体类型和来源门禁
+ok 84 - 学习端点4MiB/摘要64KiB各自413，无上游调用；严格媒体类型和来源门禁
+  ---
+  duration_ms: 56.9691
+  type: 'test'
+  ...
+# Subtest: 学习未配置503不调用上游，供应商失败不泄漏错误内容或重试
+ok 85 - 学习未配置503不调用上游，供应商失败不泄漏错误内容或重试
+  ---
+  duration_ms: 1.5367
+  type: 'test'
+  ...
+# Subtest: 两类调用独立超时，忽略取消的上游不能拖过截止或产生迟到结果
+ok 86 - 两类调用独立超时，忽略取消的上游不能拖过截止或产生迟到结果
+  ---
+  duration_ms: 65.6446
+  type: 'test'
+  ...
+# Subtest: 两类请求上游响应均限制64KiB
+ok 87 - 两类请求上游响应均限制64KiB
+  ---
+  duration_ms: 2.6643
+  type: 'test'
+  ...
+# Subtest: 每类单槽各自429，识别与摘要互不阻塞；客户端断开立即传上游取消并释放槽
+ok 88 - 每类单槽各自429，识别与摘要互不阻塞；客户端断开立即传上游取消并释放槽
+  ---
+  duration_ms: 36.4382
+  type: 'test'
+  ...
+# Subtest: 巨大有限顶点不进入无法前进的采样循环
+ok 89 - 巨大有限顶点不进入无法前进的采样循环
+  ---
+  duration_ms: 1.8084
+  type: 'test'
+  ...
+# Subtest: 纯 RGB 夹具可定位抛物线，不依赖 ffmpeg
+ok 90 - 纯 RGB 夹具可定位抛物线，不依赖 ffmpeg
+  ---
+  duration_ms: 10.2983
+  type: 'test'
+  ...
+# Subtest: 9 秒片这一帧按 y = x^2 + 1 量出来的点，偏差比例低于 2%
+ok 91 - 9 秒片这一帧按 y = x^2 + 1 量出来的点，偏差比例低于 2%
+  ---
+  duration_ms: 273.0893
+  type: 'test'
+  ...
+# Subtest: 图上没有的方程量不到线
+ok 92 - 图上没有的方程量不到线
+  ---
+  duration_ms: 135.6031
+  type: 'test'
+  ...
+# Subtest: 一帧读到抛物线：回一个能被页面收下的点
+ok 93 - 一帧读到抛物线：回一个能被页面收下的点
+  ---
+  duration_ms: 349.2867
+  type: 'test'
+  ...
+# Subtest: 发给模型的是 OpenAI 兼容格式：带图、带密钥头，温度为 0
+ok 94 - 发给模型的是 OpenAI 兼容格式：带图、带密钥头，温度为 0
+  ---
+  duration_ms: 554.2829
+  type: 'test'
+  ...
+# Subtest: 响应和日志里没有画面、课程正文和密钥
+ok 95 - 响应和日志里没有画面、课程正文和密钥
+  ---
+  duration_ms: 218.7804
+  type: 'test'
+  ...
+# Subtest: 点按时间排好，最早的在前；同一句讲解补上秒数
+ok 96 - 点按时间排好，最早的在前；同一句讲解补上秒数
+  ---
+  duration_ms: 285.8955
+  type: 'test'
+  ...
+# Subtest: 相隔不到 1 秒的两帧只留较早的一处
+ok 97 - 相隔不到 1 秒的两帧只留较早的一处
+  ---
+  duration_ms: 293.5156
+  type: 'test'
+  ...
+# Subtest: 模型说没有抛物线时回空点，由页面保留用户视频并提示没有结果
+ok 98 - 模型说没有抛物线时回空点，由页面保留用户视频并提示没有结果
+  ---
+  duration_ms: 1.148
+  type: 'test'
+  ...
+# Subtest: 方程读对但像素锚点出了画面时，改在图上找这条曲线
+ok 99 - 方程读对但像素锚点出了画面时，改在图上找这条曲线
+  ---
+  duration_ms: 228.7885
+  type: 'test'
+  ...
+# Subtest: 锚点对不上、方程无效或回答读不懂的帧都丢掉
+ok 100 - 锚点对不上、方程无效或回答读不懂的帧都丢掉
+  ---
+  duration_ms: 174.4042
+  type: 'test'
+  ...
+# Subtest: 源尺寸为 null 时不猜尺寸，也不去问模型
+ok 101 - 源尺寸为 null 时不猜尺寸，也不去问模型
+  ---
+  duration_ms: 0.4428
+  type: 'test'
+  ...
+# Subtest: 模型数值只接受 JSON number，不把布尔值、null 或数字字符串转成方程
+ok 102 - 模型数值只接受 JSON number，不把布尔值、null 或数字字符串转成方程
+  ---
+  duration_ms: 7.8379
+  type: 'test'
+  ...
+# Subtest: 曲线横坐标两端不接受数字字符串、布尔值或 null
+ok 103 - 曲线横坐标两端不接受数字字符串、布尔值或 null
+  ---
+  duration_ms: 1427.9646
+  type: 'test'
+  ...
+# Subtest: 小系数从模型到页面曲线完整保留，不被舍入成直线
+ok 104 - 小系数从模型到页面曲线完整保留，不被舍入成直线
+  ---
+  duration_ms: 142.9989
+  type: 'test'
+  ...
+# Subtest: 截帧比例和源尺寸对不上时丢掉这一帧
+ok 105 - 截帧比例和源尺寸对不上时丢掉这一帧
+  ---
+  duration_ms: 0.9153
+  type: 'test'
+  ...
+# Subtest: 没配模型时回 503，不发请求
+ok 106 - 没配模型时回 503，不发请求
+  ---
+  duration_ms: 0.1958
+  type: 'test'
+  ...
+# Subtest: 每一帧都连不上模型时回 502；部分帧读完时照常回 200
+ok 107 - 每一帧都连不上模型时回 502；部分帧读完时照常回 200
+  ---
+  duration_ms: 194.3295
+  type: 'test'
+  ...
+# Subtest: 单帧超时按时限放弃，不重试
+ok 108 - 单帧超时按时限放弃，不重试
+  ---
+  duration_ms: 47.7316
+  type: 'test'
+  ...
+# Subtest: 请求形状不对时回 400
+ok 109 - 请求形状不对时回 400
+  ---
+  duration_ms: 0.6793
+  type: 'test'
+  ...
+# Subtest: 主动取消传播到模型，且不会领取下一帧
+ok 110 - 主动取消传播到模型，且不会领取下一帧
+  ---
+  duration_ms: 1.3111
+  type: 'test'
+  ...
+# Subtest: 已经取消的请求不发模型请求
+ok 111 - 已经取消的请求不发模型请求
+  ---
+  duration_ms: 0.2257
+  type: 'test'
+  ...
+# Subtest: 回答外面包了代码块或多了几句话也能取出 JSON
+ok 112 - 回答外面包了代码块或多了几句话也能取出 JSON
+  ---
+  duration_ms: 0.1811
+  type: 'test'
+  ...
+# Subtest: 健康检查只说有没有配模型，不带密钥
+ok 113 - 健康检查只说有没有配模型，不带密钥
+  ---
+  duration_ms: 87.8634
+  type: 'test'
+  ...
+# Subtest: 扩展页预检通过，并允许从公网页面访问本机地址
+ok 114 - 扩展页预检通过，并允许从公网页面访问本机地址
+  ---
+  duration_ms: 8.9069
+  type: 'test'
+  ...
+# Subtest: 名单外的来源被拒，也拿不到跨域头
+ok 115 - 名单外的来源被拒，也拿不到跨域头
+  ---
+  duration_ms: 4.6739
+  type: 'test'
+  ...
+# Subtest: 扩展页发来的阅读请求拿到点和跨域头
+ok 116 - 扩展页发来的阅读请求拿到点和跨域头
+  ---
+  duration_ms: 207.079
+  type: 'test'
+  ...
+# Subtest: 格式、地址、方法、大小不对时各回各的状态
+ok 117 - 格式、地址、方法、大小不对时各回各的状态
+  ---
+  duration_ms: 57.3799
+  type: 'test'
+  ...
+# Subtest: 配置：默认只听本机，总预算压在页面 300 秒截止之前，来源名单可以收紧
+ok 118 - 配置：默认只听本机，总预算压在页面 300 秒截止之前，来源名单可以收紧
+  ---
+  duration_ms: 0.6525
+  type: 'test'
+  ...
+# Subtest: 客户端断开会取消模型，迟到的响应不会开始下一帧或写入断开的连接
+ok 119 - 客户端断开会取消模型，迟到的响应不会开始下一帧或写入断开的连接
+  ---
+  duration_ms: 11.0265
+  type: 'test'
+  ...
+# Subtest: 请求体上传期间断开也会结束读取，服务仍可接受下一次请求
+ok 120 - 请求体上传期间断开也会结束读取，服务仍可接受下一次请求
+  ---
+  duration_ms: 5.7713
+  type: 'test'
+  ...
+# Subtest: two media fingerprints and every limited exercise independently check out
+ok 121 - two media fingerprints and every limited exercise independently check out
+  ---
+  duration_ms: 72.3311
+  type: 'test'
+  ...
+# Subtest: video k=1 cannot be replaced by the hand-authored k=0 exploration
+ok 122 - video k=1 cannot be replaced by the hand-authored k=0 exploration
+  ---
+  duration_ms: 79.558
+  type: 'test'
+  ...
+# Subtest: edited media fingerprints and duplicate task identities are rejected
+ok 123 - edited media fingerprints and duplicate task identities are rejected
+  ---
+  duration_ms: 84.5364
+  type: 'test'
+  ...
+# Subtest: sign, expanded representation and exact-expression errors are caught
+ok 124 - sign, expanded representation and exact-expression errors are caught
+  ---
+  duration_ms: 154.3947
+  type: 'test'
+  ...
+# Subtest: missing right angle, mixed units and nonuniform area scaling fail
+ok 125 - missing right angle, mixed units and nonuniform area scaling fail
+  ---
+  duration_ms: 159.3733
+  type: 'test'
+  ...
+# Subtest: completion, prediction and examples cannot masquerade as independent submissions
+ok 126 - completion, prediction and examples cannot masquerade as independent submissions
+  ---
+  duration_ms: 200.1621
+  type: 'test'
+  ...
+# Subtest: correct answers cannot trigger a misconception diagnosis or same-question practice
+ok 127 - correct answers cannot trigger a misconception diagnosis or same-question practice
+  ---
+  duration_ms: 101.6512
+  type: 'test'
+  ...
+# Subtest: three-place display is not the scalar answer tolerance or a new mathematical state
+ok 128 - three-place display is not the scalar answer tolerance or a new mathematical state
+  ---
+  duration_ms: 60.1422
+  type: 'test'
+  ...
+# Subtest: restricted-domain minimum and a 60-degree counterexample use actual conditions
+ok 129 - restricted-domain minimum and a 60-degree counterexample use actual conditions
+  ---
+  duration_ms: 61.8264
+  type: 'test'
+  ...
+# Subtest: oversized tolerances, expression code and invented external acceptance are rejected
+ok 130 - oversized tolerances, expression code and invented external acceptance are rejected
+  ---
+  duration_ms: 114.9539
+  type: 'test'
+  ...
+# Subtest: valid video files still cannot be relabeled as another micro-lesson or pause point
+ok 131 - valid video files still cannot be relabeled as another micro-lesson or pause point
+  ---
+  duration_ms: 65.235
+  type: 'test'
+  ...
+# Subtest: an expanded-form exercise cannot silently fall back to its answer snapshot
+ok 132 - an expanded-form exercise cannot silently fall back to its answer snapshot
+  ---
+  duration_ms: 80.3611
+  type: 'test'
+  ...
+# Subtest: tiny unequal length ratios remain non-similar even within an absolute epsilon
+ok 133 - tiny unequal length ratios remain non-similar even within an absolute epsilon
+  ---
+  duration_ms: 0.2666
+  type: 'test'
+  ...
+# Subtest: 1 播放/暂停：可播放可暂停，按钮文案随状态切换
+ok 134 - 1 播放/暂停：可播放可暂停，按钮文案随状态切换
+  ---
+  duration_ms: 13.1988
+  type: 'test'
+  ...
+# Subtest: 2 定位到 12.5 秒：输入框能填 12.5，但包内成片只有 9 秒 → 该行预期需改为 6 秒
+ok 135 - 2 定位到 12.5 秒：输入框能填 12.5，但包内成片只有 9 秒 → 该行预期需改为 6 秒
+  ---
+  duration_ms: 5.2459
+  type: 'test'
+  ...
+# Subtest: 3 停在目标帧后出现抛物线与控制点（当前默认 6 秒，不是 12.5 秒）
+ok 136 - 3 停在目标帧后出现抛物线与控制点（当前默认 6 秒，不是 12.5 秒）
+  ---
+  duration_ms: 14.7859
+  type: 'test'
+  ...
+# Subtest: 4 拖动控制点或滑杆，改变水平位置 h
+ok 137 - 4 拖动控制点或滑杆，改变水平位置 h
+  ---
+  duration_ms: 7.0758
+  type: 'test'
+  ...
+# Subtest: 5 改变 h 后曲线、顶点与 h 数字同步
+ok 138 - 5 改变 h 后曲线、顶点与 h 数字同步
+  ---
+  duration_ms: 5.9887
+  type: 'test'
+  ...
+# Subtest: 6 将 h 拖到 ±2 并继续越界：只在 -2~2 内变化
+ok 139 - 6 将 h 拖到 ±2 并继续越界：只在 -2~2 内变化
+  ---
+  duration_ms: 6.6468
+  type: 'test'
+  ...
+# Subtest: 7 尝试调整 a 或 k：现在可调 → 文档预期「无调整入口、不可调」已过时
+ok 140 - 7 尝试调整 a 或 k：现在可调 → 文档预期「无调整入口、不可调」已过时
+  ---
+  duration_ms: 6.1285
+  type: 'test'
+  ...
+# Subtest: 8 点击重置：h 回 0，交互层保留，视频仍暂停在目标帧（默认 6 秒）
+ok 141 - 8 点击重置：h 回 0，交互层保留，视频仍暂停在目标帧（默认 6 秒）
+  ---
+  duration_ms: 14.5479
+  type: 'test'
+  ...
+# Subtest: 9 点击退出：曲线与控制点消失，视频仍保持暂停
+ok 142 - 9 点击退出：曲线与控制点消失，视频仍保持暂停
+  ---
+  duration_ms: 4.4095
+  type: 'test'
+  ...
+# Subtest: 10 来源标注：唤醒后始终为「预先准备的示例」
+ok 143 - 10 来源标注：唤醒后始终为「预先准备的示例」
+  ---
+  duration_ms: 5.3937
+  type: 'test'
+  ...
+# Subtest: 11 目标时间默认 6 秒，破壁后来源为「预先准备的示例」
+ok 144 - 11 目标时间默认 6 秒，破壁后来源为「预先准备的示例」
+  ---
+  duration_ms: 21.6685
+  type: 'test'
+  ...
+# Subtest: 12 三个滑块 a/h/k 都能联动曲线
+ok 145 - 12 三个滑块 a/h/k 都能联动曲线
+  ---
+  duration_ms: 21.0369
+  type: 'test'
+  ...
+# Subtest: 13 参数越界被钳制在范围内
+ok 146 - 13 参数越界被钳制在范围内
+  ---
+  duration_ms: 8.7715
+  type: 'test'
+  ...
+# Subtest: 14 重置回到初值且交互层保留
+ok 147 - 14 重置回到初值且交互层保留
+  ---
+  duration_ms: 5.4669
+  type: 'test'
+  ...
+# Subtest: 15 退出移除交互层，随后播放不会自行恢复
+ok 148 - 15 退出移除交互层，随后播放不会自行恢复
+  ---
+  duration_ms: 6.1613
+  type: 'test'
+  ...
+# Subtest: 16 等待态：进度条、取消、退出可用，1.5 秒后回退并说明原因
+ok 149 - 16 等待态：进度条、取消、退出可用，1.5 秒后回退并说明原因
+  ---
+  duration_ms: 4.7802
+  type: 'test'
+  ...
+# Subtest: 17 识别适配（需先改 config）来源为「识别结果」且不显示百分比
+ok 150 - 17 识别适配（需先改 config）来源为「识别结果」且不显示百分比
+  ---
+  duration_ms: 12.1865
+  type: 'test'
+  ...
+# Subtest: 18 P0 全程仅包内请求，006最小权限不使旧路径发新请求
+ok 151 - 18 P0 全程仅包内请求，006最小权限不使旧路径发新请求
+  ---
+  duration_ms: 26.8457
+  type: 'test'
+  ...
+# Subtest: 19 键盘焦点可见，禁用按钮说明原因
+ok 152 - 19 键盘焦点可见，禁用按钮说明原因
+  ---
+  duration_ms: 10.6627
+  type: 'test'
+  ...
+# Subtest: 20 可恢复错误：立刻播报、重试为主操作、退出可用
+ok 153 - 20 可恢复错误：立刻播报、重试为主操作、退出可用
+  ---
+  duration_ms: 6.0019
+  type: 'test'
+  ...
+# Subtest: 四种画幅下数学点都映射为有限数值
+ok 154 - 四种画幅下数学点都映射为有限数值
+  ---
+  duration_ms: 3.1198
+  type: 'test'
+  ...
+# Subtest: 超出 range 的纵坐标贴在 region 边上
+ok 155 - 超出 range 的纵坐标贴在 region 边上
+  ---
+  duration_ms: 0.1527
+  type: 'test'
+  ...
+# Subtest: 数学点先落到 region 源像素，再按 scale 得到页面点
+ok 156 - 数学点先落到 region 源像素，再按 scale 得到页面点
+  ---
+  duration_ms: 0.136
+  type: 'test'
+  ...
+# Subtest: 源像素与页面像素可以往返换算
+ok 157 - 源像素与页面像素可以往返换算
+  ---
+  duration_ms: 0.2054
+  type: 'test'
+  ...
+# Subtest: 映射结果落在内容矩形内（黑边不参与对齐）
+ok 158 - 映射结果落在内容矩形内（黑边不参与对齐）
+  ---
+  duration_ms: 0.5189
+  type: 'test'
+  ...
+# Subtest: 偏差比例以内容区域较短边为分母
+ok 159 - 偏差比例以内容区域较短边为分母
+  ---
+  duration_ms: 0.2054
+  type: 'test'
+  ...
+# Subtest: 2% 阈值包含边界值
+ok 160 - 2% 阈值包含边界值
+  ---
+  duration_ms: 0.1387
+  type: 'test'
+  ...
+# Subtest: sampleAlignment 用实测点与期望点给出最大偏差
+ok 161 - sampleAlignment 用实测点与期望点给出最大偏差
+  ---
+  duration_ms: 1.0037
+  type: 'test'
+  ...
+# Subtest: 采样点数可以指定，且不改变映射结果
+ok 162 - 采样点数可以指定，且不改变映射结果
+  ---
+  duration_ms: 2.3153
+  type: 'test'
+  ...
+# Subtest: 合法的大域与小系数不会在采样乘法中溢出
+ok 163 - 合法的大域与小系数不会在采样乘法中溢出
+  ---
+  duration_ms: 2.1165
+  type: 'test'
+  ...
+# Subtest: 极大但有限的越界 y 仍贴在正确边缘，不因比例差值溢出翻转
+ok 164 - 极大但有限的越界 y 仍贴在正确边缘，不因比例差值溢出翻转
+  ---
+  duration_ms: 0.4169
+  type: 'test'
+  ...
+# Subtest: 顶点落到窗口下方时，两臂在边界断开，不连成底边直线
+ok 165 - 顶点落到窗口下方时，两臂在边界断开，不连成底边直线
+  ---
+  duration_ms: 0.9817
+  type: 'test'
+  ...
+# Subtest: 顶点左右移出后，只保留窗口内的弧，不沿顶边画到角上
+ok 166 - 顶点左右移出后，只保留窗口内的弧，不沿顶边画到角上
+  ---
+  duration_ms: 0.374
+  type: 'test'
+  ...
+# Subtest: 整段都在窗口内时仍是从左到右的一条弧
+ok 167 - 整段都在窗口内时仍是从左到右的一条弧
+  ---
+  duration_ms: 0.2835
+  type: 'test'
+  ...
+# Subtest: rejects empty, non-object and non-finite curve results
+ok 168 - rejects empty, non-object and non-finite curve results
+  ---
+  duration_ms: 5.3462
+  type: 'test'
+  ...
+# Subtest: rejects broken parameter bounds, axes, regions and context mismatches
+ok 169 - rejects broken parameter bounds, axes, regions and context mismatches
+  ---
+  duration_ms: 0.9806
+  type: 'test'
+  ...
+# Subtest: evaluates a zero initial and rejects a non-finite x
+ok 170 - evaluates a zero initial and rejects a non-finite x
+  ---
+  duration_ms: 0.5081
+  type: 'test'
+  ...
+# Subtest: the shipped fixture stays finite across its domain
+ok 171 - the shipped fixture stays finite across its domain
+  ---
+  duration_ms: 2.3443
+  type: 'test'
+  ...
+# Subtest: a fixture that cannot be evaluated must not become drawable
+ok 172 - a fixture that cannot be evaluated must not become drawable
+  ---
+  duration_ms: 3.3834
+  type: 'test'
+  ...
+# Subtest: drag values stay finite and inside the validated range
+ok 173 - drag values stay finite and inside the validated range
+  ---
+  duration_ms: 3.5589
+  type: 'test'
+  ...
+# Subtest: callers cannot widen bounds after the result has been accepted
+ok 174 - callers cannot widen bounds after the result has been accepted
+  ---
+  duration_ms: 1.2538
+  type: 'test'
+  ...
+# Subtest: getState returns a copy so callers cannot widen accepted bounds
+ok 175 - getState returns a copy so callers cannot widen accepted bounds
+  ---
+  duration_ms: 0.2877
+  type: 'test'
+  ...
+# Subtest: result time is compared with the session target, not only the wake instant
+ok 176 - result time is compared with the session target, not only the wake instant
+  ---
+  duration_ms: 0.2534
+  type: 'test'
+  ...
+# Subtest: playback or an unusable clock clears a waiting request
+ok 177 - playback or an unusable clock clears a waiting request
+  ---
+  duration_ms: 0.2526
+  type: 'test'
+  ...
+# Subtest: leaving the tolerance edge ends an interactive session
+ok 178 - leaving the tolerance edge ends an interactive session
+  ---
+  duration_ms: 0.1812
+  type: 'test'
+  ...
+# Subtest: cancel drops the request id that was waiting
+ok 179 - cancel drops the request id that was waiting
+  ---
+  duration_ms: 0.0986
+  type: 'test'
+  ...
+# Subtest: session rejects vision results and a mismatched frame
+ok 180 - session rejects vision results and a mismatched frame
+  ---
+  duration_ms: 0.3282
+  type: 'test'
+  ...
+# Subtest: preset loading reports disabled and invalid payloads without a drawable result
+ok 181 - preset loading reports disabled and invalid payloads without a drawable result
+  ---
+  duration_ms: 0.4652
+  type: 'test'
+  ...
+# Subtest: preset loading fails closed when the validator was not loaded
+ok 182 - preset loading fails closed when the validator was not loaded
+  ---
+  duration_ms: 99.9783
+  type: 'test'
+  ...
+# Subtest: contain computes pillarbox content from source dimensions
+ok 183 - contain computes pillarbox content from source dimensions
+  ---
+  duration_ms: 1.2357
+  type: 'test'
+  ...
+# Subtest: contain computes letterbox content when the container is taller
+ok 184 - contain computes letterbox content when the container is taller
+  ---
+  duration_ms: 1.1124
+  type: 'test'
+  ...
+# Subtest: invalid geometry returns null
+ok 185 - invalid geometry returns null
+  ---
+  duration_ms: 0.1648
+  type: 'test'
+  ...
+# Subtest: 单关键字 object-position 按 CSS 语义补齐另一轴
+ok 186 - 单关键字 object-position 按 CSS 语义补齐另一轴
+  ---
+  duration_ms: 1.0356
+  type: 'test'
+  ...
+# Subtest: object-position 支持 px 长度并在剩余空间内夹住
+ok 187 - object-position 支持 px 长度并在剩余空间内夹住
+  ---
+  duration_ms: 0.2213
+  type: 'test'
+  ...
+# Subtest: 数字型与无单位 0 可以解析，无法识别的声明回退到 50%
+ok 188 - 数字型与无单位 0 可以解析，无法识别的声明回退到 50%
+  ---
+  duration_ms: 0.1695
+  type: 'test'
+  ...
+# Subtest: 关键字组合与顺序等价
+ok 189 - 关键字组合与顺序等价
+  ---
+  duration_ms: 0.9336
+  type: 'test'
+  ...
+# Subtest: 长度和同轴关键字回退到居中
+ok 190 - 长度和同轴关键字回退到居中
+  ---
+  duration_ms: 0.1586
+  type: 'test'
+  ...
+# Subtest: 三值位置从指定的边向内偏移
+ok 191 - 三值位置从指定的边向内偏移
+  ---
+  duration_ms: 0.3188
+  type: 'test'
+  ...
+# Subtest: 非有限的 videoWidth / videoHeight 返回 null
+ok 192 - 非有限的 videoWidth / videoHeight 返回 null
+  ---
+  duration_ms: 0.2414
+  type: 'test'
+  ...
+# Subtest: URL only accepts local HTTP(S) root or /read, with no credentials, query or fragment
+ok 193 - URL only accepts local HTTP(S) root or /read, with no credentials, query or fragment
+  ---
+  duration_ms: 2.1137
+  type: 'test'
+  ...
+# Subtest: single-frame body retains exact zero and end times, and makes an independent copy
+ok 194 - single-frame body retains exact zero and end times, and makes an independent copy
+  ---
+  duration_ms: 10.7927
+  type: 'test'
+  ...
+# Subtest: invalid time, shape, frame size and oversized text fail rather than being repaired
+ok 195 - invalid time, shape, frame size and oversized text fail rather than being repaired
+  ---
+  duration_ms: 0.52
+  type: 'test'
+  ...
+# Subtest: unknown request fields, prompt injection fields and forged frame metadata are rejected
+ok 196 - unknown request fields, prompt injection fields and forged frame metadata are rejected
+  ---
+  duration_ms: 0.262
+  type: 'test'
+  ...
+# Subtest: JPEG signature, base64 padding and total request limit are checked before any fetch
+ok 197 - JPEG signature, base64 padding and total request limit are checked before any fetch
+  ---
+  duration_ms: 0.213
+  type: 'test'
+  ...
+# Subtest: single candidate is checked using shared math validation and cloned on acceptance
+ok 198 - single candidate is checked using shared math validation and cloned on acceptance
+  ---
+  duration_ms: 0.5358
+  type: 'test'
+  ...
+# Subtest: video, request, exact frame time and source dimensions must all belong to the one sent frame
+ok 199 - video, request, exact frame time and source dimensions must all belong to the one sent frame
+  ---
+  duration_ms: 1.0076
+  type: 'test'
+  ...
+# Subtest: empty, multiple and unrelated points cannot be mistaken for current-frame success
+ok 200 - empty, multiple and unrelated points cannot be mistaken for current-frame success
+  ---
+  duration_ms: 0.258
+  type: 'test'
+  ...
+# Subtest: unknown response fields are rejected at every consumed level
+ok 201 - unknown response fields are rejected at every consumed level
+  ---
+  duration_ms: 0.544
+  type: 'test'
+  ...
+# Subtest: data from another browser realm is accepted without invoking an inherited toJSON hook
+ok 202 - data from another browser realm is accepted without invoking an inherited toJSON hook
+  ---
+  duration_ms: 1.3301
+  type: 'test'
+  ...
+# Subtest: one POST uses an immutable request body, returns only the validated point and clears its budget
+ok 203 - one POST uses an immutable request body, returns only the validated point and clears its budget
+  ---
+  duration_ms: 7.6693
+  type: 'test'
+  ...
+# Subtest: cancel before dispatch does not send a frame or produce a failure callback
+ok 204 - cancel before dispatch does not send a frame or produce a failure callback
+  ---
+  duration_ms: 0.7809
+  type: 'test'
+  ...
+# Subtest: cancel aborts the request and ignores a provider that completes late
+ok 205 - cancel aborts the request and ignores a provider that completes late
+  ---
+  duration_ms: 0.9231
+  type: 'test'
+  ...
+# Subtest: the independent 30s deadline aborts once and cannot be increased by an option
+ok 206 - the independent 30s deadline aborts once and cannot be increased by an option
+  ---
+  duration_ms: 0.9377
+  type: 'test'
+  ...
+# Subtest: cancel and timeout also protect against delayed JSON parsing
+ok 207 - cancel and timeout also protect against delayed JSON parsing
+  ---
+  duration_ms: 1.5187
+  type: 'test'
+  ...
+# Subtest: 503, oversized payload and provider errors use fixed messages without reading upstream text
+ok 208 - 503, oversized payload and provider errors use fixed messages without reading upstream text
+  ---
+  duration_ms: 0.806
+  type: 'test'
+  ...
+# Subtest: no curve, stale identity and malformed JSON remain explicit failures without fallback
+ok 209 - no curve, stale identity and malformed JSON remain explicit failures without fallback
+  ---
+  duration_ms: 0.7509
+  type: 'test'
+  ...
+# Subtest: invalid input and synchronous/asynchronous network failures settle safely with no retry
+ok 210 - invalid input and synchronous/asynchronous network failures settle safely with no retry
+  ---
+  duration_ms: 0.7381
+  type: 'test'
+  ...
+# Subtest: front door serves explicit dependencies and standard single media Range, HEAD, MIME and security headers
+ok 211 - front door serves explicit dependencies and standard single media Range, HEAD, MIME and security headers
+  ---
+  duration_ms: 363.5639
+  type: 'test'
+  ...
+# Subtest: unknown Host/Origin, encoded traversal, nonwhitelisted paths/methods/queries and client proxy targets are rejected before upstream
+ok 212 - unknown Host/Origin, encoded traversal, nonwhitelisted paths/methods/queries and client proxy targets are rejected before upstream
+  ---
+  duration_ms: 62.7654
+  type: 'test'
+  ...
+# Subtest: website proxy preserves original Origin/cookie/CSRF/session headers, exact flow methods/query and only fixed safe cookies
+ok 213 - website proxy preserves original Origin/cookie/CSRF/session headers, exact flow methods/query and only fixed safe cookies
+  ---
+  duration_ms: 35.2526
+  type: 'test'
+  ...
+# Subtest: reader validates frozen math/frame fields, strips every private header and Set-Cookie, and preserves separate budgets
+ok 214 - reader validates frozen math/frame fields, strips every private header and Set-Cookie, and preserves separate budgets
+  ---
+  duration_ms: 17.1425
+  type: 'test'
+  ...
+# Subtest: proxy limits declared/chunked bodies and bounded responses, rejects malformed JSON and non JSON
+ok 215 - proxy limits declared/chunked bodies and bounded responses, rejects malformed JSON and non JSON
+  ---
+  duration_ms: 36.6434
+  type: 'test'
+  ...
+# Subtest: missing gateway is honest 503 and production gateway/env refuse account forwarding while static preview remains
+ok 216 - missing gateway is honest 503 and production gateway/env refuse account forwarding while static preview remains
+  ---
+  duration_ms: 17.0423
+  type: 'test'
+  ...
+# Subtest: real gateway session is reused: GET without Origin works, cross-Origin/CSRF violations stay rejected
+ok 217 - real gateway session is reused: GET without Origin works, cross-Origin/CSRF violations stay rejected
+  ---
+  duration_ms: 227.5483
+  type: 'test'
+  ...
+# Subtest: ephemeral factory origin uses browser-style same-origin host and blocks runtime origins without overriding fixed upstream
+ok 218 - ephemeral factory origin uses browser-style same-origin host and blocks runtime origins without overriding fixed upstream
+  ---
+  duration_ms: 13.0522
+  type: 'test'
+  ...
+# Subtest: client cancellation aborts fixed reader upstream and releases the bounded reader slot
+ok 219 - client cancellation aborts fixed reader upstream and releases the bounded reader slot
+  ---
+  duration_ms: 12.1871
+  type: 'test'
+  ...
+# Subtest: reader and API deadlines cancel upstream without replacing each other
+ok 220 - reader and API deadlines cancel upstream without replacing each other
+  ---
+  duration_ms: 29.7817
+  type: 'test'
+  ...
+# Subtest: four live reader requests are bounded; a fifth gets 429 and disconnects release slots
+ok 221 - four live reader requests are bounded; a fifth gets 429 and disconnects release slots
+  ---
+  duration_ms: 28.7612
+  type: 'test'
+  ...
+# Subtest: slow incomplete upload gets the independent 10-second deadline and closes before any credential forwarding
+ok 222 - slow incomplete upload gets the independent 10-second deadline and closes before any credential forwarding
+  ---
+  duration_ms: 10.4789
+  type: 'test'
+  ...
+# Subtest: upstream chunked overflow and malformed/non-JSON JSON responses fail closed, with no cookies returned
+ok 223 - upstream chunked overflow and malformed/non-JSON JSON responses fail closed, with no cookies returned
+  ---
+  duration_ms: 39.9718
+  type: 'test'
+  ...
+# Subtest: registers only the fixture parabola evaluator
+ok 224 - registers only the fixture parabola evaluator
+  ---
+  duration_ms: 1.2135
+  type: 'test'
+  ...
+# Subtest: evaluates the fixture parabola from initial parameters
+ok 225 - evaluates the fixture parabola from initial parameters
+  ---
+  duration_ms: 0.3543
+  type: 'test'
+  ...
+# Subtest: evaluates with the supplied parameters
+ok 226 - evaluates with the supplied parameters
+  ---
+  duration_ms: 0.1488
+  type: 'test'
+  ...
+# Subtest: rejects an unknown equation id and a non-finite x
+ok 227 - rejects an unknown equation id and a non-finite x
+  ---
+  duration_ms: 0.5332
+  type: 'test'
+  ...
+# Subtest: rejects undeclared, inherited and zero parabola coefficients at evaluation
+ok 228 - rejects undeclared, inherited and zero parabola coefficients at evaluation
+  ---
+  duration_ms: 0.286
+  type: 'test'
+  ...
+# Subtest: off returns the preset immediately
+ok 229 - off returns the preset immediately
+  ---
+  duration_ms: 12.0509
+  type: 'test'
+  ...
+# Subtest: off keeps the preset video, time and frame when the context differs
+ok 230 - off keeps the preset video, time and frame when the context differs
+  ---
+  duration_ms: 0.5392
+  type: 'test'
+  ...
+# Subtest: hang does not return before cancel or timeout
+ok 231 - hang does not return before cancel or timeout
+  ---
+  duration_ms: 1.2989
+  type: 'test'
+  ...
+# Subtest: invalid returns an illegal candidate before 1500ms
+ok 232 - invalid returns an illegal candidate before 1500ms
+  ---
+  duration_ms: 0.3506
+  type: 'test'
+  ...
+# Subtest: late returns a candidate only after 1500ms
+ok 233 - late returns a candidate only after 1500ms
+  ---
+  duration_ms: 0.4683
+  type: 'test'
+  ...
+# Subtest: the same input always produces the same candidate
+ok 234 - the same input always produces the same candidate
+  ---
+  duration_ms: 1.8483
+  type: 'test'
+  ...
+# Subtest: aborting hang leaves no timer and no result
+ok 235 - aborting hang leaves no timer and no result
+  ---
+  duration_ms: 0.2897
+  type: 'test'
+  ...
+# Subtest: aborting late before it fires leaves no timer and no result
+ok 236 - aborting late before it fires leaves no timer and no result
+  ---
+  duration_ms: 0.3397
+  type: 'test'
+  ...
+# Subtest: simulator source has no network api, remote address, secret, or model name
+ok 237 - simulator source has no network api, remote address, secret, or model name
+  ---
+  duration_ms: 0.4871
+  type: 'test'
+  ...
+# Subtest: running the simulator does not call fetch
+ok 238 - running the simulator does not call fetch
+  ---
+  duration_ms: 1.8125
+  type: 'test'
+  ...
+# Subtest: the parabola uses the unchanged accepted definition and initial coefficients
+ok 239 - the parabola uses the unchanged accepted definition and initial coefficients
+  ---
+  duration_ms: 2.0858
+  type: 'test'
+  ...
+# Subtest: each local figure declares only its own labelled finite coefficients
+ok 240 - each local figure declares only its own labelled finite coefficients
+  ---
+  duration_ms: 6.5269
+  type: 'test'
+  ...
+# Subtest: new figures preserve one pixel scale for both axes inside the accepted region
+ok 241 - new figures preserve one pixel scale for both axes inside the accepted region
+  ---
+  duration_ms: 0.4626
+  type: 'test'
+  ...
+# Subtest: local horizontal and vertical position ranges match their accepted descriptors
+ok 242 - local horizontal and vertical position ranges match their accepted descriptors
+  ---
+  duration_ms: 0.2211
+  type: 'test'
+  ...
+# Subtest: coefficient updates return an immutable new figure and record actually used clamped values
+ok 243 - coefficient updates return an immutable new figure and record actually used clamped values
+  ---
+  duration_ms: 0.4691
+  type: 'test'
+  ...
+# Subtest: a multi-coefficient request is atomic when any key or value is invalid
+ok 244 - a multi-coefficient request is atomic when any key or value is invalid
+  ---
+  duration_ms: 1.4933
+  type: 'test'
+  ...
+# Subtest: changing coefficients retains exact values between slider steps
+ok 245 - changing coefficients retains exact values between slider steps
+  ---
+  duration_ms: 1.6613
+  type: 'test'
+  ...
+# Subtest: reset restores each kind from its own descriptors
+ok 246 - reset restores each kind from its own descriptors
+  ---
+  duration_ms: 0.5642
+  type: 'test'
+  ...
+# Subtest: parabola, line and sine readouts use their actual finite coefficients
+ok 247 - parabola, line and sine readouts use their actual finite coefficients
+  ---
+  duration_ms: 1.9631
+  type: 'test'
+  ...
+# Subtest: circle readouts preserve both intersections, collapse tangency and report no solution outside
+ok 248 - circle readouts preserve both intersections, collapse tangency and report no solution outside
+  ---
+  duration_ms: 0.4346
+  type: 'test'
+  ...
+# Subtest: non-finite input and corrupted coefficients are rejected before reading or drawing
+ok 249 - non-finite input and corrupted coefficients are rejected before reading or drawing
+  ---
+  duration_ms: 0.8443
+  type: 'test'
+  ...
+# Subtest: a finite but overflowing update is rejected without partial application
+ok 250 - a finite but overflowing update is rejected without partial application
+  ---
+  duration_ms: 0.1468
+  type: 'test'
+  ...
+# Subtest: line segments enter and leave exactly at rectangle intersections
+ok 251 - line segments enter and leave exactly at rectangle intersections
+  ---
+  duration_ms: 0.585
+  type: 'test'
+  ...
+# Subtest: parabola arms remain separate across an invisible vertex with exact mathematical crossings
+ok 252 - parabola arms remain separate across an invisible vertex with exact mathematical crossings
+  ---
+  duration_ms: 1.6279
+  type: 'test'
+  ...
+# Subtest: sine exits and re-enters as four independent arcs without an edge connecting them
+ok 253 - sine exits and re-enters as four independent arcs without an edge connecting them
+  ---
+  duration_ms: 0.3843
+  type: 'test'
+  ...
+# Subtest: circle uses angle sampling and remains round, with closed finite points
+ok 254 - circle uses angle sampling and remains round, with closed finite points
+  ---
+  duration_ms: 1.4934
+  type: 'test'
+  ...
+# Subtest: circle clipping retains separate left and right arcs across out-of-window top and bottom
+ok 255 - circle clipping retains separate left and right arcs across out-of-window top and bottom
+  ---
+  duration_ms: 0.3524
+  type: 'test'
+  ...
+# Subtest: wholly invisible shapes produce no fake edge
+ok 256 - wholly invisible shapes produce no fake edge
+  ---
+  duration_ms: 2.7116
+  type: 'test'
+  ...
+# Subtest: visible clipping is bounded even when a caller requests an excessive sample count
+ok 257 - visible clipping is bounded even when a caller requests an excessive sample count
+  ---
+  duration_ms: 3.8421
+  type: 'test'
+  ...
+# Subtest: a huge finite sine translation returns promptly with finite clipped coordinates
+ok 258 - a huge finite sine translation returns promptly with finite clipped coordinates
+  ---
+  duration_ms: 119.1663
+  type: 'test'
+  ...
+# Subtest: control points follow each actual figure and formulas contain its actual numbers
+ok 259 - control points follow each actual figure and formulas contain its actual numbers
+  ---
+  duration_ms: 0.5749
+  type: 'test'
+  ...
+# Subtest: the three fixed action shapes allow one edit plus one explanation
+ok 260 - the three fixed action shapes allow one edit plus one explanation
+  ---
+  duration_ms: 1.5396
+  type: 'test'
+  ...
+# Subtest: whole batches reject multiple edits, unit conflicts, foreign fields and overflowing proposals
+ok 261 - whole batches reject multiple edits, unit conflicts, foreign fields and overflowing proposals
+  ---
+  duration_ms: 1.1484
+  type: 'test'
+  ...
+# Subtest: local command mode covers the four supported question types
+ok 262 - local command mode covers the four supported question types
+  ---
+  duration_ms: 2.5795
+  type: 'test'
+  ...
+# Subtest: a matching prefix never hides a second side effect or code instruction
+ok 263 - a matching prefix never hides a second side effect or code instruction
+  ---
+  duration_ms: 1.2242
+  type: 'test'
+  ...
+# Subtest: capture uses exactly the paused frame and preserves source dimensions independently of JPEG
+ok 264 - capture uses exactly the paused frame and preserves source dimensions independently of JPEG
+  ---
+  duration_ms: 1.3513
+  type: 'test'
+  ...
+# Subtest: playing, seeking, missing dimensions and undecoded frames never capture
+ok 265 - playing, seeking, missing dimensions and undecoded frames never capture
+  ---
+  duration_ms: 0.1911
+  type: 'test'
+  ...
+# Subtest: changing time or source during canvas capture invalidates the frame
+ok 266 - changing time or source during canvas capture invalidates the frame
+  ---
+  duration_ms: 0.1452
+  type: 'test'
+  ...
+# Subtest: canvas security errors and unsupported image encoders are recoverable
+ok 267 - canvas security errors and unsupported image encoders are recoverable
+  ---
+  duration_ms: 0.2116
+  type: 'test'
+  ...
+# Subtest: the three teaching clips point to bundled MP4 files with distinct known triangle conditions
+ok 268 - the three teaching clips point to bundled MP4 files with distinct known triangle conditions
+  ---
+  duration_ms: 2.4242
+  type: 'test'
+  ...
+# Subtest: choosing a teaching clip only changes its description until explicit loading
+ok 269 - choosing a teaching clip only changes its description until explicit loading
+  ---
+  duration_ms: 13.5187
+  type: 'test'
+  ...
+# Subtest: loading a teaching clip retires old requests and metadata only pauses at the question frame
+ok 270 - loading a teaching clip retires old requests and metadata only pauses at the question frame
+  ---
+  duration_ms: 16.5743
+  type: 'test'
+  ...
+# Subtest: each loaded sample requires confirmation and restores its own conditions before returning to four seconds
+ok 271 - each loaded sample requires confirmation and restores its own conditions before returning to four seconds
+  ---
+  duration_ms: 32.856
+  type: 'test'
+  ...
+# Subtest: sample presets cannot pause playback or expose conditions outside the question interval
+ok 272 - sample presets cannot pause playback or expose conditions outside the question interval
+  ---
+  duration_ms: 2.1477
+  type: 'test'
+  ...
+# Subtest: a rejected MIME keeps the loaded sample while a local video returns to the generic preset
+ok 273 - a rejected MIME keeps the loaded sample while a local video returns to the generic preset
+  ---
+  duration_ms: 3.9426
+  type: 'test'
+  ...
+# Subtest: a failed sample retires its scene and cannot capture or load conditions until reloaded
+ok 274 - a failed sample retires its scene and cannot capture or load conditions until reloaded
+  ---
+  duration_ms: 4.9951
+  type: 'test'
+  ...
+# Subtest: invalid seconds cannot seek, discard a confirmed scene or cancel its model request
+ok 275 - invalid seconds cannot seek, discard a confirmed scene or cancel its model request
+  ---
+  duration_ms: 4.848
+  type: 'test'
+  ...
+# Subtest: valid explicit seek pauses at the chosen second and rejects the previous scene request
+ok 276 - valid explicit seek pauses at the chosen second and rejects the previous scene request
+  ---
+  duration_ms: 3.9944
+  type: 'test'
+  ...
+# Subtest: a pending play operation cannot be duplicated and retires the old scene before late model actions
+ok 277 - a pending play operation cannot be duplicated and retires the old scene before late model actions
+  ---
+  duration_ms: 9.048
+  type: 'test'
+  ...
+# Subtest: saving a new frame cancels old model actions and removes the old confirmed snapshot
+ok 278 - saving a new frame cancels old model actions and removes the old confirmed snapshot
+  ---
+  duration_ms: 3.0078
+  type: 'test'
+  ...
+# Subtest: a failed re-read of the confirmed frame preserves the experiment until a new candidate is reviewed
+ok 279 - a failed re-read of the confirmed frame preserves the experiment until a new candidate is reviewed
+  ---
+  duration_ms: 9.8687
+  type: 'test'
+  ...
+# Subtest: selecting a non-video MIME preserves the existing media, scene and pending work
+ok 280 - selecting a non-video MIME preserves the existing media, scene and pending work
+  ---
+  duration_ms: 4.908
+  type: 'test'
+  ...
+# Subtest: native play and seeking events cancel both frame reading and scene actions
+ok 281 - native play and seeking events cancel both frame reading and scene actions
+  ---
+  duration_ms: 25.0671
+  type: 'test'
+  ...
+# Subtest: recognition disables duplicate recognition while media controls can cancel the pending read
+ok 282 - recognition disables duplicate recognition while media controls can cancel the pending read
+  ---
+  duration_ms: 31.5719
+  type: 'test'
+  ...
+# Subtest: fullscreen failure leaves the experiment usable, and fullscreen Escape does not exit it
+ok 283 - fullscreen failure leaves the experiment usable, and fullscreen Escape does not exit it
+  ---
+  duration_ms: 3.0642
+  type: 'test'
+  ...
+# Subtest: Escape in the question clears its draft, while Alt+B ignores editable fields
+ok 284 - Escape in the question clears its draft, while Alt+B ignores editable fields
+  ---
+  duration_ms: 2.6366
+  type: 'test'
+  ...
+# Subtest: reader memory validates the host and credentials and stores only the local origin
+ok 285 - reader memory validates the host and credentials and stores only the local origin
+  ---
+  duration_ms: 11.6041
+  type: 'test'
+  ...
+# Subtest: unavailable session storage never blocks manual work or initiates a request
+ok 286 - unavailable session storage never blocks manual work or initiates a request
+  ---
+  duration_ms: 3.3286
+  type: 'test'
+  ...
+# Subtest: slider, number form and local question share one side update and extend the visible range
+ok 287 - slider, number form and local question share one side update and extend the visible range
+  ---
+  duration_ms: 7.7881
+  type: 'test'
+  ...
+# Subtest: ranges wait for confirmation and extreme valid lengths keep finite bounds with atomic rejection
+ok 288 - ranges wait for confirmation and extreme valid lengths keep finite bounds with atomic rejection
+  ---
+  duration_ms: 10.5798
+  type: 'test'
+  ...
+# Subtest: restoring or applying a valid local action clears rejected length errors and invalid attributes
+ok 289 - restoring or applying a valid local action clears rejected length errors and invalid attributes
+  ---
+  duration_ms: 6.486
+  type: 'test'
+  ...
+# Subtest: question examples fill editable drafts without changing the scene or submitting anything
+ok 290 - question examples fill editable drafts without changing the scene or submitting anything
+  ---
+  duration_ms: 7.1494
+  type: 'test'
+  ...
+# Subtest: question history uses text, labels result provenance, caps at forty entries and clears on a new scene
+ok 291 - question history uses text, labels result provenance, caps at forty entries and clears on a new scene
+  ---
+  duration_ms: 14.0543
+  type: 'test'
+  ...
+# Subtest: clearing question history cancels a pending turn without applying its late reply
+ok 292 - clearing question history cancels a pending turn without applying its late reply
+  ---
+  duration_ms: 2.3773
+  type: 'test'
+  ...
+# Subtest: failed and canceled model turns stay explicit, and retry uses the same question without stale actions
+ok 293 - failed and canceled model turns stay explicit, and retry uses the same question without stale actions
+  ---
+  duration_ms: 4.9526
+  type: 'test'
+  ...
+# Subtest: editing a draft withdraws the old retry without submitting or overwriting the new question
+ok 294 - editing a draft withdraws the old retry without submitting or overwriting the new question
+  ---
+  duration_ms: 9.2354
+  type: 'test'
+  ...
+# Subtest: recognition retry requires the current paused frame and never substitutes a preset
+ok 295 - recognition retry requires the current paused frame and never substitutes a preset
+  ---
+  duration_ms: 2.4864
+  type: 'test'
+  ...
+# Subtest: persisted navigation retains the confirmed local scene and repeated returns keep controls usable once
+ok 296 - persisted navigation retains the confirmed local scene and repeated returns keep controls usable once
+  ---
+  duration_ms: 17.7527
+  type: 'test'
+  ...
+# Subtest: persisted navigation preserves a candidate and its unsubmitted correction fields
+ok 297 - persisted navigation preserves a candidate and its unsubmitted correction fields
+  ---
+  duration_ms: 4.3866
+  type: 'test'
+  ...
+# Subtest: persisted departure cancels pending reading and asking without applying late results or restarting them
+ok 298 - persisted departure cancels pending reading and asking without applying late results or restarting them
+  ---
+  duration_ms: 19.1899
+  type: 'test'
+  ...
+# Subtest: cached departure retires browser promises without restarting playback or overriding a newer operation
+ok 299 - cached departure retires browser promises without restarting playback or overriding a newer operation
+  ---
+  duration_ms: 16.4685
+  type: 'test'
+  ...
+# Subtest: final nonpersisted departure releases the cached controller and ignores late browser promises
+ok 300 - final nonpersisted departure releases the cached controller and ignores late browser promises
+  ---
+  duration_ms: 10.0608
+  type: 'test'
+  ...
+# Subtest: late play and fullscreen promises cannot update page state after disposal
+ok 301 - late play and fullscreen promises cannot update page state after disposal
+  ---
+  duration_ms: 21.2942
+  type: 'test'
+  ...
+# Subtest: addresses only resolve the explicit local reader geometry route
+ok 302 - addresses only resolve the explicit local reader geometry route
+  ---
+  duration_ms: 1.0971
+  type: 'test'
+  ...
+# Subtest: valid response is bound to the same video, frame and source dimensions
+ok 303 - valid response is bound to the same video, frame and source dimensions
+  ---
+  duration_ms: 7.6147
+  type: 'test'
+  ...
+# Subtest: wrong frame and wrong JPEG-source dimensions are rejected
+ok 304 - wrong frame and wrong JPEG-source dimensions are rejected
+  ---
+  duration_ms: 1.7385
+  type: 'test'
+  ...
+# Subtest: cancel propagates to fetch and ignores a provider that resolves late
+ok 305 - cancel propagates to fetch and ignores a provider that resolves late
+  ---
+  duration_ms: 2.9987
+  type: 'test'
+  ...
+# Subtest: timeout aborts once and never accepts late success
+ok 306 - timeout aborts once and never accepts late success
+  ---
+  duration_ms: 2.8102
+  type: 'test'
+  ...
+# Subtest: oversized payload and missing model fail honestly without a mock fallback
+ok 307 - oversized payload and missing model fail honestly without a mock fallback
+  ---
+  duration_ms: 9.0086
+  type: 'test'
+  ...
+# Subtest: an action response cannot target a superseded scene revision
+ok 308 - an action response cannot target a superseded scene revision
+  ---
+  duration_ms: 0.9207
+  type: 'test'
+  ...
+# Subtest: response envelopes reject undeclared fields and unsupported responses with actions
+ok 309 - response envelopes reject undeclared fields and unsupported responses with actions
+  ---
+  duration_ms: 0.9247
+  type: 'test'
+  ...
+# Subtest: 3-4-5 and independent 6-4 values share one normalized drawing scale
+ok 310 - 3-4-5 and independent 6-4 values share one normalized drawing scale
+  ---
+  duration_ms: 3.8154
+  type: 'test'
+  ...
+# Subtest: JSON types, unknown keys and invalid derived geometry are rejected
+ok 311 - JSON types, unknown keys and invalid derived geometry are rejected
+  ---
+  duration_ms: 1.4041
+  type: 'test'
+  ...
+# Subtest: finite extreme lengths avoid unnecessary squaring overflow
+ok 312 - finite extreme lengths avoid unnecessary squaring overflow
+  ---
+  duration_ms: 0.3064
+  type: 'test'
+  ...
+# Subtest: labels are trimmed, distinct, limited in code points, and returned as isolated JSON
+ok 313 - labels are trimmed, distinct, limited in code points, and returned as isolated JSON
+  ---
+  duration_ms: 0.2424
+  type: 'test'
+  ...
+# Subtest: source pixels only locate the drawing, and vision needs a complete non-collinear triple
+ok 314 - source pixels only locate the drawing, and vision needs a complete non-collinear triple
+  ---
+  duration_ms: 1.8466
+  type: 'test'
+  ...
+# Subtest: expected identity is exact for every ownership field and known duration
+ok 315 - expected identity is exact for every ownership field and known duration
+  ---
+  duration_ms: 0.3292
+  type: 'test'
+  ...
+# Subtest: shared display formatting uses three decimals and finite exponent strings at extremes
+ok 316 - shared display formatting uses three decimals and finite exponent strings at extremes
+  ---
+  duration_ms: 0.3727
+  type: 'test'
+  ...
+# Subtest: candidates stay in review, and the confirmed snapshot is isolated from all callers
+ok 317 - candidates stay in review, and the confirmed snapshot is isolated from all callers
+  ---
+  duration_ms: 3.1468
+  type: 'test'
+  ...
+# Subtest: correction preserves original acquisition and confirms the corrected values, not raw model output
+ok 318 - correction preserves original acquisition and confirms the corrected values, not raw model output
+  ---
+  duration_ms: 1.1475
+  type: 'test'
+  ...
+# Subtest: vision confirmation compares field values, not object key insertion order
+ok 319 - vision confirmation compares field values, not object key insertion order
+  ---
+  duration_ms: 0.3606
+  type: 'test'
+  ...
+# Subtest: one side changes, old responses are refused, and restore keeps increasing revision
+ok 320 - one side changes, old responses are refused, and restore keeps increasing revision
+  ---
+  duration_ms: 6.11
+  type: 'test'
+  ...
+# Subtest: every ownership mismatch and invalid batch is atomic
+ok 321 - every ownership mismatch and invalid batch is atomic
+  ---
+  duration_ms: 1.1392
+  type: 'test'
+  ...
+# Subtest: invalidating or replacing retires identities and disposal cannot be reopened
+ok 322 - invalidating or replacing retires identities and disposal cannot be reopened
+  ---
+  duration_ms: 0.4558
+  type: 'test'
+  ...
+# Subtest: successful numeric formatting never turns a finite value into displayed Infinity
+ok 323 - successful numeric formatting never turns a finite value into displayed Infinity
+  ---
+  duration_ms: 0.389
+  type: 'test'
+  ...
+# Subtest: mark and measure keep only the elapsed milliseconds
+ok 324 - mark and measure keep only the elapsed milliseconds
+  ---
+  duration_ms: 1.6389
+  type: 'test'
+  ...
+# Subtest: summary reports p50 and p95 for the fallback-visible samples
+ok 325 - summary reports p50 and p95 for the fallback-visible samples
+  ---
+  duration_ms: 1.5312
+  type: 'test'
+  ...
+# Subtest: a cold sample is labeled cold and mixed samples stay distinguishable
+ok 326 - a cold sample is labeled cold and mixed samples stay distinguishable
+  ---
+  duration_ms: 0.1978
+  type: 'test'
+  ...
+# Subtest: excluded phases and bad numbers are not stored
+ok 327 - excluded phases and bad numbers are not stored
+  ---
+  duration_ms: 0.2256
+  type: 'test'
+  ...
+# Subtest: the log stays in memory and the source does not persist or upload it
+ok 328 - the log stays in memory and the source does not persist or upload it
+  ---
+  duration_ms: 1.4635
+  type: 'test'
+  ...
+# Subtest: progressive plans keep the current window first, preserve every bounded window and reject budget enlargement
+ok 329 - progressive plans keep the current window first, preserve every bounded window and reject budget enlargement
+  ---
+  duration_ms: 2.6939
+  type: 'test'
+  ...
+# Subtest: account analysis cache persists structured candidates across process instances, never frames or credentials
+ok 330 - account analysis cache persists structured candidates across process instances, never frames or credentials
+  ---
+  duration_ms: 18.0097
+  type: 'test'
+  ...
+# Subtest: private cached candidates never cross account, epoch, source, subtitle, sampling or provider identities
+ok 331 - private cached candidates never cross account, epoch, source, subtitle, sampling or provider identities
+  ---
+  duration_ms: 9.8112
+  type: 'test'
+  ...
+# Subtest: TTL and the 40-entry bound evict stale data without promoting an old result
+ok 332 - TTL and the 40-entry bound evict stale data without promoting an old result
+  ---
+  duration_ms: 365.197
+  type: 'test'
+  ...
+# Subtest: guest cache is memory-only and account clear/revocation reject late commits
+ok 333 - guest cache is memory-only and account clear/revocation reject late commits
+  ---
+  duration_ms: 61.647
+  type: 'test'
+  ...
+# Subtest: account capability revoked during the actual final rename rolls back disk and cannot reappear after restart
+ok 334 - account capability revoked during the actual final rename rolls back disk and cannot reappear after restart
+  ---
+  duration_ms: 81.2677
+  type: 'test'
+  ...
+# Subtest: malformed persistent candidates and repository destinations fail closed
+ok 335 - malformed persistent candidates and repository destinations fail closed
+  ---
+  duration_ms: 11.0679
+  type: 'test'
+  ...
+# Subtest: local sidecar edits display metadata while retaining immutable mathematical record and actual attempt evidence
+ok 336 - local sidecar edits display metadata while retaining immutable mathematical record and actual attempt evidence
+  ---
+  duration_ms: 26.1672
+  type: 'test'
+  ...
+# Subtest: local clear epochs and record deletion reject old edits and remove metadata from current exportable state
+ok 337 - local clear epochs and record deletion reject old edits and remove metadata from current exportable state
+  ---
+  duration_ms: 2.0969
+  type: 'test'
+  ...
+# Subtest: sidecar fails closed on malicious shapes and bounded text; valid empty notes and HTML remain literal text
+ok 338 - sidecar fails closed on malicious shapes and bounded text; valid empty notes and HTML remain literal text
+  ---
+  duration_ms: 0.8946
+  type: 'test'
+  ...
+# Subtest: annotation conflict preserves student input, requires an explicit reread, and renders hostile text without HTML
+ok 339 - annotation conflict preserves student input, requires an explicit reread, and renders hostile text without HTML
+  ---
+  duration_ms: 4.921
+  type: 'test'
+  ...
+# Subtest: closing or changing accounts discards late annotation reads and saves without exposing private values
+ok 340 - closing or changing accounts discards late annotation reads and saves without exposing private values
+  ---
+  duration_ms: 0.6711
+  type: 'test'
+  ...
+# Subtest: annotation client writes use current CSRF and epoch and preserve conflicts without automatic replay
+ok 341 - annotation client writes use current CSRF and epoch and preserve conflicts without automatic replay
+  ---
+  duration_ms: 1.3589
+  type: 'test'
+  ...
+# Subtest: annotation list and writes ignore late responses after account generation changes
+ok 342 - annotation list and writes ignore late responses after account generation changes
+  ---
+  duration_ms: 1.7642
+  type: 'test'
+  ...
+# Subtest: 音轨配置留空、非法URL/预算拒绝且不提取或请求供应商
+ok 343 - 音轨配置留空、非法URL/预算拒绝且不提取或请求供应商
+  ---
+  duration_ms: 75.1842
+  type: 'test'
+  ...
+# Subtest: 已登记短音轨实际HTTP调用multipart替身，候选/时间范围不冒充全课
+ok 344 - 已登记短音轨实际HTTP调用multipart替身，候选/时间范围不冒充全课
+  ---
+  duration_ms: 23.0143
+  type: 'test'
+  ...
+# Subtest: 不能声明外部来源、客户端音频/URL、越界时间或跨Origin能力
+ok 345 - 不能声明外部来源、客户端音频/URL、越界时间或跨Origin能力
+  ---
+  duration_ms: 27.1896
+  type: 'test'
+  ...
+# Subtest: 两次调用和全局小时额度停止，没有自动重试
+ok 346 - 两次调用和全局小时额度停止，没有自动重试
+  ---
+  duration_ms: 19.3848
+  type: 'test'
+  ...
+# Subtest: 无音轨不请求模型，供应商空文本/超长/非法结构不当成功
+ok 347 - 无音轨不请求模型，供应商空文本/超长/非法结构不当成功
+  ---
+  duration_ms: 41.8595
+  type: 'test'
+  ...
+# Subtest: 停止/撤权中止处理，不接受迟到模型文字
+ok 348 - 停止/撤权中止处理，不接受迟到模型文字
+  ---
+  duration_ms: 15.5562
+  type: 'test'
+  ...
+# Subtest: 账户epoch变化或素材撤权拒绝迟到响应，来源只允许注册路径
+ok 349 - 账户epoch变化或素材撤权拒绝迟到响应，来源只允许注册路径
+  ---
+  duration_ms: 8.1688
+  type: 'test'
+  ...
+# Subtest: 固定FFmpeg参数、输出上限、取消杀进程及视频指纹复核
+ok 350 - 固定FFmpeg参数、输出上限、取消杀进程及视频指纹复核
+  ---
+  duration_ms: 6.464
+  type: 'test'
+  ...
+# Subtest: context v1 sends ordered sparse JPEGs and author text once; fills identity and explicit partial coverage
+ok 351 - context v1 sends ordered sparse JPEGs and author text once; fills identity and explicit partial coverage
+  ---
+  duration_ms: 38.0401
+  type: 'test'
+  ...
+# Subtest: context accepts frames alone, labels only submitted times, and sorts valid objects by observed time
+ok 352 - context accepts frames alone, labels only submitted times, and sorts valid objects by observed time
+  ---
+  duration_ms: 3.7194
+  type: 'test'
+  ...
+# Subtest: pending permission and blank model produce zero external calls
+ok 353 - pending permission and blank model produce zero external calls
+  ---
+  duration_ms: 2.1419
+  type: 'test'
+  ...
+# Subtest: context rejects unknown fields, URLs, duplicate/unordered/nonfinite times, broad windows and malformed cues before model
+ok 354 - context rejects unknown fields, URLs, duplicate/unordered/nonfinite times, broad windows and malformed cues before model
+  ---
+  duration_ms: 5.2391
+  type: 'test'
+  ...
+# Subtest: context aggregate JPEG limit rejects otherwise individually valid images
+ok 355 - context aggregate JPEG limit rejects otherwise individually valid images
+  ---
+  duration_ms: 13.9484
+  type: 'test'
+  ...
+# Subtest: context rejects forged times, duplicate frame objects, malicious math/schema and unsafe model text without retry
+ok 356 - context rejects forged times, duplicate frame objects, malicious math/schema and unsafe model text without retry
+  ---
+  duration_ms: 42.5664
+  type: 'test'
+  ...
+# Subtest: context deadline invalidates a noncooperative provider and cancellation propagates without a late result
+ok 357 - context deadline invalidates a noncooperative provider and cancellation propagates without a late result
+  ---
+  duration_ms: 37.3408
+  type: 'test'
+  ...
+# Subtest: context gateway registers author subtitle SHA, exposes identity only and derives exact author cues server-side
+ok 358 - context gateway registers author subtitle SHA, exposes identity only and derives exact author cues server-side
+  ---
+  duration_ms: 208.0458
+  type: 'test'
+  ...
+# Subtest: context gateway rejects external cue text, forged subtitle identity and wrong origins before model work
+ok 359 - context gateway rejects external cue text, forged subtitle identity and wrong origins before model work
+  ---
+  duration_ms: 118.5508
+  type: 'test'
+  ...
+# Subtest: context accepts frames alone and truthfully labels an empty registered subtitle window as frames only
+ok 360 - context accepts frames alone and truthfully labels an empty registered subtitle window as frames only
+  ---
+  duration_ms: 106.1629
+  type: 'test'
+  ...
+# Subtest: pending/unknown video licensing and out-of-source times cannot be promoted by client metadata
+ok 361 - pending/unknown video licensing and out-of-source times cannot be promoted by client metadata
+  ---
+  duration_ms: 101.302
+  type: 'test'
+  ...
+# Subtest: unconfigured context service returns 503 and transmits zero material to a supplier
+ok 362 - unconfigured context service returns 503 and transmits zero material to a supplier
+  ---
+  duration_ms: 157.9759
+  type: 'test'
+  ...
+# Subtest: context and current-frame reads share one in-flight slot; ending the session aborts the actual upstream signal
+ok 363 - context and current-frame reads share one in-flight slot; ending the session aborts the actual upstream signal
+  ---
+  duration_ms: 141.6394
+  type: 'test'
+  ...
+# Subtest: context transport disconnection cancels supplier work and does not leave the shared read slot occupied
+ok 364 - context transport disconnection cancels supplier work and does not leave the shared read slot occupied
+  ---
+  duration_ms: 121.7629
+  type: 'test'
+  ...
+# Subtest: session quotas enforce 32 single-frame reads and four context calls without retry or extra supplier work
+ok 365 - session quotas enforce 32 single-frame reads and four context calls without retry or extra supplier work
+  ---
+  duration_ms: 279.9177
+  type: 'test'
+  ...
+# Subtest: context IIFE sends bounded sparse frames only after explicit start and keeps the student player unchanged
+ok 366 - context IIFE sends bounded sparse frames only after explicit start and keeps the student player unchanged
+  ---
+  duration_ms: 47.8813
+  type: 'test'
+  ...
+# Subtest: pending permission and invalid windows produce zero extraction and zero fetch
+ok 367 - pending permission and invalid windows produce zero extraction and zero fetch
+  ---
+  duration_ms: 2.0562
+  type: 'test'
+  ...
+# Subtest: registered subtitle selection with actual empty cues can display truthful frames-only coverage
+ok 368 - registered subtitle selection with actual empty cues can display truthful frames-only coverage
+  ---
+  duration_ms: 3.4104
+  type: 'test'
+  ...
+# Subtest: stop during extraction invalidates a late noncooperative decoder and never begins a model session
+ok 369 - stop during extraction invalidates a late noncooperative decoder and never begins a model session
+  ---
+  duration_ms: 2.283
+  type: 'test'
+  ...
+# Subtest: late session token from transport ignoring cancellation is explicitly ended without starting analysis
+ok 370 - late session token from transport ignoring cancellation is explicitly ended without starting analysis
+  ---
+  duration_ms: 5.9831
+  type: 'test'
+  ...
+# Subtest: cancel, hidden page, replaced file and account stop discard late candidate responses without restoring old UI
+ok 371 - cancel, hidden page, replaced file and account stop discard late candidate responses without restoring old UI
+  ---
+  duration_ms: 9.5763
+  type: 'test'
+  ...
+# Subtest: media identity changes are independently checked even when the owner has not yet called stop
+ok 372 - media identity changes are independently checked even when the owner has not yet called stop
+  ---
+  duration_ms: 2.8464
+  type: 'test'
+  ...
+# Subtest: forged identity/coverage and malicious mathematical candidates are rejected before interactive callbacks
+ok 373 - forged identity/coverage and malicious mathematical candidates are rejected before interactive callbacks
+  ---
+  duration_ms: 17.1167
+  type: 'test'
+  ...
+# Subtest: candidate buttons from cleared results cannot invoke callbacks or write learning data
+ok 374 - candidate buttons from cleared results cannot invoke callbacks or write learning data
+  ---
+  duration_ms: 3.3013
+  type: 'test'
+  ...
+# Subtest: asynchronous candidate preparation receives a generation guard and cancellation prevents its late writeback
+ok 375 - asynchronous candidate preparation receives a generation guard and cancellation prevents its late writeback
+  ---
+  duration_ms: 2.3328
+  type: 'test'
+  ...
+# Subtest: candidate generation guards reject hidden pages, changed sources and account stop independently of transport
+ok 376 - candidate generation guards reject hidden pages, changed sources and account stop independently of transport
+  ---
+  duration_ms: 12.5615
+  type: 'test'
+  ...
+# Subtest: destroy clears prepared state and removes both action listeners and the visibility listener
+ok 377 - destroy clears prepared state and removes both action listeners and the visibility listener
+  ---
+  duration_ms: 2.832
+  type: 'test'
+  ...
+# Subtest: purpose is stable sidecar data: titles and old question kinds cannot silently classify explanations
+ok 378 - purpose is stable sidecar data: titles and old question kinds cannot silently classify explanations
+  ---
+  duration_ms: 8.9161
+  type: 'test'
+  ...
+# Subtest: worked examples are computed from actual signed parameters and units, never a fixed video preset
+ok 379 - worked examples are computed from actual signed parameters and units, never a fixed video preset
+  ---
+  duration_ms: 1.4312
+  type: 'test'
+  ...
+# Subtest: all twenty recipes have deterministic pure views and correct programme mathematics across both lessons
+ok 380 - all twenty recipes have deterministic pure views and correct programme mathematics across both lessons
+  ---
+  duration_ms: 91.4287
+  type: 'test'
+  ...
+# Subtest: independent representation questions distinguish formula signs, missing right angles, and one-side scaling
+ok 381 - independent representation questions distinguish formula signs, missing right angles, and one-side scaling
+  ---
+  duration_ms: 1.0288
+  type: 'test'
+  ...
+# Subtest: help only accumulates for its exact exercise and generation; prediction and notes have no submission stage
+ok 382 - help only accumulates for its exact exercise and generation; prediction and notes have no submission stage
+  ---
+  duration_ms: 0.8202
+  type: 'test'
+  ...
+# Subtest: receipts rejudge answers and locked assistance, reject false independent claims and unrelated sources
+ok 383 - receipts rejudge answers and locked assistance, reject false independent claims and unrelated sources
+  ---
+  duration_ms: 7.5006
+  type: 'test'
+  ...
+# Subtest: completion has its own receipt but does not increase complete independent evidence or review streaks
+ok 384 - completion has its own receipt but does not increase complete independent evidence or review streaks
+  ---
+  duration_ms: 0.615
+  type: 'test'
+  ...
+# Subtest: new exercise receipt drives the same product schedule without altering the original record or old attempt shape
+ok 385 - new exercise receipt drives the same product schedule without altering the original record or old attempt shape
+  ---
+  duration_ms: 1.5164
+  type: 'test'
+  ...
+# Subtest: finite cause candidates need a real mathematically wrong receipt and never choose a diagnosis automatically
+ok 386 - finite cause candidates need a real mathematically wrong receipt and never choose a diagnosis automatically
+  ---
+  duration_ms: 1.0699
+  type: 'test'
+  ...
+# Subtest: legacy APIs use the same-record judged history and stable event IDs for 1/3/7/14/28-day suggestions
+ok 387 - legacy APIs use the same-record judged history and stable event IDs for 1/3/7/14/28-day suggestions
+  ---
+  duration_ms: 18.2386
+  type: 'test'
+  ...
+# Subtest: queue excludes unclassified/reflection/pending/invalid math, respects edits and skip, and returns true emptiness
+ok 388 - queue excludes unclassified/reflection/pending/invalid math, respects edits and skip, and returns true emptiness
+  ---
+  duration_ms: 2.0937
+  type: 'test'
+  ...
+# Subtest: foundation and interleaved queues are explicit deterministic arrangements, without mastery or attempts
+ok 389 - foundation and interleaved queues are explicit deterministic arrangements, without mastery or attempts
+  ---
+  duration_ms: 1.5439
+  type: 'test'
+  ...
+# Subtest: strict pure validators reject extra keys, cross-lesson stages, reused IDs, getters and nonfinite values
+ok 390 - strict pure validators reject extra keys, cross-lesson stages, reused IDs, getters and nonfinite values
+  ---
+  duration_ms: 9.2485
+  type: 'test'
+  ...
+# Subtest: UMD browser module needs no DOM or network and matches CommonJS values
+ok 391 - UMD browser module needs no DOM or network and matches CommonJS values
+  ---
+  duration_ms: 11.7693
+  type: 'test'
+  ...
+# Subtest: controlled media server rejects decoded traversal/private files and supports video ranges
+ok 392 - controlled media server rejects decoded traversal/private files and supports video ranges
+  ---
+  duration_ms: 88.4045
+  type: 'test'
+  ...
+# Subtest: five manual templates have strict mathematical conditions and parameter budgets
+ok 393 - five manual templates have strict mathematical conditions and parameter budgets
+  ---
+  duration_ms: 2.7608
+  type: 'test'
+  ...
+# Subtest: answers are deterministic and physical concepts do not depend on irrelevant parameters
+ok 394 - answers are deterministic and physical concepts do not depend on irrelevant parameters
+  ---
+  duration_ms: 24.4375
+  type: 'test'
+  ...
+# Subtest: manual templates save and produce real answer receipts while video recognition remains two-template-only
+ok 395 - manual templates save and produce real answer receipts while video recognition remains two-template-only
+  ---
+  duration_ms: 28.9851
+  type: 'test'
+  ...
+# Subtest: predictions, progressive hints and twenty independent variants follow actual parameter mathematics
+ok 396 - predictions, progressive hints and twenty independent variants follow actual parameter mathematics
+  ---
+  duration_ms: 28.2372
+  type: 'test'
+  ...
+# Subtest: graphs only use actual judged answers, distinguish diagnostic receipts and show unknown states
+ok 397 - graphs only use actual judged answers, distinguish diagnostic receipts and show unknown states
+  ---
+  duration_ms: 1.3932
+  type: 'test'
+  ...
+# Subtest: hint fading and review suggestions respond to independent history and reset after help or errors
+ok 398 - hint fading and review suggestions respond to independent history and reset after help or errors
+  ---
+  duration_ms: 14.4433
+  type: 'test'
+  ...
+# Subtest: deterministic SVG contains finite program geometry and browser modules match server mathematics
+ok 399 - deterministic SVG contains finite program geometry and browser modules match server mathematics
+  ---
+  duration_ms: 9.8636
+  type: 'test'
+  ...
+# Subtest: new plane particle points satisfy the same line, circle and sine equations and stay at z=0
+ok 400 - new plane particle points satisfy the same line, circle and sine equations and stay at z=0
+  ---
+  duration_ms: 17.395
+  type: 'test'
+  ...
+# Subtest: similar triangle particle geometry preserves all three sides and actual squared area ratio
+ok 401 - similar triangle particle geometry preserves all three sides and actual squared area ratio
+  ---
+  duration_ms: 8.7756
+  type: 'test'
+  ...
+# Subtest: cuboid uses eight real 3D mathematical corners and twelve axis edges with given lengths
+ok 402 - cuboid uses eight real 3D mathematical corners and twelve axis edges with given lengths
+  ---
+  duration_ms: 2.2105
+  type: 'test'
+  ...
+# Subtest: five templates reuse fixed GPU budgets and shaders; camera cannot mutate math and lifecycle releases resources
+ok 403 - five templates reuse fixed GPU budgets and shaders; camera cannot mutate math and lifecycle releases resources
+  ---
+  duration_ms: 64.8203
+  type: 'test'
+  ...
+# Subtest: new cuboid context loss preserves mathematics and browser IIFE samples without executable input
+ok 404 - new cuboid context loss preserves mathematics and browser IIFE samples without executable input
+  ---
+  duration_ms: 7.0761
+  type: 'test'
+  ...
+# Subtest: canonical browser math validates account listing and actual sync queues for five manual types
+ok 405 - canonical browser math validates account listing and actual sync queues for five manual types
+  ---
+  duration_ms: 62.2431
+  type: 'test'
+  ...
+# Subtest: worker imports, controlled injection and status page load the same canonical math before consumers
+ok 406 - worker imports, controlled injection and status page load the same canonical math before consumers
+  ---
+  duration_ms: 1.106
+  type: 'test'
+  ...
+# Subtest: manual choice creates actual mathematics, saves conditions and submits actual wrong/independent answers
+ok 407 - manual choice creates actual mathematics, saves conditions and submits actual wrong/independent answers
+  ---
+  duration_ms: 34.9718
+  type: 'test'
+  ...
+# Subtest: diagnostic old/new templates are optional, distinct from ordinary practice and no action implies mastery
+ok 408 - diagnostic old/new templates are optional, distinct from ordinary practice and no action implies mastery
+  ---
+  duration_ms: 16.3802
+  type: 'test'
+  ...
+# Subtest: reopening cannot wash out help, and fading follows independent evidence for the selected new record
+ok 409 - reopening cannot wash out help, and fading follows independent evidence for the selected new record
+  ---
+  duration_ms: 23.3776
+  type: 'test'
+  ...
+# Subtest: parameter exploration and variants create independent records, reject invalid shapes and preserve original math
+ok 410 - parameter exploration and variants create independent records, reject invalid shapes and preserve original math
+  ---
+  duration_ms: 7.7332
+  type: 'test'
+  ...
+# Subtest: account changes discard delayed success and removed dynamic controls release event handlers
+ok 411 - account changes discard delayed success and removed dynamic controls release event handlers
+  ---
+  duration_ms: 3.1057
+  type: 'test'
+  ...
+# Subtest: optional particle failure retains actual SVG/practice and new scene/account exit destroys the old renderer
+ok 412 - optional particle failure retains actual SVG/practice and new scene/account exit destroys the old renderer
+  ---
+  duration_ms: 20.2365
+  type: 'test'
+  ...
+# Subtest: 未配置或未主动启用时not-run且零provider调用，不需媒体工具或伪造验收成功
+ok 413 - 未配置或未主动启用时not-run且零provider调用，不需媒体工具或伪造验收成功
+  ---
+  duration_ms: 226.4939
+  type: 'test'
+  ...
+# Subtest: 固定自制素材全文件指纹和作者VTT指纹绑定登记，时间窗不声称读取音频整课
+ok 414 - 固定自制素材全文件指纹和作者VTT指纹绑定登记，时间窗不声称读取音频整课
+  ---
+  duration_ms: 107.245
+  type: 'test'
+  ...
+# Subtest: transport注入仍调用真实readLearning与context函数，3单帧加1组合共4次，不计真实模型证据
+ok 415 - transport注入仍调用真实readLearning与context函数，3单帧加1组合共4次，不计真实模型证据
+  ---
+  duration_ms: 72.3435
+  type: 'test'
+  ...
+# Subtest: 候选误差、单位不符、needs_review和上下文缺帧分开记录，不将失败或缺失算正确
+ok 416 - 候选误差、单位不符、needs_review和上下文缺帧分开记录，不将失败或缺失算正确
+  ---
+  duration_ms: 58.7696
+  type: 'test'
+  ...
+# Subtest: 错误模板与非法模型结构经实际reader拒绝，异常不把provider原文写报告或自动重试
+ok 417 - 错误模板与非法模型结构经实际reader拒绝，异常不把provider原文写报告或自动重试
+  ---
+  duration_ms: 86.0883
+  type: 'test'
+  ...
+# Subtest: 无效或错误采样时间和非JPEG帧先拒绝，零provider调用
+ok 418 - 无效或错误采样时间和非JPEG帧先拒绝，零provider调用
+  ---
+  duration_ms: 197.2307
+  type: 'test'
+  ...
+# Subtest: 报告仅写绝对仓库外新文件，已有报告不覆盖，仓库与相对路径拒绝
+ok 419 - 报告仅写绝对仓库外新文件，已有报告不覆盖，仓库与相对路径拒绝
+  ---
+  duration_ms: 144.9885
+  type: 'test'
+  ...
+# Subtest: 实际CLI未配置运行退出2并输出not-run零调用报告，不需要FFmpeg或密钥
+ok 420 - 实际CLI未配置运行退出2并输出not-run零调用报告，不需要FFmpeg或密钥
+  ---
+  duration_ms: 361.6455
+  type: 'test'
+  ...
+# Subtest: 仓库外目录链接指向仓库时也不能写报告或创建子目录
+ok 421 - 仓库外目录链接指向仓库时也不能写报告或创建子目录
+  ---
+  duration_ms: 59.7137
+  type: 'test'
+  ...
+# Subtest: 三层提示由思路到关系和代入，不直接给出斜边或顶点结果
+ok 422 - 三层提示由思路到关系和代入，不直接给出斜边或顶点结果
+  ---
+  duration_ms: 9.0044
+  type: 'test'
+  ...
+# Subtest: 预测变更使用实际数学：AB增且AC不变使BC增加，h加1使顶点右移
+ok 423 - 预测变更使用实际数学：AB增且AC不变使BC增加，h加1使顶点右移
+  ---
+  duration_ms: 2.4698
+  type: 'test'
+  ...
+# Subtest: 变式返回独立严格v1记录，新的非AI手工来源可保存且不得覆盖原题
+ok 424 - 变式返回独立严格v1记录，新的非AI手工来源可保存且不得覆盖原题
+  ---
+  duration_ms: 1.4945
+  type: 'test'
+  ...
+# Subtest: 两模板20个序号的变式数学都有效，答案取自新条件并区别原条件
+ok 425 - 两模板20个序号的变式数学都有效，答案取自新条件并区别原条件
+  ---
+  duration_ms: 14.6555
+  type: 'test'
+  ...
+# Subtest: 学生解释独立保存原数学来源与快照，未评分且不生成作答或掌握结论
+ok 426 - 学生解释独立保存原数学来源与快照，未评分且不生成作答或掌握结论
+  ---
+  duration_ms: 3.7864
+  type: 'test'
+  ...
+# Subtest: 解释拒绝空白、超限、媒体地址、凭证、控制字符和复用ID，不静默截断内容
+ok 427 - 解释拒绝空白、超限、媒体地址、凭证、控制字符和复用ID，不静默截断内容
+  ---
+  duration_ms: 1.1705
+  type: 'test'
+  ...
+# Subtest: 极端或无效数学明确拒绝预测变式，原记录完整保留
+ok 428 - 极端或无效数学明确拒绝预测变式，原记录完整保留
+  ---
+  duration_ms: 2.5782
+  type: 'test'
+  ...
+# Subtest: 浏览器IIFE与CommonJS导出同一纯能力，无DOM或网络依赖
+ok 429 - 浏览器IIFE与CommonJS导出同一纯能力，无DOM或网络依赖
+  ---
+  duration_ms: 10.4465
+  type: 'test'
+  ...
+# Subtest: production gateway construction refuses unsafe supplier routing without tightening the development transport contract
+ok 430 - production gateway construction refuses unsafe supplier routing without tightening the development transport contract
+  ---
+  duration_ms: 535.089
+  type: 'test'
+  ...
+# Subtest: production classic and progressive supplier requests explicitly reject redirects and do not expose redirected content
+ok 431 - production classic and progressive supplier requests explicitly reject redirects and do not expose redirected content
+  ---
+  duration_ms: 778.5604
+  type: 'test'
+  ...
+# Subtest: actual production gateway serves only through trusted loopback HTTPS proxy headers and blocks registration, public plugin and guest APIs
+ok 432 - actual production gateway serves only through trusted loopback HTTPS proxy headers and blocks registration, public plugin and guest APIs
+  ---
+  duration_ms: 281.6042
+  type: 'test'
+  ...
+# Subtest: approved login emits Secure cookie; unapproved accounts and missing/foreign mutation Origin or CSRF are refused
+ok 433 - approved login emits Secure cookie; unapproved accounts and missing/foreign mutation Origin or CSRF are refused
+  ---
+  duration_ms: 424.5546
+  type: 'test'
+  ...
+# Subtest: real gateway rechecks approval files for member APIs and approved login; changed proof does not silently preserve account access
+ok 434 - real gateway rechecks approval files for member APIs and approved login; changed proof does not silently preserve account access
+  ---
+  duration_ms: 279.2128
+  type: 'test'
+  ...
+# Subtest: production classic and progressive discard model replies after approval withdrawal and never cache the late explanation
+ok 435 - production classic and progressive discard model replies after approval withdrawal and never cache the late explanation
+  ---
+  duration_ms: 382.5117
+  type: 'test'
+  ...
+# Subtest: production audio approval withdrawal blocks upload after extraction and discards an already sent transcript
+ok 436 - production audio approval withdrawal blocks upload after extraction and discards an already sent transcript
+  ---
+  duration_ms: 345.903
+  type: 'test'
+  ...
+# Subtest: public account handler constructor requires an explicit production origin, Secure cookies, matching sole allowlist and approval hook
+ok 437 - public account handler constructor requires an explicit production origin, Secure cookies, matching sole allowlist and approval hook
+  ---
+  duration_ms: 0.6851
+  type: 'test'
+  ...
+# Subtest: explicit progressive sessions freeze allowed sampling, privately reuse AI candidates and keep unknown material closed
+ok 438 - explicit progressive sessions freeze allowed sampling, privately reuse AI candidates and keep unknown material closed
+  ---
+  duration_ms: 256.6751
+  type: 'test'
+  ...
+# Subtest: account cache survives restart only after new login, isolates another account and clears with a committed deletion epoch
+ok 439 - account cache survives restart only after new login, isolates another account and clears with a committed deletion epoch
+  ---
+  duration_ms: 442.1081
+  type: 'test'
+  ...
+# Subtest: changed provider configuration and restarted guests cannot reuse an old scope result
+ok 440 - changed provider configuration and restarted guests cannot reuse an old scope result
+  ---
+  duration_ms: 381.0942
+  type: 'test'
+  ...
+# Subtest: guest-only cache deletion rotates this browser scope and preserves the logged-in account cache
+ok 441 - guest-only cache deletion rotates this browser scope and preserves the logged-in account cache
+  ---
+  duration_ms: 231.2596
+  type: 'test'
+  ...
+# Subtest: progressive tokens cannot enter classic read/context routes and share the single upstream slot
+ok 442 - progressive tokens cannot enter classic read/context routes and share the single upstream slot
+  ---
+  duration_ms: 132.034
+  type: 'test'
+  ...
+# Subtest: logout and material revocation abort actual upstream work and reject late results/cache writes
+ok 443 - logout and material revocation abort actual upstream work and reject late results/cache writes
+  ---
+  duration_ms: 379.1569
+  type: 'test'
+  ...
+# Subtest: progressive task has an independent 20-model-call budget; failed work never silently starts a new task
+ok 444 - progressive task has an independent 20-model-call budget; failed work never silently starts a new task
+  ---
+  duration_ms: 272.4976
+  type: 'test'
+  ...
+# Subtest: progressive UI explicitly processes current window first with single sequential decoding, visible gaps and unchanged player
+ok 445 - progressive UI explicitly processes current window first with single sequential decoding, visible gaps and unchanged player
+  ---
+  duration_ms: 33.7089
+  type: 'test'
+  ...
+# Subtest: paused requests abort and late answers never become ready; only explicit continue retries a missing window
+ok 446 - paused requests abort and late answers never become ready; only explicit continue retries a missing window
+  ---
+  duration_ms: 8.4002
+  type: 'test'
+  ...
+# Subtest: failure leaves completed results and unprocessed gaps visible without retrying; cache hits retain original AI label
+ok 447 - failure leaves completed results and unprocessed gaps visible without retrying; cache hits retain original AI label
+  ---
+  duration_ms: 32.128
+  type: 'test'
+  ...
+# Subtest: pending permissions, forged response identity and source changes fail closed without stale candidates
+ok 448 - pending permissions, forged response identity and source changes fail closed without stale candidates
+  ---
+  duration_ms: 14.5109
+  type: 'test'
+  ...
+# Subtest: hidden page cancels upstream, clears ephemeral results and cache clearing is an explicit isolated request
+ok 449 - hidden page cancels upstream, clears ephemeral results and cache clearing is an explicit isolated request
+  ---
+  duration_ms: 4.8665
+  type: 'test'
+  ...
+# Subtest: clear local data has a distinct guest-only cache action and reports a server failure to its caller
+ok 450 - clear local data has a distinct guest-only cache action and reports a server failure to its caller
+  ---
+  duration_ms: 6.7016
+  type: 'test'
+  ...
+# Subtest: empty release settings and repository example remain blocked and disclose no private config
+ok 451 - empty release settings and repository example remain blocked and disclose no private config
+  ---
+  duration_ms: 6.6685
+  type: 'test'
+  ...
+# Subtest: bounded scoped evidence files permit technical readiness without claiming actual deployment or valid legal approvals
+ok 452 - bounded scoped evidence files permit technical readiness without claiming actual deployment or valid legal approvals
+  ---
+  duration_ms: 198.7596
+  type: 'test'
+  ...
+# Subtest: supplier routing and enablement fingerprint must match approval; credentials rotate without hashing secrets
+ok 453 - supplier routing and enablement fingerprint must match approval; credentials rotate without hashing secrets
+  ---
+  duration_ms: 344.8337
+  type: 'test'
+  ...
+# Subtest: production supplier routing requires HTTPS or explicit loopback HTTP even when the provider is disabled
+ok 454 - production supplier routing requires HTTPS or explicit loopback HTTP even when the provider is disabled
+  ---
+  duration_ms: 1.9642
+  type: 'test'
+  ...
+# Subtest: strict manifest origin, schema, countries, audience, expiry and edge secret reject broad or unchecked release configuration
+ok 455 - strict manifest origin, schema, countries, audience, expiry and edge secret reject broad or unchecked release configuration
+  ---
+  duration_ms: 1244.6215
+  type: 'test'
+  ...
+# Subtest: evidence path traversal, symlinks, over-budget files and bad hashes fail closed without printing evidence
+ok 456 - evidence path traversal, symlinks, over-budget files and bad hashes fail closed without printing evidence
+  ---
+  duration_ms: 230.8436
+  type: 'test'
+  ...
+# Subtest: minor and regional approvals require matching file-backed guardian references and reject duplicate, missing or mismatched account scopes
+ok 457 - minor and regional approvals require matching file-backed guardian references and reject duplicate, missing or mismatched account scopes
+  ---
+  duration_ms: 102.6166
+  type: 'test'
+  ...
+# Subtest: evidence expiry bounds runtime readiness and expired individual evidence cannot be overridden by a future manifest expiry
+ok 458 - evidence expiry bounds runtime readiness and expired individual evidence cannot be overridden by a future manifest expiry
+  ---
+  duration_ms: 21.3414
+  type: 'test'
+  ...
+# Subtest: edge checks require loopback, exact Host, secret and HTTPS proxy evidence; approval changes and expiry revoke scope
+ok 459 - edge checks require loopback, exact Host, secret and HTTPS proxy evidence; approval changes and expiry revoke scope
+  ---
+  duration_ms: 20.0748
+  type: 'test'
+  ...
+# Subtest: production runner never listens on incomplete config; ready runner binds only loopback and forwards frozen policy
+ok 460 - production runner never listens on incomplete config; ready runner binds only loopback and forwards frozen policy
+  ---
+  duration_ms: 34.9175
+  type: 'test'
+  ...
+# Subtest: check CLI rejects empty configs with a readiness report and never outputs secrets or evidence bodies
+ok 461 - check CLI rejects empty configs with a readiness report and never outputs secrets or evidence bodies
+  ---
+  duration_ms: 531.7384
+  type: 'test'
+  ...
+# Subtest: account changes abort reads and discard late old-account replies even if transport ignores abort
+ok 462 - account changes abort reads and discard late old-account replies even if transport ignores abort
+  ---
+  duration_ms: 1.9305
+  type: 'test'
+  ...
+# Subtest: writes carry same-origin credentials, current CSRF and deletion epoch; failure never advances the epoch
+ok 463 - writes carry same-origin credentials, current CSRF and deletion epoch; failure never advances the epoch
+  ---
+  duration_ms: 1.4919
+  type: 'test'
+  ...
+# Subtest: logout clears visible identity before awaiting service but only reports completion on a successful response
+ok 464 - logout clears visible identity before awaiting service but only reports completion on a successful response
+  ---
+  duration_ms: 2.2648
+  type: 'test'
+  ...
+# Subtest: refresh detects an external cookie account change and rejects the old in-flight save result
+ok 465 - refresh detects an external cookie account change and rejects the old in-flight save result
+  ---
+  duration_ms: 1.3946
+  type: 'test'
+  ...
+# Subtest: bounded request timeout is reported as unconfirmed service work, even when fetch ignores abort
+ok 466 - bounded request timeout is reported as unconfirmed service work, even when fetch ignores abort
+  ---
+  duration_ms: 22.3838
+  type: 'test'
+  ...
+# Subtest: deletion supersedes old write acknowledgements and their earlier data epoch
+ok 467 - deletion supersedes old write acknowledgements and their earlier data epoch
+  ---
+  duration_ms: 0.7318
+  type: 'test'
+  ...
+# Subtest: refresh of same account detects external deletion epoch and invalidates stale saves
+ok 468 - refresh of same account detects external deletion epoch and invalidates stale saves
+  ---
+  duration_ms: 0.4141
+  type: 'test'
+  ...
+# Subtest: actual format/size/duration/dimensions have explicit first-version bounds
+ok 469 - actual format/size/duration/dimensions have explicit first-version bounds
+  ---
+  duration_ms: 1.285
+  type: 'test'
+  ...
+# Subtest: cancel/source switch revokes old URLs; full SHA binds identity and repeated same File hashes once
+ok 470 - cancel/source switch revokes old URLs; full SHA binds identity and repeated same File hashes once
+  ---
+  duration_ms: 17.9111
+  type: 'test'
+  ...
+# Subtest: decoding failures release media and do not become ready or claim cloud upload
+ok 471 - decoding failures release media and do not become ready or claim cloud upload
+  ---
+  duration_ms: 0.6151
+  type: 'test'
+  ...
+# Subtest: only exact packaged parabola bytes retain the original high resolution without granting AI permission
+ok 472 - only exact packaged parabola bytes retain the original high resolution without granting AI permission
+  ---
+  duration_ms: 223.1583
+  type: 'test'
+  ...
+# Subtest: personal pitfalls stay distinct from actual wrong answers and hints never count as independent
+ok 473 - personal pitfalls stay distinct from actual wrong answers and hints never count as independent
+  ---
+  duration_ms: 23.9776
+  type: 'test'
+  ...
+# Subtest: idempotent imports are atomic; conflicting ids and stale clear epochs do not write
+ok 474 - idempotent imports are atomic; conflicting ids and stale clear epochs do not write
+  ---
+  duration_ms: 1.7866
+  type: 'test'
+  ...
+# Subtest: minimal local data rejects media, malformed answers, false manual AI origins and invalid mathematics
+ok 475 - minimal local data rejects media, malformed answers, false manual AI origins and invalid mathematics
+  ---
+  duration_ms: 1.3399
+  type: 'test'
+  ...
+# Subtest: file recovery is fingerprint-bound and the parabola vertex uses actual signed h/k
+ok 476 - file recovery is fingerprint-bound and the parabola vertex uses actual signed h/k
+  ---
+  duration_ms: 0.409
+  type: 'test'
+  ...
+# Subtest: guest and account decisions agree at small-triangle and large signed-vertex tolerance boundaries
+ok 477 - guest and account decisions agree at small-triangle and large signed-vertex tolerance boundaries
+  ---
+  duration_ms: 5.3637
+  type: 'test'
+  ...
+# Subtest: private pending-permission watch metadata is valid without granting AI or record-content permission
+ok 478 - private pending-permission watch metadata is valid without granting AI or record-content permission
+  ---
+  duration_ms: 0.7024
+  type: 'test'
+  ...
+# Subtest: plugin package import keeps source/id and rejects misleading flags, extra media and oversized files
+ok 479 - plugin package import keeps source/id and rejects misleading flags, extra media and oversized files
+  ---
+  duration_ms: 0.8886
+  type: 'test'
+  ...
+# Subtest: shared record contract preserves author fixtures and rejects fields before canonical copying
+ok 480 - shared record contract preserves author fixtures and rejects fields before canonical copying
+  ---
+  duration_ms: 0.4373
+  type: 'test'
+  ...
+# Subtest: website HTTP serves only whitelisted scripts/media and rejects secret paths, traversal and foreign Host
+ok 481 - website HTTP serves only whitelisted scripts/media and rejects secret paths, traversal and foreign Host
+  ---
+  duration_ms: 259.9827
+  type: 'test'
+  ...
+# Subtest: registered policy returns only the exact self-authored source while unknown/pending sources never call AI
+ok 482 - registered policy returns only the exact self-authored source while unknown/pending sources never call AI
+  ---
+  duration_ms: 126.9363
+  type: 'test'
+  ...
+# Subtest: visual sessions bind exact registered source and Origin; missing/stale tokens and request identity/time fail before AI
+ok 483 - visual sessions bind exact registered source and Origin; missing/stale tokens and request identity/time fail before AI
+  ---
+  duration_ms: 174.3827
+  type: 'test'
+  ...
+# Subtest: unconfigured model keeps local policy available and returns explicit 503 without a provider call
+ok 484 - unconfigured model keeps local policy available and returns explicit 503 without a provider call
+  ---
+  duration_ms: 118.6799
+  type: 'test'
+  ...
+# Subtest: HTTP summary uses bounded observations, preserves source identity and derives its times from the input
+ok 485 - HTTP summary uses bounded observations, preserves source identity and derives its times from the input
+  ---
+  duration_ms: 107.3065
+  type: 'test'
+  ...
+# Subtest: read has one shared slot, summary remains independent, and session/end aborts upstream and invalidates old tokens
+ok 486 - read has one shared slot, summary remains independent, and session/end aborts upstream and invalidates old tokens
+  ---
+  duration_ms: 141.0456
+  type: 'test'
+  ...
+# Subtest: oversized session, frame and chunked summary bodies return HTTP 413 instead of resetting the socket
+ok 487 - oversized session, frame and chunked summary bodies return HTTP 413 instead of resetting the socket
+  ---
+  duration_ms: 152.0537
+  type: 'test'
+  ...
+# Subtest: disconnect during an incomplete request body releases the read slot without invoking a model
+ok 488 - disconnect during an incomplete request body releases the read slot without invoking a model
+  ---
+  duration_ms: 112.0502
+  type: 'test'
+  ...
+# Subtest: stop/destroy abort an unfinished session start and a provider ignoring abort cannot restart the loop
+ok 489 - stop/destroy abort an unfinished session start and a provider ignoring abort cannot restart the loop
+  ---
+  duration_ms: 41.7534
+  type: 'test'
+  ...
+# Subtest: normal start and stop close the issued token, clear observations and prevent hidden-page captures
+ok 490 - normal start and stop close the issued token, clear observations and prevent hidden-page captures
+  ---
+  duration_ms: 15.4419
+  type: 'test'
+  ...
+# Subtest: permission-pending and explicit manual mode create only manual-notes with no acquisition or HTTP
+ok 491 - permission-pending and explicit manual mode create only manual-notes with no acquisition or HTTP
+  ---
+  duration_ms: 8.4491
+  type: 'test'
+  ...
+# Subtest: prepared context reuses the confirmed mathematical overlay without new acquisition and is cleared on stop
+ok 492 - prepared context reuses the confirmed mathematical overlay without new acquisition and is cleared on stop
+  ---
+  duration_ms: 4.1161
+  type: 'test'
+  ...
+# Subtest: restarting while begin is pending aborts the old owner, and its late token does not end the new session
+ok 493 - restarting while begin is pending aborts the old owner, and its late token does not end the new session
+  ---
+  duration_ms: 3.5443
+  type: 'test'
+  ...
+# Subtest: read replies arriving after stop cannot populate points or trigger summary
+ok 494 - read replies arriving after stop cannot populate points or trigger summary
+  ---
+  duration_ms: 3.2629
+  type: 'test'
+  ...
+# Subtest: a late summary from the previous owner cannot overwrite a restarted session
+ok 495 - a late summary from the previous owner cannot overwrite a restarted session
+  ---
+  duration_ms: 6.3126
+  type: 'test'
+  ...
+# Subtest: client recognition stops at its 32-call limit and a 30-minute session expires before another capture
+ok 496 - client recognition stops at its 32-call limit and a 30-minute session expires before another capture
+  ---
+  duration_ms: 15.2624
+  type: 'test'
+  ...
+# Subtest: 课程说明：空着可以，8000 字以内照发，超过就不发正文
+ok 497 - 课程说明：空着可以，8000 字以内照发，超过就不发正文
+  ---
+  duration_ms: 4.1433
+  type: 'test'
+  ...
+# Subtest: 请求体带源尺寸，画面最多 8 张，每张只带时间和图片
+ok 498 - 请求体带源尺寸，画面最多 8 张，每张只带时间和图片
+  ---
+  duration_ms: 1.1711
+  type: 'test'
+  ...
+# Subtest: 回包要对上这一次的阅读编号、视频编号，且来源是 external
+ok 499 - 回包要对上这一次的阅读编号、视频编号，且来源是 external
+  ---
+  duration_ms: 0.2101
+  type: 'test'
+  ...
+# Subtest: 空白地址和夹具片子不发请求
+ok 500 - 空白地址和夹具片子不发请求
+  ---
+  duration_ms: 0.4232
+  type: 'test'
+  ...
+# Subtest: POST 一次 JSON，5 分钟没回就按超时失败并中止请求
+ok 501 - POST 一次 JSON，5 分钟没回就按超时失败并中止请求
+  ---
+  duration_ms: 0.4698
+  type: 'test'
+  ...
+# Subtest: 非 2xx、断网和对不上的回包都算 unavailable
+ok 502 - 非 2xx、断网和对不上的回包都算 unavailable
+  ---
+  duration_ms: 8.1294
+  type: 'test'
+  ...
+# Subtest: 对得上的回包交给 onSuccess，并清掉超时
+ok 503 - 对得上的回包交给 onSuccess，并清掉超时
+  ---
+  duration_ms: 1.3308
+  type: 'test'
+  ...
+# Subtest: 取消只停下请求，不当作失败，迟到的回包也不再交出去
+ok 504 - 取消只停下请求，不当作失败，迟到的回包也不再交出去
+  ---
+  duration_ms: 0.6659
+  type: 'test'
+  ...
+# Subtest: 模块里没有固定地址，也不直接调用全局 fetch
+ok 505 - 模块里没有固定地址，也不直接调用全局 fetch
+  ---
+  duration_ms: 0.3876
+  type: 'test'
+  ...
+# Subtest: 短片只采中点，长片最多八处且不从零逐帧
+ok 506 - 短片只采中点，长片最多八处且不从零逐帧
+  ---
+  duration_ms: 1.2186
+  type: 'test'
+  ...
+# Subtest: 相邻不足一秒时丢掉较晚的采样
+ok 507 - 相邻不足一秒时丢掉较晚的采样
+  ---
+  duration_ms: 0.3003
+  type: 'test'
+  ...
+# Subtest: 尺寸不符和视频不符都会丢掉，且不留下替身曲线
+ok 508 - 尺寸不符和视频不符都会丢掉，且不留下替身曲线
+  ---
+  duration_ms: 4.0418
+  type: 'test'
+  ...
+# Subtest: 时间、间隔和八个点的上限使用约定原因
+ok 509 - 时间、间隔和八个点的上限使用约定原因
+  ---
+  duration_ms: 1.0138
+  type: 'test'
+  ...
+# Subtest: 第一处按到达顺序，下一处只取更晚的已存点
+ok 510 - 第一处按到达顺序，下一处只取更晚的已存点
+  ---
+  duration_ms: 0.3126
+  type: 'test'
+  ...
+# Subtest: 课程说明超过 80 个字会被丢掉
+ok 511 - 课程说明超过 80 个字会被丢掉
+  ---
+  duration_ms: 0.1553
+  type: 'test'
+  ...
+# Subtest: 重复的编号或课程说明也只用约定原因
+ok 512 - 重复的编号或课程说明也只用约定原因
+  ---
+  duration_ms: 1.1201
+  type: 'test'
+  ...
+# Subtest: 当次请求绑定拒绝未采样帧、旧编号、不同 duration 和变化的源尺寸
+ok 513 - 当次请求绑定拒绝未采样帧、旧编号、不同 duration 和变化的源尺寸
+  ---
+  duration_ms: 0.5193
+  type: 'test'
+  ...
+# Subtest: dock hide timer
+    # Subtest: hide timer keeps the dock when the pointer is on its landed position
+    ok 1 - hide timer keeps the dock when the pointer is on its landed position
+      ---
+      duration_ms: 1.7981
+      type: 'test'
+      ...
+    # Subtest: hide timer still dismisses the dock when the pointer has left
+    ok 2 - hide timer still dismisses the dock when the pointer has left
+      ---
+      duration_ms: 0.992
+      type: 'test'
+      ...
+    # Subtest: visible reveal control opens the dock and focuses the first available action
+    ok 3 - visible reveal control opens the dock and focuses the first available action
+      ---
+      duration_ms: 0.4256
+      type: 'test'
+      ...
+    # Subtest: devices without hover keep the dock visible after the pointer leaves
+    ok 4 - devices without hover keep the dock visible after the pointer leaves
+      ---
+      duration_ms: 0.2418
+      type: 'test'
+      ...
+    # Subtest: reading-state hold keeps the dock and expanded state until released
+    ok 5 - reading-state hold keeps the dock and expanded state until released
+      ---
+      duration_ms: 0.8432
+      type: 'test'
+      ...
+    1..5
+ok 514 - dock hide timer
+  ---
+  duration_ms: 5.3557
+  type: 'suite'
+  ...
+# Subtest: 衰减曲线：中心为 1、边界为 0、单调不增
+ok 515 - 衰减曲线：中心为 1、边界为 0、单调不增
+  ---
+  duration_ms: 0.9652
+  type: 'test'
+  ...
+# Subtest: sample 给出缩放与抬升，且指针在正中时最大
+ok 516 - sample 给出缩放与抬升，且指针在正中时最大
+  ---
+  duration_ms: 0.2645
+  type: 'test'
+  ...
+# Subtest: 指针离开容器时不放大任何按钮
+ok 517 - 指针离开容器时不放大任何按钮
+  ---
+  duration_ms: 0.8787
+  type: 'test'
+  ...
+# Subtest: 相邻按钮的放大是连续过渡，不会出现台阶
+ok 518 - 相邻按钮的放大是连续过渡，不会出现台阶
+  ---
+  duration_ms: 0.2007
+  type: 'test'
+  ...
+# Subtest: 参数被夹在合理范围
+ok 519 - 参数被夹在合理范围
+  ---
+  duration_ms: 0.8165
+  type: 'test'
+  ...
+# Subtest: 平滑与帧率无关：两个半步约等于一个整步
+ok 520 - 平滑与帧率无关：两个半步约等于一个整步
+  ---
+  duration_ms: 0.1396
+  type: 'test'
+  ...
+# Subtest: settle 与 isSettled 驱动动画收敛
+ok 521 - settle 与 isSettled 驱动动画收敛
+  ---
+  duration_ms: 0.4881
+  type: 'test'
+  ...
+# Subtest: center left 与 center right 按关键字落到对应轴
+ok 522 - center left 与 center right 按关键字落到对应轴
+  ---
+  duration_ms: 3.6494
+  type: 'test'
+  ...
+# Subtest: yAxis down 把较大的 y 放在区域下沿
+ok 523 - yAxis down 把较大的 y 放在区域下沿
+  ---
+  duration_ms: 0.4427
+  type: 'test'
+  ...
+# Subtest: 采样包含不在等距格上的顶点，缺测点不能算通过
+ok 524 - 采样包含不在等距格上的顶点，缺测点不能算通过
+  ---
+  duration_ms: 0.6952
+  type: 'test'
+  ...
+# Subtest: NaN 时间容差回退到默认 ±0.2 秒，而不是放行任意时间
+ok 525 - NaN 时间容差回退到默认 ±0.2 秒，而不是放行任意时间
+  ---
+  duration_ms: 1.007
+  type: 'test'
+  ...
+# Subtest: 空格不会破壁，点击舞台外部会退出并保持暂停
+ok 526 - 空格不会破壁，点击舞台外部会退出并保持暂停
+  ---
+  duration_ms: 27.4138
+  type: 'test'
+  ...
+# Subtest: 从曲线一侧按下不会把顶点跳到指针，松手或取消后不再跟随
+ok 527 - 从曲线一侧按下不会把顶点跳到指针，松手或取消后不再跟随
+  ---
+  duration_ms: 9.8435
+  type: 'test'
+  ...
+# Subtest: 失败态可以从初始禁用的退出按钮和 Esc 离开
+ok 528 - 失败态可以从初始禁用的退出按钮和 Esc 离开
+  ---
+  duration_ms: 6.8448
+  type: 'test'
+  ...
+# Subtest: 播放会清掉失败提示，而不是把错误说明留在已经结束的会话上
+ok 529 - 播放会清掉失败提示，而不是把错误说明留在已经结束的会话上
+  ---
+  duration_ms: 6.0458
+  type: 'test'
+  ...
+# Subtest: 等待中可以退出，超时后的结果不再打开
+ok 530 - 等待中可以退出，超时后的结果不再打开
+  ---
+  duration_ms: 7.4425
+  type: 'test'
+  ...
+# Subtest: 页面转入后台时卸下覆盖层
+ok 531 - 页面转入后台时卸下覆盖层
+  ---
+  duration_ms: 7.8264
+  type: 'test'
+  ...
+# Subtest: 配置没加载成功时不挂包内片子，随后的视频错误也不改口
+ok 532 - 配置没加载成功时不挂包内片子，随后的视频错误也不改口
+  ---
+  duration_ms: 4.5907
+  type: 'test'
+  ...
+# Subtest: object-fit 不是 contain 时重算不抛错，已画的曲线还留在原位
+ok 533 - object-fit 不是 contain 时重算不抛错，已画的曲线还留在原位
+  ---
+  duration_ms: 4.8766
+  type: 'test'
+  ...
+# Subtest: 点在画面上不会把曲线清掉，只有点到画面外面才退出
+ok 534 - 点在画面上不会把曲线清掉，只有点到画面外面才退出
+  ---
+  duration_ms: 23.1399
+  type: 'test'
+  ...
+# Subtest: 控制点落在曲线顶点上，而不是落在相邻采样点旁边
+ok 535 - 控制点落在曲线顶点上，而不是落在相邻采样点旁边
+  ---
+  duration_ms: 20.828
+  type: 'test'
+  ...
+# Subtest: 拖动中途重置或窗口变化后，松手前的移动不能把参数拽回去
+ok 536 - 拖动中途重置或窗口变化后，松手前的移动不能把参数拽回去
+  ---
+  duration_ms: 7.9942
+  type: 'test'
+  ...
+# Subtest: 改目标时间或定位后，画面时间和曲线绑定保持一致
+ok 537 - 改目标时间或定位后，画面时间和曲线绑定保持一致
+  ---
+  duration_ms: 6.7322
+  type: 'test'
+  ...
+# Subtest: 目标时间空着或为负数时，定位不会把视频跳到 0 或抛错
+ok 538 - 目标时间空着或为负数时，定位不会把视频跳到 0 或抛错
+  ---
+  duration_ms: 5.52
+  type: 'test'
+  ...
+# Subtest: 等待时改目标时间，超时后不能把旧帧的曲线画出来
+ok 539 - 等待时改目标时间，超时后不能把旧帧的曲线画出来
+  ---
+  duration_ms: 4.4259
+  type: 'test'
+  ...
+# Subtest: 停在 6.2 秒仍可破壁，连续快捷键只留一层
+ok 540 - 停在 6.2 秒仍可破壁，连续快捷键只留一层
+  ---
+  duration_ms: 11.3983
+  type: 'test'
+  ...
+# Subtest: 常见分辨率都能破壁，退出后不留下上一帧的对齐结论
+ok 541 - 常见分辨率都能破壁，退出后不留下上一帧的对齐结论
+  ---
+  duration_ms: 12.5652
+  type: 'test'
+  ...
+# Subtest: 视频报错时卸下曲线并留下说明
+ok 542 - 视频报错时卸下曲线并留下说明
+  ---
+  duration_ms: 4.5533
+  type: 'test'
+  ...
+# Subtest: 全屏时 Esc 只退出全屏，不拆曲线
+ok 543 - 全屏时 Esc 只退出全屏，不拆曲线
+  ---
+  duration_ms: 5.8811
+  type: 'test'
+  ...
+# Subtest: 视频标识和准备结果不一致时不能破壁
+ok 544 - 视频标识和准备结果不一致时不能破壁
+  ---
+  duration_ms: 3.0873
+  type: 'test'
+  ...
+# Subtest: 禁用原因节点已接线，并有 sr-only 样式
+ok 545 - 禁用原因节点已接线，并有 sr-only 样式
+  ---
+  duration_ms: 3.7943
+  type: 'test'
+  ...
+# Subtest: 错误态切到 assertive，等待与交互态保持 polite
+ok 546 - 错误态切到 assertive，等待与交互态保持 polite
+  ---
+  duration_ms: 25.1485
+  type: 'test'
+  ...
+# Subtest: 破壁不可用时给出原因，出现交互层后说明为什么不能再点
+ok 547 - 破壁不可用时给出原因，出现交互层后说明为什么不能再点
+  ---
+  duration_ms: 10.2832
+  type: 'test'
+  ...
+# Subtest: 暂停在目标时间时破壁可用且不写原因
+ok 548 - 暂停在目标时间时破壁可用且不写原因
+  ---
+  duration_ms: 5.1275
+  type: 'test'
+  ...
+# Subtest: 播放中破壁给出暂停原因
+ok 549 - 播放中破壁给出暂停原因
+  ---
+  duration_ms: 9.2823
+  type: 'test'
+  ...
+# Subtest: 滑块带读屏用的取值与范围说明
+ok 550 - 滑块带读屏用的取值与范围说明
+  ---
+  duration_ms: 8.0871
+  type: 'test'
+  ...
+# Subtest: 控制点有更大的透明热区，且第一个圆仍是可见控制点
+ok 551 - 控制点有更大的透明热区，且第一个圆仍是可见控制点
+  ---
+  duration_ms: 5.6046
+  type: 'test'
+  ...
+# Subtest: click and Alt+B read one actual paused frame at any legal time and automatically open its curve
+ok 552 - click and Alt+B read one actual paused frame at any legal time and automatically open its curve
+  ---
+  duration_ms: 114.2256
+  type: 'test'
+  ...
+# Subtest: a paused own video with no reader address prompts for configuration without capturing or uploading
+ok 553 - a paused own video with no reader address prompts for configuration without capturing or uploading
+  ---
+  duration_ms: 4.7127
+  type: 'test'
+  ...
+# Subtest: an exact cached current curve wakes again without reading, while seeking to another frame requires a fresh capture
+ok 554 - an exact cached current curve wakes again without reading, while seeking to another frame requires a fresh capture
+  ---
+  duration_ms: 12.1109
+  type: 'test'
+  ...
+# Subtest: explicit current-frame reading stops pre-reading and late lesson points cannot move or replace its frame
+ok 555 - explicit current-frame reading stops pre-reading and late lesson points cannot move or replace its frame
+  ---
+  duration_ms: 7.0712
+  type: 'test'
+  ...
+# Subtest: network, service and no-curve failures keep the own video and retry captures its current paused frame
+ok 556 - network, service and no-curve failures keep the own video and retry captures its current paused frame
+  ---
+  duration_ms: 24.8465
+  type: 'test'
+  ...
+# Subtest: the independent thirty-second deadline cannot trigger the packaged fifteen-hundred-millisecond fallback
+ok 557 - the independent thirty-second deadline cannot trigger the packaged fifteen-hundred-millisecond fallback
+  ---
+  duration_ms: 4.8596
+  type: 'test'
+  ...
+# Subtest: responses with foreign identities, frame data, origin or unsupported curve fields never mount
+ok 558 - responses with foreign identities, frame data, origin or unsupported curve fields never mount
+  ---
+  duration_ms: 50.0507
+  type: 'test'
+  ...
+# Subtest: undecoded, playing, seeking or invalid source frames cannot draw a canvas or make a read request
+ok 559 - undecoded, playing, seeking or invalid source frames cannot draw a canvas or make a read request
+  ---
+  duration_ms: 49.5704
+  type: 'test'
+  ...
+# Subtest: cancel, Escape and exit abort current-frame work and a late response cannot open an overlay
+ok 560 - cancel, Escape and exit abort current-frame work and a late response cannot open an overlay
+  ---
+  duration_ms: 19.3325
+  type: 'test'
+  ...
+# Subtest: media, source, address and lifecycle changes retire current-frame reads before any late reply
+ok 561 - media, source, address and lifecycle changes retire current-frame reads before any late reply
+  ---
+  duration_ms: 44.1565
+  type: 'test'
+  ...
+# Subtest: canvas encoding errors never upload a fake image or substitute the packaged demo
+ok 562 - canvas encoding errors never upload a fake image or substitute the packaged demo
+  ---
+  duration_ms: 19.9308
+  type: 'test'
+  ...
+# Subtest: Alt+B ignores editable targets, extra modifiers and repeated keys while a deliberate shortcut reads once
+ok 563 - Alt+B ignores editable targets, extra modifiers and repeated keys while a deliberate shortcut reads once
+  ---
+  duration_ms: 4.3404
+  type: 'test'
+  ...
+# Subtest: a target beyond the own video duration cannot seek or invalidate its cached curve
+ok 564 - a target beyond the own video duration cannot seek or invalidate its cached curve
+  ---
+  duration_ms: 6.6136
+  type: 'test'
+  ...
+# Subtest: a successful current-frame read keeps already accepted later lesson points usable through next
+ok 565 - a successful current-frame read keeps already accepted later lesson points usable through next
+  ---
+  duration_ms: 9.9991
+  type: 'test'
+  ...
+# Subtest: a valid explicit jump during a pending read cancels it and a retry reads the newly paused frame
+ok 566 - a valid explicit jump during a pending read cancels it and a retry reads the newly paused frame
+  ---
+  duration_ms: 9.2844
+  type: 'test'
+  ...
+# Subtest: particle adapter preserves signed sine phase and represents zero amplitude as a constant line
+ok 567 - particle adapter preserves signed sine phase and represents zero amplitude as a constant line
+  ---
+  duration_ms: 19.3155
+  type: 'test'
+  ...
+# Subtest: 图形选择器和本地滑块有标签，脚本从扩展包加载
+ok 568 - 图形选择器和本地滑块有标签，脚本从扩展包加载
+  ---
+  duration_ms: 1.164
+  type: 'test'
+  ...
+# Subtest: 破壁前和 1500ms 等待中不接受切换、更新或读数
+ok 569 - 破壁前和 1500ms 等待中不接受切换、更新或读数
+  ---
+  duration_ms: 15.0081
+  type: 'test'
+  ...
+# Subtest: 四种图形切换后各自滑块改变真实 SVG，显示当前参数与本地来源
+ok 570 - 四种图形切换后各自滑块改变真实 SVG，显示当前参数与本地来源
+  ---
+  duration_ms: 21.8597
+  type: 'test'
+  ...
+# Subtest: 离开抛物线后旧 a/h/k 控件无法改当前本地图形或原有结果
+ok 571 - 离开抛物线后旧 a/h/k 控件无法改当前本地图形或原有结果
+  ---
+  duration_ms: 10.7023
+  type: 'test'
+  ...
+# Subtest: 重置只恢复当前图形的初值，并把实际系数同步回滑块
+ok 572 - 重置只恢复当前图形的初值，并把实际系数同步回滑块
+  ---
+  duration_ms: 12.1903
+  type: 'test'
+  ...
+# Subtest: API 返回快照，未知图形、未知参数和非有限批量更新均保持原图
+ok 573 - API 返回快照，未知图形、未知参数和非有限批量更新均保持原图
+  ---
+  duration_ms: 9.1973
+  type: 'test'
+  ...
+# Subtest: 四种图形的读数和真实路径使用同一组修改后的系数
+ok 574 - 四种图形的读数和真实路径使用同一组修改后的系数
+  ---
+  duration_ms: 24.4502
+  type: 'test'
+  ...
+# Subtest: 完全越界不画假边，窗口外读数仍保留真实数值并标明不可见
+ok 575 - 完全越界不画假边，窗口外读数仍保留真实数值并标明不可见
+  ---
+  duration_ms: 11.1001
+  type: 'test'
+  ...
+# Subtest: 越界系数使用实际可用数值，API、滑块和读数一致
+ok 576 - 越界系数使用实际可用数值，API、滑块和读数一致
+  ---
+  duration_ms: 6.6875
+  type: 'test'
+  ...
+# Subtest: 退出、播放和换视频都清空图形，下一次破壁回到抛物线
+ok 577 - 退出、播放和换视频都清空图形，下一次破壁回到抛物线
+  ---
+  duration_ms: 13.2692
+  type: 'test'
+  ...
+# Subtest: 显示映射失效时切换、更新和重置均原子拒绝，恢复后可以操作
+ok 578 - 显示映射失效时切换、更新和重置均原子拒绝，恢复后可以操作
+  ---
+  duration_ms: 6.0365
+  type: 'test'
+  ...
+# Subtest: 抛物线滑块在映射不可用时还原实际系数，不改变真实路径
+ok 579 - 抛物线滑块在映射不可用时还原实际系数，不改变真实路径
+  ---
+  duration_ms: 4.7192
+  type: 'test'
+  ...
+# Subtest: 全窗外大圆提示调整或重置，隐藏拖动点，重置后恢复可见
+ok 580 - 全窗外大圆提示调整或重置，隐藏拖动点，重置后恢复可见
+  ---
+  duration_ms: 7.8456
+  type: 'test'
+  ...
+# Subtest: 本地图形遮住视频里的原曲线并隐藏舞台提示，回到抛物线恢复提示
+ok 581 - 本地图形遮住视频里的原曲线并隐藏舞台提示，回到抛物线恢复提示
+  ---
+  duration_ms: 6.3006
+  type: 'test'
+  ...
+# Subtest: page confirms explicit preset, computes single-side changes and restores original
+ok 582 - page confirms explicit preset, computes single-side changes and restores original
+  ---
+  duration_ms: 12.9156
+  type: 'test'
+  ...
+# Subtest: field validation keeps invalid input and requires explicit condition confirmation
+ok 583 - field validation keeps invalid input and requires explicit condition confirmation
+  ---
+  duration_ms: 3.6583
+  type: 'test'
+  ...
+# Subtest: local Chinese question uses the same model and model mode never silently uses local commands
+ok 584 - local Chinese question uses the same model and model mode never silently uses local commands
+  ---
+  duration_ms: 4.2839
+  type: 'test'
+  ...
+# Subtest: quiz supports wrong, retry, correct and skip; returning video does not require passing
+ok 585 - quiz supports wrong, retry, correct and skip; returning video does not require passing
+  ---
+  duration_ms: 21.9361
+  type: 'test'
+  ...
+# Subtest: canceled or stale model actions cannot replace a manually modified scene
+ok 586 - canceled or stale model actions cannot replace a manually modified scene
+  ---
+  duration_ms: 10.6215
+  type: 'test'
+  ...
+# Subtest: actual frame candidate point correction retains vision origin and confirmed snapshot
+ok 587 - actual frame candidate point correction retains vision origin and confirmed snapshot
+  ---
+  duration_ms: 3.7765
+  type: 'test'
+  ...
+# Subtest: editing an input cancels pending model actions before submitting a change
+ok 588 - editing an input cancels pending model actions before submitting a change
+  ---
+  duration_ms: 2.5688
+  type: 'test'
+  ...
+# Subtest: a current read response for an invalid frame cleans up pending controls
+ok 589 - a current read response for an invalid frame cleans up pending controls
+  ---
+  duration_ms: 2.3866
+  type: 'test'
+  ...
+# Subtest: dragging uses uniform SVG scale including centered letterboxing
+ok 590 - dragging uses uniform SVG scale including centered letterboxing
+  ---
+  duration_ms: 3.3967
+  type: 'test'
+  ...
+# Subtest: HTML keeps local script order, visible labels and standalone narrow-screen layout
+ok 591 - HTML keeps local script order, visible labels and standalone narrow-screen layout
+  ---
+  duration_ms: 2.0783
+  type: 'test'
+  ...
+# Subtest: SVG keyboard adjustment preserves focus on the same side after every render
+ok 592 - SVG keyboard adjustment preserves focus on the same side after every render
+  ---
+  duration_ms: 20.6941
+  type: 'test'
+  ...
+# Subtest: long vertex labels use compact symbols plus a complete wrapping mapping
+ok 593 - long vertex labels use compact symbols plus a complete wrapping mapping
+  ---
+  duration_ms: 2.7478
+  type: 'test'
+  ...
+# Subtest: very short AB keeps vertex labels apart and edge readings on another baseline
+ok 594 - very short AB keeps vertex labels apart and edge readings on another baseline
+  ---
+  duration_ms: 2.816
+  type: 'test'
+  ...
+# Subtest: 还没有画面时，Alt+B 提示先选择视频
+ok 595 - 还没有画面时，Alt+B 提示先选择视频
+  ---
+  duration_ms: 16.2502
+  type: 'test'
+  ...
+# Subtest: 目标时间改离准备结果后，定位文案和跳转是同一个秒数
+ok 596 - 目标时间改离准备结果后，定位文案和跳转是同一个秒数
+  ---
+  duration_ms: 15.3293
+  type: 'test'
+  ...
+# Subtest: 停在画面外时，点定位会落到按钮宣布的那一秒
+ok 597 - 停在画面外时，点定位会落到按钮宣布的那一秒
+  ---
+  duration_ms: 6.6506
+  type: 'test'
+  ...
+# Subtest: 演示页按依赖顺序加载本地脚本
+ok 598 - 演示页按依赖顺序加载本地脚本
+  ---
+  duration_ms: 8.9663
+  type: 'test'
+  ...
+# Subtest: 等待与失败控件存在且默认不可用
+ok 599 - 等待与失败控件存在且默认不可用
+  ---
+  duration_ms: 0.5471
+  type: 'test'
+  ...
+# Subtest: RuntimeConfig 保持离线主路径并保留 1.5 秒回退
+ok 600 - RuntimeConfig 保持离线主路径并保留 1.5 秒回退
+  ---
+  duration_ms: 0.3808
+  type: 'test'
+  ...
+# Subtest: 006仅新增显式activeTab和本机reader权限，不放宽旧页面脚本策略
+ok 601 - 006仅新增显式activeTab和本机reader权限，不放宽旧页面脚本策略
+  ---
+  duration_ms: 0.2978
+  type: 'test'
+  ...
+# Subtest: 扩展不含远程地址或动态代码，005 仅保留本机 reader 文本示例
+ok 602 - 扩展不含远程地址或动态代码，005 仅保留本机 reader 文本示例
+  ---
+  duration_ms: 11.1346
+  type: 'test'
+  ...
+# Subtest: 页面只调用 createWake，不维护第二套唤醒或替身
+ok 603 - 页面只调用 createWake，不维护第二套唤醒或替身
+  ---
+  duration_ms: 1.4573
+  type: 'test'
+  ...
+# Subtest: 覆盖层绝对定位并接入多画幅重算与测量
+ok 604 - 覆盖层绝对定位并接入多画幅重算与测量
+  ---
+  duration_ms: 0.759
+  type: 'test'
+  ...
+# Subtest: 入口不可用时不会注入未验证页面
+ok 605 - 入口不可用时不会注入未验证页面
+  ---
+  duration_ms: 0.3738
+  type: 'test'
+  ...
+# Subtest: 液态玻璃顶栏承载既有控件，且都带无障碍名称
+ok 606 - 液态玻璃顶栏承载既有控件，且都带无障碍名称
+  ---
+  duration_ms: 0.7315
+  type: 'test'
+  ...
+# Subtest: 三个参数滑块的范围与预制一致
+ok 607 - 三个参数滑块的范围与预制一致
+  ---
+  duration_ms: 0.638
+  type: 'test'
+  ...
+# Subtest: 样式表包含玻璃令牌、焦点可见与降级规则
+ok 608 - 样式表包含玻璃令牌、焦点可见与降级规则
+  ---
+  duration_ms: 3.6687
+  type: 'test'
+  ...
+# Subtest: 顶栏脚本在扩展包内且不引远程资源
+ok 609 - 顶栏脚本在扩展包内且不引远程资源
+  ---
+  duration_ms: 0.6583
+  type: 'test'
+  ...
+# Subtest: 提问区在控制栏里，有标签、记录区和默认禁用的送出
+ok 610 - 提问区在控制栏里，有标签、记录区和默认禁用的送出
+  ---
+  duration_ms: 0.588
+  type: 'test'
+  ...
+# Subtest: 回答里的系数叫法与滑块标签逐字相同
+ok 611 - 回答里的系数叫法与滑块标签逐字相同
+  ---
+  duration_ms: 2.7183
+  type: 'test'
+  ...
+# Subtest: 提问模块不发请求，也不碰 DOM
+ok 612 - 提问模块不发请求，也不碰 DOM
+  ---
+  duration_ms: 0.8513
+  type: 'test'
+  ...
+# Subtest: 9 秒片照旧走单点示例，不进入阅读
+ok 613 - 9 秒片照旧走单点示例，不进入阅读
+  ---
+  duration_ms: 24.7334
+  type: 'test'
+  ...
+# Subtest: 别人的片子：隐藏采样后发一次请求，舞台时间不动，第一处到之前不能破壁
+ok 614 - 别人的片子：隐藏采样后发一次请求，舞台时间不动，第一处到之前不能破壁
+  ---
+  duration_ms: 13.7096
+  type: 'test'
+  ...
+# Subtest: 第一处通过就暂停并定位，停稳后才用这一处的曲线重建唤醒
+ok 615 - 第一处通过就暂停并定位，停稳后才用这一处的曲线重建唤醒
+  ---
+  duration_ms: 10.8518
+  type: 'test'
+  ...
+# Subtest: 阅读点的系数超出页面初始滑块范围时，滑块按这一处的范围走
+ok 616 - 阅读点的系数超出页面初始滑块范围时，滑块按这一处的范围走
+  ---
+  duration_ms: 5.8106
+  type: 'test'
+  ...
+# Subtest: 尺寸对不上的点直接丢掉：时间、覆盖层和唤醒都不动
+ok 617 - 尺寸对不上的点直接丢掉：时间、覆盖层和唤醒都不动
+  ---
+  duration_ms: 5.5567
+  type: 'test'
+  ...
+# Subtest: 下一个：还在读就留在原地，有更晚的点就先卸下曲线再过去，读完没有下一处就禁用
+ok 618 - 下一个：还在读就留在原地，有更晚的点就先卸下曲线再过去，读完没有下一处就禁用
+  ---
+  duration_ms: 6.4053
+  type: 'test'
+  ...
+# Subtest: 回包里先到的点先停；更早的后到点只入库，读完后没有下一处
+ok 619 - 回包里先到的点先停；更早的后到点只入库，读完后没有下一处
+  ---
+  duration_ms: 5.1622
+  type: 'test'
+  ...
+# Subtest: 空白地址：不发请求，用户选的片子留在画面上
+ok 620 - 空白地址：不发请求，用户选的片子留在画面上
+  ---
+  duration_ms: 7.5786
+  type: 'test'
+  ...
+# Subtest: 片子已经选中后再填阅读地址，会开始看
+ok 621 - 片子已经选中后再填阅读地址，会开始看
+  ---
+  duration_ms: 6.1883
+  type: 'test'
+  ...
+# Subtest: 这次浏览里填过的地址会补回，再选片子直接开始看
+ok 622 - 这次浏览里填过的地址会补回，再选片子直接开始看
+  ---
+  duration_ms: 6.1635
+  type: 'test'
+  ...
+# Subtest: 断网且一处都没有：片子留在画面上
+ok 623 - 断网且一处都没有：片子留在画面上
+  ---
+  duration_ms: 4.0455
+  type: 'test'
+  ...
+# Subtest: 5 分钟零通过：片子留在画面上，不换回 9 秒片
+ok 624 - 5 分钟零通过：片子留在画面上，不换回 9 秒片
+  ---
+  duration_ms: 5.144
+  type: 'test'
+  ...
+# Subtest: 取消阅读：停下请求，已存的点留着，5 分钟后也不退回
+ok 625 - 取消阅读：停下请求，已存的点留着，5 分钟后也不退回
+  ---
+  duration_ms: 5.6488
+  type: 'test'
+  ...
+# Subtest: 已经存了点之后请求失败，只结束阅读，不退回
+ok 626 - 已经存了点之后请求失败，只结束阅读，不退回
+  ---
+  duration_ms: 4.9489
+  type: 'test'
+  ...
+# Subtest: 课程说明超过 8000 字：不发正文，并在阅读状态里说明
+ok 627 - 课程说明超过 8000 字：不发正文，并在阅读状态里说明
+  ---
+  duration_ms: 3.889
+  type: 'test'
+  ...
+# Subtest: 两组计时分开记，不混进回退、等待或识别；自比对齐不算 2% 已通过
+ok 628 - 两组计时分开记，不混进回退、等待或识别；自比对齐不算 2% 已通过
+  ---
+  duration_ms: 18.4294
+  type: 'test'
+  ...
+# Subtest: 未发送的帧时间被拒绝，只有请求中的点可以定位和破壁
+ok 629 - 未发送的帧时间被拒绝，只有请求中的点可以定位和破壁
+  ---
+  duration_ms: 5.2911
+  type: 'test'
+  ...
+# Subtest: 换片后旧阅读结果不能定位到新视频
+ok 630 - 换片后旧阅读结果不能定位到新视频
+  ---
+  duration_ms: 9.1814
+  type: 'test'
+  ...
+# Subtest: 部分截图失败时按实际发送的两张帧绑定，拒绝计划中未发送的时间
+ok 631 - 部分截图失败时按实际发送的两张帧绑定，拒绝计划中未发送的时间
+  ---
+  duration_ms: 4.0718
+  type: 'test'
+  ...
+# Subtest: 小系数初值完整显示，不被滑块步长的格式化舍入成零
+ok 632 - 小系数初值完整显示，不被滑块步长的格式化舍入成零
+  ---
+  duration_ms: 4.173
+  type: 'test'
+  ...
+# Subtest: 画面上分开写明正在看、可以破壁和破壁已打开
+ok 633 - 画面上分开写明正在看、可以破壁和破壁已打开
+  ---
+  duration_ms: 4.693
+  type: 'test'
+  ...
+# Subtest: 离开页面取消尚未落定的隐藏采样，迟到截图不能再发阅读请求
+ok 634 - 离开页面取消尚未落定的隐藏采样，迟到截图不能再发阅读请求
+  ---
+  duration_ms: 4.0432
+  type: 'test'
+  ...
+# Subtest: 离开页面清掉阅读地址输入的延迟，不启动已卸载的阅读
+ok 635 - 离开页面清掉阅读地址输入的延迟，不启动已卸载的阅读
+  ---
+  duration_ms: 3.2141
+  type: 'test'
+  ...
+# Subtest: off 主路径：破壁后挂载覆盖层并持续显示来源
+ok 636 - off 主路径：破壁后挂载覆盖层并持续显示来源
+  ---
+  duration_ms: 24.9987
+  type: 'test'
+  ...
+# Subtest: hang：等待态可取消，1.5 秒后自动回退并持续显示原因
+ok 637 - hang：等待态可取消，1.5 秒后自动回退并持续显示原因
+  ---
+  duration_ms: 6.422
+  type: 'test'
+  ...
+# Subtest: 取消等待：回到暂停画面，等待提示消失
+ok 638 - 取消等待：回到暂停画面，等待提示消失
+  ---
+  duration_ms: 4.8363
+  type: 'test'
+  ...
+# Subtest: invalid：非法外部结果进入可恢复错误并提供重试
+ok 639 - invalid：非法外部结果进入可恢复错误并提供重试
+  ---
+  duration_ms: 4.4547
+  type: 'test'
+  ...
+# Subtest: 目标时间默认是 6 秒，会话仍跟随输入框当前值
+ok 640 - 目标时间默认是 6 秒，会话仍跟随输入框当前值
+  ---
+  duration_ms: 23.5161
+  type: 'test'
+  ...
+# Subtest: 只有宽度、高度还是 0 时不把破壁记成准备结果不可用
+ok 641 - 只有宽度、高度还是 0 时不把破壁记成准备结果不可用
+  ---
+  duration_ms: 4.6456
+  type: 'test'
+  ...
+# Subtest: 3024×1898 破壁时使用片子上的区域，别的画幅才按比例换算
+ok 642 - 3024×1898 破壁时使用片子上的区域，别的画幅才按比例换算
+  ---
+  duration_ms: 9.9108
+  type: 'test'
+  ...
+# Subtest: 播放会让等待或交互状态一起结束
+ok 643 - 播放会让等待或交互状态一起结束
+  ---
+  duration_ms: 4.4189
+  type: 'test'
+  ...
+# Subtest: 选择本地视频只换成浏览器内地址，并卸下已有曲线
+ok 644 - 选择本地视频只换成浏览器内地址，并卸下已有曲线
+  ---
+  duration_ms: 5.9339
+  type: 'test'
+  ...
+# Subtest: 交互出现后暴露布局读数，但不把自画路径当成 2% 实测
+ok 645 - 交互出现后暴露布局读数，但不把自画路径当成 2% 实测
+  ---
+  duration_ms: 25.1709
+  type: 'test'
+  ...
+# Subtest: 窗口大小变化后重算内容矩形与覆盖层位置
+ok 646 - 窗口大小变化后重算内容矩形与覆盖层位置
+  ---
+  duration_ms: 7.5101
+  type: 'test'
+  ...
+# Subtest: 全屏、方向变化与视频元素尺寸变化都会重算
+ok 647 - 全屏、方向变化与视频元素尺寸变化都会重算
+  ---
+  duration_ms: 7.4869
+  type: 'test'
+  ...
+# Subtest: 设备像素比变化后重新挂载监听并重算
+ok 648 - 设备像素比变化后重新挂载监听并重算
+  ---
+  duration_ms: 5.2804
+  type: 'test'
+  ...
+# Subtest: pagehide 释放监听并清空测量输出
+ok 649 - pagehide 释放监听并清空测量输出
+  ---
+  duration_ms: 5.2743
+  type: 'test'
+  ...
+# Subtest: DOM 准备和双 rAF 的绘制机会分开记，不能在挂载时报告首帧
+ok 650 - DOM 准备和双 rAF 的绘制机会分开记，不能在挂载时报告首帧
+  ---
+  duration_ms: 21.836
+  type: 'test'
+  ...
+# Subtest: 首帧前退出或隐藏页面不留下可见耗时样本
+ok 651 - 首帧前退出或隐藏页面不留下可见耗时样本
+  ---
+  duration_ms: 9.9882
+  type: 'test'
+  ...
+# Subtest: 两个帧回调之间隐藏再恢复，不把后台停留时间记作首帧
+ok 652 - 两个帧回调之间隐藏再恢复，不把后台停留时间记作首帧
+  ---
+  duration_ms: 6.3693
+  type: 'test'
+  ...
+# Subtest: 零视频显示区域不会留下空 SVG 或禁用退出入口
+ok 653 - 零视频显示区域不会留下空 SVG 或禁用退出入口
+  ---
+  duration_ms: 3.9689
+  type: 'test'
+  ...
+# Subtest: 绘图意外失败时清理 SVG，提供重试和退出，恢复后可再次破壁
+ok 654 - 绘图意外失败时清理 SVG，提供重试和退出，恢复后可再次破壁
+  ---
+  duration_ms: 8.182
+  type: 'test'
+  ...
+# Subtest: 换成直线、圆或正弦后清空旧回答，下一问改的是新图形
+ok 655 - 换成直线、圆或正弦后清空旧回答，下一问改的是新图形
+  ---
+  duration_ms: 52.8444
+  type: 'test'
+  ...
+# Subtest: 直线上用抛物线的说法提问，不改直线，也不改藏在下面的抛物线
+ok 656 - 直线上用抛物线的说法提问，不改直线，也不改藏在下面的抛物线
+  ---
+  duration_ms: 7.3277
+  type: 'test'
+  ...
+# Subtest: 重置后在已有记录上补一句说明
+ok 657 - 重置后在已有记录上补一句说明
+  ---
+  duration_ms: 8.798
+  type: 'test'
+  ...
+# Subtest: 记录被单条说明顶满时，不能留下没有问题的回答
+ok 658 - 记录被单条说明顶满时，不能留下没有问题的回答
+  ---
+  duration_ms: 8.2013
+  type: 'test'
+  ...
+# Subtest: 用户原话按文本写入记录，不解析成标记
+ok 659 - 用户原话按文本写入记录，不解析成标记
+  ---
+  duration_ms: 4.3438
+  type: 'test'
+  ...
+# Subtest: 播放或离开目标时间后，记录清空并且不能继续问
+ok 660 - 播放或离开目标时间后，记录清空并且不能继续问
+  ---
+  duration_ms: 8.8352
+  type: 'test'
+  ...
+# Subtest: 只输入空格时给出提示，并清掉这串空格
+ok 661 - 只输入空格时给出提示，并清掉这串空格
+  ---
+  duration_ms: 4.7497
+  type: 'test'
+  ...
+# Subtest: 写入系数失败时滑块保持原值，回答不能宣称已经改成
+ok 662 - 写入系数失败时滑块保持原值，回答不能宣称已经改成
+  ---
+  duration_ms: 6.0306
+  type: 'test'
+  ...
+# Subtest: 破壁前提问区禁用，并提示先破壁
+ok 663 - 破壁前提问区禁用，并提示先破壁
+  ---
+  duration_ms: 15.1219
+  type: 'test'
+  ...
+# Subtest: 改一个系数：会话、滑块、曲线与回答用同一个数
+ok 664 - 改一个系数：会话、滑块、曲线与回答用同一个数
+  ---
+  duration_ms: 17.6599
+  type: 'test'
+  ...
+# Subtest: 越界的数按实际采用的数显示在滑块和回答里
+ok 665 - 越界的数按实际采用的数显示在滑块和回答里
+  ---
+  duration_ms: 6.5396
+  type: 'test'
+  ...
+# Subtest: 读数与之后拖动滑块互不干扰
+ok 666 - 读数与之后拖动滑块互不干扰
+  ---
+  duration_ms: 6.4458
+  type: 'test'
+  ...
+# Subtest: 无法执行的提问不改滑块，也不重画
+ok 667 - 无法执行的提问不改滑块，也不重画
+  ---
+  duration_ms: 6.0593
+  type: 'test'
+  ...
+# Subtest: 空着送出只给提示，不记成一条提问
+ok 668 - 空着送出只给提示，不记成一条提问
+  ---
+  duration_ms: 4.2819
+  type: 'test'
+  ...
+# Subtest: 焦点在提问框里按 Esc 只清空草稿，不退出破壁
+ok 669 - 焦点在提问框里按 Esc 只清空草稿，不退出破壁
+  ---
+  duration_ms: 5.8704
+  type: 'test'
+  ...
+# Subtest: 退出后记录清空，提问区回到禁用
+ok 670 - 退出后记录清空，提问区回到禁用
+  ---
+  duration_ms: 6.0318
+  type: 'test'
+  ...
+# Subtest: 平移说法从滑块上的当前值算起
+ok 671 - 平移说法从滑块上的当前值算起
+  ---
+  duration_ms: 5.9806
+  type: 'test'
+  ...
+# Subtest: 重置后在记录里补一句，没有记录时不补
+ok 672 - 重置后在记录里补一句，没有记录时不补
+  ---
+  duration_ms: 7.5305
+  type: 'test'
+  ...
+# Subtest: 换图形就清空记录，示例换成这种图形的问法
+ok 673 - 换图形就清空记录，示例换成这种图形的问法
+  ---
+  duration_ms: 14.1513
+  type: 'test'
+  ...
+# Subtest: 在直线、圆、正弦上提问：改的是画面上的图形，读数与 figureSession.readAt 相同
+ok 674 - 在直线、圆、正弦上提问：改的是画面上的图形，读数与 figureSession.readAt 相同
+  ---
+  duration_ms: 15.358
+  type: 'test'
+  ...
+# Subtest: 显示区域对不上时提问不改图，并说明原因
+ok 675 - 显示区域对不上时提问不改图，并说明原因
+  ---
+  duration_ms: 6.3581
+  type: 'test'
+  ...
+# Subtest: 点示例只填进输入框，不替用户送出
+ok 676 - 点示例只填进输入框，不替用户送出
+  ---
+  duration_ms: 5.3795
+  type: 'test'
+  ...
+# Subtest: 记录最多保留二十条
+ok 677 - 记录最多保留二十条
+  ---
+  duration_ms: 9.2383
+  type: 'test'
+  ...
+# Subtest: 提问全程不发请求
+ok 678 - 提问全程不发请求
+  ---
+  duration_ms: 5.8612
+  type: 'test'
+  ...
+# Subtest: 三个参数滑块随会话出现，并可以逐个调节
+ok 679 - 三个参数滑块随会话出现，并可以逐个调节
+  ---
+  duration_ms: 27.8886
+  type: 'test'
+  ...
+# Subtest: 等待态显示等待条与进度时长，回退后收起并标记来源
+ok 680 - 等待态显示等待条与进度时长，回退后收起并标记来源
+  ---
+  duration_ms: 9.1111
+  type: 'test'
+  ...
+# Subtest: 可恢复错误把重试升为主操作并标出错误样式
+ok 681 - 可恢复错误把重试升为主操作并标出错误样式
+  ---
+  duration_ms: 4.588
+  type: 'test'
+  ...
+# Subtest: 退出后顶栏复位：主操作回到破壁，滑块与等待条收起
+ok 682 - 退出后顶栏复位：主操作回到破壁，滑块与等待条收起
+  ---
+  duration_ms: 4.5305
+  type: 'test'
+  ...
+# Subtest: 来源区存在，且页面按 evidence 区分识别样例
+ok 683 - 来源区存在，且页面按 evidence 区分识别样例
+  ---
+  duration_ms: 1.3211
+  type: 'test'
+  ...
+# Subtest: 默认关闭时的预制与超时文案保持不变
+ok 684 - 默认关闭时的预制与超时文案保持不变
+  ---
+  duration_ms: 0.5324
+  type: 'test'
+  ...
+# Subtest: 识别来源是合法来源，不得被当成警示态
+ok 685 - 识别来源是合法来源，不得被当成警示态
+  ---
+  duration_ms: 0.5189
+  type: 'test'
+  ...
+# Subtest: 页面不显示置信度，也不出现已接通或准确率
+ok 686 - 页面不显示置信度，也不出现已接通或准确率
+  ---
+  duration_ms: 1.551
+  type: 'test'
+  ...
+# Subtest: 页面脚本不新增远程地址、动态代码或密钥
+ok 687 - 页面脚本不新增远程地址、动态代码或密钥
+  ---
+  duration_ms: 10.3524
+  type: 'test'
+  ...
+# Subtest: borrowed curve invalidates published scenes on exit, playback, seeking, hiding and render failure; reset republishes original
+ok 688 - borrowed curve invalidates published scenes on exit, playback, seeking, hiding and render failure; reset republishes original
+  ---
+  duration_ms: 44.4763
+  type: 'test'
+  ...
+# Subtest: borrowed curve fixes same-origin reader without reading or mutating legacy address memory or pre-reading metadata
+ok 689 - borrowed curve fixes same-origin reader without reading or mutating legacy address memory or pre-reading metadata
+  ---
+  duration_ms: 7.6322
+  type: 'test'
+  ...
+# Subtest: borrowed geometry locks same-origin read/ask and disables address memory/forget while retaining consent
+ok 690 - borrowed geometry locks same-origin read/ask and disables address memory/forget while retaining consent
+  ---
+  duration_ms: 10.4221
+  type: 'test'
+  ...
+# Subtest: independent geometry retains legacy session address restoration, editing and explicit forget
+ok 691 - independent geometry retains legacy session address restoration, editing and explicit forget
+  ---
+  duration_ms: 1.6558
+  type: 'test'
+  ...
+# Subtest: 3024×1898 的预制区域按当前帧宽高比例放进 1920×1080
+ok 692 - 3024×1898 的预制区域按当前帧宽高比例放进 1920×1080
+  ---
+  duration_ms: 1.3509
+  type: 'test'
+  ...
+# Subtest: 当前帧与准备画幅相同时区域保持原值
+ok 693 - 当前帧与准备画幅相同时区域保持原值
+  ---
+  duration_ms: 0.1465
+  type: 'test'
+  ...
+# Subtest: 刚好铺满的区域换到 31 像素宽时不会被浮点误差拒绝
+ok 694 - 刚好铺满的区域换到 31 像素宽时不会被浮点误差拒绝
+  ---
+  duration_ms: 0.1783
+  type: 'test'
+  ...
+# Subtest: 超出准备画幅的区域换算后仍放不进当前帧
+ok 695 - 超出准备画幅的区域换算后仍放不进当前帧
+  ---
+  duration_ms: 0.1436
+  type: 'test'
+  ...
+# Subtest: explicit playback starts minimal watch tracking without AI and a missing model leaves it active
+ok 696 - explicit playback starts minimal watch tracking without AI and a missing model leaves it active
+  ---
+  duration_ms: 9.0249
+  type: 'test'
+  ...
+# Subtest: time updates are throttled, hidden or revoked watch does not resume until fresh playback
+ok 697 - time updates are throttled, hidden or revoked watch does not resume until fresh playback
+  ---
+  duration_ms: 3.8734
+  type: 'test'
+  ...
+# Subtest: pairing change stops old time updates and requires a new playback-bound watch session
+ok 698 - pairing change stops old time updates and requires a new playback-bound watch session
+  ---
+  duration_ms: 3.3343
+  type: 'test'
+  ...
+# Subtest: background only allows packaged status pages to pair or access account records
+ok 699 - background only allows packaged status pages to pair or access account records
+  ---
+  duration_ms: 26.7021
+  type: 'test'
+  ...
+# Subtest: saving controlled student records preserves local ID before authenticated account write
+ok 700 - saving controlled student records preserves local ID before authenticated account write
+  ---
+  duration_ms: 11.4741
+  type: 'test'
+  ...
+# Subtest: local clearing cancels pending sync and notifies visual session without deleting account data
+ok 701 - local clearing cancels pending sync and notifies visual session without deleting account data
+  ---
+  duration_ms: 2.2332
+  type: 'test'
+  ...
+# Subtest: controlled watch metadata stays minimal and unrelated content cannot select a different source
+ok 702 - controlled watch metadata stays minimal and unrelated content cannot select a different source
+  ---
+  duration_ms: 2.8669
+  type: 'test'
+  ...
+# Subtest: old guest import only accepts selected existing local IDs, never content-supplied records
+ok 703 - old guest import only accepts selected existing local IDs, never content-supplied records
+  ---
+  duration_ms: 1.4624
+  type: 'test'
+  ...
+# Subtest: pairing stores token only in session and returns no credential to UI
+ok 704 - pairing stores token only in session and returns no credential to UI
+  ---
+  duration_ms: 26.3015
+  type: 'test'
+  ...
+# Subtest: unpaired or disabled saves never upload, explicit reviewed import leaves auto setting disabled
+ok 705 - unpaired or disabled saves never upload, explicit reviewed import leaves auto setting disabled
+  ---
+  duration_ms: 9.2067
+  type: 'test'
+  ...
+# Subtest: future saves are persisted before one account confirmation, with stable original ID/source
+ok 706 - future saves are persisted before one account confirmation, with stable original ID/source
+  ---
+  duration_ms: 1.3237
+  type: 'test'
+  ...
+# Subtest: offline failure retains bounded queue without automatic retry, explicit retry checks same epoch
+ok 707 - offline failure retains bounded queue without automatic retry, explicit retry checks same epoch
+  ---
+  duration_ms: 7.877
+  type: 'test'
+  ...
+# Subtest: website deletion epoch invalidates old queue before retry rather than refreshing and resurrecting it
+ok 708 - website deletion epoch invalidates old queue before retry rather than refreshing and resurrecting it
+  ---
+  duration_ms: 1.85
+  type: 'test'
+  ...
+# Subtest: different account on me invalidates pending queue instead of migrating it
+ok 709 - different account on me invalidates pending queue instead of migrating it
+  ---
+  duration_ms: 1.3276
+  type: 'test'
+  ...
+# Subtest: 401 and 409 from writes erase token and stale queue while preserving local save responsibility
+ok 710 - 401 and 409 from writes erase token and stale queue while preserving local save responsibility
+  ---
+  duration_ms: 1.649
+  type: 'test'
+  ...
+# Subtest: queue limit is 100 and rejects malformed media-bearing records before upload
+ok 711 - queue limit is 100 and rejects malformed media-bearing records before upload
+  ---
+  duration_ms: 14.9545
+  type: 'test'
+  ...
+# Subtest: parallel saves and watch share one HTTP lane and do not lose queue records
+ok 712 - parallel saves and watch share one HTTP lane and do not lose queue records
+  ---
+  duration_ms: 4.6084
+  type: 'test'
+  ...
+# Subtest: clear aborts pending write and late response cannot report confirmation or restore queue
+ok 713 - clear aborts pending write and late response cannot report confirmation or restore queue
+  ---
+  duration_ms: 1.1099
+  type: 'test'
+  ...
+# Subtest: record saved across a new pairing cannot be attached to the replacement account
+ok 714 - record saved across a new pairing cannot be attached to the replacement account
+  ---
+  duration_ms: 0.7198
+  type: 'test'
+  ...
+# Subtest: disconnect clears session and queued records without deleting either server or local source records
+ok 715 - disconnect clears session and queued records without deleting either server or local source records
+  ---
+  duration_ms: 1.5693
+  type: 'test'
+  ...
+# Subtest: timeout cancels the request once and retains queue for explicit retry
+ok 716 - timeout cancels the request once and retains queue for explicit retry
+  ---
+  duration_ms: 14.8772
+  type: 'test'
+  ...
+# Subtest: restart without session never replays persisted queue to a new pairing
+ok 717 - restart without session never replays persisted queue to a new pairing
+  ---
+  duration_ms: 0.7739
+  type: 'test'
+  ...
+# Subtest: disabling auto sync succeeds offline and future saves do not enter queue
+ok 718 - disabling auto sync succeeds offline and future saves do not enter queue
+  ---
+  duration_ms: 0.4466
+  type: 'test'
+  ...
+# Subtest: failed replacement pairing cannot continue using the old account token or old queue
+ok 719 - failed replacement pairing cannot continue using the old account token or old queue
+  ---
+  duration_ms: 0.6703
+  type: 'test'
+  ...
+# Subtest: same record ID with different content is rejected rather than confirming the old content
+ok 720 - same record ID with different content is rejected rather than confirming the old content
+  ---
+  duration_ms: 0.7992
+  type: 'test'
+  ...
+# Subtest: new save and watch events never automatically retry a failed older queue item
+ok 721 - new save and watch events never automatically retry a failed older queue item
+  ---
+  duration_ms: 1.9781
+  type: 'test'
+  ...
+# Subtest: rehydrated session queue requires an explicit epoch check before any replay
+ok 722 - rehydrated session queue requires an explicit epoch check before any replay
+  ---
+  duration_ms: 1.0995
+  type: 'test'
+  ...
+# Subtest: watch-only network failure can be restarted by a fresh explicit playback without trapping an empty record queue
+ok 723 - watch-only network failure can be restarted by a fresh explicit playback without trapping an empty record queue
+  ---
+  duration_ms: 0.6467
+  type: 'test'
+  ...
+# Subtest: reviewed import confirms the same account epoch and sends only the chosen IDs, leaving older failed items paused
+ok 724 - reviewed import confirms the same account epoch and sends only the chosen IDs, leaving older failed items paused
+  ---
+  duration_ms: 1.2259
+  type: 'test'
+  ...
+# Subtest: source identities reject unknown fields, inherited data, credentials and wrong analysis versions
+ok 725 - source identities reject unknown fields, inherited data, credentials and wrong analysis versions
+  ---
+  duration_ms: 2.2989
+  type: 'test'
+  ...
+# Subtest: pending-rights metadata cannot become usable points or saved records
+ok 726 - pending-rights metadata cannot become usable points or saved records
+  ---
+  duration_ms: 0.5798
+  type: 'test'
+  ...
+# Subtest: 007 local file identities require complete SHA-256 without granting analysis permission
+ok 727 - 007 local file identities require complete SHA-256 without granting analysis permission
+  ---
+  duration_ms: 0.3063
+  type: 'test'
+  ...
+# Subtest: vision candidates and manual corrections have honest source-compatible origins
+ok 728 - vision candidates and manual corrections have honest source-compatible origins
+  ---
+  duration_ms: 4.3366
+  type: 'test'
+  ...
+# Subtest: time and normalized region bounds reject non-finite and out-of-video data
+ok 729 - time and normalized region bounds reject non-finite and out-of-video data
+  ---
+  duration_ms: 0.3682
+  type: 'test'
+  ...
+# Subtest: batch validation is atomic and rejects duplicate, sparse and accessor arrays without executing getters
+ok 730 - batch validation is atomic and rejects duplicate, sparse and accessor arrays without executing getters
+  ---
+  duration_ms: 1.5458
+  type: 'test'
+  ...
+# Subtest: AI result is a limited candidate and rejects executable, unknown or automatic-verdict fields
+ok 731 - AI result is a limited candidate and rejects executable, unknown or automatic-verdict fields
+  ---
+  duration_ms: 0.3721
+  type: 'test'
+  ...
+# Subtest: both mathematical templates reuse finite-domain and right-triangle validation
+ok 732 - both mathematical templates reuse finite-domain and right-triangle validation
+  ---
+  duration_ms: 0.8881
+  type: 'test'
+  ...
+# Subtest: saved records contain only manual question/pitfall and strict source-bound snapshots
+ok 733 - saved records contain only manual question/pitfall and strict source-bound snapshots
+  ---
+  duration_ms: 1.5031
+  type: 'test'
+  ...
+# Subtest: throwing prototype traps fail closed instead of escaping the validator
+ok 734 - throwing prototype traps fail closed instead of escaping the validator
+  ---
+  duration_ms: 0.2948
+  type: 'test'
+  ...
+# Subtest: site policy allows only the exact controlled origin and path, leaving Bilibili off
+ok 735 - site policy allows only the exact controlled origin and path, leaving Bilibili off
+  ---
+  duration_ms: 0.426
+  type: 'test'
+  ...
+# Subtest: browser IIFE works with the actual evaluator/geometry imports and no CommonJS runtime
+ok 736 - browser IIFE works with the actual evaluator/geometry imports and no CommonJS runtime
+  ---
+  duration_ms: 2.907
+  type: 'test'
+  ...
+# Subtest: continuous recognition has one in-flight frame and schedules a fresh sample after completion
+ok 737 - continuous recognition has one in-flight frame and schedules a fresh sample after completion
+  ---
+  duration_ms: 5.1263
+  type: 'test'
+  ...
+# Subtest: unchanged picture is not uploaded repeatedly
+ok 738 - unchanged picture is not uploaded repeatedly
+  ---
+  duration_ms: 0.8122
+  type: 'test'
+  ...
+# Subtest: stop aborts upstream and rejects late results even if upstream ignores cancellation
+ok 739 - stop aborts upstream and rejects late results even if upstream ignores cancellation
+  ---
+  duration_ms: 0.4801
+  type: 'test'
+  ...
+# Subtest: service/policy failure stops rather than building a retry queue
+ok 740 - service/policy failure stops rather than building a retry queue
+  ---
+  duration_ms: 0.5976
+  type: 'test'
+  ...
+# Subtest: parabola samples preserve the defined domain, vertex and finite two-dimensional mathematics
+ok 741 - parabola samples preserve the defined domain, vertex and finite two-dimensional mathematics
+  ---
+  duration_ms: 12.7755
+  type: 'test'
+  ...
+# Subtest: triangle sampling keeps the 3-4-5 relation, shared scale, vertices and right-angle marker
+ok 742 - triangle sampling keeps the 3-4-5 relation, shared scale, vertices and right-angle marker
+  ---
+  duration_ms: 2.0466
+  type: 'test'
+  ...
+# Subtest: unknown templates, invalid units, extra fields and non-finite/overflow mathematics fail before rendering
+ok 743 - unknown templates, invalid units, extra fields and non-finite/overflow mathematics fail before rendering
+  ---
+  duration_ms: 1.1937
+  type: 'test'
+  ...
+# Subtest: WebGL uses bounded canvas/DPR and fixed local shaders while update and camera preserve math state
+ok 744 - WebGL uses bounded canvas/DPR and fixed local shaders while update and camera preserve math state
+  ---
+  duration_ms: 2.9474
+  type: 'test'
+  ...
+# Subtest: legal extreme lengths normalize before Float32 upload without changing mathematical values
+ok 745 - legal extreme lengths normalize before Float32 upload without changing mathematical values
+  ---
+  duration_ms: 0.9829
+  type: 'test'
+  ...
+# Subtest: WebGL absence, compile failure and context loss report one fallback and never replace the mathematical template
+ok 746 - WebGL absence, compile failure and context loss report one fallback and never replace the mathematical template
+  ---
+  duration_ms: 4.8184
+  type: 'test'
+  ...
+# Subtest: hidden pages defer drawing, visibility resumes once, and destroy releases resources/listeners and blocks new draws
+ok 747 - hidden pages defer drawing, visibility resumes once, and destroy releases resources/listeners and blocks new draws
+  ---
+  duration_ms: 1.9905
+  type: 'test'
+  ...
+# Subtest: rendering and resize-observer exceptions release GPU resources and cannot escape into video controls
+ok 748 - rendering and resize-observer exceptions release GPU resources and cannot escape into video controls
+  ---
+  duration_ms: 1.0166
+  type: 'test'
+  ...
+# Subtest: browser IIFE works with the existing validators/solvers and no require or animation runtime
+ok 749 - browser IIFE works with the existing validators/solvers and no require or animation runtime
+  ---
+  duration_ms: 5.0844
+  type: 'test'
+  ...
+# Subtest: only minimal structured student records are persisted
+ok 750 - only minimal structured student records are persisted
+  ---
+  duration_ms: 6.7199
+  type: 'test'
+  ...
+# Subtest: clear is ordered with pending saves and rejects old-session write-back
+ok 751 - clear is ordered with pending saves and rejects old-session write-back
+  ---
+  duration_ms: 2.4916
+  type: 'test'
+  ...
+# Subtest: pending rights and mismatched video version do not create records
+ok 752 - pending rights and mismatched video version do not create records
+  ---
+  duration_ms: 1.2664
+  type: 'test'
+  ...
+# Subtest: clear recovers a corrupt record schema and invalidates its old epoch
+ok 753 - clear recovers a corrupt record schema and invalidates its old epoch
+  ---
+  duration_ms: 0.4468
+  type: 'test'
+  ...
+# Subtest: reinjecting the session file keeps its existing lifecycle owner
+ok 754 - reinjecting the session file keeps its existing lifecycle owner
+  ---
+  duration_ms: 2.0206
+  type: 'test'
+  ...
+# Subtest: runtime config stays on the offline preset path
+ok 755 - runtime config stays on the offline preset path
+  ---
+  duration_ms: 0.8054
+  type: 'test'
+  ...
+# Subtest: demo preset is a valid fixture and not a vision result
+ok 756 - demo preset is a valid fixture and not a vision result
+  ---
+  duration_ms: 1.6735
+  type: 'test'
+  ...
+# Subtest: only wakes while paused at the target time
+ok 757 - only wakes while paused at the target time
+  ---
+  duration_ms: 1.8765
+  type: 'test'
+  ...
+# Subtest: wake follows a caller-updated target time
+ok 758 - wake follows a caller-updated target time
+  ---
+  duration_ms: 3.0915
+  type: 'test'
+  ...
+# Subtest: resolves, clamps the drag parameter and resets without leaving
+ok 759 - resolves, clamps the drag parameter and resets without leaving
+  ---
+  duration_ms: 0.4198
+  type: 'test'
+  ...
+# Subtest: old request results cannot replace a newer wait
+ok 760 - old request results cannot replace a newer wait
+  ---
+  duration_ms: 0.2924
+  type: 'test'
+  ...
+# Subtest: non-off external attempts can wait but a failed check never becomes interactive
+ok 761 - non-off external attempts can wait but a failed check never becomes interactive
+  ---
+  duration_ms: 0.7801
+  type: 'test'
+  ...
+# Subtest: fail() clears the pending state and keeps the reason for retry
+ok 762 - fail() clears the pending state and keeps the reason for retry
+  ---
+  duration_ms: 0.1659
+  type: 'test'
+  ...
+# Subtest: only one session may be active at a time
+ok 763 - only one session may be active at a time
+  ---
+  duration_ms: 0.2408
+  type: 'test'
+  ...
+# Subtest: playing or leaving the target time ends a pending or interactive session
+ok 764 - playing or leaving the target time ends a pending or interactive session
+  ---
+  duration_ms: 0.9448
+  type: 'test'
+  ...
+# Subtest: exit clears the active session and returns to paused-ready
+ok 765 - exit clears the active session and returns to paused-ready
+  ---
+  duration_ms: 0.2401
+  type: 'test'
+  ...
+# Subtest: setParameter 支持任意已声明参数，并做有限性与范围校验
+ok 766 - setParameter 支持任意已声明参数，并做有限性与范围校验
+  ---
+  duration_ms: 0.4016
+  type: 'test'
+  ...
+# Subtest: rejects non-finite drag and slider updates without changing the current curve
+ok 767 - rejects non-finite drag and slider updates without changing the current curve
+  ---
+  duration_ms: 0.7346
+  type: 'test'
+  ...
+# Subtest: showcase curve automatically demonstrates once on visibility and returns to the original parameter
+ok 768 - showcase curve automatically demonstrates once on visibility and returns to the original parameter
+  ---
+  duration_ms: 3.9549
+  type: 'test'
+  ...
+# Subtest: explicit pause freezes the chosen frame and resume finishes the remaining demonstration
+ok 769 - explicit pause freezes the chosen frame and resume finishes the remaining demonstration
+  ---
+  duration_ms: 1.3676
+  type: 'test'
+  ...
+# Subtest: manual parameter input takes ownership and survives leaving and returning to the graph
+ok 770 - manual parameter input takes ownership and survives leaving and returning to the graph
+  ---
+  duration_ms: 2.5102
+  type: 'test'
+  ...
+# Subtest: pointer editing stops autoplay before input and reset remains under manual control
+ok 771 - pointer editing stops autoplay before input and reset remains under manual control
+  ---
+  duration_ms: 3.7525
+  type: 'test'
+  ...
+# Subtest: leaving the graph cancels animation and requires an explicit resume
+ok 772 - leaving the graph cancels animation and requires an explicit resume
+  ---
+  duration_ms: 0.916
+  type: 'test'
+  ...
+# Subtest: a hidden document or pagehide cancels scheduled work without changing the curve
+ok 773 - a hidden document or pagehide cancels scheduled work without changing the curve
+  ---
+  duration_ms: 0.9656
+  type: 'test'
+  ...
+# Subtest: reduced motion prevents automatic playback while preserving manual parameter changes
+ok 774 - reduced motion prevents automatic playback while preserving manual parameter changes
+  ---
+  duration_ms: 0.8305
+  type: 'test'
+  ...
+# Subtest: legacy MediaQueryList starts the real demo and honors live reduced-motion changes
+ok 775 - legacy MediaQueryList starts the real demo and honors live reduced-motion changes
+  ---
+  duration_ms: 0.9263
+  type: 'test'
+  ...
+# Subtest: final departure removes modern and legacy demo listeners without AbortController
+ok 776 - final departure removes modern and legacy demo listeners without AbortController
+  ---
+  duration_ms: 1.4801
+  type: 'test'
+  ...
+# Subtest: a complete exit rearms a reveal for both upward and downward returns
+ok 777 - a complete exit rearms a reveal for both upward and downward returns
+  ---
+  duration_ms: 3.5373
+  type: 'test'
+  ...
+# Subtest: content within the viewport at boot appears directly and remains eligible for later returns
+ok 778 - content within the viewport at boot appears directly and remains eligible for later returns
+  ---
+  duration_ms: 0.993
+  type: 'test'
+  ...
+# Subtest: unseen elements stay pending independently until their own entry
+ok 779 - unseen elements stay pending independently until their own entry
+  ---
+  duration_ms: 1.8285
+  type: 'test'
+  ...
+# Subtest: a tall mobile element enters with any intersection instead of requiring a section ratio
+ok 780 - a tall mobile element enters with any intersection instead of requiring a section ratio
+  ---
+  duration_ms: 0.7254
+  type: 'test'
+  ...
+# Subtest: partially visible elements do not hide or replay when an intersection report is false
+ok 781 - partially visible elements do not hide or replay when an intersection report is false
+  ---
+  duration_ms: 0.6747
+  type: 'test'
+  ...
+# Subtest: keyboard focus reveals its ancestor, protects it outside the viewport, and rearms after focus moves
+ok 782 - keyboard focus reveals its ancestor, protects it outside the viewport, and rearms after focus moves
+  ---
+  duration_ms: 1.4384
+  type: 'test'
+  ...
+# Subtest: live reduced motion reveals all content and reenabling motion preserves visible content
+ok 783 - live reduced motion reveals all content and reenabling motion preserves visible content
+  ---
+  duration_ms: 0.7986
+  type: 'test'
+  ...
+# Subtest: initial reduced motion keeps content readable and observing can start when it is disabled
+ok 784 - initial reduced motion keeps content readable and observing can start when it is disabled
+  ---
+  duration_ms: 2.2243
+  type: 'test'
+  ...
+# Subtest: queued entries from a replaced observer cannot hide or reanimate current content
+ok 785 - queued entries from a replaced observer cannot hide or reanimate current content
+  ---
+  duration_ms: 1.5476
+  type: 'test'
+  ...
+# Subtest: without IntersectionObserver all content stays directly readable through preference changes
+ok 786 - without IntersectionObserver all content stays directly readable through preference changes
+  ---
+  duration_ms: 0.9193
+  type: 'test'
+  ...
+# Subtest: pagehide disconnects observations and removes lifecycle listeners on final departure
+ok 787 - pagehide disconnects observations and removes lifecycle listeners on final departure
+  ---
+  duration_ms: 1.7294
+  type: 'test'
+  ...
+# Subtest: a bfcache departure preserves observations and repeated return behavior
+ok 788 - a bfcache departure preserves observations and repeated return behavior
+  ---
+  duration_ms: 1.0572
+  type: 'test'
+  ...
+# Subtest: legacy MediaQueryList boot preserves first-entry reveal and live reduced-motion readability
+ok 789 - legacy MediaQueryList boot preserves first-entry reveal and live reduced-motion readability
+  ---
+  duration_ms: 1.9817
+  type: 'test'
+  ...
+# Subtest: legacy preference and lifecycle listeners are removed on final departure
+ok 790 - legacy preference and lifecycle listeners are removed on final departure
+  ---
+  duration_ms: 0.9454
+  type: 'test'
+  ...
+# Subtest: locking freezes the current horizontal and vertical position without losing scrollbar width
+ok 791 - locking freezes the current horizontal and vertical position without losing scrollbar width
+  ---
+  duration_ms: 2.0611
+  type: 'test'
+  ...
+# Subtest: wheel, touch and page-scrolling keys are blocked during entrance and released afterward
+ok 792 - wheel, touch and page-scrolling keys are blocked during entrance and released afterward
+  ---
+  duration_ms: 10.7382
+  type: 'test'
+  ...
+# Subtest: editable controls retain their keyboard behavior while the surrounding page stays locked
+ok 793 - editable controls retain their keyboard behavior while the surrounding page stays locked
+  ---
+  duration_ms: 2.7811
+  type: 'test'
+  ...
+# Subtest: pinch gestures and Ctrl+wheel keep browser zoom available during the entrance
+ok 794 - pinch gestures and Ctrl+wheel keep browser zoom available during the entrance
+  ---
+  duration_ms: 1.0043
+  type: 'test'
+  ...
+# Subtest: nested same-page anchors cannot navigate during entrance, while other destinations remain usable
+ok 795 - nested same-page anchors cannot navigate during entrance, while other destinations remain usable
+  ---
+  duration_ms: 1.2059
+  type: 'test'
+  ...
+# Subtest: unlock restores saved position and styles immediately even when the page normally scrolls smoothly
+ok 796 - unlock restores saved position and styles immediately even when the page normally scrolls smoothly
+  ---
+  duration_ms: 1.3849
+  type: 'test'
+  ...
+# Subtest: repeated lock is idempotent, and replay locks a fresh position without retaining old handlers
+ok 797 - repeated lock is idempotent, and replay locks a fresh position without retaining old handlers
+  ---
+  duration_ms: 1.5783
+  type: 'test'
+  ...
+# Subtest: disposing a running entrance restores scrolling and permanently releases every input listener
+ok 798 - disposing a running entrance restores scrolling and permanently releases every input listener
+  ---
+  duration_ms: 0.7026
+  type: 'test'
+  ...
+# Subtest: an unused controller can be disposed without scrolling or mutating existing presentation styles
+ok 799 - an unused controller can be disposed without scrolling or mutating existing presentation styles
+  ---
+  duration_ms: 1.8853
+  type: 'test'
+  ...
+# Subtest: all standalone entry points ship identical protected document bytes
+ok 800 - all standalone entry points ship identical protected document bytes
+  ---
+  duration_ms: 1.0846
+  type: 'test'
+  ...
+# Subtest: 展示网站: only the six shipped inline scripts are authorized
+ok 801 - 展示网站: only the six shipped inline scripts are authorized
+  ---
+  duration_ms: 5.7964
+  type: 'test'
+  ...
+# Subtest: 展示网站.html: only the six shipped inline scripts are authorized
+ok 802 - 展示网站.html: only the six shipped inline scripts are authorized
+  ---
+  duration_ms: 2.7506
+  type: 'test'
+  ...
+# Subtest: index.html: only the six shipped inline scripts are authorized
+ok 803 - index.html: only the six shipped inline scripts are authorized
+  ---
+  duration_ms: 2.6373
+  type: 'test'
+  ...
+# Subtest: a modified or newly injected script has no hash authorization
+ok 804 - a modified or newly injected script has no hash authorization
+  ---
+  duration_ms: 2.7863
+  type: 'test'
+  ...
+# Subtest: line-ending conversion preserves browser script authorization
+ok 805 - line-ending conversion preserves browser script authorization
+  ---
+  duration_ms: 3.449
+  type: 'test'
+  ...
+# Subtest: source and built pages apply CSP and referrer protection before resources
+ok 806 - source and built pages apply CSP and referrer protection before resources
+  ---
+  duration_ms: 7.3755
+  type: 'test'
+  ...
+# Subtest: default background rendering stays near 30fps on a high-refresh display
+ok 807 - default background rendering stays near 30fps on a high-refresh display
+  ---
+  duration_ms: 4.9538
+  type: 'test'
+  ...
+# Subtest: reduced-motion background redraws its static frame after resizing
+ok 808 - reduced-motion background redraws its static frame after resizing
+  ---
+  duration_ms: 1.031
+  type: 'test'
+  ...
+# Subtest: background animation advances by elapsed time at 60Hz and 144Hz
+ok 809 - background animation advances by elapsed time at 60Hz and 144Hz
+  ---
+  duration_ms: 7.5783
+  type: 'test'
+  ...
+# Subtest: long pauses and hidden-page resume cannot inject a large animation step
+ok 810 - long pauses and hidden-page resume cannot inject a large animation step
+  ---
+  duration_ms: 1.3387
+  type: 'test'
+  ...
+# Subtest: Escape on the cover keeps the current page visible
+ok 811 - Escape on the cover keeps the current page visible
+  ---
+  duration_ms: 2.1339
+  type: 'test'
+  ...
+# Subtest: dissolved headings expose the original text while hiding decorative glyph nodes
+ok 812 - dissolved headings expose the original text while hiding decorative glyph nodes
+  ---
+  duration_ms: 3.0806
+  type: 'test'
+  ...
+# Subtest: reduced motion navigates directly without fading or waiting
+ok 813 - reduced motion navigates directly without fading or waiting
+  ---
+  duration_ms: 0.7897
+  type: 'test'
+  ...
+# Subtest: page shortcuts preserve native link and form keyboard actions
+ok 814 - page shortcuts preserve native link and form keyboard actions
+  ---
+  duration_ms: 0.7697
+  type: 'test'
+  ...
+# Subtest: reduced motion scrolls to the next section immediately and permits the next gesture
+ok 815 - reduced motion scrolls to the next section immediately and permits the next gesture
+  ---
+  duration_ms: 0.9986
+  type: 'test'
+  ...
+# Subtest: 快照来自画面上的图形：系数值、范围、叫法、窗口与是否在交互
+ok 816 - 快照来自画面上的图形：系数值、范围、叫法、窗口与是否在交互
+  ---
+  duration_ms: 3.9815
+  type: 'test'
+  ...
+# Subtest: 改一个系数：回答里的数就是实际采用的数
+ok 817 - 改一个系数：回答里的数就是实际采用的数
+  ---
+  duration_ms: 8.5465
+  type: 'test'
+  ...
+# Subtest: 开口变化说明变窄或变宽
+ok 818 - 开口变化说明变窄或变宽
+  ---
+  duration_ms: 1.7806
+  type: 'test'
+  ...
+# Subtest: 一句改两个系数，回答列出每一项
+ok 819 - 一句改两个系数，回答列出每一项
+  ---
+  duration_ms: 0.542
+  type: 'test'
+  ...
+# Subtest: 越界时采用夹取后的数，并且不复述越界的原话
+ok 820 - 越界时采用夹取后的数，并且不复述越界的原话
+  ---
+  duration_ms: 0.9835
+  type: 'test'
+  ...
+# Subtest: 落在两格之间按步长取值，并说明
+ok 821 - 落在两格之间按步长取值，并说明
+  ---
+  duration_ms: 0.7614
+  type: 'test'
+  ...
+# Subtest: 增减与平移从当前值算起，越界同样夹取
+ok 822 - 增减与平移从当前值算起，越界同样夹取
+  ---
+  duration_ms: 0.8834
+  type: 'test'
+  ...
+# Subtest: 改成当前值：不改图，并说图像不变
+ok 823 - 改成当前值：不改图，并说图像不变
+  ---
+  duration_ms: 0.5886
+  type: 'test'
+  ...
+# Subtest: 横坐标上的读数与求值一致，不改系数
+ok 824 - 横坐标上的读数与求值一致，不改系数
+  ---
+  duration_ms: 0.8966
+  type: 'test'
+  ...
+# Subtest: 负系数代入时加括号
+ok 825 - 负系数代入时加括号
+  ---
+  duration_ms: 0.3972
+  type: 'test'
+  ...
+# Subtest: 纵坐标落在窗口外：给出真实的 y，并说明在窗口外
+ok 826 - 纵坐标落在窗口外：给出真实的 y，并说明在窗口外
+  ---
+  duration_ms: 0.5741
+  type: 'test'
+  ...
+# Subtest: 横坐标落在窗口外：照算，并说明
+ok 827 - 横坐标落在窗口外：照算，并说明
+  ---
+  duration_ms: 0.3786
+  type: 'test'
+  ...
+# Subtest: 顶点与系数当前值
+ok 828 - 顶点与系数当前值
+  ---
+  duration_ms: 1.5035
+  type: 'test'
+  ...
+# Subtest: 先改再读：读数用改完的曲线
+ok 829 - 先改再读：读数用改完的曲线
+  ---
+  duration_ms: 0.3978
+  type: 'test'
+  ...
+# Subtest: 把顶点移到一个坐标
+ok 830 - 把顶点移到一个坐标
+  ---
+  duration_ms: 0.3775
+  type: 'test'
+  ...
+# Subtest: 无法执行的提问不改系数，并说明没有改
+ok 831 - 无法执行的提问不改系数，并说明没有改
+  ---
+  duration_ms: 3.9893
+  type: 'test'
+  ...
+# Subtest: 不在交互状态、图形未登记、求值失败都不改图
+ok 832 - 不在交互状态、图形未登记、求值失败都不改图
+  ---
+  duration_ms: 0.861
+  type: 'test'
+  ...
+# Subtest: 直线：斜率与截距按滑块叫法改，读数带代入过程
+ok 833 - 直线：斜率与截距按滑块叫法改，读数带代入过程
+  ---
+  duration_ms: 1.1664
+  type: 'test'
+  ...
+# Subtest: 圆：一个 x 上有两个、一个或没有 y，圆心可读可移
+ok 834 - 圆：一个 x 上有两个、一个或没有 y，圆心可读可移
+  ---
+  duration_ms: 4.9923
+  type: 'test'
+  ...
+# Subtest: 正弦：振幅与平移，读数按弧度代入
+ok 835 - 正弦：振幅与平移，读数按弧度代入
+  ---
+  duration_ms: 1.4123
+  type: 'test'
+  ...
+# Subtest: 只属于抛物线的说法不会把别的图形改回抛物线
+ok 836 - 只属于抛物线的说法不会把别的图形改回抛物线
+  ---
+  duration_ms: 0.5909
+  type: 'test'
+  ...
+# Subtest: 回答里的每个数都能在画面上核对
+ok 837 - 回答里的每个数都能在画面上核对
+  ---
+  duration_ms: 21.8145
+  type: 'test'
+  ...
+# Subtest: 回答与滑块标签用同一个格式化
+ok 838 - 回答与滑块标签用同一个格式化
+  ---
+  duration_ms: 0.2757
+  type: 'test'
+  ...
+# Subtest: 读出阿拉伯数字、全角、负号、分数与中文数字
+ok 839 - 读出阿拉伯数字、全角、负号、分数与中文数字
+  ---
+  duration_ms: 1.6048
+  type: 'test'
+  ...
+# Subtest: 写法不对、分母为 0 或过大的数不算
+ok 840 - 写法不对、分母为 0 或过大的数不算
+  ---
+  duration_ms: 1.0337
+  type: 'test'
+  ...
+# Subtest: 句子里的数的写法能被正则找到
+ok 841 - 句子里的数的写法能被正则找到
+  ---
+  duration_ms: 2.1418
+  type: 'test'
+  ...
+# Subtest: 范围内且在格子上的数原样采用
+ok 842 - 范围内且在格子上的数原样采用
+  ---
+  duration_ms: 0.706
+  type: 'test'
+  ...
+# Subtest: 越界的数夹到上限或下限，并标明夹取
+ok 843 - 越界的数夹到上限或下限，并标明夹取
+  ---
+  duration_ms: 0.175
+  type: 'test'
+  ...
+# Subtest: 两格之间取最近一格；等距时取更靠近 0 的一格
+ok 844 - 两格之间取最近一格；等距时取更靠近 0 的一格
+  ---
+  duration_ms: 0.151
+  type: 'test'
+  ...
+# Subtest: 没有步长时只夹取；定义不完整时不给值
+ok 845 - 没有步长时只夹取；定义不完整时不给值
+  ---
+  duration_ms: 0.0993
+  type: 'test'
+  ...
+# Subtest: 系数写法与原来的滑块标签逐个一致
+ok 846 - 系数写法与原来的滑块标签逐个一致
+  ---
+  duration_ms: 0.3609
+  type: 'test'
+  ...
+# Subtest: 读数最多 4 位小数，-0 写作 0
+ok 847 - 读数最多 4 位小数，-0 写作 0
+  ---
+  duration_ms: 0.1385
+  type: 'test'
+  ...
+# Subtest: 统一写法：全角、减号、大小写与空白
+ok 848 - 统一写法：全角、减号、大小写与空白
+  ---
+  duration_ms: 1.129
+  type: 'test'
+  ...
+# Subtest: 认出修改一个系数的常见说法
+ok 849 - 认出修改一个系数的常见说法
+  ---
+  duration_ms: 5.1453
+  type: 'test'
+  ...
+# Subtest: 一句里改两个系数
+ok 850 - 一句里改两个系数
+  ---
+  duration_ms: 1.1679
+  type: 'test'
+  ...
+# Subtest: 把顶点移到一个坐标，同时改左右位置和顶点高度
+ok 851 - 把顶点移到一个坐标，同时改左右位置和顶点高度
+  ---
+  duration_ms: 0.6692
+  type: 'test'
+  ...
+# Subtest: 认出横坐标上的读数
+ok 852 - 认出横坐标上的读数
+  ---
+  duration_ms: 0.5892
+  type: 'test'
+  ...
+# Subtest: 认出顶点与系数当前值的读法
+ok 853 - 认出顶点与系数当前值的读法
+  ---
+  duration_ms: 0.7368
+  type: 'test'
+  ...
+# Subtest: 先改再读：同一句里的读数排在修改之后
+ok 854 - 先改再读：同一句里的读数排在修改之后
+  ---
+  duration_ms: 0.2694
+  type: 'test'
+  ...
+# Subtest: 单个字母不在别的英文单词里误命中
+ok 855 - 单个字母不在别的英文单词里误命中
+  ---
+  duration_ms: 0.4564
+  type: 'test'
+  ...
+# Subtest: 其他图形的系数整句拒绝，即使另一项能改
+ok 856 - 其他图形的系数整句拒绝，即使另一项能改
+  ---
+  duration_ms: 0.3227
+  type: 'test'
+  ...
+# Subtest: 同一系数两个不同的数算冲突；相同的数只算一次
+ok 857 - 同一系数两个不同的数算冲突；相同的数只算一次
+  ---
+  duration_ms: 0.3681
+  type: 'test'
+  ...
+# Subtest: 增减说法记成相对变化，改成某数仍是绝对值
+ok 858 - 增减说法记成相对变化，改成某数仍是绝对值
+  ---
+  duration_ms: 0.576
+  type: 'test'
+  ...
+# Subtest: 平移说法落到对应系数
+ok 859 - 平移说法落到对应系数
+  ---
+  duration_ms: 0.5513
+  type: 'test'
+  ...
+# Subtest: 有数没目标、空句与对不上的话
+ok 860 - 有数没目标、空句与对不上的话
+  ---
+  duration_ms: 0.1918
+  type: 'test'
+  ...
+# Subtest: 没有顶点的图形问顶点会被拒绝
+ok 861 - 没有顶点的图形问顶点会被拒绝
+  ---
+  duration_ms: 0.3475
+  type: 'test'
+  ...
+# Subtest: 圆的关键点叫圆心：可读、可移，问顶点会被拒绝
+ok 862 - 圆的关键点叫圆心：可读、可移，问顶点会被拒绝
+  ---
+  duration_ms: 0.4502
+  type: 'test'
+  ...
+# Subtest: 登记会拒绝缺字段、说法冲突与重复登记
+ok 863 - 登记会拒绝缺字段、说法冲突与重复登记
+  ---
+  duration_ms: 0.6257
+  type: 'test'
+  ...
+# Subtest: 登记的叫法与图形模型给滑块的标签逐字相同
+ok 864 - 登记的叫法与图形模型给滑块的标签逐字相同
+  ---
+  duration_ms: 1.2754
+  type: 'test'
+  ...
+# Subtest: 同一句里同一个系数的两个不同的数，整句不改图
+ok 865 - 同一句里同一个系数的两个不同的数，整句不改图
+  ---
+  duration_ms: 7.2675
+  type: 'test'
+  ...
+# Subtest: 写到一半的系数不能被丢掉后只改另一项
+ok 866 - 写到一半的系数不能被丢掉后只改另一项
+  ---
+  duration_ms: 0.6429
+  type: 'test'
+  ...
+# Subtest: 数字被截成前缀时，不能按那个前缀改图
+ok 867 - 数字被截成前缀时，不能按那个前缀改图
+  ---
+  duration_ms: 1.8364
+  type: 'test'
+  ...
+# Subtest: 否定和是非问句不改图
+ok 868 - 否定和是非问句不改图
+  ---
+  duration_ms: 0.6025
+  type: 'test'
+  ...
+# Subtest: 顶点的高度、从甲移到乙、顶点是某个点，都要改到那个点
+ok 869 - 顶点的高度、从甲移到乙、顶点是某个点，都要改到那个点
+  ---
+  duration_ms: 0.7667
+  type: 'test'
+  ...
+# Subtest: 有中文数字但没点名系数时，要说明没点名，而不是说完全对不上
+ok 870 - 有中文数字但没点名系数时，要说明没点名，而不是说完全对不上
+  ---
+  duration_ms: 0.2832
+  type: 'test'
+  ...
+# Subtest: 点了名的系数配上无效或带量词的数字时，不能说没点名系数
+ok 871 - 点了名的系数配上无效或带量词的数字时，不能说没点名系数
+  ---
+  duration_ms: 0.5556
+  type: 'test'
+  ...
+# Subtest: 「几」出现在「几何」里，或顺口提到的系数，不算一次读数
+ok 872 - 「几」出现在「几何」里，或顺口提到的系数，不算一次读数
+  ---
+  duration_ms: 1.7791
+  type: 'test'
+  ...
+# Subtest: 一句里点了五个横坐标，五个都要回答
+ok 873 - 一句里点了五个横坐标，五个都要回答
+  ---
+  duration_ms: 0.432
+  type: 'test'
+  ...
+# Subtest: 步长把越界值又挪进范围后，不能把这个值叫成上限
+ok 874 - 步长把越界值又挪进范围后，不能把这个值叫成上限
+  ---
+  duration_ms: 0.8235
+  type: 'test'
+  ...
+# Subtest: 开口系数变成 0 时，不能说成开口向下
+ok 875 - 开口系数变成 0 时，不能说成开口向下
+  ---
+  duration_ms: 0.2902
+  type: 'test'
+  ...
+# Subtest: 回答里印出的代入式，按印出的数再算，要得到印出的 y
+ok 876 - 回答里印出的代入式，按印出的数再算，要得到印出的 y
+  ---
+  duration_ms: 1.3592
+  type: 'test'
+  ...
+# Subtest: 讲解或读数中途出错时返回没算出来，不能把异常抛出
+ok 877 - 讲解或读数中途出错时返回没算出来，不能把异常抛出
+  ---
+  duration_ms: 1.5324
+  type: 'test'
+  ...
+# Subtest: 已经能画的直线、圆、正弦，提问区也要能改它的系数
+ok 878 - 已经能画的直线、圆、正弦，提问区也要能改它的系数
+  ---
+  duration_ms: 1.0335
+  type: 'test'
+  ...
+# Subtest: 窗口边界算在内，刚出界要说明，并且不说画在边上
+ok 879 - 窗口边界算在内，刚出界要说明，并且不说画在边上
+  ---
+  duration_ms: 0.5612
+  type: 'test'
+  ...
+# Subtest: 中文坐标、左右位置和相同的数这些说法仍然成立
+ok 880 - 中文坐标、左右位置和相同的数这些说法仍然成立
+  ---
+  duration_ms: 1.1758
+  type: 'test'
+  ...
+# Subtest: 圆上一个点在窗口内、一个点在窗口外时，要分开说明
+ok 881 - 圆上一个点在窗口内、一个点在窗口外时，要分开说明
+  ---
+  duration_ms: 1.1027
+  type: 'test'
+  ...
+# Subtest: 问句不会改写快照，拒绝语里也没有阿拉伯数字
+ok 882 - 问句不会改写快照，拒绝语里也没有阿拉伯数字
+  ---
+  duration_ms: 0.2483
+  type: 'test'
+  ...
+# Subtest: accepts a valid preset result
+ok 883 - accepts a valid preset result
+  ---
+  duration_ms: 2.8244
+  type: 'test'
+  ...
+# Subtest: rejects vision results in the P0 preset path
+ok 884 - rejects vision results in the P0 preset path
+  ---
+  duration_ms: 1.123
+  type: 'test'
+  ...
+# Subtest: rejects missing fields, non-finite values and invalid region
+ok 885 - rejects missing fields, non-finite values and invalid region
+  ---
+  duration_ms: 0.2861
+  type: 'test'
+  ...
+# Subtest: a region that only overflows by a rounding ulp still fits
+ok 886 - a region that only overflows by a rounding ulp still fits
+  ---
+  duration_ms: 0.2483
+  type: 'test'
+  ...
+# Subtest: rejects unknown equation and mismatched context
+ok 887 - rejects unknown equation and mismatched context
+  ---
+  duration_ms: 0.4149
+  type: 'test'
+  ...
+# Subtest: rejects coefficients and drag targets outside the registered equation
+ok 888 - rejects coefficients and drag targets outside the registered equation
+  ---
+  duration_ms: 0.1709
+  type: 'test'
+  ...
+# Subtest: rejects finite coefficients that overflow initially or after a valid slider adjustment
+ok 889 - rejects finite coefficients that overflow initially or after a valid slider adjustment
+  ---
+  duration_ms: 0.2223
+  type: 'test'
+  ...
+# Subtest: keeps every adjustable parabola nonzero without excluding small or negative coefficients
+ok 890 - keeps every adjustable parabola nonzero without excluding small or negative coefficients
+  ---
+  duration_ms: 0.4286
+  type: 'test'
+  ...
+# Subtest: rejects finite endpoints whose span overflows drawing and slider arithmetic
+ok 891 - rejects finite endpoints whose span overflows drawing and slider arithmetic
+  ---
+  duration_ms: 0.2489
+  type: 'test'
+  ...
+# Subtest: local extraction uses a separate muted decoder, captures bounded JPEGs and leaves the student player untouched
+ok 892 - local extraction uses a separate muted decoder, captures bounded JPEGs and leaves the student player untouched
+  ---
+  duration_ms: 3.1066
+  type: 'test'
+  ...
+# Subtest: same-origin authored fixtures are allowed but third-party, other-origin blobs and arbitrary paths are blocked before decode
+ok 893 - same-origin authored fixtures are allowed but third-party, other-origin blobs and arbitrary paths are blocked before decode
+  ---
+  duration_ms: 3.1946
+  type: 'test'
+  ...
+# Subtest: source duration/size limits are enforced before drawing and resources are always released
+ok 894 - source duration/size limits are enforced before drawing and resources are always released
+  ---
+  duration_ms: 0.7623
+  type: 'test'
+  ...
+# Subtest: one extraction per player rejects overlap; cancellation aborts a stuck decoder and releases the next run
+ok 895 - one extraction per player rejects overlap; cancellation aborts a stuck decoder and releases the next run
+  ---
+  duration_ms: 0.6306
+  type: 'test'
+  ...
+# Subtest: visibility change, media replacement and generation change invalidate work without a partial result
+ok 896 - visibility change, media replacement and generation change invalidate work without a partial result
+  ---
+  duration_ms: 0.7179
+  type: 'test'
+  ...
+# Subtest: decode failure rejects without seeking the student video and cleans listeners/media buffers
+ok 897 - decode failure rejects without seeking the student video and cleans listeners/media buffers
+  ---
+  duration_ms: 0.2277
+  type: 'test'
+  ...
+# Subtest: author VTT and SRT are parsed with actual text and exact seconds, including UTF8/BOM/CRLF
+ok 898 - author VTT and SRT are parsed with actual text and exact seconds, including UTF8/BOM/CRLF
+  ---
+  duration_ms: 2.4173
+  type: 'test'
+  ...
+# Subtest: parser fails closed for byte/count limits, invalid timestamp grammar, ordering, controls, URLs and markup
+ok 899 - parser fails closed for byte/count limits, invalid timestamp grammar, ordering, controls, URLs and markup
+  ---
+  duration_ms: 1.8289
+  type: 'test'
+  ...
+# Subtest: window selection applies explicit bounded offset, preserves partial overlap and rejects overflow rather than truncating
+ok 900 - window selection applies explicit bounded offset, preserves partial overlap and rejects overflow rather than truncating
+  ---
+  duration_ms: 0.4578
+  type: 'test'
+  ...
+# Subtest: sampling is evenly spaced, finite, ordered and bounded to the requested short window
+ok 901 - sampling is evenly spaced, finite, ordered and bounded to the requested short window
+  ---
+  duration_ms: 0.2515
+  type: 'test'
+  ...
+# Subtest: 提交配置保持关闭：visionAdapter 为 off，其余开关不变
+ok 902 - 提交配置保持关闭：visionAdapter 为 off，其余开关不变
+  ---
+  duration_ms: 0.952
+  type: 'test'
+  ...
+# Subtest: visionAdapter 只有 fixture 才生效，其余一律按 off
+ok 903 - visionAdapter 只有 fixture 才生效，其余一律按 off
+  ---
+  duration_ms: 5.8985
+  type: 'test'
+  ...
+# Subtest: 预制不可用时仍按值归一化开关（识别路径不受 enableLocalMock 约束）
+ok 904 - 预制不可用时仍按值归一化开关（识别路径不受 enableLocalMock 约束）
+  ---
+  duration_ms: 0.2328
+  type: 'test'
+  ...
+# Subtest: load.js 不新增远程地址、上传或模型名
+ok 905 - load.js 不新增远程地址、上传或模型名
+  ---
+  duration_ms: 0.5128
+  type: 'test'
+  ...
+# Subtest: 识别成功记录一条 vision-decision，且不写入 fallback-visible
+ok 906 - 识别成功记录一条 vision-decision，且不写入 fallback-visible
+  ---
+  duration_ms: 26.838
+  type: 'test'
+  ...
+# Subtest: 识别失败也记录 vision-decision，仍然不碰 fallback-visible
+ok 907 - 识别失败也记录 vision-decision，仍然不碰 fallback-visible
+  ---
+  duration_ms: 4.9359
+  type: 'test'
+  ...
+# Subtest: 预制路径不写 vision-decision，超时回退分别写 DOM 和帧时序
+ok 908 - 预制路径不写 vision-decision，超时回退分别写 DOM 和帧时序
+  ---
+  duration_ms: 6.6724
+  type: 'test'
+  ...
+# Subtest: 两组耗时分开可查，且不含被排除的四个名称
+ok 909 - 两组耗时分开可查，且不含被排除的四个名称
+  ---
+  duration_ms: 4.133
+  type: 'test'
+  ...
+# Subtest: 缺 evidence → 可恢复错误，不绘制
+ok 910 - 缺 evidence → 可恢复错误，不绘制
+  ---
+  duration_ms: 10.7231
+  type: 'test'
+  ...
+# Subtest: evidence 不是 packaged-sample → 可恢复错误，不绘制
+ok 911 - evidence 不是 packaged-sample → 可恢复错误，不绘制
+  ---
+  duration_ms: 0.808
+  type: 'test'
+  ...
+# Subtest: confidence 低于 0.5 → 可恢复错误，不绘制
+ok 912 - confidence 低于 0.5 → 可恢复错误，不绘制
+  ---
+  duration_ms: 0.5939
+  type: 'test'
+  ...
+# Subtest: confidence 非有限 → 可恢复错误，不绘制
+ok 913 - confidence 非有限 → 可恢复错误，不绘制
+  ---
+  duration_ms: 0.8154
+  type: 'test'
+  ...
+# Subtest: region 越出样例自己的画幅 → 可恢复错误，不绘制
+ok 914 - region 越出样例自己的画幅 → 可恢复错误，不绘制
+  ---
+  duration_ms: 1.6955
+  type: 'test'
+  ...
+# Subtest: videoId 不匹配 → 可恢复错误，不绘制
+ok 915 - videoId 不匹配 → 可恢复错误，不绘制
+  ---
+  duration_ms: 1.2991
+  type: 'test'
+  ...
+# Subtest: time 超出 ±0.2 秒 → 可恢复错误，不绘制
+ok 916 - time 超出 ±0.2 秒 → 可恢复错误，不绘制
+  ---
+  duration_ms: 0.6248
+  type: 'test'
+  ...
+# Subtest: 未知 equationId → 可恢复错误，不绘制
+ok 917 - 未知 equationId → 可恢复错误，不绘制
+  ---
+  duration_ms: 0.3935
+  type: 'test'
+  ...
+# Subtest: fallback 不是 null → 可恢复错误，不绘制
+ok 918 - fallback 不是 null → 可恢复错误，不绘制
+  ---
+  duration_ms: 0.4685
+  type: 'test'
+  ...
+# Subtest: frameSize 与当前帧不一致时不得换算成识别成功
+ok 919 - frameSize 与当前帧不一致时不得换算成识别成功
+  ---
+  duration_ms: 0.6561
+  type: 'test'
+  ...
+# Subtest: 存在匹配预制时，坏识别候选也不得把预制画成识别成功
+ok 920 - 存在匹配预制时，坏识别候选也不得把预制画成识别成功
+  ---
+  duration_ms: 0.6162
+  type: 'test'
+  ...
+# Subtest: 非 off 的外部演练优先：visionAdapter 打开也不走识别样例
+ok 921 - 非 off 的外部演练优先：visionAdapter 打开也不走识别样例
+  ---
+  duration_ms: 1.9011
+  type: 'test'
+  ...
+# Subtest: hang 演练仍按 1500ms 回退到预制并保留超时来源
+ok 922 - hang 演练仍按 1500ms 回退到预制并保留超时来源
+  ---
+  duration_ms: 0.5506
+  type: 'test'
+  ...
+# Subtest: 取消或退出后，迟到的识别样例不得再打开交互
+ok 923 - 取消或退出后，迟到的识别样例不得再打开交互
+  ---
+  duration_ms: 0.8943
+  type: 'test'
+  ...
+# Subtest: 离开目标时间后，识别样例结算被丢弃
+ok 924 - 离开目标时间后，识别样例结算被丢弃
+  ---
+  duration_ms: 0.5605
+  type: 'test'
+  ...
+# Subtest: 读取失败时按外部结果不可用处理
+ok 925 - 读取失败时按外部结果不可用处理
+  ---
+  duration_ms: 0.6536
+  type: 'test'
+  ...
+# Subtest: 没有 allowVision 时 vision 仍被拒绝
+ok 926 - 没有 allowVision 时 vision 仍被拒绝
+  ---
+  duration_ms: 1.6771
+  type: 'test'
+  ...
+# Subtest: allowVision 且 evidence 为 packaged-sample、fallback 为 null、confidence 缺省时通过
+ok 927 - allowVision 且 evidence 为 packaged-sample、fallback 为 null、confidence 缺省时通过
+  ---
+  duration_ms: 2.1716
+  type: 'test'
+  ...
+# Subtest: evidence 缺失或不是 packaged-sample 都拒绝
+ok 928 - evidence 缺失或不是 packaged-sample 都拒绝
+  ---
+  duration_ms: 0.2396
+  type: 'test'
+  ...
+# Subtest: vision 的 fallback 必须是 null
+ok 929 - vision 的 fallback 必须是 null
+  ---
+  duration_ms: 0.1368
+  type: 'test'
+  ...
+# Subtest: confidence 存在时必须是 0 到 1 的有限数
+ok 930 - confidence 存在时必须是 0 到 1 的有限数
+  ---
+  duration_ms: 0.3682
+  type: 'test'
+  ...
+# Subtest: confidence 低于 0.5 拒绝，等于 0.5 通过
+ok 931 - confidence 低于 0.5 拒绝，等于 0.5 通过
+  ---
+  duration_ms: 0.1703
+  type: 'test'
+  ...
+# Subtest: confidence 缺省时不显示也不编造百分比
+ok 932 - confidence 缺省时不显示也不编造百分比
+  ---
+  duration_ms: 0.1888
+  type: 'test'
+  ...
+# Subtest: preset 携带 evidence 被拒绝
+ok 933 - preset 携带 evidence 被拒绝
+  ---
+  duration_ms: 0.3388
+  type: 'test'
+  ...
+# Subtest: 001 的既有拒绝条件仍然生效
+ok 934 - 001 的既有拒绝条件仍然生效
+  ---
+  duration_ms: 0.3799
+  type: 'test'
+  ...
+# Subtest: 上下文不匹配仍然拒绝（视频、时间、画幅、请求号）
+ok 935 - 上下文不匹配仍然拒绝（视频、时间、画幅、请求号）
+  ---
+  duration_ms: 1.0441
+  type: 'test'
+  ...
+# Subtest: 夹具本身不含密钥、上传地址或模型名
+ok 936 - 夹具本身不含密钥、上传地址或模型名
+  ---
+  duration_ms: 0.3169
+  type: 'test'
+  ...
+# Subtest: visionAdapter 为 off 时走预制主路径，不出现 vision
+ok 937 - visionAdapter 为 off 时走预制主路径，不出现 vision
+  ---
+  duration_ms: 4.0824
+  type: 'test'
+  ...
+# Subtest: visionAdapter 缺省或其他值时按 off 处理，不读识别样例
+ok 938 - visionAdapter 缺省或其他值时按 off 处理，不读识别样例
+  ---
+  duration_ms: 1.9718
+  type: 'test'
+  ...
+# Subtest: 识别样例读取挂起超过 1500ms 时进入可恢复错误
+ok 939 - 识别样例读取挂起超过 1500ms 时进入可恢复错误
+  ---
+  duration_ms: 12.3746
+  type: 'test'
+  ...
+# Subtest: fixture + 样例匹配时进入 interactive，来源为 vision 且带 evidence
+ok 940 - fixture + 样例匹配时进入 interactive，来源为 vision 且带 evidence
+  ---
+  duration_ms: 2.8213
+  type: 'test'
+  ...
+# Subtest: 识别样例的参数范围仍然满足 min ≤ initial ≤ max 且 step > 0
+ok 941 - 识别样例的参数范围仍然满足 min ≤ initial ≤ max 且 step > 0
+  ---
+  duration_ms: 1.0615
+  type: 'test'
+  ...
+# Subtest: 识别样例不经过预制缓存：preset 为 null 时也能进入交互
+ok 942 - 识别样例不经过预制缓存：preset 为 null 时也能进入交互
+  ---
+  duration_ms: 1.2139
+  type: 'test'
+  ...
+# Subtest: 包内样例文件本身符合契约（可被同一校验器放行）
+ok 943 - 包内样例文件本身符合契约（可被同一校验器放行）
+  ---
+  duration_ms: 0.8529
+  type: 'test'
+  ...
+# Subtest: wake 只导出 createWake，入参与返回方法与冻结契约一致
+ok 944 - wake 只导出 createWake，入参与返回方法与冻结契约一致
+  ---
+  duration_ms: 2.2555
+  type: 'test'
+  ...
+# Subtest: onChange 收到与 getState() 同形的状态，且不带被禁的别名字段
+ok 945 - onChange 收到与 getState() 同形的状态，且不带被禁的别名字段
+  ---
+  duration_ms: 4.0873
+  type: 'test'
+  ...
+# Subtest: off：start 立即进入交互，来源是 preset 且 fallback 为 null
+ok 946 - off：start 立即进入交互，来源是 preset 且 fallback 为 null
+  ---
+  duration_ms: 0.7036
+  type: 'test'
+  ...
+# Subtest: start 未到目标时间时返回 not_ready，会话不进入可恢复错误
+ok 947 - start 未到目标时间时返回 not_ready，会话不进入可恢复错误
+  ---
+  duration_ms: 0.1585
+  type: 'test'
+  ...
+# Subtest: hang：先 waiting，满 fallbackAfterMs 后自动回退为交互
+ok 948 - hang：先 waiting，满 fallbackAfterMs 后自动回退为交互
+  ---
+  duration_ms: 3.8852
+  type: 'test'
+  ...
+# Subtest: invalid：外部结果不可用时进入可恢复错误，result 为 null
+ok 949 - invalid：外部结果不可用时进入可恢复错误，result 为 null
+  ---
+  duration_ms: 3.8799
+  type: 'test'
+  ...
+# Subtest: cancel、exit 与 dispose 都会清掉看门狗
+ok 950 - cancel、exit 与 dispose 都会清掉看门狗
+  ---
+  duration_ms: 0.5383
+  type: 'test'
+  ...
+# Subtest: onPlaybackChange 结束等待并返回会话状态
+ok 951 - onPlaybackChange 结束等待并返回会话状态
+  ---
+  duration_ms: 0.2321
+  type: 'test'
+  ...
+# Subtest: 测试可以注入 attempt，注入对象会被 start 与 abort
+ok 952 - 测试可以注入 attempt，注入对象会被 start 与 abort
+  ---
+  duration_ms: 0.221
+  type: 'test'
+  ...
+# Subtest: fixture preset stays inside the curve contract
+ok 953 - fixture preset stays inside the curve contract
+  ---
+  duration_ms: 2.3971
+  type: 'test'
+  ...
+# Subtest: off enters interactive immediately with a preset and no fallback
+ok 954 - off enters interactive immediately with a preset and no fallback
+  ---
+  duration_ms: 4.1808
+  type: 'test'
+  ...
+# Subtest: hang stays waiting and draws nothing before 1500ms
+ok 955 - hang stays waiting and draws nothing before 1500ms
+  ---
+  duration_ms: 0.5852
+  type: 'test'
+  ...
+# Subtest: hang falls back at 1500ms without another start
+ok 956 - hang falls back at 1500ms without another start
+  ---
+  duration_ms: 0.5516
+  type: 'test'
+  ...
+# Subtest: a cancelled request id is not drawn when the watchdog fires
+ok 957 - a cancelled request id is not drawn when the watchdog fires
+  ---
+  duration_ms: 0.253
+  type: 'test'
+  ...
+# Subtest: video mismatch at fallback does not draw
+ok 958 - video mismatch at fallback does not draw
+  ---
+  duration_ms: 0.2984
+  type: 'test'
+  ...
+# Subtest: time outside ±0.2s at fallback does not draw
+ok 959 - time outside ±0.2s at fallback does not draw
+  ---
+  duration_ms: 0.2261
+  type: 'test'
+  ...
+# Subtest: a preset authored at another resolution scales onto the current frame
+ok 960 - a preset authored at another resolution scales onto the current frame
+  ---
+  duration_ms: 0.4284
+  type: 'test'
+  ...
+# Subtest: an incomplete frame size does not become a preset failure
+ok 961 - an incomplete frame size does not become a preset failure
+  ---
+  duration_ms: 0.177
+  type: 'test'
+  ...
+# Subtest: the shipped preset draws on a 3024×1898 frame paused at 6s
+ok 962 - the shipped preset draws on a 3024×1898 frame paused at 6s
+  ---
+  duration_ms: 1.009
+  type: 'test'
+  ...
+# Subtest: a late result does not replace the timeout curve
+ok 963 - a late result does not replace the timeout curve
+  ---
+  duration_ms: 0.397
+  type: 'test'
+  ...
+# Subtest: prewarmed false becomes a recoverable error with no curve
+ok 964 - prewarmed false becomes a recoverable error with no curve
+  ---
+  duration_ms: 0.3238
+  type: 'test'
+  ...
+# Subtest: a missing preset becomes a recoverable error with no curve
+ok 965 - a missing preset becomes a recoverable error with no curve
+  ---
+  duration_ms: 0.216
+  type: 'test'
+  ...
+# Subtest: an invalid external result is not drawn as success
+ok 966 - an invalid external result is not drawn as success
+  ---
+  duration_ms: 0.4796
+  type: 'test'
+  ...
+# Subtest: cancel returns to paused-ready and clears the watchdog
+ok 967 - cancel returns to paused-ready and clears the watchdog
+  ---
+  duration_ms: 0.1876
+  type: 'test'
+  ...
+# Subtest: a result arriving after cancel does not open interactive
+ok 968 - a result arriving after cancel does not open interactive
+  ---
+  duration_ms: 0.1497
+  type: 'test'
+  ...
+# Subtest: five exit and wake cycles keep only the latest matching result
+ok 969 - five exit and wake cycles keep only the latest matching result
+  ---
+  duration_ms: 10.3448
+  type: 'test'
+  ...
+# Subtest: five frame changes drop the previous curve
+ok 970 - five frame changes drop the previous curve
+  ---
+  duration_ms: 1.1046
+  type: 'test'
+  ...
+# Subtest: playback during a wait ends the session and clears the timer
+ok 971 - playback during a wait ends the session and clears the timer
+  ---
+  duration_ms: 0.2511
+  type: 'test'
+  ...
+# Subtest: leaving the target time ends the session and clears the timer
+ok 972 - leaving the target time ends the session and clears the timer
+  ---
+  duration_ms: 0.2835
+  type: 'test'
+  ...
+# Subtest: a second start while waiting does not open another session
+ok 973 - a second start while waiting does not open another session
+  ---
+  duration_ms: 0.3005
+  type: 'test'
+  ...
+# Subtest: request ids increase across wakes
+ok 974 - request ids increase across wakes
+  ---
+  duration_ms: 1.207
+  type: 'test'
+  ...
+# Subtest: a vision candidate never becomes interactive
+ok 975 - a vision candidate never becomes interactive
+  ---
+  duration_ms: 0.3899
+  type: 'test'
+  ...
+# Subtest: an external result with a different frameSize is not drawn as success
+ok 976 - an external result with a different frameSize is not drawn as success
+  ---
+  duration_ms: 0.3228
+  type: 'test'
+  ...
+# Subtest: a late result cannot wash a different frame into the current one
+ok 977 - a late result cannot wash a different frame into the current one
+  ---
+  duration_ms: 0.9379
+  type: 'test'
+  ...
+# Subtest: a missing invalid candidate fails before the watchdog
+ok 978 - a missing invalid candidate fails before the watchdog
+  ---
+  duration_ms: 0.4022
+  type: 'test'
+  ...
+# Subtest: a missing late candidate still falls back to the preset at 1500ms
+ok 979 - a missing late candidate still falls back to the preset at 1500ms
+  ---
+  duration_ms: 0.4818
+  type: 'test'
+  ...
+# Subtest: a fallback delay other than 1500 does not schedule another watchdog
+ok 980 - a fallback delay other than 1500 does not schedule another watchdog
+  ---
+  duration_ms: 0.1742
+  type: 'test'
+  ...
+# Subtest: enableLocalMock false does not turn a timeout into a preset success
+ok 981 - enableLocalMock false does not turn a timeout into a preset success
+  ---
+  duration_ms: 0.1955
+  type: 'test'
+  ...
+# Subtest: a synchronous attempt failure is not reported as started
+ok 982 - a synchronous attempt failure is not reported as started
+  ---
+  duration_ms: 0.1968
+  type: 'test'
+  ...
+# Subtest: the watchdog path fails closed when no clock is provided
+ok 983 - the watchdog path fails closed when no clock is provided
+  ---
+  duration_ms: 0.1521
+  type: 'test'
+  ...
+# Subtest: the preset path does not need a clock
+ok 984 - the preset path does not need a clock
+  ---
+  duration_ms: 0.2675
+  type: 'test'
+  ...
+# Subtest: a missing vision loader is not reported as started
+ok 985 - a missing vision loader is not reported as started
+  ---
+  duration_ms: 1.3466
+  type: 'test'
+  ...
+# Subtest: startCached 即时通过规则层 beginWait/resolve，禁用本地 Mock 也可消费阅读缓存
+ok 986 - startCached 即时通过规则层 beginWait/resolve，禁用本地 Mock 也可消费阅读缓存
+  ---
+  duration_ms: 6.0572
+  type: 'test'
+  ...
+# Subtest: startCached 不读 Mock/fixture 配置、不需要时钟、不发起替身
+ok 987 - startCached 不读 Mock/fixture 配置、不需要时钟、不发起替身
+  ---
+  duration_ms: 0.5595
+  type: 'test'
+  ...
+# Subtest: 缓存入口只允许 cachedReading 严格为 true，其他值不改变会话
+ok 988 - 缓存入口只允许 cachedReading 严格为 true，其他值不改变会话
+  ---
+  duration_ms: 0.5313
+  type: 'test'
+  ...
+# Subtest: 缓存入口要求真实暂停、有限时间和正整数源尺寸，不生成等待
+ok 989 - 缓存入口要求真实暂停、有限时间和正整数源尺寸，不生成等待
+  ---
+  duration_ms: 1.2655
+  type: 'test'
+  ...
+# Subtest: 缓存入口保留会话既有播放时间容差，缓存自身时间必须精确对应目标
+ok 990 - 缓存入口保留会话既有播放时间容差，缓存自身时间必须精确对应目标
+  ---
+  duration_ms: 0.7993
+  type: 'test'
+  ...
+# Subtest: 缓存入口拒绝另一视频的结果，不把视频编号改装成当前视频
+ok 991 - 缓存入口拒绝另一视频的结果，不把视频编号改装成当前视频
+  ---
+  duration_ms: 0.3063
+  type: 'test'
+  ...
+# Subtest: 缓存入口拒绝源画幅不匹配，不缩放阅读区域
+ok 992 - 缓存入口拒绝源画幅不匹配，不缩放阅读区域
+  ---
+  duration_ms: 0.1376
+  type: 'test'
+  ...
+# Subtest: 当前播放尺寸必须同时匹配会话源尺寸，不重写会话画幅
+ok 993 - 当前播放尺寸必须同时匹配会话源尺寸，不重写会话画幅
+  ---
+  duration_ms: 0.1445
+  type: 'test'
+  ...
+# Subtest: 缓存入口拒绝 vision、timeout 和夹带识别样例证据，不能洗成 preset 成功
+ok 994 - 缓存入口拒绝 vision、timeout 和夹带识别样例证据，不能洗成 preset 成功
+  ---
+  duration_ms: 0.2201
+  type: 'test'
+  ...
+# Subtest: 缓存仍通过共享校验器拒绝缺失身份、越界和不可有限求值的数据
+ok 995 - 缓存仍通过共享校验器拒绝缺失身份、越界和不可有限求值的数据
+  ---
+  duration_ms: 0.3186
+  type: 'test'
+  ...
+# Subtest: 同一缓存可用于首尾时间帧，0 秒不被误作没有目标时间
+ok 996 - 同一缓存可用于首尾时间帧，0 秒不被误作没有目标时间
+  ---
+  duration_ms: 0.6022
+  type: 'test'
+  ...
+# Subtest: 已有交互会话不能被缓存入口覆盖，也不产生新的编号
+ok 997 - 已有交互会话不能被缓存入口覆盖，也不产生新的编号
+  ---
+  duration_ms: 0.233
+  type: 'test'
+  ...
+# Subtest: 缓存交互退出和重新进入生成新编号，外部对象修改不能污染已建立会话
+ok 998 - 缓存交互退出和重新进入生成新编号，外部对象修改不能污染已建立会话
+  ---
+  duration_ms: 0.3258
+  type: 'test'
+  ...
+# Subtest: 缓存流程没有迟到看门狗，时间前进不把 null fallback 改为 timeout
+ok 999 - 缓存流程没有迟到看门狗，时间前进不把 null fallback 改为 timeout
+  ---
+  duration_ms: 8.3618
+  type: 'test'
+  ...
+# Subtest: real gateway through front door preserves help across reload, recomputes receipt, and locks one submission
+ok 1000 - real gateway through front door preserves help across reload, recomputes receipt, and locks one submission
+  ---
+  duration_ms: 231.6908
+  type: 'test'
+  ...
+# Subtest: second account cannot read or mutate first account exercises through the same front door
+ok 1001 - second account cannot read or mutate first account exercises through the same front door
+  ---
+  duration_ms: 130.3541
+  type: 'test'
+  ...
+# Subtest: concurrent purpose revisions have one winner, preserve original math and do not create attempts
+ok 1002 - concurrent purpose revisions have one winner, preserve original math and do not create attempts
+  ---
+  duration_ms: 93.1267
+  type: 'test'
+  ...
+# Subtest: record deletion cascades flow sidecars and rejects late exercise/help submissions
+ok 1003 - record deletion cascades flow sidecars and rejects late exercise/help submissions
+  ---
+  duration_ms: 113.9989
+  type: 'test'
+  ...
+# Subtest: account data deletion increments epoch and prevents old flow writes after same record is resaved
+ok 1004 - account data deletion increments epoch and prevents old flow writes after same record is resaved
+  ---
+  duration_ms: 100.6291
+  type: 'test'
+  ...
+# Subtest: real flow writes remain protected by Origin and CSRF, and empty model config remains honest
+ok 1005 - real flow writes remain protected by Origin and CSRF, and empty model config remains honest
+  ---
+  duration_ms: 78.9791
+  type: 'test'
+  ...
+# Subtest: local record deletion persistently removes its flow and same-ID reimport cannot revive evidence
+ok 1006 - local record deletion persistently removes its flow and same-ID reimport cannot revive evidence
+  ---
+  duration_ms: 26.8678
+  type: 'test'
+  ...
+# Subtest: local flow read persistently prunes deleted parent dependencies without an explicit remove call
+ok 1007 - local flow read persistently prunes deleted parent dependencies without an explicit remove call
+  ---
+  duration_ms: 11.3722
+  type: 'test'
+  ...
+# Subtest: local flow read replaces an obsolete epoch and stale removal cannot alter the replacement
+ok 1008 - local flow read replaces an obsolete epoch and stale removal cannot alter the replacement
+  ---
+  duration_ms: 3.1346
+  type: 'test'
+  ...
+# Subtest: local flow cleanup rechecks the parent epoch immediately before persisting
+ok 1009 - local flow cleanup rechecks the parent epoch immediately before persisting
+  ---
+  duration_ms: 2.2499
+  type: 'test'
+  ...
+# Subtest: local exercises require explicitly saved practice purpose before creating any new state
+ok 1010 - local exercises require explicitly saved practice purpose before creating any new state
+  ---
+  duration_ms: 1.3054
+  type: 'test'
+  ...
+# Subtest: website migration accepts distinct complete watch identities and rejects an exact identity duplicate
+ok 1011 - website migration accepts distinct complete watch identities and rejects an exact identity duplicate
+  ---
+  duration_ms: 5.1391
+  type: 'test'
+  ...
+# Subtest: UTC+8 review calendar round trip preserves the selected day and repeated saves do not drift
+ok 1012 - UTC+8 review calendar round trip preserves the selected day and repeated saves do not drift
+  ---
+  duration_ms: 120.2645
+  type: 'test'
+  ...
+# Subtest: account switch while onChanged reload waits cannot reopen the previous account exercise
+ok 1013 - account switch while onChanged reload waits cannot reopen the previous account exercise
+  ---
+  duration_ms: 4.8963
+  type: 'test'
+  ...
+# Subtest: help persistence 503 cannot disclose a worked example then count the answer as independent
+ok 1014 - help persistence 503 cannot disclose a worked example then count the answer as independent
+  ---
+  duration_ms: 28.7885
+  type: 'test'
+  ...
+# Subtest: a successfully saved full example is visible and the actual answer remains assisted
+ok 1015 - a successfully saved full example is visible and the actual answer remains assisted
+  ---
+  duration_ms: 4.9719
+  type: 'test'
+  ...
+# Subtest: a new exercise clears the old example and creates its own independent help context
+ok 1016 - a new exercise clears the old example and creates its own independent help context
+  ---
+  duration_ms: 10.2344
+  type: 'test'
+  ...
+# Subtest: pending help keeps native disclosure empty and busy actions cannot bypass the assistance write
+ok 1017 - pending help keeps native disclosure empty and busy actions cannot bypass the assistance write
+  ---
+  duration_ms: 5.2081
+  type: 'test'
+  ...
+# Subtest: changing learning records under the same owner discards a delayed create result
+ok 1018 - changing learning records under the same owner discards a delayed create result
+  ---
+  duration_ms: 3.8366
+  type: 'test'
+  ...
+# Subtest: selectRecord opens newly saved mathematics without old exercise help and ignores unknown IDs
+ok 1019 - selectRecord opens newly saved mathematics without old exercise help and ignores unknown IDs
+  ---
+  duration_ms: 6.3843
+  type: 'test'
+  ...
+# Subtest: actual receipt immediately updates review reason and date while retaining the current exercise result
+ok 1020 - actual receipt immediately updates review reason and date while retaining the current exercise result
+  ---
+  duration_ms: 11.1606
+  type: 'test'
+  ...
+# Subtest: refresh, queue and cause replacement retire listeners and destroy releases every remaining control
+ok 1021 - refresh, queue and cause replacement retire listeners and destroy releases every remaining control
+  ---
+  duration_ms: 20.7145
+  type: 'test'
+  ...
+# Subtest: destroy cancels pending visitor-download timers and revokes each temporary URL once
+ok 1022 - destroy cancels pending visitor-download timers and revokes each temporary URL once
+  ---
+  duration_ms: 4.1681
+  type: 'test'
+  ...
+# Subtest: live particle WebGL absence retains confirmed parameters, formula and an updating finite 2D view
+ok 1023 - live particle WebGL absence retains confirmed parameters, formula and an updating finite 2D view
+  ---
+  duration_ms: 20.1793
+  type: 'test'
+  ...
+# Subtest: camera sliders, drag, keyboard and 2D reset change only view and preserve the same mathematics
+ok 1024 - camera sliders, drag, keyboard and 2D reset change only view and preserve the same mathematics
+  ---
+  duration_ms: 9.1774
+  type: 'test'
+  ...
+# Subtest: reduced-motion preference produces one initial render with no background animation loop
+ok 1025 - reduced-motion preference produces one initial render with no background animation loop
+  ---
+  duration_ms: 10.9813
+  type: 'test'
+  ...
+# Subtest: reduced motion and unavailable WebGL can coexist while the same 2D triangle stays usable
+ok 1026 - reduced motion and unavailable WebGL can coexist while the same 2D triangle stays usable
+  ---
+  duration_ms: 3.1469
+  type: 'test'
+  ...
+# Subtest: live WebGL context loss immediately reveals the preserved 2D mathematical view
+ok 1027 - live WebGL context loss immediately reveals the preserved 2D mathematical view
+  ---
+  duration_ms: 7.124
+  type: 'test'
+  ...
+# Subtest: WebGL, explicit 2D and context loss expose exactly one output using DOM hidden attributes
+ok 1028 - WebGL, explicit 2D and context loss expose exactly one output using DOM hidden attributes
+  ---
+  duration_ms: 6.342
+  type: 'test'
+  ...
+# Subtest: parabola fallback is one continuous solid path with no circle sample cloud
+ok 1029 - parabola fallback is one continuous solid path with no circle sample cloud
+  ---
+  duration_ms: 7.8965
+  type: 'test'
+  ...
+# Subtest: cuboid and similar triangles use separate edge subpaths without cross-edge connections
+ok 1030 - cuboid and similar triangles use separate edge subpaths without cross-edge connections
+  ---
+  duration_ms: 12.0225
+  type: 'test'
+  ...
+# Subtest: WebGL mathematical outlines use line primitives while POINTS are limited to explicit anchors
+ok 1031 - WebGL mathematical outlines use line primitives while POINTS are limited to explicit anchors
+  ---
+  duration_ms: 28.8589
+  type: 'test'
+  ...
+# Subtest: parameter changes update both solid SVG and GPU line coordinates without starting a reduced-motion loop
+ok 1032 - parameter changes update both solid SVG and GPU line coordinates without starting a reduced-motion loop
+  ---
+  duration_ms: 10.7616
+  type: 'test'
+  ...
+1..1032
+# tests 1036
+# suites 1
+# pass 1036
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 5312.7565

@@ -242,10 +242,8 @@
         gl.uniform2f(locations.view, view.yaw, view.pitch);
         gl.enable(gl.BLEND); gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
         drawGroup(0, gl.LINES, [0.5, 0.64, 0.77, 0.8], 1, 0);
-        drawGroup(1, scene.outlineMode === 'lines' ? gl.LINES : gl.LINE_STRIP, [0.4, 0.85, 1, 0.8], 1, 0);
+        drawGroup(1, scene.outlineMode === 'lines' ? gl.LINES : gl.LINE_STRIP, [0.4, 0.85, 1, 1], 1, 0);
         drawGroup(2, gl.LINE_STRIP, [1, 0.8, 0.3, 1], 1, 0);
-        drawGroup(3, gl.POINTS, [0.3, 0.8, 1, 0.16], 7, 1);
-        drawGroup(3, gl.POINTS, [0.65, 0.93, 1, 0.94], 3, 1);
         drawGroup(4, gl.POINTS, [1, 0.8, 0.3, 1], 5, 1);
         if (typeof gl.getError === 'function' && gl.getError() !== gl.NO_ERROR) throw new Error('draw');
         dirty = false; return true;

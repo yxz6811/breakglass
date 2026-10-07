@@ -1,0 +1,26 @@
+{
+  "date": "2026-10-07",
+  "timezone": "Asia/Shanghai",
+  "origin": "http://127.0.0.1:18767",
+  "browser": "Codex In-app Browser",
+  "scope": "three narrow browser follow-up checks, initial evidence preserved",
+  "checks": {
+    "geometryAuto4": true,
+    "curveClearAndReset": true,
+    "sameOriginReadonlyReader": true
+  },
+  "sourceUnchangedDuringChecks": true,
+  "sha256": {
+    "extension/src/page/main.js": "bbcab9e6b5291840970d0e6890f5bf2608f9a3d5c82bd63e832069c39c9d4640",
+    "extension/src/page/geometry.js": "deea16a6c3e589fdb05ce763df97bc2aa3249f02dbe7e773ee796b7aa595efed",
+    "extension/demo/workspace.js": "220dd09be2580a052e38a0aa6af5824dce2e30c295a36d918887758095e1b9b2"
+  },
+  "initialEvidence": "evidence.json",
+  "readerNetworkRequestCount": "not directly measured",
+  "realModel": false,
+  "sourceEditsByThisFollowup": false,
+  "ownerReportedTests": {
+    "targeted": 62,
+    "full": 1036
+  }
+}

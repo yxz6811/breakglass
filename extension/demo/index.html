@@ -3,10 +3,11 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>BreakGlass · 原位抛物线演示</title>
+    <title>BreakGlass · 视频理解与学习工作台</title>
     <link rel="stylesheet" href="../src/ui/theme.css">
     <link rel="stylesheet" href="../src/ui/dock.css">
     <link rel="stylesheet" href="./demo.css">
+    <link rel="stylesheet" href="./workspace.css">
     <script defer src="../src/curve/validate.js"></script>
     <script defer src="../src/curve/evaluate.js"></script>
     <script defer src="../src/geometry/content-rect.js"></script>
@@ -28,8 +29,25 @@
     <script defer src="../src/tutor/parse.js"></script>
     <script defer src="../src/tutor/ask.js"></script>
     <script defer src="../src/page/main.js"></script>
+    <script defer src="../src/page/mount-context.js"></script>
+    <script defer src="../src/geometry-scene/validate.js"></script>
+    <script defer src="../src/geometry-scene/solve.js"></script>
+    <script defer src="../src/geometry-scene/actions.js"></script>
+    <script defer src="../src/geometry-session/session.js"></script>
+    <script defer src="../src/geometry-scene/frame.js"></script>
+    <script defer src="../src/geometry-scene/request.js"></script>
+    <script defer src="../src/geometry-scene/view.js"></script>
+    <script defer src="../src/page/geometry.js"></script>
+    <script defer src="../src/plugin/math-learning.js"></script>
+    <script defer src="../src/plugin/contracts.js"></script>
+    <script defer src="../src/plugin/frame-sampler.js"></script>
+    <script defer src="../src/plugin/live-loop.js"></script>
+    <script defer src="../src/plugin/overlay.js"></script>
+    <script defer src="../src/plugin/particle-renderer.js"></script>
+    <script defer src="../src/plugin/video-context.js"></script>
+    <script defer src="./workspace.js"></script>
   </head>
-  <body>
+  <body data-unified-workspace="true">
     <!-- 液态玻璃的边缘折射滤镜：支持 backdrop-filter: url() 时才由脚本启用 -->
     <svg width="0" height="0" aria-hidden="true" focusable="false" style="position:absolute">
       <filter id="lg-refract" x="-20%" y="-20%" width="140%" height="140%" color-interpolation-filters="sRGB">

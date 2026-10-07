@@ -1,0 +1,447 @@
+{
+  "warmupCount": 5,
+  "measurementCount": 50,
+  "definition": "Real keyboard slider input -> formula/SVG/onScene synchronous line renderer update; excludes tool overhead and pixel presentation",
+  "samples": [
+    {
+      "durationMs": 8.199999988079071,
+      "formula": "y=1(x−(0.1))²+(1)",
+      "kind": "DOM+particle synchronous update, not pixel presentation",
+      "pathCount": 1,
+      "seq": 1,
+      "value": "0.1"
+    },
+    {
+      "durationMs": 2.600000023841858,
+      "formula": "y=1(x−(0))²+(1)",
+      "kind": "DOM+particle synchronous update, not pixel presentation",
+      "pathCount": 1,
+      "seq": 2,
+      "value": "0"
+    },
+    {
+      "durationMs": 2.7000000178813934,
+      "formula": "y=1(x−(0.1))²+(1)",
+      "kind": "DOM+particle synchronous update, not pixel presentation",
+      "pathCount": 1,
+      "seq": 3,
+      "value": "0.1"
+    },
+    {
+      "durationMs": 2.800000011920929,
+      "formula": "y=1(x−(0))²+(1)",
+      "kind": "DOM+particle synchronous update, not pixel presentation",
+      "pathCount": 1,
+      "seq": 4,
+      "value": "0"
+    },
+    {
+      "durationMs": 2.399999976158142,
+      "formula": "y=1(x−(0.1))²+(1)",
+      "kind": "DOM+particle synchronous update, not pixel presentation",
+      "pathCount": 1,
+      "seq": 5,
+      "value": "0.1"
+    },
+    {
+      "durationMs": 2.0999999940395355,
+      "formula": "y=1(x−(0))²+(1)",
+      "kind": "DOM+particle synchronous update, not pixel presentation",
+      "pathCount": 1,
+      "seq": 6,
+      "value": "0"
+    },
+    {
+      "durationMs": 2.2999999821186066,
+      "formula": "y=1(x−(0.1))²+(1)",
+      "kind": "DOM+particle synchronous update, not pixel presentation",
+      "pathCount": 1,
+      "seq": 7,
+      "value": "0.1"
+    },
+    {
+      "durationMs": 2.300000011920929,
+      "formula": "y=1(x−(0))²+(1)",
+      "kind": "DOM+particle synchronous update, not pixel presentation",
+      "pathCount": 1,
+      "seq": 8,
+      "value": "0"
+    },
+    {
+      "durationMs": 2.5,
+      "formula": "y=1(x−(0.1))²+(1)",
+      "kind": "DOM+particle synchronous update, not pixel presentation",
+      "pathCount": 1,
+      "seq": 9,
+      "value": "0.1"
+    },
+    {
+      "durationMs": 2.199999988079071,
+      "formula": "y=1(x−(0))²+(1)",
+      "kind": "DOM+particle synchronous update, not pixel presentation",
+      "pathCount": 1,
+      "seq": 10,
+      "value": "0"
+    },
+    {
+      "durationMs": 1.899999976158142,
+      "formula": "y=1(x−(0.1))²+(1)",
+      "kind": "DOM+particle synchronous update, not pixel presentation",
+      "pathCount": 1,
+      "seq": 11,
+      "value": "0.1"
+    },
+    {
+      "durationMs": 1.9000000059604645,
+      "formula": "y=1(x−(0))²+(1)",
+      "kind": "DOM+particle synchronous update, not pixel presentation",
+      "pathCount": 1,
+      "seq": 12,
+      "value": "0"
+    },
+    {
+      "durationMs": 2,
+      "formula": "y=1(x−(0.1))²+(1)",
+      "kind": "DOM+particle synchronous update, not pixel presentation",
+      "pathCount": 1,
+      "seq": 13,
+      "value": "0.1"
+    },
+    {
+      "durationMs": 2,
+      "formula": "y=1(x−(0))²+(1)",
+      "kind": "DOM+particle synchronous update, not pixel presentation",
+      "pathCount": 1,
+      "seq": 14,
+      "value": "0"
+    },
+    {
+      "durationMs": 2.2999999821186066,
+      "formula": "y=1(x−(0.1))²+(1)",
+      "kind": "DOM+particle synchronous update, not pixel presentation",
+      "pathCount": 1,
+      "seq": 15,
+      "value": "0.1"
+    },
+    {
+      "durationMs": 2,
+      "formula": "y=1(x−(0))²+(1)",
+      "kind": "DOM+particle synchronous update, not pixel presentation",
+      "pathCount": 1,
+      "seq": 16,
+      "value": "0"
+    },
+    {
+      "durationMs": 2.0999999940395355,
+      "formula": "y=1(x−(0.1))²+(1)",
+      "kind": "DOM+particle synchronous update, not pixel presentation",
+      "pathCount": 1,
+      "seq": 17,
+      "value": "0.1"
+    },
+    {
+      "durationMs": 1.9000000059604645,
+      "formula": "y=1(x−(0))²+(1)",
+      "kind": "DOM+particle synchronous update, not pixel presentation",
+      "pathCount": 1,
+      "seq": 18,
+      "value": "0"
+    },
+    {
+      "durationMs": 2,
+      "formula": "y=1(x−(0.1))²+(1)",
+      "kind": "DOM+particle synchronous update, not pixel presentation",
+      "pathCount": 1,
+      "seq": 19,
+      "value": "0.1"
+    },
+    {
+      "durationMs": 1.9000000059604645,
+      "formula": "y=1(x−(0))²+(1)",
+      "kind": "DOM+particle synchronous update, not pixel presentation",
+      "pathCount": 1,
+      "seq": 20,
+      "value": "0"
+    },
+    {
+      "durationMs": 2.0999999940395355,
+      "formula": "y=1(x−(0.1))²+(1)",
+      "kind": "DOM+particle synchronous update, not pixel presentation",
+      "pathCount": 1,
+      "seq": 21,
+      "value": "0.1"
+    },
+    {
+      "durationMs": 2.199999988079071,
+      "formula": "y=1(x−(0))²+(1)",
+      "kind": "DOM+particle synchronous update, not pixel presentation",
+      "pathCount": 1,
+      "seq": 22,
+      "value": "0"
+    },
+    {
+      "durationMs": 2,
+      "formula": "y=1(x−(0.1))²+(1)",
+      "kind": "DOM+particle synchronous update, not pixel presentation",
+      "pathCount": 1,
+      "seq": 23,
+      "value": "0.1"
+    },
+    {
+      "durationMs": 2,
+      "formula": "y=1(x−(0))²+(1)",
+      "kind": "DOM+particle synchronous update, not pixel presentation",
+      "pathCount": 1,
+      "seq": 24,
+      "value": "0"
+    },
+    {
+      "durationMs": 2.199999988079071,
+      "formula": "y=1(x−(0.1))²+(1)",
+      "kind": "DOM+particle synchronous update, not pixel presentation",
+      "pathCount": 1,
+      "seq": 25,
+      "value": "0.1"
+    },
+    {
+      "durationMs": 2.2000000178813934,
+      "formula": "y=1(x−(0))²+(1)",
+      "kind": "DOM+particle synchronous update, not pixel presentation",
+      "pathCount": 1,
+      "seq": 26,
+      "value": "0"
+    },
+    {
+      "durationMs": 1.9000000059604645,
+      "formula": "y=1(x−(0.1))²+(1)",
+      "kind": "DOM+particle synchronous update, not pixel presentation",
+      "pathCount": 1,
+      "seq": 27,
+      "value": "0.1"
+    },
+    {
+      "durationMs": 1.9000000059604645,
+      "formula": "y=1(x−(0))²+(1)",
+      "kind": "DOM+particle synchronous update, not pixel presentation",
+      "pathCount": 1,
+      "seq": 28,
+      "value": "0"
+    },
+    {
+      "durationMs": 1.899999976158142,
+      "formula": "y=1(x−(0.1))²+(1)",
+      "kind": "DOM+particle synchronous update, not pixel presentation",
+      "pathCount": 1,
+      "seq": 29,
+      "value": "0.1"
+    },
+    {
+      "durationMs": 2.4000000059604645,
+      "formula": "y=1(x−(0))²+(1)",
+      "kind": "DOM+particle synchronous update, not pixel presentation",
+      "pathCount": 1,
+      "seq": 30,
+      "value": "0"
+    },
+    {
+      "durationMs": 1.9000000059604645,
+      "formula": "y=1(x−(0.1))²+(1)",
+      "kind": "DOM+particle synchronous update, not pixel presentation",
+      "pathCount": 1,
+      "seq": 31,
+      "value": "0.1"
+    },
+    {
+      "durationMs": 1.7999999821186066,
+      "formula": "y=1(x−(0))²+(1)",
+      "kind": "DOM+particle synchronous update, not pixel presentation",
+      "pathCount": 1,
+      "seq": 32,
+      "value": "0"
+    },
+    {
+      "durationMs": 1.800000011920929,
+      "formula": "y=1(x−(0.1))²+(1)",
+      "kind": "DOM+particle synchronous update, not pixel presentation",
+      "pathCount": 1,
+      "seq": 33,
+      "value": "0.1"
+    },
+    {
+      "durationMs": 1.9000000059604645,
+      "formula": "y=1(x−(0))²+(1)",
+      "kind": "DOM+particle synchronous update, not pixel presentation",
+      "pathCount": 1,
+      "seq": 34,
+      "value": "0"
+    },
+    {
+      "durationMs": 1.9000000059604645,
+      "formula": "y=1(x−(0.1))²+(1)",
+      "kind": "DOM+particle synchronous update, not pixel presentation",
+      "pathCount": 1,
+      "seq": 35,
+      "value": "0.1"
+    },
+    {
+      "durationMs": 2,
+      "formula": "y=1(x−(0))²+(1)",
+      "kind": "DOM+particle synchronous update, not pixel presentation",
+      "pathCount": 1,
+      "seq": 36,
+      "value": "0"
+    },
+    {
+      "durationMs": 2,
+      "formula": "y=1(x−(0.1))²+(1)",
+      "kind": "DOM+particle synchronous update, not pixel presentation",
+      "pathCount": 1,
+      "seq": 37,
+      "value": "0.1"
+    },
+    {
+      "durationMs": 1.7999999821186066,
+      "formula": "y=1(x−(0))²+(1)",
+      "kind": "DOM+particle synchronous update, not pixel presentation",
+      "pathCount": 1,
+      "seq": 38,
+      "value": "0"
+    },
+    {
+      "durationMs": 1.899999976158142,
+      "formula": "y=1(x−(0.1))²+(1)",
+      "kind": "DOM+particle synchronous update, not pixel presentation",
+      "pathCount": 1,
+      "seq": 39,
+      "value": "0.1"
+    },
+    {
+      "durationMs": 1.800000011920929,
+      "formula": "y=1(x−(0))²+(1)",
+      "kind": "DOM+particle synchronous update, not pixel presentation",
+      "pathCount": 1,
+      "seq": 40,
+      "value": "0"
+    },
+    {
+      "durationMs": 2,
+      "formula": "y=1(x−(0.1))²+(1)",
+      "kind": "DOM+particle synchronous update, not pixel presentation",
+      "pathCount": 1,
+      "seq": 41,
+      "value": "0.1"
+    },
+    {
+      "durationMs": 1.7999999821186066,
+      "formula": "y=1(x−(0))²+(1)",
+      "kind": "DOM+particle synchronous update, not pixel presentation",
+      "pathCount": 1,
+      "seq": 42,
+      "value": "0"
+    },
+    {
+      "durationMs": 1.899999976158142,
+      "formula": "y=1(x−(0.1))²+(1)",
+      "kind": "DOM+particle synchronous update, not pixel presentation",
+      "pathCount": 1,
+      "seq": 43,
+      "value": "0.1"
+    },
+    {
+      "durationMs": 2,
+      "formula": "y=1(x−(0))²+(1)",
+      "kind": "DOM+particle synchronous update, not pixel presentation",
+      "pathCount": 1,
+      "seq": 44,
+      "value": "0"
+    },
+    {
+      "durationMs": 1.699999988079071,
+      "formula": "y=1(x−(0.1))²+(1)",
+      "kind": "DOM+particle synchronous update, not pixel presentation",
+      "pathCount": 1,
+      "seq": 45,
+      "value": "0.1"
+    },
+    {
+      "durationMs": 2,
+      "formula": "y=1(x−(0))²+(1)",
+      "kind": "DOM+particle synchronous update, not pixel presentation",
+      "pathCount": 1,
+      "seq": 46,
+      "value": "0"
+    },
+    {
+      "durationMs": 1.7999999821186066,
+      "formula": "y=1(x−(0.1))²+(1)",
+      "kind": "DOM+particle synchronous update, not pixel presentation",
+      "pathCount": 1,
+      "seq": 47,
+      "value": "0.1"
+    },
+    {
+      "durationMs": 1.9000000059604645,
+      "formula": "y=1(x−(0))²+(1)",
+      "kind": "DOM+particle synchronous update, not pixel presentation",
+      "pathCount": 1,
+      "seq": 48,
+      "value": "0"
+    },
+    {
+      "durationMs": 1.800000011920929,
+      "formula": "y=1(x−(0.1))²+(1)",
+      "kind": "DOM+particle synchronous update, not pixel presentation",
+      "pathCount": 1,
+      "seq": 49,
+      "value": "0.1"
+    },
+    {
+      "durationMs": 1.9000000059604645,
+      "formula": "y=1(x−(0))²+(1)",
+      "kind": "DOM+particle synchronous update, not pixel presentation",
+      "pathCount": 1,
+      "seq": 50,
+      "value": "0"
+    },
+    {
+      "durationMs": 1.9000000059604645,
+      "formula": "y=1(x−(0.1))²+(1)",
+      "kind": "DOM+particle synchronous update, not pixel presentation",
+      "pathCount": 1,
+      "seq": 51,
+      "value": "0.1"
+    },
+    {
+      "durationMs": 2,
+      "formula": "y=1(x−(0))²+(1)",
+      "kind": "DOM+particle synchronous update, not pixel presentation",
+      "pathCount": 1,
+      "seq": 52,
+      "value": "0"
+    },
+    {
+      "durationMs": 2,
+      "formula": "y=1(x−(0.1))²+(1)",
+      "kind": "DOM+particle synchronous update, not pixel presentation",
+      "pathCount": 1,
+      "seq": 53,
+      "value": "0.1"
+    },
+    {
+      "durationMs": 1.7999999821186066,
+      "formula": "y=1(x−(0))²+(1)",
+      "kind": "DOM+particle synchronous update, not pixel presentation",
+      "pathCount": 1,
+      "seq": 54,
+      "value": "0"
+    },
+    {
+      "durationMs": 1.7999999821186066,
+      "formula": "y=1(x−(0.1))²+(1)",
+      "kind": "DOM+particle synchronous update, not pixel presentation",
+      "pathCount": 1,
+      "seq": 55,
+      "value": "0.1"
+    }
+  ]
+}

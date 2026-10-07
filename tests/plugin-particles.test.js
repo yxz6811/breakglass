@@ -102,7 +102,9 @@ test('WebGL uses bounded canvas/DPR and fixed local shaders while update and cam
   assert.equal(renderer.getState().dpr, 4 / 3);
   assert.ok(Math.abs(renderer.getState().width / renderer.getState().height - 1200 / 500) < 0.002);
   assert.equal(renderer.getState().reducedMotion, true);
-  assert.ok(f.gl.state.draws.some((draw) => draw.primitive === f.gl.POINTS && draw.count === 384));
+  assert.ok(f.gl.state.draws.some((draw) => draw.primitive === f.gl.LINE_STRIP && draw.count === 4));
+  assert.equal(f.gl.state.draws.some((draw) => draw.primitive === f.gl.POINTS && draw.count === 384), false,
+    'The triangle uses its three connected solid edges, not a particle cloud');
   assert.equal(f.gl.state.shaders.length, 2);
   assert.ok(f.gl.state.shaders.every((source) => !source.includes('run()')));
   const initialBuffers = f.gl.state.buffers.size;

@@ -183,21 +183,22 @@
     return records.filter((record) => (source === 'all' || identity(record.source) === source)
       && (kind === 'all' || (kind === 'wrong' ? wrong.has(record.id) : record.kind === kind)));
   }
-  function nextReview(attempts, recordId) {
-    const history = attempts.filter((item) => item.recordId === recordId).sort((a, b) => a.createdAt.localeCompare(b.createdAt));
-    const latest = history.at(-1);
-    if (!latest) return null;
-    let streak = 0;
-    for (let i = history.length - 1; i >= 0 && history[i].correct && !history[i].hintUsed; i -= 1) streak += 1;
-    // A product suggestion based on submitted history, never a learning-effect measurement.
-    const days = latest.correct ? latest.hintUsed ? 3 : Math.min(28, 7 * 2 ** Math.min(streak - 1, 2)) : 1;
-    return new Date(Date.parse(latest.createdAt) + days * 86400000).toISOString();
+  function nextReview(attempts, recordId, sourceRecords) {
+    if (!Array.isArray(attempts)) throw new TypeError('复习历史必须是列表。');
+    const record = Array.isArray(sourceRecords) ? sourceRecords.find((item) => item.id === recordId)
+      : sourceRecords && sourceRecords.id === recordId ? sourceRecords : null;
+    if (sourceRecords !== undefined && !record) return null;
+    // The legacy two-argument API consumes history already validated by its
+    // owning store. New callers may supply records to rejudge mathematical facts.
+    const plan = record ? math().historyPlan(validateRecord(record), attempts)
+      : math().reviewSuggestion(attempts.filter((item) => item?.recordId === recordId));
+    return plan.days === null ? null : new Date(Date.parse(plan.lastAttemptAt) + plan.days * 86400000).toISOString();
   }
   function learningState(record, attempts) {
-    const latest = attempts.filter((item) => item.recordId === record.id).sort((a, b) => a.createdAt.localeCompare(b.createdAt)).pop();
-    if (!latest) return '待验证';
-    if (!latest.correct) return '需要复练';
-    return latest.hintUsed ? '使用提示完成' : '最近一次独立正确';
+    const plan = math().historyPlan(record, attempts);
+    if (!plan.latestOutcome) return '待验证';
+    if (plan.latestOutcome === 'wrong') return '需要复练';
+    return plan.latestOutcome === 'correct_with_hint' ? '使用提示完成' : '最近一次独立正确';
   }
   return { KEY, identity, fileId, validSnapshot, validateRecord, validateSource, validateWatch, expectedAnswer, judge, createLocalStore, filterRecords, nextReview, parsePluginPackage, learningState };
 });

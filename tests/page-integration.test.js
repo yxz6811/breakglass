@@ -67,7 +67,14 @@ test('演示页按依赖顺序加载本地脚本', () => {
     '../src/tutor/figures.js',
     '../src/tutor/parse.js',
     '../src/tutor/ask.js',
-    '../src/page/main.js'
+    '../src/page/main.js',
+    '../src/page/mount-context.js',
+    '../src/geometry-scene/validate.js', '../src/geometry-scene/solve.js', '../src/geometry-scene/actions.js',
+    '../src/geometry-session/session.js', '../src/geometry-scene/frame.js', '../src/geometry-scene/request.js',
+    '../src/geometry-scene/view.js', '../src/page/geometry.js',
+    '../src/plugin/math-learning.js', '../src/plugin/contracts.js', '../src/plugin/frame-sampler.js',
+    '../src/plugin/live-loop.js', '../src/plugin/overlay.js', '../src/plugin/particle-renderer.js',
+    '../src/plugin/video-context.js', './workspace.js'
   ]);
   for (const src of sources) {
     assert.doesNotMatch(src, /^(https?:)?\/\//);
@@ -159,8 +166,8 @@ test('覆盖层绝对定位并接入多画幅重算与测量', () => {
   assert.match(main, /viewBox/);
   assert.match(main, /contentRect.left - stageRect.left/);
   assert.match(main, /__breakglassAlignment/);
-  assert.equal(main.includes("addEventListener('fullscreenchange'"), true);
-  assert.equal(main.includes("addEventListener('orientationchange'"), true);
+  assert.match(main, /listen\(document, 'fullscreenchange', drawCurve\)/);
+  assert.match(main, /listen\(window, 'orientationchange', drawCurve\)/);
   assert.match(main, /ResizeObserver/);
   assert.match(main, /matchMedia/);
   assert.match(main, /alignment.mathPointToPage/);

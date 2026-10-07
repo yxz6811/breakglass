@@ -1,5 +1,36 @@
-(function () {
+(function (root) {
   'use strict';
+  function toLearningScene(figure) {
+    const p = figure.parameters;
+    if (figure.kind !== 'sine') return { template: figure.kind, snapshot: { ...p } };
+    // The older graph allows zero amplitude; it is a constant, with no minimum period.
+    if (p.a === 0) return { template: 'line', snapshot: { m: 0, b: p.k }, degeneracy: 'zero-amplitude-sine' };
+    return { template: 'sine', snapshot: { A: Math.abs(p.a), omega: 1,
+      phi: (-p.h + (p.a < 0 ? Math.PI : 0)) % (2 * Math.PI), k: p.k } };
+  }
+  function createCurvePage(options = {}) {
+  const document = options.document || root.document;
+  const window = options.window || root.window || root;
+  let active = true; let disposed = false; let borrowedMedia = null;
+  const listeners = [];
+  function listen(target, ...args) { target.addEventListener(...args); listeners.push(() => target.removeEventListener(...args)); }
+  const isActive = () => !disposed && active && (!options.isActive || options.isActive());
+  const canSend = () => isActive() && (!options.canRead || options.canRead());
+  let lastInputTiming = null; let inputSequence = 0;
+  function measureInput(change) {
+    const clock = () => root.performance?.now ? root.performance.now() : Date.now();
+    const started = clock();
+    try { return change(); }
+    finally {
+      lastInputTiming = { durationMs: Math.max(0, clock() - started), seq: ++inputSequence,
+        kind: 'DOM+particle synchronous update, not pixel presentation' };
+      if (options.container?.dataset) {
+        options.container.dataset.inputDurationMs = String(lastInputTiming.durationMs);
+        options.container.dataset.inputSeq = String(lastInputTiming.seq);
+        options.container.dataset.inputTimingKind = lastInputTiming.kind;
+      }
+    }
+  }
 
   const {
     geometry,
@@ -17,8 +48,8 @@
   const tutorApi = window.BreakGlass.tutor || null;
   const tutorFigures = window.BreakGlass.tutorFigures || null;
   const $ = (selector) => document.querySelector(selector);
-  const video = $('#demo-video');
-  const stage = $('#video-stage');
+  const video = options.video || $('#demo-video');
+  const stage = options.stage || $('#video-stage');
   const targetInput = $('#target-time');
   const playToggle = $('#play-toggle');
   const jumpTarget = $('#jump-target');
@@ -64,6 +95,12 @@
   const lessonCancel = $('#lesson-cancel');
   const lessonNext = $('#lesson-next');
   const lessonEndpoint = $('#lesson-endpoint');
+  const fixedReaderEndpoint = options.video && typeof options.fixedReaderEndpoint === 'string' ? options.fixedReaderEndpoint : '';
+  if (fixedReaderEndpoint && lessonEndpoint) {
+    lessonEndpoint.value = fixedReaderEndpoint;
+    lessonEndpoint.readOnly = true;
+    lessonEndpoint.setAttribute('readonly', '');
+  }
   const lessonNote = $('#lesson-note');
   const stageBanner = $('#stage-banner');
   const stageBannerTitle = $('#stage-banner-title');
@@ -197,6 +234,7 @@
    * @returns {Promise<void>}
    */
   async function choosePackagedVideo() {
+    if (options.onSelectSample) return options.onSelectSample(PACKAGED_VIDEO_URL, 'parabola-demo.mp4');
     if (bootFailure || !video) return;
     invalidateFrameRead();
     resetLesson();
@@ -224,6 +262,7 @@
    * @returns {Promise<boolean>} 是否已把地址交给演示 video
    */
   async function attachPackagedVideo() {
+    if (options.video) return Boolean(borrowedMedia?.selection);
     if (localVideoUrl || bootFailure) return Boolean(localVideoUrl);
     try {
       const response = await fetch(PACKAGED_VIDEO_URL, { method: 'HEAD' });
@@ -242,6 +281,7 @@
    * @param {File} file
    */
   function useLocalVideo(file) {
+    if (options.onSelectFile) return options.onSelectFile(file);
     if (!file || !video || typeof URL.createObjectURL !== 'function') return;
     if (file.type && file.type.indexOf('video/') !== 0) {
       setStatus('请选择一个视频文件。');
@@ -506,6 +546,7 @@
     figureKind = 'parabola';
     localFigure = null;
     figureOutsideWindow = false;
+    options.onScene?.(null);
   }
 
   function unavailableFigureMapping() {
@@ -644,6 +685,7 @@
    */
   function videoMatches() {
     if (!presetResult) return false;
+    if (options.video && !usingLessonCurve && borrowedMedia?.sample !== 'parabola') return false;
     if (localVideoUrl && !usingLessonCurve) return false;
     if (!video || typeof video.getAttribute !== 'function') return true;
     const marked = video.getAttribute('data-video-id');
@@ -811,6 +853,7 @@
    */
   function syncStageBanner() {
     if (!stageBanner) return;
+    if (!isActive()) { stageBanner.hidden = true; return; }
     const state = sessionState();
     const waiting = Boolean(state && state.status === 'waiting');
     const failed = Boolean(state && state.status === 'recoverable-error');
@@ -1157,7 +1200,11 @@
 
   function drawCurve() {
     try {
-      return drawCurveUnsafe();
+      const result = drawCurveUnsafe();
+      const figure = activeFigure();
+      if (result === true && figure && overlay && isActive()) options.onScene?.({ ...toLearningScene(figure), origin: 'exploration', confirmed: true, sourceId: borrowedMedia?.source?.id || null, sourceVersion: borrowedMedia?.source?.version || null });
+      else options.onScene?.(null);
+      return result;
     } catch {
       cancelPresentation();
       dragging = false;
@@ -1581,8 +1628,8 @@
   }
 
   function wake() {
-    if (frameRead || overlay) return;
-    if (localVideoUrl && !cachedCurveReady()) {
+    if (!isActive() || frameRead || overlay) return;
+    if ((localVideoUrl || (options.video && borrowedMedia?.selection)) && !cachedCurveReady()) {
       readCurrentFrame();
       return;
     }
@@ -1668,7 +1715,7 @@
   }
 
   function canReadCurrentFrame() {
-    return Boolean(localVideoUrl && config && currentFrameApi && !bootFailure && !videoBroken && !mediaPending &&
+    return Boolean((localVideoUrl || borrowedMedia?.selection) && canSend() && config && currentFrameApi && !bootFailure && !videoBroken && !mediaPending &&
       video.paused && !video.seeking && video.readyState >= 2 &&
       Number.isSafeInteger(video.videoWidth) && video.videoWidth > 0 &&
       Number.isSafeInteger(video.videoHeight) && video.videoHeight > 0 &&
@@ -1736,12 +1783,13 @@
   }
 
   function readCurrentFrame() {
+    if (!canSend()) { setStatus('识别尚未获准或未主动启用；可以在学习工作台查看处理状态。'); return; }
     if (!canReadCurrentFrame() || (lesson && lesson.seeking)) {
       setStatus(wakeBlockedStatus());
       return;
     }
     let url;
-    try { url = currentFrameApi.buildUrl(lessonEndpoint ? lessonEndpoint.value : ''); }
+    try { url = currentFrameApi.buildUrl(fixedReaderEndpoint || (lessonEndpoint ? lessonEndpoint.value : '')); }
     catch {
       failFrameRead({ message: '请填入本机 reader 阅读地址（根地址或 /read），再点破壁识别当前帧。' });
       if (lessonEndpoint && lessonEndpoint.focus) lessonEndpoint.focus();
@@ -1908,6 +1956,7 @@
    * @returns {string}
    */
   function readStoredEndpoint() {
+    if (fixedReaderEndpoint) return '';
     try {
       if (typeof sessionStorage === 'undefined' || !sessionStorage || typeof sessionStorage.getItem !== 'function') return '';
       return String(sessionStorage.getItem('breakglass.lessonEndpoint') || '').trim();
@@ -1920,7 +1969,7 @@
    * 记住这一栏里的地址，刷新后还能接着看。空字符串会清掉上次的记录。
    */
   function rememberEndpoint() {
-    if (!lessonEndpoint) return;
+    if (fixedReaderEndpoint || !lessonEndpoint) return;
     const url = String(lessonEndpoint.value || '').trim();
     try {
       if (typeof sessionStorage === 'undefined' || !sessionStorage) return;
@@ -1935,7 +1984,7 @@
    * 输入框还是空的时候，用这次浏览里填过的地址补上。
    */
   function restoreEndpoint() {
-    if (!lessonEndpoint || String(lessonEndpoint.value || '').trim()) return;
+    if (fixedReaderEndpoint || !lessonEndpoint || String(lessonEndpoint.value || '').trim()) return;
     const saved = readStoredEndpoint();
     if (saved) lessonEndpoint.value = saved;
   }
@@ -1945,12 +1994,14 @@
    * 同一支片子、同一个地址已经在看时，不重新开始。
    */
   function maybeStartLesson() {
+    if (options.video) return; // The unified media owner controls continuous analysis; this panel reads only explicit frames.
+    if (!canSend()) return;
     if (!lessonApi || !localClock || !packagedPreset || !video) return;
     const src = String(video.src || '');
     if (!src || isPreparedSource(src)) return;
     const duration = Number(video.duration);
     if (!Number.isFinite(duration) || duration <= 0) return;
-    const url = lessonEndpoint ? String(lessonEndpoint.value || '').trim() : '';
+    const url = fixedReaderEndpoint || (lessonEndpoint ? String(lessonEndpoint.value || '').trim() : '');
     if (lesson && lesson.src === src && lesson.endpoint === url) return;
     resetLesson();
     lessonSerial += 1;
@@ -2362,7 +2413,7 @@
       maybeStartLesson();
     } catch (error) {
       bootFailure = error.message || '配置加载失败。';
-      if (video && !localVideoUrl) {
+      if (video && !localVideoUrl && !options.video) {
         if (video.removeAttribute) video.removeAttribute('src');
         video.src = '';
       }
@@ -2372,14 +2423,14 @@
     syncControls();
   }
 
-  video.addEventListener('resize', syncControls);
-  video.addEventListener('seeking', () => {
+  listen(video, 'resize', syncControls);
+  listen(video, 'seeking', () => {
     invalidateFrameRead();
     if (overlay) removeOverlay({ pauseVideo: false });
     syncControls();
   });
-  video.addEventListener('loadeddata', syncControls);
-  video.addEventListener('loadedmetadata', () => {
+  listen(video, 'loadeddata', syncControls);
+  listen(video, 'loadedmetadata', () => {
     mediaPending = false;
     videoBroken = false;
     assetEmpty.hidden = true;
@@ -2388,15 +2439,15 @@
     maybeStartLesson();
   });
   // 只有阅读点的定位在等这一下。其它跳转照旧由 timeupdate / pause 同步。
-  video.addEventListener('seeked', () => {
+  listen(video, 'seeked', () => {
     if (lesson && lesson.seeking) settleLessonSeek();
     syncControls();
   });
-  video.addEventListener('timeupdate', syncControls);
-  video.addEventListener('play', () => { invalidateFrameRead(); syncControls(); });
-  video.addEventListener('pause', syncControls);
-  video.addEventListener('ended', syncControls);
-  video.addEventListener('error', () => {
+  listen(video, 'timeupdate', syncControls);
+  listen(video, 'play', () => { invalidateFrameRead(); syncControls(); });
+  listen(video, 'pause', syncControls);
+  listen(video, 'ended', syncControls);
+  listen(video, 'error', () => {
     if (bootFailure) return;
     invalidateFrameRead();
     if (lessonFallbackReason && isPreparedSource(video.src) && lessonStatus) {
@@ -2420,7 +2471,7 @@
   if (pickVideoButton && localVideoInput) {
     pickVideoButton.addEventListener('click', () => { localVideoInput.click(); });
   }
-  if (lessonEndpoint) {
+  if (lessonEndpoint && !fixedReaderEndpoint) {
     lessonEndpoint.addEventListener('input', () => {
       invalidateFrameRead();
       syncControls();
@@ -2446,13 +2497,15 @@
   if (presetVideoButton) presetVideoButton.addEventListener('click', () => { choosePackagedVideo(); });
   const presetAgain = document.querySelector('[data-choose-preset]');
   if (presetAgain) presetAgain.addEventListener('click', () => { choosePackagedVideo(); });
-  window.addEventListener('resize', drawCurve);
-  document.addEventListener('fullscreenchange', drawCurve);
-  document.addEventListener('visibilitychange', () => {
+  listen(window, 'resize', drawCurve);
+  listen(document, 'fullscreenchange', drawCurve);
+  listen(document, 'visibilitychange', () => {
     if (document.visibilityState === 'hidden') cancelPresentation();
   });
-  window.addEventListener('orientationchange', drawCurve);
-  window.addEventListener('pagehide', () => {
+  listen(window, 'orientationchange', drawCurve);
+  function destroy() {
+    if (disposed) return; disposed = true;
+    listeners.splice(0).forEach((remove) => remove());
     invalidateFrameRead();
     if (endpointWait != null) {
       window.clearTimeout(endpointWait);
@@ -2473,11 +2526,13 @@
     const docks = window.BreakGlassUI && window.BreakGlassUI.docks;
     if (Array.isArray(docks)) {
       docks.forEach((dock) => {
-        if (dock && typeof dock.destroy === 'function') dock.destroy();
+        if (dock && (!options.video || dock.root === $('#demo-toolbar')) && typeof dock.destroy === 'function') dock.destroy();
       });
     }
-  });
-  document.addEventListener('keydown', (event) => {
+  }
+  listen(window, 'pagehide', destroy);
+  listen(document, 'keydown', (event) => {
+    if (!isActive()) return;
     // 在提问框里按 Esc 只清空草稿，不拆掉正在提问的曲线。
     if (event.key === 'Escape' && tutorInput && event.target === tutorInput) {
       tutorInput.value = '';
@@ -2579,9 +2634,11 @@
     if (!row.input) return;
     row.input.addEventListener('input', () => {
       if (!controller || figureKind !== 'parabola') return;
-      if (figuresApi) { updateFigureParameters({ [row.name]: Number(row.input.value) }); return; }
-      controller.setParameter(row.name, Number(row.input.value));
-      drawCurve();
+      measureInput(() => {
+        if (figuresApi) { updateFigureParameters({ [row.name]: Number(row.input.value) }); return; }
+        controller.setParameter(row.name, Number(row.input.value));
+        drawCurve();
+      });
     });
   });
   if (figureSelect) figureSelect.addEventListener('change', () => {
@@ -2592,7 +2649,7 @@
     if (!row.input) return;
     row.input.addEventListener('input', () => {
       if (figureKind === 'parabola' || !row.name) return;
-      updateFigureParameters({ [row.name]: Number(row.input.value) });
+      measureInput(() => updateFigureParameters({ [row.name]: Number(row.input.value) }));
     });
   });
   fullscreenButton.addEventListener('click', () => {
@@ -2605,4 +2662,10 @@
   });
 
   boot();
-})();
+  return { setActive(value) { active = Boolean(value); if (!active) { invalidateFrameRead(); stopLessonWork(); removeOverlay({ pauseVideo: false }); } else syncControls(); }, onMediaChange(value) { const changed = borrowedMedia?.generation !== value.generation || borrowedMedia?.owner !== value.owner; borrowedMedia = value; localVideoIdentity = value.source?.id || 'no-current-video'; if (changed) { invalidateFrameRead(); resetLesson(); removeOverlay({ pauseVideo: false }); } videoBroken = false; mediaPending = !value.selection; if (assetEmpty) assetEmpty.hidden = Boolean(value.selection); syncControls(); }, getSnapshot: () => ({ ...figureSnapshot(), lastInputTiming: lastInputTiming && { ...lastInputTiming } }), destroy };
+  }
+  const bg = (root.window || root).BreakGlass;
+  bg.curvePage = { createCurvePage, toLearningScene, mount: (container, options = {}) => createCurvePage({ ...options, container }) };
+  const unified = root.document?.body?.dataset?.unifiedWorkspace && ['localhost', '127.0.0.1'].includes(root.location?.hostname);
+  if (!unified && root.document?.querySelector('#demo-video')) bg.curvePage.page = createCurvePage();
+})(globalThis);

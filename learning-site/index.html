@@ -83,8 +83,8 @@
     <section id="practice-empty" class="panel" data-page="practice" hidden><h2>理解复练</h2><p>选择保存过数学条件的记录，回顾场景或跳过这次复练。</p><button type="button" data-view="records">选择需要回顾的记录</button></section>
     <section id="scene-panel" class="panel" data-page="practice" hidden aria-labelledby="scene-title"><h2 id="scene-title" tabindex="-1">回顾数学场景</h2>
       <p id="scene-context" class="muted"></p><div id="scene-stage" class="scene-stage"></div><div id="scene-parameters" class="field-grid"></div>
-      <p class="muted">二维数学主图始终保留。粒子中的旋转只是观察视角；函数数学点仍在二维平面，不能据此改变几何条件。</p>
-      <div class="field-grid"><label>粒子水平视角<input id="camera-yaw" type="range" min="-60" max="60" value="0"></label><label>粒子俯仰视角<input id="camera-pitch" type="range" min="-45" max="45" value="0"></label></div><button id="camera-reset" type="button">恢复二维观察视角</button>
+      <p class="muted">二维数学主图始终保留。实线视图中的旋转只是观察视角；函数数学点仍在二维平面，不能据此改变几何条件。</p>
+      <div class="field-grid"><label>空间水平视角<input id="camera-yaw" type="range" min="-60" max="60" value="0"></label><label>空间俯仰视角<input id="camera-pitch" type="range" min="-45" max="45" value="0"></label></div><button id="camera-reset" type="button">恢复二维观察视角</button>
       <div class="actions"><button id="scene-apply" type="button">应用参数探索</button><button id="scene-reset" type="button">恢复保存的条件</button><button id="scene-return" type="button" disabled>定位匹配视频</button><button id="scene-close" type="button">收起场景</button></div>
       <p id="scene-status" role="status"></p>
       <section id="practice-panel" aria-labelledby="practice-title"><h3 id="practice-title">可跳过的理解复练</h3>
@@ -97,6 +97,7 @@
         <div class="actions"><button id="create-variant" type="button">换一道程序生成的变式</button><button id="save-explanation" type="button">把我的解释保存为疑问笔记</button></div><p id="pedagogy-status" role="status"></p>
       </section>
     </section>
+    <section id="learning-flow-workbench" class="panel" data-page="practice" hidden aria-label="课程微闭环与错因复练"></section>
     <section id="math-workbench" class="panel" data-page="practice" hidden aria-label="数学深化与基础诊断"></section>
     <section class="panel" data-page="account" hidden aria-labelledby="data-title"><h2 id="data-title">账户数据与模型设置</h2>
       <p>本机记录与账户数据分别清除。删除账户数据必须得到服务确认；原文件只在当前浏览器预览。</p>
@@ -106,11 +107,11 @@
       <p id="data-status" role="status"></p>
     </section>
   </main>
-  <footer id="deployment-footer">BreakGlass · 本机开发验证。粒子表现和数学关系由程序绘制；真实模型效果与正式平台上线另行验证。</footer>
+  <footer id="deployment-footer">BreakGlass · 本机开发验证。实线图像和数学关系由程序绘制；真实模型效果与正式平台上线另行验证。</footer>
   <script src="../extension/src/curve/evaluate.js"></script>
   <script src="../extension/src/plugin/math-learning.js"></script>
   <script src="../extension/src/geometry-scene/validate.js"></script><script src="../extension/src/geometry-scene/solve.js"></script><script src="../extension/src/geometry-scene/actions.js"></script>
   <script src="../extension/src/geometry/content-rect.js"></script><script src="../extension/src/plugin/contracts.js"></script><script src="../extension/src/plugin/frame-sampler.js"></script><script src="../extension/src/plugin/live-loop.js"></script><script src="../extension/src/plugin/overlay.js"></script>
-  <script src="../extension/src/plugin/particle-renderer.js"></script><script src="../extension/src/plugin/video-context.js"></script><script src="account-client.js"></script><script src="records.js"></script><script src="pedagogy.js"></script><script src="annotations.js"></script><script src="annotation-editor.js"></script><script src="math-workbench.js"></script><script src="import.js"></script><script src="visual-session.js"></script><script src="pairing.js"></script><script src="context.js"></script><script src="analysis-cache.js"></script><script src="progressive.js"></script><script src="audio.js"></script><script src="app.js"></script>
+  <script src="../extension/src/plugin/particle-renderer.js"></script><script src="../extension/src/plugin/video-context.js"></script><script src="account-client.js"></script><script src="records.js"></script><script src="pedagogy.js"></script><script src="annotations.js"></script><script src="annotation-editor.js"></script><script src="math-workbench.js"></script><script src="import.js"></script><script src="visual-session.js"></script><script src="pairing.js"></script><script src="context.js"></script><script src="analysis-cache.js"></script><script src="progressive.js"></script><script src="audio.js"></script><script src="learning-flow.js"></script><script src="learning-flow-store.js"></script><script src="learning-flow-ui.js"></script><script src="live-particles.js"></script><script src="app.js"></script>
 </body>
 </html>

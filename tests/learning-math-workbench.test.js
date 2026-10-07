@@ -66,12 +66,19 @@ test('diagnostic old/new templates are optional, distinct from ordinary practice
   await f.action('skip').emit('click'); assert.equal(f.store.read().attempts.length, before); f.ui.destroy();
 });
 
-test('hint/answer usage cannot count as independent, fading can be overridden, and two saved histories extend review', async () => {
+test('reopening cannot wash out help, and fading follows independent evidence for the selected new record', async () => {
   const f = harness(); await f.action('new').emit('click'); await f.action('save').emit('click');
   f.answer().value = '1'; await f.action('hint').emit('click'); await f.submit();
   assert.equal(f.store.read().attempts[0].outcome, 'correct_with_hint');
   const record = f.store.read().records[0]; f.ui.open(record); f.answer().value = '1'; await f.submit();
   f.ui.open(record); f.answer().value = '1'; await f.submit(); f.ui.open(record);
+  assert.ok(f.store.read().attempts.every((attempt) => attempt.outcome === 'correct_with_hint'));
+  assert.equal(f.action('hint').dataset.suggested, '3');
+  assert.equal(math.historyPlan(record, f.store.read().attempts).independentStreak, 0);
+  await f.action('new').emit('click'); await f.action('save').emit('click');
+  const independent = f.store.read().records.at(-1); assert.notEqual(independent.id, record.id);
+  f.answer().value = '1'; await f.submit(); f.ui.open(independent);
+  f.answer().value = '1'; await f.submit(); f.ui.open(independent);
   assert.equal(f.action('hint').dataset.suggested, '1'); assert.equal(f.action('more-hints').hidden, false);
   await f.action('more-hints').emit('click'); assert.equal(f.action('hint').dataset.suggested, '3');
   await f.action('answer').emit('click'); f.answer().value = '1'; await f.submit();
@@ -103,7 +110,7 @@ test('optional particle failure retains actual SVG/practice and new scene/accoun
   assert.equal(all(f.container).filter((n) => n.tagName === 'CANVAS').length, 0);
   const svg = all(f.container).find((n) => n.className === 'math-svg').innerHTML;
   await f.action('particles').emit('click'); const canvas = all(f.container).find((n) => n.tagName === 'CANVAS');
-  assert.equal(canvas.hidden, true); assert.match(f.container.textContent, /粒子视图不可用/);
+  assert.equal(canvas.hidden, true); assert.match(f.container.textContent, /实线空间视图不可用/);
   assert.equal(all(f.container).find((n) => n.className === 'math-svg').innerHTML, svg);
   assert.equal(f.action('camera-yaw').disabled, true); assert.ok(canvas.countListeners() > 0);
   await f.action('save').emit('click'); f.answer().value = '24'; await f.submit(); assert.equal(f.store.read().attempts.at(-1).correct, true);

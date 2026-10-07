@@ -158,7 +158,8 @@
     });
   }
   function validReceipt(record, attempt) {
-    if (!attempt || typeof attempt.hintUsed !== 'boolean' || typeof attempt.correct !== 'boolean'
+    if (!record || !attempt || attempt.recordId !== record.id || !receiptMetadata(attempt)
+      || typeof attempt.hintUsed !== 'boolean' || typeof attempt.correct !== 'boolean'
       || typeof attempt.createdAt !== 'string' || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(attempt.createdAt)
       || !Number.isFinite(Date.parse(attempt.createdAt)) || new Date(attempt.createdAt).toISOString() !== attempt.createdAt) return false;
     let correct;
@@ -182,10 +183,26 @@
     return typeof correct === 'boolean' && correct === attempt.correct
       && attempt.outcome === (correct ? attempt.hintUsed ? 'correct_with_hint' : 'correct_independent' : 'wrong');
   }
-  function historyPlan(record, attempts = [], records = [record]) {
-    const byId = new Map(records.filter((r) => r.template === record.template).map((r) => [r.id, r]));
-    const evidence = attempts.filter((a) => byId.has(a.recordId) && validReceipt(byId.get(a.recordId), a))
-      .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+  function receiptMetadata(attempt) {
+    return Boolean(attempt && typeof attempt.id === 'string' && attempt.id.length > 0 && attempt.id.length <= 128
+      && /^[A-Za-z0-9][A-Za-z0-9._:-]*$/.test(attempt.id)
+      && !/^(?:https?|data|blob|file|chrome-extension):/i.test(attempt.id)
+      && typeof attempt.recordId === 'string' && attempt.recordId.length > 0 && attempt.recordId.length <= 128
+      && /^[A-Za-z0-9][A-Za-z0-9._:-]*$/.test(attempt.recordId)
+      && !/^(?:https?|data|blob|file|chrome-extension):/i.test(attempt.recordId)
+      && typeof attempt.correct === 'boolean' && typeof attempt.hintUsed === 'boolean'
+      && typeof attempt.createdAt === 'string' && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(attempt.createdAt)
+      && Number.isFinite(Date.parse(attempt.createdAt)) && new Date(attempt.createdAt).toISOString() === attempt.createdAt
+      && attempt.outcome === (attempt.correct ? attempt.hintUsed ? 'correct_with_hint' : 'correct_independent' : 'wrong'));
+  }
+  // Both legacy callers share this product rule. They remain responsible for
+  // mathematical receipt validation before passing history to this helper.
+  function reviewSuggestion(history = []) {
+    if (!Array.isArray(history)) throw new TypeError('复习历史必须是列表。');
+    const counts = new Map();
+    for (const item of history) if (receiptMetadata(item)) counts.set(item.id, (counts.get(item.id) || 0) + 1);
+    const evidence = history.filter((item) => receiptMetadata(item) && counts.get(item.id) === 1)
+      .sort((a, b) => a.createdAt.localeCompare(b.createdAt) || a.id.localeCompare(b.id));
     let streak = 0;
     for (let i = evidence.length - 1; i >= 0 && evidence[i].correct && !evidence[i].hintUsed; i -= 1) streak += 1;
     const last = evidence.at(-1);
@@ -193,7 +210,13 @@
       days: !last ? null : !last.correct ? 1 : last.hintUsed ? 3 : Math.min(28, 7 * 2 ** Math.min(streak - 1, 2)),
       reason: !last ? '还没有实际作答，先验证这道题。' : !last.correct ? '最近一次答错，建议短间隔再练。'
         : last.hintUsed ? '最近一次借助提示，建议稍后独立再练。'
-          : streak >= 2 ? '连续独立正确，默认减少提示，可主动展开完整提示。' : '最近一次独立正确，保留可选提示。' };
+          : streak >= 2 ? '连续独立正确，默认减少提示，可主动展开完整提示。' : '最近一次独立正确，保留可选提示。',
+      evidenceCount: evidence.length, lastAttemptAt: last?.createdAt || null, latestOutcome: last?.outcome || null };
+  }
+  function historyPlan(record, attempts = [], records = [record]) {
+    // The optional records argument remains accepted, but another record of the
+    // same template cannot establish a streak for the currently selected problem.
+    return reviewSuggestion(attempts.filter((attempt) => attempt.recordId === record.id && validReceipt(record, attempt)));
   }
   function sceneSVG(template, snapshot) {
     const s = checked(template, snapshot); const paths = []; const lines = [];
@@ -240,5 +263,5 @@
     return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" role="img" aria-label="${description}">${lines.join('')}<text x="20" y="330" fill="#eef5ff" font-size="13">${equation(template, s)}</text></svg>`;
   }
   return { TEMPLATE_IDS, isExtended, validateSnapshot, templateInfo, expectedAnswer, judge, equation,
-    hints, prediction, variantSnapshot, learningGraph, historyPlan, sceneSVG };
+    hints, prediction, variantSnapshot, learningGraph, validReceipt, reviewSuggestion, historyPlan, sceneSVG };
 });

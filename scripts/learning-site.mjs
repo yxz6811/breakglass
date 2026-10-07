@@ -71,7 +71,8 @@ export function registeredSources() {
   }));
 }
 export function createLearningSiteServer({ settings = loadSettings({}), audioSettings = loadAudioSettings({}), audioExtractImpl, dataDir, fetchImpl = fetch,
-  allowedOrigins = ['http://localhost:4174', 'http://127.0.0.1:4174'], releasePolicy = null } = {}) {
+  allowedOrigins = ['http://localhost:4174', 'http://127.0.0.1:4174',
+    'http://localhost:8765', 'http://127.0.0.1:8765'], releasePolicy = null } = {}) {
   if (releasePolicy && (releasePolicy.mode !== 'production-pilot' || releasePolicy.secureCookies !== true
     || !['checkRequest', 'authorizeAccount', 'authorizeScope'].every((key) => typeof releasePolicy[key] === 'function')
     || allowedOrigins.length !== 1 || allowedOrigins[0] !== releasePolicy.publicOrigin)) {
