@@ -158,7 +158,7 @@ function createGeometryHarness(options = {}) {
       requestGeometry(settings) { const pending = { ...settings, body: JSON.parse(JSON.stringify(settings.body)), canceled: false, cancel() { pending.canceled = true; } }; requests.push(pending); return pending; }
     }
   };
-  const page = createGeometryPage({ document, window, BreakGlass: BG });
+  const page = createGeometryPage({ document, window, BreakGlass: BG, ...options.pageOptions, ...(options.borrowedVideo ? { video } : {}) });
   function confirmPreset() { elements['preset-button'].dispatch('click'); elements['right-angle-check'].checked = true; elements['review-form'].dispatch('submit'); }
   function loadVideo(file = { name: 'geometry.mp4', type: 'video/mp4' }) { elements['local-video'].files = [file]; elements['local-video'].dispatch('change'); video.dispatch('loadedmetadata'); video.dispatch('canplay'); }
   function seekVideo(time) { video.seeking = true; video.dispatch('seeking'); video.currentTime = time; video.seeking = false; video.dispatch('seeked'); video.dispatch('timeupdate'); }

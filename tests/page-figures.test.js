@@ -30,6 +30,27 @@ function changedValue(item) {
     ? item.initial + 2 * item.step : item.initial - 2 * item.step;
 }
 
+test('particle adapter preserves signed sine phase and represents zero amplitude as a constant line', async () => {
+  const harness = await createHarness();
+  const math = require('../learning-site/math-learning');
+  try {
+    const adapt = harness.win.BreakGlass.curvePage.toLearningScene;
+    for (const a of [-2, 0, 2]) for (const h of [-2, 0, 2]) {
+      const k = 1; const mapped = adapt({ kind: 'sine', parameters: { a, h, k } });
+      assert.equal(math.validateSnapshot(mapped.template, mapped.snapshot).ok, true);
+      assert.equal(mapped.template, a === 0 ? 'line' : 'sine');
+      if (a === 0) { assert.equal(mapped.degeneracy, 'zero-amplitude-sine'); assert.deepEqual(mapped.snapshot, { m: 0, b: k }); }
+      for (const x of [-10, -Math.PI, -0.5, 0, 0.75, Math.PI, 10]) {
+        const p = mapped.snapshot;
+        const actual = mapped.template === 'line' ? p.m * x + p.b : p.A * Math.sin(p.omega * x + p.phi) + p.k;
+        closeTo(actual, a * Math.sin(x - h) + k);
+      }
+    }
+    assert.equal(math.validateSnapshot('sine', { A: 0, omega: 1, phi: 0, k: 1 }).ok, false,
+      'the new positive-amplitude sine contract remains unchanged');
+  } finally { harness.restore(); }
+});
+
 // 直接把真实 SVG 的路径像素还原为数学坐标，用独立算式核对绘制结果。
 function renderedPoints(harness, figure) {
   const scale = Math.min(harness.video.rect.width / harness.video.videoWidth,

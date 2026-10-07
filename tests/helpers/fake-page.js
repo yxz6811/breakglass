@@ -347,7 +347,9 @@ async function createHarness(options = {}) {
     window: globalThis.window,
     document: globalThis.document,
     getComputedStyle: globalThis.getComputedStyle,
-    fetch: globalThis.fetch
+    fetch: globalThis.fetch,
+    location: globalThis.location,
+    sessionStorage: globalThis.sessionStorage
   };
   const fake = createWindow();
   let config = {
@@ -362,6 +364,11 @@ async function createHarness(options = {}) {
 
   globalThis.window = fake.win;
   globalThis.document = documentStub;
+  if (options.pageOptions) {
+    documentStub.body = { dataset: { unifiedWorkspace: true } };
+    globalThis.location = { hostname: 'localhost' };
+  }
+  if (options.storage) globalThis.sessionStorage = options.storage;
   globalThis.getComputedStyle = options.getComputedStyle || (() => ({ objectFit: 'contain', objectPosition: '50% 50%' }));
   globalThis.fetch = (url) => {
     if (String(url).indexOf('config.json') >= 0) {
@@ -387,6 +394,9 @@ async function createHarness(options = {}) {
   }
 
   vm.runInThisContext(mainSource, { filename: 'main.js' });
+  const page = options.pageOptions
+    ? fake.win.BreakGlass.curvePage.createCurvePage({ ...options.pageOptions, document: documentStub, window: fake.win, video: elements['demo-video'], stage: elements['video-stage'] })
+    : fake.win.BreakGlass.curvePage.page;
   await flush();
 
   const video = elements['demo-video'];
@@ -396,6 +406,7 @@ async function createHarness(options = {}) {
     stage: elements['video-stage'],
     document: documentStub,
     win: fake.win,
+    page,
     advance: fake.advance,
     frame: fake.frame,
     flush,
@@ -423,6 +434,8 @@ async function createHarness(options = {}) {
       globalThis.document = previous.document;
       globalThis.getComputedStyle = previous.getComputedStyle;
       globalThis.fetch = previous.fetch;
+      globalThis.location = previous.location;
+      globalThis.sessionStorage = previous.sessionStorage;
     }
   };
 }

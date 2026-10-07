@@ -2,6 +2,7 @@ import { randomBytes, randomUUID, scrypt, timingSafeEqual, createHash } from 'no
 import { promisify } from 'node:util';
 import { createAccountStore } from './store.mjs';
 import * as checks from './validation.mjs';
+import { matchLearningFlow, updateLearningFlow } from './learning-flow-service.mjs';
 
 const derive = promisify(scrypt);
 const COOKIE = 'breakglass_local_session';
@@ -394,6 +395,14 @@ export function createLearningHandler({ dataDir, allowedOrigins = DEFAULT_ORIGIN
         return true;
       }
       const active = await authenticated(request, mutation);
+      const flowRoute = matchLearningFlow(url.pathname, request.method, body, pathId);
+      if (flowRoute) {
+        if (url.search) fail(400, 'invalid_request', '学习流程不接受查询参数。');
+        assertLive(active);
+        if (flowRoute.action === 'read') send(200, { epoch: active.user.epoch, flow: active.user.flow || checks.emptyFlow() });
+        else send(200, await mutate(active, body.expectedEpoch, user => updateLearningFlow(user, flowRoute.action, body, flowRoute.identity, now())));
+        return true;
+      }
       if (url.pathname === '/api/account/plugin-pairing' && ['POST', 'DELETE'].includes(request.method)) {
         if (!checks.exact(body, [])) fail(400, 'invalid_request', '插件配对设置不接受额外字段。');
         assertLive(active);
@@ -463,6 +472,7 @@ export function createLearningHandler({ dataDir, allowedOrigins = DEFAULT_ORIGIN
           if (!user.records.some((item) => item.id === id)) fail(404, 'record_not_found', '当前账户没有这条记录。');
           user.records = user.records.filter((item) => item.id !== id);
           user.attempts = user.attempts.filter((item) => item.recordId !== id);
+          if (user.flow) user.flow = checks.pruneFlow(user.flow, user.records);
           if (user.annotations) user.annotations = user.annotations.filter((item) => item.recordId !== id);
           changedEpoch(user); return { ok: true, epoch: user.epoch };
         });
@@ -471,7 +481,7 @@ export function createLearningHandler({ dataDir, allowedOrigins = DEFAULT_ORIGIN
       if (url.pathname === '/api/learning/records' && request.method === 'DELETE') {
         if (!checks.exact(body, ['expectedEpoch'])) fail(400, 'invalid_request', '清除记录需要当前数据版本。');
         const result = await mutate(active, body.expectedEpoch, (user) => {
-          user.records = []; user.attempts = []; if (user.annotations) user.annotations = [];
+          user.records = []; user.attempts = []; if (user.annotations) user.annotations = []; if (user.flow) user.flow = checks.emptyFlow();
           changedEpoch(user); return { ok: true, epoch: user.epoch };
         });
         send(200, result); return true;
@@ -512,7 +522,7 @@ export function createLearningHandler({ dataDir, allowedOrigins = DEFAULT_ORIGIN
       if (url.pathname === '/api/account/data' && request.method === 'DELETE') {
         if (!checks.exact(body, ['expectedEpoch'])) fail(400, 'invalid_request', '删除账户学习数据需要当前版本。');
         const result = await mutate(active, body.expectedEpoch, (user) => {
-          user.records = []; user.watch = []; user.attempts = []; if (user.annotations) user.annotations = [];
+          user.records = []; user.watch = []; user.attempts = []; if (user.annotations) user.annotations = []; if (user.flow) user.flow = checks.emptyFlow();
           changedEpoch(user); return { ok: true, epoch: user.epoch };
         });
         send(200, result); return true;

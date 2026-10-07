@@ -3,6 +3,11 @@ const require = createRequire(import.meta.url);
 const rules = require('../../extension/src/plugin/contracts.js');
 const annotations = require('../../learning-site/annotations.js');
 const mathLearning = require('../../learning-site/math-learning.js');
+const flowStore = require('../../learning-site/learning-flow-store.js');
+
+export const emptyFlow = flowStore.emptyFlow;
+export const pruneFlow = flowStore.pruneFlow;
+export function learningFlow(value, records) { try { return flowStore.validateFlow(value, records); } catch { return null; } }
 
 export function exact(value, keys) {
   return value && typeof value === 'object' && !Array.isArray(value)
@@ -80,8 +85,8 @@ function unique(values, key) { return new Set(values.map(key)).size === values.l
 export function database(value) {
   if (!exact(value, ['schemaVersion', 'users']) || value.schemaVersion !== 1 || !Array.isArray(value.users)
     || value.users.length > 50 || !unique(value.users, (item) => item.id) || !unique(value.users, (item) => item.username)) return false;
-  return value.users.every((user) => (exact(user, ['id', 'username', 'passwordSalt', 'passwordHash', 'epoch', 'records', 'watch', 'attempts'])
-      || exact(user, ['id', 'username', 'passwordSalt', 'passwordHash', 'epoch', 'records', 'watch', 'attempts', 'annotations']))
+  return value.users.every((user) => exact(user, ['id', 'username', 'passwordSalt', 'passwordHash', 'epoch', 'records', 'watch', 'attempts',
+      ...(Object.hasOwn(user, 'annotations') ? ['annotations'] : []), ...(Object.hasOwn(user, 'flow') ? ['flow'] : [])])
     && safeId(user.id) && username(user.username) === user.username && epoch(user.epoch)
     && /^[a-f0-9]{32}$/.test(user.passwordSalt) && /^[a-f0-9]{128}$/.test(user.passwordHash)
     && Array.isArray(user.records) && user.records.length <= 500 && unique(user.records, (item) => item.id) && user.records.every(record)
@@ -90,5 +95,6 @@ export function database(value) {
     && user.attempts.every((item) => attempt(item, user.records))
     && (!Object.hasOwn(user, 'annotations') || (Array.isArray(user.annotations) && user.annotations.length <= 500
       && unique(user.annotations, (item) => item.recordId) && user.annotations.every((item) => annotation(item)
-        && user.records.some((original) => original.id === item.recordId)))));
+        && user.records.some((original) => original.id === item.recordId))))
+    && (!Object.hasOwn(user, 'flow') || Boolean(learningFlow(user.flow, user.records))));
 }

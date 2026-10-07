@@ -1,6 +1,8 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const { webcrypto } = require('node:crypto');
+const fs = require('node:fs');
+const path = require('node:path');
 const { MAX_BYTES, validateFile, validateMetadata, createImporter } = require('../learning-site/import');
 class Video {
   constructor() { this.listeners = new Map(); this.duration = 12; this.videoWidth = 640; this.videoHeight = 360; this.src = ''; }
@@ -34,4 +36,29 @@ test('decoding failures release media and do not become ready or claim cloud upl
   const failing = importer.choose({ name: 'bad.webm', size: 3, type: 'video/webm', arrayBuffer: async () => new ArrayBuffer(3) });
   video.dispatch('error'); await assert.rejects(failing, /无法解码/);
   assert.equal(revoked, true); assert.equal(statuses.some((item) => item.state === 'ready'), false);
+});
+
+test('only exact packaged parabola bytes retain the original high resolution without granting AI permission', async () => {
+  const bytes = fs.readFileSync(path.join(__dirname, '../extension/assets/video/breakglass-demo-9s.mp4'));
+  async function choose(content, dimensions = {}) {
+    const video = new Video(); Object.assign(video, { duration: 9.383333, videoWidth: 3024, videoHeight: 1898 }, dimensions);
+    const statuses = []; const revoked = [];
+    const importer = createImporter({ video, url: { createObjectURL: () => 'blob:fixture', revokeObjectURL: (value) => revoked.push(value) }, subtle: webcrypto.subtle, onChange: (value) => statuses.push(value) });
+    const file = { name: 'breakglass-demo-9s.mp4', type: 'video/mp4', size: content.length,
+      arrayBuffer: async () => content.buffer.slice(content.byteOffset, content.byteOffset + content.byteLength) };
+    const pending = importer.choose(file); video.dispatch('loadedmetadata');
+    return { pending, importer, statuses, revoked, video };
+  }
+  const valid = await choose(bytes); const selected = await valid.pending;
+  assert.equal(selected.source.id, 'file-10cdba752936a87778e5c82635ef0afbef2ff4071080251cf272ce8810a911f1');
+  assert.equal(selected.width, 3024); assert.equal(selected.height, 1898);
+  assert.equal(selected.source.materialMode, 'permission-pending');
+  assert.equal(valid.statuses.filter((item) => item.state === 'ready').length, 1);
+  // The file name alone is insufficient; altered bytes cannot receive the exception.
+  const impostor = await choose(Buffer.concat([bytes, Buffer.from([0])]));
+  await assert.rejects(impostor.pending, /1920/); assert.equal(impostor.importer.current(), null);
+  assert.equal(impostor.statuses.some((item) => item.state === 'ready'), false); assert.deepEqual(impostor.revoked, ['blob:fixture']);
+  const wrongSize = await choose(bytes, { videoWidth: 3025 }); await assert.rejects(wrongSize.pending, /1920/);
+  const tooLong = await choose(bytes, { duration: 11 }); await assert.rejects(tooLong.pending, /1920/);
+  assert.throws(() => validateMetadata({ duration: 9.383333, width: 3024, height: 1898 }), /1920/);
 });

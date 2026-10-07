@@ -1,0 +1,216 @@
+{
+  "schemaVersion": 1,
+  "auditDateLocal": "2026-10-07",
+  "timezone": "Asia/Shanghai",
+  "observedAtUtc": "2026-10-07T03:56:23.164Z",
+  "runtime": "v24.21.0",
+  "method": "Public npm registry and upstream GitHub tags; tarballs fetched and decompressed only in memory; no installation or execution of package code; byte lengths plus gzipSync level 9; tarball sha512 compared to registry integrity; provenance decoded but signature not cryptographically verified.",
+  "limitations": [
+    "Browser, CJS execution and prototype not run.",
+    "gzip figures are local level-9 compression, not measured HTTP transfer sizes.",
+    "npm package total includes files never sent to a browser."
+  ],
+  "decision": "Do not adopt either library in 010.",
+  "packages": [
+    {
+      "name": "ts-fsrs",
+      "version": "5.4.2",
+      "publishedAt": "2026-09-01T02:23:24.171Z",
+      "registryUrl": "https://registry.npmjs.org/ts-fsrs/5.4.2",
+      "upstream": {
+        "repo": "open-spaced-repetition/ts-fsrs",
+        "tag": "v5.4.2",
+        "commit": "bb71e35a2f5af5a5ac6cce9ef7c41ad24855721d",
+        "tagApiUrl": "https://api.github.com/repos/open-spaced-repetition/ts-fsrs/tags?per_page=100",
+        "gitHeadInRegistry": null,
+        "manifestUrl": "https://github.com/open-spaced-repetition/ts-fsrs/blob/bb71e35a2f5af5a5ac6cce9ef7c41ad24855721d/packages/fsrs/package.json",
+        "licenseUrl": "https://github.com/open-spaced-repetition/ts-fsrs/blob/bb71e35a2f5af5a5ac6cce9ef7c41ad24855721d/LICENSE"
+      },
+      "license": "MIT",
+      "runtimeEntries": {
+        "main": "dist/index.cjs",
+        "module": "dist/index.mjs",
+        "exports": {
+          ".": {
+            "require": "./dist/index.cjs",
+            "import": "./dist/index.mjs",
+            "umd": "./dist/index.umd.js",
+            "default": "./dist/index.mjs",
+            "types": "./dist/index.d.ts"
+          }
+        },
+        "type": "module",
+        "browser": null,
+        "engines": {
+          "node": ">=20.0.0"
+        },
+        "dependencies": {}
+      },
+      "distribution": {
+        "tarballUrl": "https://registry.npmjs.org/ts-fsrs/-/ts-fsrs-5.4.2.tgz",
+        "tarballBytes": 150324,
+        "registryUnpackedBytes": 706415,
+        "registryFileCount": 13,
+        "tarReadFileCount": 13,
+        "computedIntegrity": "sha512-z4qop4pzTcyTzuJ566d9EaX/4bZZzhYfeaPImfVr+xcYT65c5oBgFDijUhCE/D+C78eaolHIhKRZ04/RwF+v2g==",
+        "integrityMatchesRegistry": true,
+        "artifacts": [
+          {
+            "path": "package/LICENSE",
+            "bytes": 1079,
+            "gzipLevel9Bytes": 660,
+            "sha256": "8b83a73dd2894ff553d6de6113064b3ad9dfad3f839837b61f3b183881131d01"
+          },
+          {
+            "path": "package/dist/index.cjs",
+            "bytes": 62470,
+            "gzipLevel9Bytes": 13663,
+            "sha256": "abf2062dd8218357662d4dbe7cb39bc7c0e9b0be8760a5d74bb515c75321f533"
+          },
+          {
+            "path": "package/dist/index.umd.js",
+            "bytes": 72009,
+            "gzipLevel9Bytes": 14826,
+            "sha256": "59b7444121d0aae5bb969097ed95df38eff4a4f878e459703c63720f6b6a176b"
+          },
+          {
+            "path": "package/dist/index.mjs",
+            "bytes": 61245,
+            "gzipLevel9Bytes": 13468,
+            "sha256": "ad4a4b3b7e259fcbf02764454c8f9db4ea3bf5aae2f473198129ecb7728f1a19"
+          }
+        ]
+      },
+      "provenance": [
+        {
+          "predicateType": "https://github.com/npm/attestation/tree/main/specs/publish/v0.1",
+          "subject": [
+            {
+              "name": "pkg:npm/ts-fsrs@5.4.2",
+              "digest": {
+                "sha512": "cf8aa8a78a734dcc93cee279eba77d11a5ffe1b659ce161f79a3c899f56bfb17184fae5ce680601438a3521084fc3f82efc79aa251c884a459d38fd1c05fafda"
+              }
+            }
+          ]
+        },
+        {
+          "predicateType": "https://slsa.dev/provenance/v1",
+          "subject": [
+            {
+              "name": "pkg:npm/ts-fsrs@5.4.2",
+              "digest": {
+                "sha512": "cf8aa8a78a734dcc93cee279eba77d11a5ffe1b659ce161f79a3c899f56bfb17184fae5ce680601438a3521084fc3f82efc79aa251c884a459d38fd1c05fafda"
+              }
+            }
+          ],
+          "resolvedDependencies": [
+            {
+              "uri": "git+https://github.com/open-spaced-repetition/ts-fsrs@refs/heads/main",
+              "digest": {
+                "gitCommit": "bb71e35a2f5af5a5ac6cce9ef7c41ad24855721d"
+              }
+            }
+          ]
+        }
+      ],
+      "sourceEntryStartsWithImports": null,
+      "provenanceUrl": "https://registry.npmjs.org/-/npm/v1/attestations/ts-fsrs@5.4.2"
+    },
+    {
+      "name": "jsxgraph",
+      "version": "1.14.0",
+      "publishedAt": "2026-10-05T09:08:59.054Z",
+      "registryUrl": "https://registry.npmjs.org/jsxgraph/1.14.0",
+      "upstream": {
+        "repo": "jsxgraph/jsxgraph",
+        "tag": "v1.14.0",
+        "commit": "d0fd56a473651ce8eba51c2b7821ab3cfb357ac3",
+        "tagApiUrl": "https://api.github.com/repos/jsxgraph/jsxgraph/tags?per_page=100",
+        "gitHeadInRegistry": "d0fd56a473651ce8eba51c2b7821ab3cfb357ac3",
+        "manifestUrl": "https://github.com/jsxgraph/jsxgraph/blob/d0fd56a473651ce8eba51c2b7821ab3cfb357ac3/package.json",
+        "licenseUrl": "https://github.com/jsxgraph/jsxgraph/blob/d0fd56a473651ce8eba51c2b7821ab3cfb357ac3/LICENSE.MIT"
+      },
+      "license": "(MIT OR LGPL-3.0-or-later)",
+      "runtimeEntries": {
+        "main": "./distrib/jsxgraphcore.js",
+        "module": "./src/index.js",
+        "exports": {
+          "types": "./src/index.d.ts",
+          "default": "./src/index.js"
+        },
+        "type": null,
+        "browser": null,
+        "engines": {
+          "node": ">=20.19.0"
+        },
+        "dependencies": {}
+      },
+      "distribution": {
+        "tarballUrl": "https://registry.npmjs.org/jsxgraph/-/jsxgraph-1.14.0.tgz",
+        "tarballBytes": 19165637,
+        "registryUnpackedBytes": 74837998,
+        "registryFileCount": 546,
+        "tarReadFileCount": 546,
+        "computedIntegrity": "sha512-BXdiVqmSKDKNuLvux6lvio0dY4rQy0G0c+ZAhP2YSuCqobczlzRwOzUn6USmIiJQs6+hvPyrbUeQaeg0d0gbXg==",
+        "integrityMatchesRegistry": true,
+        "artifacts": [
+          {
+            "path": "package/distrib/jsxgraph.css",
+            "bytes": 4822,
+            "gzipLevel9Bytes": 1628,
+            "sha256": "ec20cf945b24635586faf6eea865cf2d0ab23e7156f3c08b37abf70a501bb375"
+          },
+          {
+            "path": "package/src/index.js",
+            "bytes": 9146,
+            "gzipLevel9Bytes": 2340,
+            "sha256": "17ba0ad98eeb6349f1f45e9ffcb0a2dd7d208403ca248ccdffbc43e5477427af"
+          },
+          {
+            "path": "package/distrib/jsxgraphcore.js",
+            "bytes": 993978,
+            "gzipLevel9Bytes": 258582,
+            "sha256": "72481cfa439d74c4eb517dbc1c7e948ecbfcfafa07a69bb116f38c04065fa56b"
+          },
+          {
+            "path": "package/LICENSE.LGPL",
+            "bytes": 7652,
+            "gzipLevel9Bytes": 2604,
+            "sha256": "e3a994d82e644b03a792a930f574002658412f62407f5fee083f2555c5f23118"
+          },
+          {
+            "path": "package/LICENSE.MIT",
+            "bytes": 1201,
+            "gzipLevel9Bytes": 716,
+            "sha256": "43e325001487de7f09745fbe086b054bb1b70d4ab58060e87153849365b23ff1"
+          },
+          {
+            "path": "package/distrib/jsxgraphcore.mjs",
+            "bytes": 1025449,
+            "gzipLevel9Bytes": 258486,
+            "sha256": "63d6ce28054f05834687143eec1396a783e87ac934a52ea7cd030f2ee538844a"
+          }
+        ]
+      },
+      "provenance": null,
+      "sourceEntryStartsWithImports": true
+    }
+  ],
+  "localSourceAudit": {
+    "commit": "e6aceb3e486bcf08ade7b0cd1939c6535a19f190",
+    "files": [
+      {
+        "path": "learning-site/records.js",
+        "sha256": "b8947464dbc5e228ea238df1bb62a710617b4a6bf5b529e18a9084051946e38c"
+      },
+      {
+        "path": "extension/src/plugin/math-learning.js",
+        "sha256": "b017807b3fce7cb9d185e08091508129cb01494e66815ec7cf4eccdf12178364"
+      },
+      {
+        "path": "learning-site/math-workbench.js",
+        "sha256": "8e8070b2ec0973c8fa38d7fd7aed5d1b13313298e00d92b58b03d463b5c08b85"
+      }
+    ]
+  }
+}
