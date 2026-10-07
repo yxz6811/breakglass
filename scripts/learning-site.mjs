@@ -12,20 +12,23 @@ import { loadSettings } from '../breakglass-reader/src/settings.mjs';
 import { createAnalysisCache, contextCacheIdentity } from './analysis-cache.mjs';
 import { createAudioHandler, loadAudioSettings } from './learning-audio.mjs';
 import { validateSupplierRuntime } from './learning-release.mjs';
+import { readRecognition, checkRecognition, RECOGNITION_PROMPT_VERSION, RECOGNITION_CALIBRATION_VERSION } from '../breakglass-reader/src/recognition.mjs';
+import { modelProfileIdentity } from '../breakglass-reader/src/model-profile.mjs';
 const root = path.resolve(fileURLToPath(new URL('../', import.meta.url)));
 const textContext = createRequire(import.meta.url)('../extension/src/plugin/video-context.js');
 const progressiveRules = createRequire(import.meta.url)('../learning-site/analysis-cache.js');
 const GUEST_COOKIE = 'breakglass_analysis_guest';
 export const FILE_LIMITS = Object.freeze({ maxBytes: 64 * 1024 * 1024, maxDuration: 600, maxWidth: 1920, maxHeight: 1080 });
 const fixtures = [
-  { file: 'extension/assets/video/geometry/triangle-3-4-5.mp4', title: '自制直角三角形课程', duration: 12,
+  { file: 'extension/assets/video/geometry/triangle-3-4-5.mp4', title: '自制直角三角形课程', duration: 12, frameSize: { width: 1280, height: 720 },
     subtitle: 'extension/assets/video/geometry/triangle-3-4-5.zh.vtt' },
-  { file: 'extension/assets/video/breakglass-demo-9s.mp4', title: '自制抛物线课程', duration: 9.383333 }
+  { file: 'extension/assets/video/breakglass-demo-9s.mp4', title: '自制抛物线课程', duration: 9.383333, frameSize: { width: 3024, height: 1898 } }
 ];
 const extensions = ['src/ui/theme.css', 'src/geometry/content-rect.js', 'src/curve/evaluate.js',
   'src/geometry-scene/validate.js', 'src/geometry-scene/solve.js', 'src/geometry-scene/actions.js',
   'src/plugin/contracts.js', 'src/plugin/live-loop.js', 'src/plugin/frame-sampler.js', 'src/plugin/particle-renderer.js',
-  'src/plugin/overlay.js', 'src/plugin/overlay.css', 'src/plugin/video-context.js', 'src/plugin/math-learning.js'].map((file) => '/extension/' + file);
+  'src/plugin/overlay.js', 'src/plugin/overlay.css', 'src/plugin/video-context.js', 'src/plugin/math-learning.js',
+  'src/plugin/recognition-contracts.js'].map((file) => '/extension/' + file);
 const brand = ['/site/assets/breakglass-brand/logo-aperture-fracture.svg', '/site/assets/breakglass-brand/wordmark-aperture.svg'];
 const types = { '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.svg': 'image/svg+xml', '.mp4': 'video/mp4' };
 function json(response, status, value) {
@@ -67,7 +70,7 @@ export function registeredSources() {
       if (!parsed.ok) throw new Error('登记的自制字幕无效。');
       context = { id: 'subtitle-' + createHash('sha256').update(text).digest('hex'), title: '项目作者编写的中文字幕（非音轨识别）', cues: parsed.cues };
     }
-    return [id, { source: { kind: 'local-file', id, version: '1', analysisVersion: '1', materialMode: 'self-authored', title: fixture.title }, duration: fixture.duration, context, filePath: path.join(root, fixture.file) }];
+    return [id, { source: { kind: 'local-file', id, version: '1', analysisVersion: '1', materialMode: 'self-authored', title: fixture.title }, duration: fixture.duration, frameSize: { ...fixture.frameSize }, context, filePath: path.join(root, fixture.file) }];
   }));
 }
 export function createLearningSiteServer({ settings = loadSettings({}), audioSettings = loadAudioSettings({}), audioExtractImpl, dataDir, fetchImpl = fetch,
@@ -92,7 +95,9 @@ export function createLearningSiteServer({ settings = loadSettings({}), audioSet
   const guests = new Set();
   const configured = Boolean(settings.baseUrl && settings.apiKey && settings.model);
   const providerVersion = 'provider-' + createHash('sha256').update(JSON.stringify({ baseUrl: settings.baseUrl,
-    model: settings.model, jsonMode: settings.jsonMode, configured, prompt: LEARNING_CONTEXT_PROMPT, algorithm: 'progressive-context-v1' })).digest('hex');
+    model: settings.model, jsonMode: settings.jsonMode, configured, profile: modelProfileIdentity(settings),
+    prompt: LEARNING_CONTEXT_PROMPT, algorithm: 'progressive-context-v1',
+    recognitionPrompt: RECOGNITION_PROMPT_VERSION, recognitionCalibration: RECOGNITION_CALIBRATION_VERSION })).digest('hex');
   function guestId(request, response, create = false) {
     const values = String(request.headers.cookie || '').split(';').map((item) => item.trim())
       .filter((item) => item.startsWith(GUEST_COOKIE + '='));
@@ -207,13 +212,16 @@ export function createLearningSiteServer({ settings = loadSettings({}), audioSet
         }
         if (uri.pathname === '/api/vision/session') {
           const input = await body(request, 1024); const registered = sources.get(input?.sourceId);
-          if (!input || typeof input !== 'object' || Array.isArray(input) || Object.keys(input).length !== 1 || !registered) {
+          const recognition = exactLearningFields(input, ['sourceId', 'capability']) && input.capability === 'recognition-v1';
+          if ((!exactLearningFields(input, ['sourceId']) && !recognition) || !registered) {
             json(response, 403, { code: 'permission_pending', error: '该素材没有已登记的AI处理许可。' }); return;
           }
           if (sessions.size >= 16) { json(response, 429, { error: '本机分析会话已达上限，请先停止其他会话。' }); return; }
           const token = randomUUID();
-          const owner = releasePolicy ? await privateOwner(request, response) : null;
-          sessions.set(token, { kind: 'classic', sourceId: registered.source.id, origin: request.headers.origin, owner,
+          const owner = recognition ? await privateOwner(request, response, true)
+            : releasePolicy ? await privateOwner(request, response) : null;
+          sessions.set(token, { kind: 'classic', capability: recognition ? 'recognition-v1' : null,
+            sourceId: registered.source.id, origin: request.headers.origin, owner,
             startedAt: Date.now(), read: 0, summarize: 0, context: 0, controllers: new Set() });
           json(response, 200, { token }); return;
         }
@@ -223,16 +231,23 @@ export function createLearningSiteServer({ settings = loadSettings({}), audioSet
             json(response, 400, { error: '会话字段无效。' }); return;
           }
           if (session && session.origin === request.headers.origin) {
+            if (session.capability === 'recognition-v1' && !await ownerCurrent(request, session.owner)) {
+              json(response, 403, { code: 'stale_analysis', error: '结束请求与分析会话的归属不符。' }); return;
+            }
             session.controllers.forEach((controller) => controller.abort()); sessions.delete(input.token);
           }
           json(response, 200, { ok: true }); return;
         }
         const progressive = uri.pathname === '/api/vision/progressive/context';
-        const route = uri.pathname === '/api/vision/read' ? 'read' : uri.pathname === '/api/vision/summarize' ? 'summarize'
+        const recognition = uri.pathname === '/api/vision/recognition';
+        const route = uri.pathname === '/api/vision/read' || recognition ? 'read' : uri.pathname === '/api/vision/summarize' ? 'summarize'
           : uri.pathname === '/api/vision/context' || progressive ? 'context' : null;
         if (!route) { json(response, 404, { error: '没有此接口。' }); return; }
         const token = request.headers['x-breakglass-visual-session']; const session = sessions.get(token);
         if (!session || session.origin !== request.headers.origin) { json(response, 403, { error: '分析会话已失效。' }); return; }
+        if (recognition && (session.capability !== 'recognition-v1' || !session.owner || session.kind !== 'classic')) {
+          json(response, 403, { code: 'unsupported_capability', error: '当前会话未绑定新单帧识别能力。' }); return;
+        }
         if ((session.kind === 'progressive') !== progressive || (session.owner && !await ownerCurrent(request, session.owner))) {
           session.controllers.forEach((controller) => controller.abort()); sessions.delete(token);
           json(response, 403, { code: 'stale_analysis', error: '任务入口或账户状态已改变。' }); return;
@@ -278,7 +293,9 @@ export function createLearningSiteServer({ settings = loadSettings({}), audioSet
             if (!window.ok) { json(response, 400, { error: '字幕时间窗无效。' }); return; }
             input = { ...input, cues: window.cues };
           }
-          const validation = route === 'read' ? checkLearningRead(input) : route === 'context' ? checkLearningContext(input) : checkLearningSummary(input);
+          const validation = recognition ? checkRecognition(input, { frameSize: registered.frameSize, duration: registered.duration,
+            sourceId: registered.source.id, videoVersion: registered.source.version, analysisVersion: registered.source.analysisVersion })
+            : route === 'read' ? checkLearningRead(input) : route === 'context' ? checkLearningContext(input) : checkLearningSummary(input);
           if (!validation.ok) { json(response, 400, { error: '画面或观察请求结构无效。' }); return; }
           controller.signal.throwIfAborted();
           if (sessions.get(token) !== session) { json(response, 403, { error: '旧分析会话已失效。' }); return; }
@@ -296,8 +313,12 @@ export function createLearningSiteServer({ settings = loadSettings({}), audioSet
             if (session.context >= progressiveRules.LIMITS.windows) { json(response, 429, { code: 'budget_exhausted', error: '本任务20次模型调用已用完；未分析片段仍保留缺口。' }); return; }
           }
           session[route] += 1;
-          const result = await (route === 'read' ? readLearning : route === 'context' ? readLearningContext : summarizeLearning)(input, { settings, fetchImpl: supplierFetch, signal: controller.signal });
+          const result = await (recognition ? readRecognition : route === 'read' ? readLearning : route === 'context' ? readLearningContext : summarizeLearning)(input, { settings, fetchImpl: supplierFetch, signal: controller.signal });
           if (!controller.signal.aborted && sessions.get(token) === session) {
+            if (recognition && (sources.get(input.sourceId) !== registered
+              || Buffer.byteLength(JSON.stringify(result.payload)) > 64 * 1024)) {
+              json(response, 409, { code: 'stale_analysis', error: '素材已改变或结果超过新通道上限。' }); return;
+            }
             if (session.owner && !await ownerCurrent(request, session.owner)) { json(response, 409, { error: '账户或发布审批已改变，旧结果已丢弃。' }); return; }
             if (progressive) {
               if (!sources.has(input.sourceId) || !await ownerCurrent(request, session.owner)) { json(response, 409, { error: '账户或素材状态已改变。' }); return; }

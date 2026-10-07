@@ -43,6 +43,7 @@ function createFixture(options = {}) {
       if (url === '/api/vision/session/end') return new Response(JSON.stringify({ ok: true }));
       const identity = { schemaVersion: '1', requestId: body.requestId, sourceId: body.sourceId,
         videoVersion: body.videoVersion, analysisVersion: body.analysisVersion };
+      if (url === '/api/vision/recognition') return new Response(JSON.stringify({ ...identity, schemaVersion:'011.1', kind:body.kind, frameTime:body.frameTime, frameSize:body.frameSize, jpegSize:{width:640,height:402}, status:'unsupported', candidate:null, evidence:{formulaBasis:'none',mathStatus:'insufficient',placementStatus:'unknown',map:null,calibrationBasis:'none',profileVersion:'recognition-profile-v1',promptVersion:'recognition-prompt-v1',calibrationVersion:'recognition-calibration-v1'},limitations:['unsupported_object','independent_board_only'] }));
       if (url === '/api/vision/read') return new Response(JSON.stringify({ ...identity, frameTime: body.frameTime,
         status: 'unsupported', result: null, code: 'unsupported_frame' }));
       if (url === '/api/vision/summarize') return new Response(JSON.stringify({ ...identity, status: 'summary',
@@ -54,14 +55,16 @@ function createFixture(options = {}) {
   for (const name of ['curve/evaluate.js', 'geometry-scene/validate.js', 'plugin/contracts.js', 'plugin/live-loop.js']) {
     vm.runInContext(fs.readFileSync(path.join(__dirname, '../extension/src', name), 'utf8'), sandbox, { filename: name });
   }
+  if (options.recognition) vm.runInContext(fs.readFileSync(path.join(__dirname,'../extension/src/plugin/recognition-contracts.js'),'utf8'),sandbox);
+  sandbox.atob = atob; sandbox.btoa = btoa;
   sandbox.BreakGlass.frameSampling = { capture() { captured += 1;
-    return options.frames ? { frameTime: captured / 10, image: 'transport-frame-placeholder', signature: `picture-${captured}` } : null; } };
+    return options.frames ? { frameTime: captured / 10, image: options.image || 'transport-frame-placeholder', signature: `picture-${captured}` } : null; } };
   sandbox.BreakGlass.pluginOverlay = { createLearningOverlay(value) { overlayOptions = value; return overlay; } };
   vm.runInContext(fs.readFileSync(path.join(__dirname, '../learning-site/visual-session.js'), 'utf8'), sandbox, { filename: 'visual-session.js' });
   const materialMode = options.pending ? 'permission-pending' : 'self-authored';
-  sandbox.manualOnly = Boolean(options.manualOnly);
+  sandbox.manualOnly = Boolean(options.manualOnly); sandbox.deferOverlay = Boolean(options.deferOverlay);
   sandbox.materialMode = materialMode; sandbox.fileId = FILE_ID;
-  const session = vm.runInContext(`BreakGlass.webVisual.createSession({video, cssText:'local-style', manualOnly,
+  const session = vm.runInContext(`BreakGlass.webVisual.createSession({video, cssText:'local-style', manualOnly, deferOverlay,
     source:{kind:'local-file',id:fileId,version:'1',analysisVersion:'1',materialMode,title:'自制课程'}})`, sandbox);
   return { session, video, document, window, calls, states, pointUpdates, summaries, tasks, overlay, mount, sandbox,
     overlayOptions: () => overlayOptions, captures: () => captured, setTime(value) { now = value; },
@@ -221,4 +224,40 @@ test('client recognition stops at its 32-call limit and a 30-minute session expi
   assert.equal(await timed.advance(), true);
   assert.equal(timed.captures(), captures); assert.equal(timed.states.at(-1), false);
   assert.equal(timed.tasks.size, 0); timed.session.destroy();
+});
+
+const jpeg = 'data:image/jpeg;base64,' + fs.readFileSync(path.join(__dirname,'../breakglass-reader/tests/helpers/fixtures/demo-6451-640x402.jpg')).toString('base64');
+function oneFrame(fixture) { fixture.sandbox.session = fixture.session; return vm.runInContext("session.recognize({kind:'parabola',frameSize:{width:3024,height:1898}})",fixture.sandbox); }
+test('prepare is shared and does not acquire; single frame and continuous reading consume the same counter', async () => {
+  const f = createFixture({recognition:true,image:jpeg,frames:true});
+  assert.deepEqual(await Promise.all([f.session.prepare(),f.session.prepare()]),[true,true]);
+  assert.equal(f.calls.filter(v=>v.url==='/api/vision/session').length,1);
+  assert.equal(f.calls[0].body.capability,'recognition-v1'); assert.equal(f.captures(),0);
+  assert.equal((await oneFrame(f)).status,'unsupported'); assert.equal(f.session.snapshot().readCalls,1);
+  await f.session.start(); await flush();
+  assert.equal(f.calls.filter(v=>v.url==='/api/vision/session').length,1); assert.equal(f.session.snapshot().readCalls,2);
+  f.session.destroy();
+});
+test('different recognition kinds cannot reset 32 reads and malformed JPEG never consumes a request', async () => {
+  const f = createFixture({recognition:true,image:jpeg,frames:true}); await f.session.prepare();
+  for(let i=0;i<32;i++) await oneFrame(f);
+  await assert.rejects(oneFrame(f),/额度/); assert.equal(f.calls.filter(v=>v.url==='/api/vision/recognition').length,32);
+  f.session.destroy();
+  const invalid = createFixture({recognition:true,frames:true}); await invalid.session.prepare();
+  await assert.rejects(oneFrame(invalid),/契约/); assert.equal(invalid.session.snapshot().readCalls,0); invalid.session.destroy();
+});
+test('single frame in flight aborts promptly even when transport ignores abort, with no queued second read', async () => {
+  const delayed = deferred(), f = createFixture({recognition:true,image:jpeg,frames:true,fetch: e=>e.url==='/api/vision/recognition'?delayed.promise:undefined});
+  await f.session.prepare(); const pending = oneFrame(f); const rejected = assert.rejects(pending,/取消|过期/); await flush();
+  await assert.rejects(oneFrame(f),/正在处理/); f.session.stop(); await rejected;
+  const call=f.calls.find(v=>v.url==='/api/vision/recognition'); assert.equal(call.init.signal.aborted,true);
+  delayed.resolve(new Response('{}')); await flush(); assert.equal(f.session.snapshot().running,false); f.session.destroy();
+});
+
+test('a prepare-only session leaves no old floating overlay and concurrent continuous start reuses its pending grant', async () => {
+ const begin=deferred();const f=createFixture({recognition:true,deferOverlay:true,fetch:e=>e.url==='/api/vision/session'?begin.promise:undefined});
+ assert.equal(f.overlayOptions(),undefined);const prepared=f.session.prepare(),started=f.session.start();
+ assert.equal(f.calls.filter(v=>v.url==='/api/vision/session').length,1);assert.equal(f.overlayOptions(),undefined);
+ begin.resolve(new Response(JSON.stringify({token:'shared-grant'})));assert.equal(await prepared,true);assert.equal(await started,true);
+ assert.ok(f.overlayOptions());f.session.destroy();
 });

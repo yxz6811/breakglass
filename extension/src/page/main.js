@@ -12,10 +12,19 @@
   const document = options.document || root.document;
   const window = options.window || root.window || root;
   let active = true; let disposed = false; let borrowedMedia = null;
+  let readerGeneration = 0; let currentFrameIdentity = null; let currentFrameConfirmed = false;
+  const lifecycleAbort = new AbortController();
   const listeners = [];
   function listen(target, ...args) { target.addEventListener(...args); listeners.push(() => target.removeEventListener(...args)); }
   const isActive = () => !disposed && active && (!options.isActive || options.isActive());
-  const canSend = () => isActive() && (!options.canRead || options.canRead());
+  const canSend = () => isActive() && document.visibilityState !== 'hidden' && (!options.canRead || options.canRead());
+  const readerIdentity = () => ({ readerSequence: readerGeneration, permission: options.getPermissionGeneration?.() ?? 0,
+    generation: borrowedMedia?.generation ?? 0, owner: borrowedMedia?.owner ?? null, epoch: borrowedMedia?.epoch ?? null,
+    sourceId: borrowedMedia?.source?.id ?? null, sourceVersion: borrowedMedia?.source?.version ?? null });
+  const readerStillCurrent = (identity) => {
+    const current = readerIdentity();
+    return canSend() && identity && Object.keys(current).every((key) => current[key] === identity[key]);
+  };
   let lastInputTiming = null; let inputSequence = 0;
   function measureInput(change) {
     const clock = () => root.performance?.now ? root.performance.now() : Date.now();
@@ -234,6 +243,7 @@
    * @returns {Promise<void>}
    */
   async function choosePackagedVideo() {
+    if (disposed) return;
     if (options.onSelectSample) return options.onSelectSample(PACKAGED_VIDEO_URL, 'parabola-demo.mp4');
     if (bootFailure || !video) return;
     invalidateFrameRead();
@@ -247,6 +257,7 @@
     mediaPending = true;
     if (video.setAttribute && packagedPreset) video.setAttribute('data-video-id', packagedPreset.videoId);
     const attached = await attachPackagedVideo();
+    if (disposed) return;
     if (!attached) {
       mediaPending = false;
       if (!bootFailure) setStatus('预先准备的片子没有加载出来。');
@@ -265,12 +276,12 @@
     if (options.video) return Boolean(borrowedMedia?.selection);
     if (localVideoUrl || bootFailure) return Boolean(localVideoUrl);
     try {
-      const response = await fetch(PACKAGED_VIDEO_URL, { method: 'HEAD' });
+      const response = await fetch(PACKAGED_VIDEO_URL, { method: 'HEAD', signal: lifecycleAbort.signal });
       if (response.status === 404 || response.status === 410) return false;
     } catch {
       // 断网时 HEAD 失败，不代表扩展包里没有这个文件。
     }
-    if (localVideoUrl || bootFailure) return Boolean(localVideoUrl);
+    if (disposed || localVideoUrl || bootFailure) return !disposed && Boolean(localVideoUrl);
     video.src = PACKAGED_VIDEO_URL;
     return true;
   }
@@ -1202,7 +1213,7 @@
     try {
       const result = drawCurveUnsafe();
       const figure = activeFigure();
-      if (result === true && figure && overlay && isActive()) options.onScene?.({ ...toLearningScene(figure), origin: 'exploration', confirmed: true, sourceId: borrowedMedia?.source?.id || null, sourceVersion: borrowedMedia?.source?.version || null });
+      if (result === true && figure && overlay && isActive()) options.onScene?.({ ...toLearningScene(figure), origin: 'exploration', confirmed: !options.video || !usingCurrentFrame || currentFrameConfirmed, requiresConfirmation: Boolean(options.video && usingCurrentFrame && !currentFrameConfirmed), sourceId: borrowedMedia?.source?.id || null, sourceVersion: borrowedMedia?.source?.version || null });
       else options.onScene?.(null);
       return result;
     } catch {
@@ -1692,6 +1703,8 @@
     presetResult = result;
     usingLessonCurve = Boolean(fromLesson);
     usingCurrentFrame = Boolean(fromCurrentFrame);
+    currentFrameIdentity = null;
+    currentFrameConfirmed = false;
     if (!usingCurrentFrame) currentFrameSource = '';
     targetInput.value = String(fromLesson ? result.time : PACKAGED_DEMO_TARGET_SECONDS);
     const live = fromLesson ? { ...config, externalAttempt: 'off', visionAdapter: 'off' } : config;
@@ -1732,10 +1745,17 @@
   }
 
   function frameReadStillCurrent(owner) {
-    return frameRead === owner && owner.epoch === frameMediaEpoch && owner.videoId === localVideoIdentity &&
+    return frameRead === owner && readerStillCurrent(owner.identity) && owner.epoch === frameMediaEpoch && owner.videoId === localVideoIdentity &&
       owner.src === video.src && canReadCurrentFrame() && owner.time === video.currentTime &&
       owner.duration === video.duration && owner.frameSize.width === video.videoWidth &&
       owner.frameSize.height === video.videoHeight;
+  }
+
+  function acceptFrameResponse(owner) {
+    if (frameReadStillCurrent(owner)) return true;
+    // An omitted caller cancellation must not leave the retired request busy.
+    if (frameRead === owner) { invalidateFrameRead(); if (!disposed) syncControls(); }
+    return false;
   }
 
   function invalidateFrameRead() {
@@ -1808,6 +1828,7 @@
     }
     const owner = {
       src: video.src, videoId: localVideoIdentity, epoch: frameMediaEpoch,
+      identity: readerIdentity(),
       readingId: 'current-read-' + (++frameReadSerial), time: video.currentTime,
       duration: video.duration, frameSize: { width: video.videoWidth, height: video.videoHeight }, handle: null
     };
@@ -1829,9 +1850,10 @@
     owner.handle = currentFrameApi.startRead({
       url, body, clock: localClock, fetchImpl: (address, init) => fetch(address, init),
       onSuccess(point) {
-        if (!frameReadStillCurrent(owner)) return;
+        if (!acceptFrameResponse(owner)) return;
         frameRead = null;
         mountWake(point.curve, true, true);
+        currentFrameIdentity = owner.identity;
         currentFrameSource = owner.src;
         if (video.setAttribute) video.setAttribute('data-video-id', point.curve.videoId);
         renderLesson();
@@ -1839,11 +1861,12 @@
         wake();
       },
       onFailure(failure) {
-        if (!frameReadStillCurrent(owner)) return;
+        if (!acceptFrameResponse(owner)) return;
         frameRead = null;
         failFrameRead(failure);
       }
     });
+    if (!readerStillCurrent(owner.identity)) owner.handle.cancel();
   }
 
   /**
@@ -1923,6 +1946,30 @@
       lessonProbe = null;
       probe.finish();
     }
+  }
+
+  // This is an internal mount hook; changing permission never starts a new read.
+  function stopReader() {
+    readerGeneration += 1;
+    invalidateFrameRead();
+    if (endpointWait != null) { window.clearTimeout(endpointWait); endpointWait = null; }
+    stopLessonWork();
+    if (lesson) { lesson.phase = 'ready'; lesson.cancelled = true; renderLesson(); }
+    if (options.video && usingCurrentFrame && !currentFrameConfirmed) {
+      removeOverlay({ pauseVideo: false });
+      if (wakeHandle) wakeHandle.dispose();
+      wakeHandle = null; controller = null; presetResult = null;
+      usingCurrentFrame = false; usingLessonCurve = false; currentFrameIdentity = null;
+    }
+    if (!disposed) syncControls();
+  }
+
+  function confirmScene() {
+    if (!usingCurrentFrame || currentFrameConfirmed || !overlay || !readerStillCurrent(currentFrameIdentity)) return false;
+    currentFrameConfirmed = true;
+    const rendered = drawCurve() === true;
+    if (!rendered) currentFrameConfirmed = false;
+    return rendered;
   }
 
   /**
@@ -2008,6 +2055,7 @@
     const course = askApi ? askApi.prepareCourse(lessonNote ? lessonNote.value : '') : { message: '' };
     lesson = {
       src,
+      identity: readerIdentity(),
       readingId: 'reading-' + lessonSerial,
       videoId: 'local-binding-' + lessonSerial,
       duration,
@@ -2037,13 +2085,13 @@
     }
     const owner = lesson;
     owner.timer = localClock.schedule(askApi.DEADLINE_MS, () => {
-      if (lesson !== owner) return;
+      if (lesson !== owner || !readerStillCurrent(owner.identity)) return;
       owner.timer = null;
       if (owner.points.length === 0) fallbackToPrepared('timeout');
       else finishLesson();
     });
     captureFrames(lessonApi.sampleTimes(duration)).then((frames) => {
-      if (lesson !== owner || owner.phase !== 'reading') return;
+      if (lesson !== owner || owner.phase !== 'reading' || !readerStillCurrent(owner.identity)) return;
       if (frames.length === 0) {
         lessonFailed(owner, 'unavailable');
         return;
@@ -2064,7 +2112,7 @@
         fetchImpl: (address, init) => fetch(address, init),
         clock: localClock,
         onSuccess: (payload) => {
-          if (lesson !== owner || owner.phase !== 'reading') return;
+          if (lesson !== owner || owner.phase !== 'reading' || !readerStillCurrent(owner.identity)) return;
           lessonAskHandle = null;
           (Array.isArray(payload.points) ? payload.points : []).forEach((point) => offerLessonPoint(point));
           if (lesson !== owner) return;
@@ -2073,6 +2121,9 @@
         },
         onFailure: (code) => lessonFailed(owner, code)
       });
+      if (lesson !== owner || owner.phase !== 'reading' || !readerStillCurrent(owner.identity)) {
+        lessonAskHandle?.cancel(); lessonAskHandle = null;
+      }
     });
   }
 
@@ -2281,7 +2332,7 @@
    * @param {string} code
    */
   function lessonFailed(owner, code) {
-    if (lesson !== owner || owner.phase !== 'reading') return;
+    if (lesson !== owner || owner.phase !== 'reading' || !readerStillCurrent(owner.identity)) return;
     lessonAskHandle = null;
     if (owner.points.length > 0) {
       finishLesson('外部阅读没有返回可用结果。');
@@ -2389,6 +2440,7 @@
   async function boot() {
     try {
       const loaded = await preset.loadPreset();
+      if (disposed) return;
       const currentFrameOnly = !loaded.ok && loaded.code === 'preset_disabled' &&
         loaded.config && loaded.config.enableLocalMock === false;
       if (!loaded.ok && !currentFrameOnly) throw new Error(loaded.message);
@@ -2412,6 +2464,7 @@
       restoreEndpoint();
       maybeStartLesson();
     } catch (error) {
+      if (disposed) return;
       bootFailure = error.message || '配置加载失败。';
       if (video && !localVideoUrl && !options.video) {
         if (video.removeAttribute) video.removeAttribute('src');
@@ -2462,17 +2515,17 @@
   });
   const localVideoInput = $('#local-video');
   if (localVideoInput) {
-    localVideoInput.addEventListener('change', () => {
+    listen(localVideoInput, 'change', () => {
       const file = localVideoInput.files && localVideoInput.files[0];
       if (file) useLocalVideo(file);
     });
   }
   const pickVideoButton = $('#pick-video');
   if (pickVideoButton && localVideoInput) {
-    pickVideoButton.addEventListener('click', () => { localVideoInput.click(); });
+    listen(pickVideoButton, 'click', () => { localVideoInput.click(); });
   }
   if (lessonEndpoint && !fixedReaderEndpoint) {
-    lessonEndpoint.addEventListener('input', () => {
+    listen(lessonEndpoint, 'input', () => {
       invalidateFrameRead();
       syncControls();
       rememberEndpoint();
@@ -2482,7 +2535,7 @@
         maybeStartLesson();
       }, 300);
     });
-    lessonEndpoint.addEventListener('change', () => {
+    listen(lessonEndpoint, 'change', () => {
       invalidateFrameRead();
       syncControls();
       rememberEndpoint();
@@ -2494,17 +2547,19 @@
     });
   }
   const presetVideoButton = $('#preset-video');
-  if (presetVideoButton) presetVideoButton.addEventListener('click', () => { choosePackagedVideo(); });
+  if (presetVideoButton) listen(presetVideoButton, 'click', () => { choosePackagedVideo(); });
   const presetAgain = document.querySelector('[data-choose-preset]');
-  if (presetAgain) presetAgain.addEventListener('click', () => { choosePackagedVideo(); });
+  if (presetAgain) listen(presetAgain, 'click', () => { choosePackagedVideo(); });
   listen(window, 'resize', drawCurve);
   listen(document, 'fullscreenchange', drawCurve);
   listen(document, 'visibilitychange', () => {
-    if (document.visibilityState === 'hidden') cancelPresentation();
+    if (document.visibilityState === 'hidden') { stopReader(); cancelPresentation(); }
   });
   listen(window, 'orientationchange', drawCurve);
   function destroy() {
     if (disposed) return; disposed = true;
+    lifecycleAbort.abort();
+    stopReader();
     listeners.splice(0).forEach((remove) => remove());
     invalidateFrameRead();
     if (endpointWait != null) {
@@ -2554,22 +2609,22 @@
       else if (status === 'waiting') cancelWaiting();
     }
   });
-  stage.addEventListener('click', (event) => {
+  listen(stage, 'click', (event) => {
     if (!overlay || overlay.contains(event.target)) return;
     // 原生控制条属于 video。点它只操作播放器，不把交互层拆掉。
     if (event.target === video || (video.contains && video.contains(event.target))) return;
     removeOverlay();
   });
-  playToggle.addEventListener('click', () => {
+  listen(playToggle, 'click', () => {
     if (video.paused) {
       invalidateFrameRead();
       if (overlay) removeOverlay({ pauseVideo: false });
       syncControls();
-      video.play().catch(() => setStatus('视频当前无法播放。'));
+      video.play().catch(() => { if (!disposed) setStatus('视频当前无法播放。'); });
     }
     else video.pause();
   });
-  jumpTarget.addEventListener('click', () => {
+  listen(jumpTarget, 'click', () => {
     if (!video.videoWidth) {
       setStatus(pickStatus());
       return;
@@ -2585,16 +2640,16 @@
     video.pause();
     syncControls();
   });
-  targetInput.addEventListener('input', () => {
+  listen(targetInput, 'input', () => {
     if (!Number.isFinite(targetTime())) return;
     syncControls();
   });
-  wakeButton.addEventListener('click', wake);
-  if (lessonNext) lessonNext.addEventListener('click', lessonGoNext);
-  if (lessonCancel) lessonCancel.addEventListener('click', cancelLesson);
-  cancelButton.addEventListener('click', cancelWaiting);
-  retryButton.addEventListener('click', wake);
-  resetButton.addEventListener('click', () => {
+  listen(wakeButton, 'click', wake);
+  if (lessonNext) listen(lessonNext, 'click', lessonGoNext);
+  if (lessonCancel) listen(lessonCancel, 'click', cancelLesson);
+  listen(cancelButton, 'click', cancelWaiting);
+  listen(retryButton, 'click', wake);
+  listen(resetButton, 'click', () => {
     if (figuresApi) {
       const outcome = resetFigureParameters();
       if (outcome.ok && outcome.figure && tutorLog && tutorLog.children.length) {
@@ -2607,20 +2662,20 @@
     if (controller) controller.reset();
     if (drawCurve()) setStatus('已恢复本次结果的初始参数。');
   });
-  exitButton.addEventListener('click', () => {
+  listen(exitButton, 'click', () => {
     invalidateFrameRead();
     removeOverlay();
     syncControls();
   });
   if (tutorForm) {
-    tutorForm.addEventListener('submit', (event) => {
+    listen(tutorForm, 'submit', (event) => {
       event.preventDefault();
       submitTutor();
     });
   }
   // 示例只填进输入框，不替用户送出；用户可以先改数再问。
   if (tutorExamples) {
-    tutorExamples.addEventListener('click', (event) => {
+    listen(tutorExamples, 'click', (event) => {
       const target = event.target;
       const button = target && typeof target.closest === 'function' ? target.closest('[data-tutor-example]') : target;
       const text = button && button.dataset ? button.dataset.tutorExample : '';
@@ -2632,7 +2687,7 @@
   // 滑块按参数逐个调节（会话层 setParameter）；控制点拖动仍走 updateParameter。
   sliderRows.forEach((row) => {
     if (!row.input) return;
-    row.input.addEventListener('input', () => {
+    listen(row.input, 'input', () => {
       if (!controller || figureKind !== 'parabola') return;
       measureInput(() => {
         if (figuresApi) { updateFigureParameters({ [row.name]: Number(row.input.value) }); return; }
@@ -2641,18 +2696,18 @@
       });
     });
   });
-  if (figureSelect) figureSelect.addEventListener('change', () => {
+  if (figureSelect) listen(figureSelect, 'change', () => {
     const selected = selectFigure(figureSelect.value);
     if (!selected.ok) syncFigureControls();
   });
   figureRows.forEach((row) => {
     if (!row.input) return;
-    row.input.addEventListener('input', () => {
+    listen(row.input, 'input', () => {
       if (figureKind === 'parabola' || !row.name) return;
       measureInput(() => updateFigureParameters({ [row.name]: Number(row.input.value) }));
     });
   });
-  fullscreenButton.addEventListener('click', () => {
+  listen(fullscreenButton, 'click', () => {
     if (document.fullscreenElement) {
       if (document.exitFullscreen) document.exitFullscreen();
       return;
@@ -2662,7 +2717,23 @@
   });
 
   boot();
-  return { setActive(value) { active = Boolean(value); if (!active) { invalidateFrameRead(); stopLessonWork(); removeOverlay({ pauseVideo: false }); } else syncControls(); }, onMediaChange(value) { const changed = borrowedMedia?.generation !== value.generation || borrowedMedia?.owner !== value.owner; borrowedMedia = value; localVideoIdentity = value.source?.id || 'no-current-video'; if (changed) { invalidateFrameRead(); resetLesson(); removeOverlay({ pauseVideo: false }); } videoBroken = false; mediaPending = !value.selection; if (assetEmpty) assetEmpty.hidden = Boolean(value.selection); syncControls(); }, getSnapshot: () => ({ ...figureSnapshot(), lastInputTiming: lastInputTiming && { ...lastInputTiming } }), destroy };
+  return {
+    stopReader, confirmScene,
+    setActive(value) {
+      if (disposed) return; active = Boolean(value);
+      if (!active) { stopReader(); removeOverlay({ pauseVideo: false }); } else syncControls();
+    },
+    onMediaChange(value) {
+      if (disposed) return;
+      const changed = borrowedMedia?.generation !== value.generation || borrowedMedia?.owner !== value.owner || borrowedMedia?.epoch !== value.epoch ||
+        borrowedMedia?.source?.id !== value.source?.id || borrowedMedia?.source?.version !== value.source?.version;
+      borrowedMedia = value; localVideoIdentity = value.source?.id || 'no-current-video';
+      if (changed) { stopReader(); resetLesson(); removeOverlay({ pauseVideo: false }); }
+      videoBroken = false; mediaPending = !value.selection;
+      if (assetEmpty) assetEmpty.hidden = Boolean(value.selection); syncControls();
+    },
+    getSnapshot: () => ({ ...figureSnapshot(), lastInputTiming: lastInputTiming && { ...lastInputTiming } }), destroy
+  };
   }
   const bg = (root.window || root).BreakGlass;
   bg.curvePage = { createCurvePage, toLearningScene, mount: (container, options = {}) => createCurvePage({ ...options, container }) };

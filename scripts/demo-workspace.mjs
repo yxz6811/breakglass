@@ -29,7 +29,7 @@ export const WORKSPACE_STATIC_FILES = Object.freeze([
     'page/main.js', 'page/geometry.js', 'page/mount-context.js',
     'geometry-scene/validate.js', 'geometry-scene/solve.js', 'geometry-scene/actions.js',
     'geometry-scene/frame.js', 'geometry-scene/request.js', 'geometry-scene/view.js', 'geometry-session/session.js',
-    'plugin/contracts.js', 'plugin/frame-sampler.js', 'plugin/live-loop.js', 'plugin/math-learning.js',
+    'plugin/contracts.js', 'plugin/recognition-contracts.js', 'plugin/frame-sampler.js', 'plugin/live-loop.js', 'plugin/math-learning.js',
     'plugin/overlay.js', 'plugin/overlay.css', 'plugin/particle-renderer.js', 'plugin/video-context.js',
     'plugin/session.js', 'plugin/registry.js', 'plugin/record-store.js', 'plugin/account-sync.js']
     .map((file) => 'extension/src/' + file),
@@ -40,7 +40,8 @@ export const WORKSPACE_STATIC_FILES = Object.freeze([
   ...['index.html', 'site.css', 'learning-layer.css', 'account-client.js', 'records.js', 'pedagogy.js',
     'annotations.js', 'annotation-editor.js', 'math-workbench.js', 'math-learning.js', 'import.js',
     'visual-session.js', 'pairing.js', 'context.js', 'analysis-cache.js', 'progressive.js', 'audio.js', 'app.js',
-    'learning-flow.js', 'learning-flow-store.js', 'learning-flow-ui.js', 'live-particles.js']
+    'learning-flow.js', 'learning-flow-store.js', 'learning-flow-ui.js', 'live-particles.js',
+    'learning-evidence.js', 'provenance.js', 'recognition-workbench.js']
     .map((file) => 'learning-site/' + file),
   'site/assets/breakglass-brand/logo-aperture-fracture.svg', 'site/assets/breakglass-brand/wordmark-aperture.svg'
 ]);
@@ -58,16 +59,19 @@ const API = new Map([
   ['/api/learning/watch', route('GET')], ['/api/learning/attempts', route('GET POST', 64 * KiB, WORKSPACE_LIMITS.apiMs, 'recordId')],
   ['/api/learning/export', route('GET')], ['/api/annotations', route('GET')],
   ['/api/learning/flow', route('GET')], ['/api/learning/flow/exercises', route('POST')],
+  ['/api/learning/provenance', route('GET')],
   ['/api/vision/config', route('GET')], ['/api/vision/policy', route('GET', 0, WORKSPACE_LIMITS.apiMs, 'sourceId')],
   ...['session', 'session/end', 'cache/clear', 'cache/clear-guest'].map((name) => ['/api/vision/' + name, route('POST', KiB)]),
   ['/api/vision/progressive/session', route('POST', 2 * KiB)],
   ...['read', 'context', 'progressive/context'].map((name) => ['/api/vision/' + name, route('POST', 4 * MiB, WORKSPACE_LIMITS.visionMs)]),
+  ['/api/vision/recognition', { ...route('POST', 4 * MiB, WORKSPACE_LIMITS.visionMs), responseBytes: 64 * KiB }],
   ['/api/vision/summarize', route('POST', 64 * KiB, WORKSPACE_LIMITS.visionMs)],
   ['/api/audio/config', route('GET')],
   ...['session', 'session/end', 'transcribe'].map((name) => ['/api/audio/' + name,
     { ...route('POST', KiB, WORKSPACE_LIMITS.audioMs), responseBytes: WORKSPACE_LIMITS.audioResponseBytes }])
 ]);
 const DYNAMIC = [
+  [/^\/api\/learning\/provenance\/([^/]+)$/, route('PUT')],
   [/^\/api\/learning\/records\/([^/]+)$/, route('PUT DELETE')],
   [/^\/api\/learning\/watch\/([^/]+)$/, route('PUT')], [/^\/api\/annotations\/([^/]+)$/, route('GET PUT')],
   [/^\/api\/learning\/flow\/purposes\/([^/]+)$/, route('PUT')],

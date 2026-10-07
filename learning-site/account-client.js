@@ -107,6 +107,8 @@
       revokePluginPairings: () => request('/api/account/plugin-pairing', { method: 'DELETE', body: {} }),
       records: () => request('/api/learning/records'),
       flow: () => request('/api/learning/flow'),
+      provenance: () => request('/api/learning/provenance'),
+      saveProvenance: (recordId, metadata, expectedRevision = 0) => write(`/api/learning/provenance/${encodeURIComponent(recordId)}`, 'PUT', { metadata, expectedRevision }),
       savePurpose: (recordId, purpose, expectedRevision = 0) => write(`/api/learning/flow/purposes/${encodeURIComponent(recordId)}`, 'PUT', { purpose, expectedRevision }),
       createExercise: (options) => write('/api/learning/flow/exercises', 'POST', options),
       exerciseHelp: (exerciseId, value) => write(`/api/learning/flow/exercises/${encodeURIComponent(exerciseId)}/help`, 'POST', value),

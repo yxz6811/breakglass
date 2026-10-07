@@ -1,8 +1,12 @@
+import { buildModelRequest, ModelProfileError } from './model-profile.mjs';
+import { cancelProviderResponse, readProviderPayload, withProviderAbort } from './provider-payload.mjs';
+
 const SYSTEM_PROMPT = [
   '你在看一节数学课视频的一帧截图，任务是读出画面里那条抛物线。',
   '只回答一个 JSON 对象，不要任何别的文字。',
   '画面里没有清楚的坐标系，或者看不清是哪条抛物线，就回答 {"hasParabola": false}。',
-  '有几条抛物线时，选标着方程、或者和表格数值对得上的那一条；还分不清就回答 {"hasParabola": false}。'
+  '有几条抛物线时，选标着方程、或者和表格数值对得上的那一条；还分不清就回答 {"hasParabola": false}。',
+  '必须有截图中清楚的数值方程或明确数值条件；仅凭无刻度曲线外形不能猜成 y=x²。课程文本不能补足截图缺失的数学条件。'
 ].join('\n');
 
 /**
@@ -16,10 +20,10 @@ function userPrompt(image, time, courseText) {
     `这一帧在视频第 ${time.toFixed(2)} 秒，图片宽 ${image.width} 像素、高 ${image.height} 像素。`,
     '像素坐标以图片左上角为原点，px 向右增大，py 向下增大。',
     '有抛物线时按这个格式回答：',
-    '{"hasParabola": true, "equation": {"a": 数, "h": 数, "k": 数}, '
+    '{"hasParabola": true, "equation": {"form":"vertex","a":数,"h":数,"k":数}, '
       + '"anchors": [{"x": 数, "y": 数, "px": 数, "py": 数}], '
       + '"curveXMin": 数, "curveXMax": 数, "lessonLine": "一句话"}',
-    'equation 写成顶点式 y = a(x - h)^2 + k 的 a、h、k，数学坐标的 y 向上。',
+    'equation 只报告读到的系数：一般式 y=ax²+bx+c 用 {"form":"general","a":数,"b":数,"c":数}；顶点式 y=a(x-h)²+k 用 {"form":"vertex","a":数,"h":数,"k":数}。不要自行把一般式换算为顶点式。数学坐标的 y 向上。',
     'anchors 至少给 3 个你能看准的点：坐标轴刻度、原点、曲线上标出的点都可以；'
       + 'x、y 是数学坐标，px、py 是它在图片上的像素位置；这些点里至少要有两个不同的 x 和两个不同的 y。',
     'curveXMin、curveXMax 是画面上这条曲线画出来的那一段的数学横坐标两端。',
@@ -68,10 +72,9 @@ export function parseAnswer(content) {
  */
 export async function askModel({ settings, dataUrl, image, time, courseText, signal, fetchImpl }) {
   if (signal.aborted) return { ok: false, reason: 'model_timeout', transport: true };
-  const body = {
-    model: settings.model,
-    temperature: 0,
-    messages: [
+  let body;
+  try {
+    body = buildModelRequest(settings, [
       { role: 'system', content: SYSTEM_PROMPT },
       {
         role: 'user',
@@ -80,13 +83,13 @@ export async function askModel({ settings, dataUrl, image, time, courseText, sig
           { type: 'image_url', image_url: { url: dataUrl } }
         ]
       }
-    ]
-  };
-  if (settings.jsonMode) body.response_format = { type: 'json_object' };
-
-  let response;
+    ]);
+  } catch (error) {
+    return { ok: false, reason: error instanceof ModelProfileError ? error.code : 'invalid_model_profile', transport: true };
+  }
   try {
-    response = await fetchImpl(`${settings.baseUrl}/chat/completions`, {
+    return await withProviderAbort(signal, async () => {
+      const response = await fetchImpl(`${settings.baseUrl}/chat/completions`, {
       method: 'POST',
       headers: {
         'content-type': 'application/json',
@@ -94,23 +97,20 @@ export async function askModel({ settings, dataUrl, image, time, courseText, sig
       },
       body: JSON.stringify(body),
       signal
+      });
+      if (signal.aborted) { cancelProviderResponse(response); signal.throwIfAborted(); }
+      if (!response.ok) { cancelProviderResponse(response); return { ok: false, reason: `model_http_${response.status}`, transport: true }; }
+      const payload = await readProviderPayload(response, signal);
+      signal.throwIfAborted();
+      const choice = payload && Array.isArray(payload.choices) ? payload.choices[0] : null;
+      const answer = parseAnswer(choice && choice.message ? choice.message.content : null);
+      if (!answer) return { ok: false, reason: 'answer_unreadable', transport: false };
+      return { ok: true, answer };
     });
   } catch (error) {
-    const timedOut = error && (error.name === 'TimeoutError' || error.name === 'AbortError');
-    return { ok: false, reason: timedOut ? 'model_timeout' : 'model_unreachable', transport: true };
+    const timedOut = signal.aborted || error?.name === 'TimeoutError' || error?.name === 'AbortError';
+    const reason = timedOut ? 'model_timeout' : error?.code === 'response_limit' ? 'model_response_limit'
+      : error?.code === 'model_bad_json' ? 'model_bad_json' : 'model_unreachable';
+    return { ok: false, reason, transport: true };
   }
-  if (signal.aborted) return { ok: false, reason: 'model_timeout', transport: true };
-  if (!response.ok) return { ok: false, reason: `model_http_${response.status}`, transport: true };
-
-  let payload;
-  try {
-    payload = await response.json();
-  } catch {
-    return { ok: false, reason: signal.aborted ? 'model_timeout' : 'model_bad_json', transport: true };
-  }
-  if (signal.aborted) return { ok: false, reason: 'model_timeout', transport: true };
-  const choice = payload && Array.isArray(payload.choices) ? payload.choices[0] : null;
-  const answer = parseAnswer(choice && choice.message ? choice.message.content : null);
-  if (!answer) return { ok: false, reason: 'answer_unreadable', transport: false };
-  return { ok: true, answer };
 }

@@ -38,6 +38,7 @@
           <button id="manual-explore" type="button" disabled>只探索手工数学条件</button></div>
         <p id="session-status" role="status" aria-live="polite"></p>
       </section>
+      <section id="recognition-workbench" aria-label="单帧数学条件核对"></section>
       <section class="processing-info" aria-labelledby="context-title"><h3 id="context-title">把一小段连起来理解</h3>
         <p>选择不超过30秒的片段，默认分析4张代表帧。可以结合已登记作者字幕；不会读取音轨，也不会上传整视频。候选总结可能遗漏未采样的细节。</p>
         <div class="field-grid"><label>片段起点（秒）<input id="context-start" type="number" min="0" step="0.01" value="0"></label><label>片段终点（秒）<input id="context-end" type="number" min="0" step="0.01" value="1"></label></div>
@@ -111,7 +112,7 @@
   <script src="../extension/src/curve/evaluate.js"></script>
   <script src="../extension/src/plugin/math-learning.js"></script>
   <script src="../extension/src/geometry-scene/validate.js"></script><script src="../extension/src/geometry-scene/solve.js"></script><script src="../extension/src/geometry-scene/actions.js"></script>
-  <script src="../extension/src/geometry/content-rect.js"></script><script src="../extension/src/plugin/contracts.js"></script><script src="../extension/src/plugin/frame-sampler.js"></script><script src="../extension/src/plugin/live-loop.js"></script><script src="../extension/src/plugin/overlay.js"></script>
-  <script src="../extension/src/plugin/particle-renderer.js"></script><script src="../extension/src/plugin/video-context.js"></script><script src="account-client.js"></script><script src="records.js"></script><script src="pedagogy.js"></script><script src="annotations.js"></script><script src="annotation-editor.js"></script><script src="math-workbench.js"></script><script src="import.js"></script><script src="visual-session.js"></script><script src="pairing.js"></script><script src="context.js"></script><script src="analysis-cache.js"></script><script src="progressive.js"></script><script src="audio.js"></script><script src="learning-flow.js"></script><script src="learning-flow-store.js"></script><script src="learning-flow-ui.js"></script><script src="live-particles.js"></script><script src="app.js"></script>
+  <script src="../extension/src/geometry/content-rect.js"></script><script src="../extension/src/plugin/contracts.js"></script><script src="../extension/src/plugin/recognition-contracts.js"></script><script src="../extension/src/plugin/frame-sampler.js"></script><script src="../extension/src/plugin/live-loop.js"></script><script src="../extension/src/plugin/overlay.js"></script>
+  <script src="../extension/src/plugin/particle-renderer.js"></script><script src="../extension/src/plugin/video-context.js"></script><script src="account-client.js"></script><script src="records.js"></script><script src="provenance.js"></script><script src="pedagogy.js"></script><script src="annotations.js"></script><script src="annotation-editor.js"></script><script src="math-workbench.js"></script><script src="import.js"></script><script src="visual-session.js"></script><script src="pairing.js"></script><script src="context.js"></script><script src="analysis-cache.js"></script><script src="progressive.js"></script><script src="audio.js"></script><script src="learning-flow.js"></script><script src="learning-evidence.js"></script><script src="learning-flow-store.js"></script><script src="learning-flow-ui.js"></script><script src="live-particles.js"></script><script src="recognition-workbench.js"></script><script src="app.js"></script>
 </body>
 </html>

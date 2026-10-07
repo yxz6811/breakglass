@@ -1,5 +1,6 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { loadModelProfile } from './model-profile.mjs';
 
 const SERVICE_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -57,6 +58,7 @@ export function loadSettings(env) {
     apiKey: (env.READER_API_KEY || '').trim(),
     model: (env.READER_MODEL || '').trim(),
     jsonMode: env.READER_JSON_MODE === '1',
+    modelProfile: loadModelProfile(env),
     timeoutMs: intInRange(env.READER_MODEL_TIMEOUT_MS, 60000, 1000, PAGE_DEADLINE_MS),
     budgetMs: intInRange(env.READER_BUDGET_MS, 240000, 1000, PAGE_DEADLINE_MS - 20000),
     concurrency: intInRange(env.READER_CONCURRENCY, 2, 1, 8),

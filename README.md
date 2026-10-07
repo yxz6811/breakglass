@@ -1,6 +1,6 @@
 # BreakGlass（破壁）
 
-> 011优化规划（2026-10-07）：结合外部旧 main 评审与当前 `94d2b38` 代码核对，新增[识别可信度与学习闭环优化方案](docs/BreakGlass-recognition-optimization-plan-2026-10-07.md)。优先处理在途识别撤销、新题证据进入概览/错题、公式程序换算与独立坐标校验，再做模型兼容、性能和发布一致性。见[规格](specs/011-recognition-reliability/spec.md)、[契约草案](specs/011-recognition-reliability/contracts.md)、[实施计划](specs/011-recognition-reliability/plan.md)和[待执行任务](specs/011-recognition-reliability/tasks.md)。本轮仅文档，草案未冻结、代码未修改、未增加真实模型验收；宪法仍为2.6.2，历史任务保留。
+> 011首批实施交付（2026-10-07，治理2.6.3）：已冻结[实施契约v1](specs/011-recognition-reliability/contracts.md)，整合学习证据投影、许可撤销与生命周期、新单帧候选、有限模型profile及来源sidecar。主入口为 `extension/demo/index.html`；[实施验证](docs/BreakGlass-011-implementation-validation-2026-10-07.md)记录1206项程序回归和局部实际浏览器证据。[优化方案](docs/BreakGlass-recognition-optimization-plan-2026-10-07.md)、[规格](specs/011-recognition-reliability/spec.md)、[计划](specs/011-recognition-reliability/plan.md)及[任务清单](specs/011-recognition-reliability/tasks.md)区分11项首批完成与11项完整条件待验。自动原位标定、真实模型、完整UI/MV3与教学效果继续待验，历史任务保留。
 
 > 010开发交付（2026-10-07）：用户指定 `extension/demo/index.html` 为统一主工作台，现已将既有视频/数学/分析/账号/学习记录与两微课、用途/帮助、新题作答、复练队列和实时实线图像接在同一页。[研究融合与竞争评估](docs/BreakGlass-evidence-learning-plan-2026-10-07.md)、[主工作台UI](docs/BreakGlass-demo-workspace-ui-plan-2026-10-07.md)、[任务清单](specs/010-evidence-guided-learning/tasks.md)记录实现顺序。两份宪法同步2.6.2实施记录；[运行说明](specs/010-evidence-guided-learning/quickstart.md)使用8765同源前门与4174唯一学习服务。真实模型、平台/地区发布、教师与学生效果独立待验；006–009旧验收保留。
 
@@ -177,3 +177,5 @@ Safari 使用媒体查询新旧监听接口的能力检测；旧环境的导航�
 可选模型实测工具为 `scripts/evaluate-learning-model.mjs`，默认不调用供应商；将来配置后显式加`--run-model`并指定仓库外`--output`路径。当前not-run不代表真实AI通过。实际集成脚本`verify-connected-learning.mjs`模型是明确替身，独占4173/4174/8787并使用临时测试账户。
 
 后续视觉决定（2026-10-07，2.6.2）：用户将粒子改为连续实线。实时参数/公式/二维图与空间线框同步，函数仍在二维数学平面，几何按已注册边连接，保留相机与回退；内部particle模块名仅用于兼容，不改变数学/来源/账号/模型/预算与外部验收边界。
+
+011多会话首批实现与剩余验收：[实施验证](docs/BreakGlass-011-implementation-validation-2026-10-07.md)。主入口增加主动单帧核对、同页独立数学画板与来源保存，位置待校对；模型留空、真实模型/完整外部验收状态不变。

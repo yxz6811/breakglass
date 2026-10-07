@@ -46,8 +46,8 @@ npm start
 ## 一帧怎么读
 
 1. 读出 JPEG 宽高，和请求里的源尺寸比一下比例，对不上就丢掉。
-2. 问模型一次（温度 0，不重试）：有没有一条能对上坐标轴的抛物线；顶点式 `a`、`h`、`k`；至少 3 个「数学坐标 ↔ 图片像素」的锚点；曲线画出的横坐标两端；一句讲解。
-   方程参数和横坐标端点只接受有限的 JSON number；布尔值、`null`、数字字符串不会自动转换成数字。
+2. 问模型一次（默认温度 0，不重试）：有没有一条有明确数值依据且能对上坐标轴的抛物线；一般式 `a/b/c` 或顶点式 `a/h/k`；至少 3 个「数学坐标 ↔ 图片像素」的锚点；曲线画出的横坐标两端；一句讲解。一般式由程序按 `h=-b/(2a)`、`k=c-b²/(4a)` 换算，不要求模型自行配方。题面数值不清或仅有无刻度外形时应拒绝，不猜成 `y=x²`，课程文字不能补截图缺失数学标注。
+   公式只接受严格 general/vertex 字段和兼容旧 `{a,h,k}`。每原始及换算后系数绝对值不超过 `1e6`，`abs(a)>=1e-6`，并继续页面有限域校验；accessor、原型/未知字段、字符串、非有限值和溢出拒绝。这是候选合法性校验，不能证明模型读对题面。
 3. 有本机 `ffmpeg` 时先把 JPEG 解成 RGB，在画面里寻找和方程重合的细线；成功时用实际像素得到的区域。没有 ffmpeg、解码失败或找不到线时，再用模型锚点拟合坐标映射。锚点最远偏离超过 JPEG 短边 2% 时，说明读数不一致，整帧丢掉。模型的横坐标端点仅在锚点路径使用，并须通过上述数字类型检查。这些检查不能证明模型整体看准了画面。
 4. 把要画的那段曲线放进画面，算出 `domain`、`range`，区域乘回源像素。
 5. 拼成点，交给扩展自己的 `validateLessonReading` 再查一遍，过了才回。
@@ -85,6 +85,16 @@ npm test
 回归测试覆盖严格数值类型、小系数保留、主动取消、上传期间断开，以及不配合取消的迟到模型响应。这些测试不代表真实模型识别或四种画幅的 2% 对齐验收已经通过；产品边界仍遵守 [`docs/BreakGlass-constitution.md`](../docs/BreakGlass-constitution.md)。
 
 JPEG 取消测试使用受控子进程替身。真实 RGB 解码及像素定位用例需要本机 `ffmpeg`；没有该依赖时只能验证锚点路径，不能宣称像素定位用例通过。
+
+## 011 reader能力配置与响应读取
+
+服务端 `recognition-profile-v1` 同时用于旧曲线、几何及复用几何入口的学习read/context/summary。`.env.example` 列出有限选项：`READER_TEMPERATURE_POLICY=fixed|omit`、`READER_TEMPERATURE` 严格0～2（默认0）、可选有限 `READER_REASONING_EFFORT` 与 `READER_IMAGE_TRANSPORT=inline|public-url`。默认仍发送temperature=0；omit不发送它，未配置reasoning不发送。未知值拒绝，基础地址/密钥/模型留空不调用供应商，不重试、不自动挑选其他模型。
+
+能力配置须依据具体供应商入口核对。当前画面以inline JPEG data URL发送；public-url策略收到它会在调用前明确拒绝，不自动托管或公开画面。这些选项不证明任意同名模型兼容。JSON mode只控制请求输出选项，仍须严格数学和身份校验。非秘密profile identity用于网关缓存版本，密钥不进入该identity；ASR配置独立。
+
+两模型入口共用64KiB上游响应限制：真实字节流在JSON解析前累计，超限即取消；仅提供json的测试替身也检查UTF-8长度。abort race结束不配合取消的等待，迟到响应不解析为成功。旧曲线保留容忍代码块的内容解析，几何/学习保留纯JSON严格解析；旧公开错误code/envelope和各时间预算保持。配置/传输失败只返回安全原因，错误不暴露完整供应商内容。
+
+相关测试：`node --test breakglass-reader/tests/equation-normalise.test.mjs breakglass-reader/tests/model-profile.test.mjs breakglass-reader/tests/provider-payload.test.mjs`（从仓库根执行）。使用自制系数、Web可读流和不联网替身，不等于真实模型、无刻度拒绝质量、像素标定或四画幅2%验收通过。011新共享识别通道、可信定位和sidecar由独立模块实施，此处不宣称已经完成。
 
 ## 005 当前帧直角三角形（独立接口）
 

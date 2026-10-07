@@ -3,6 +3,7 @@ import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 import { decodeJpegDataUrl, jpegSize } from './jpeg.mjs';
 import { askGeometryModel } from './geometry-model.mjs';
+import { ModelProfileError } from './model-profile.mjs';
 
 const require = createRequire(import.meta.url);
 const DEFAULT_EXTENSION = fileURLToPath(new URL('../../extension/', import.meta.url));
@@ -64,9 +65,11 @@ export async function withLearningBudget({ signal, budgetMs }, run) {
   try {
     combined.throwIfAborted();
     return await run(combined);
-  } catch {
+  } catch (error) {
     signal?.throwIfAborted();
-    return learningError(deadline.signal.aborted ? 504 : 502, deadline.signal.aborted ? 'timeout' : 'model_failed');
+    const result = learningError(deadline.signal.aborted ? 504 : 502, deadline.signal.aborted ? 'timeout' : 'model_failed');
+    if (!deadline.signal.aborted && error instanceof ModelProfileError) result.payload.error = error.message;
+    return result;
   } finally {
     clearTimeout(timer);
   }

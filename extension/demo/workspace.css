@@ -31,6 +31,7 @@
 .workspace-curve .lg-dock,.workspace-geometry .lg-dock { position:relative; inset:auto; transform:none; margin:0 0 20px; width:100%; }
 .workspace-curve .dock-reveal,.workspace-geometry .dock-reveal { position:relative; inset:auto; }
 .workspace-curve footer { margin:12px 0; }
+.workspace-curve .workspace-nav { display:none; }
 .workspace-geometry .workspace-nav { display:none; }
 .workspace-geometry .video-layout { display:block; }
 .workspace-geometry .geometry-stage { min-height:0; background:transparent; }
@@ -51,6 +52,7 @@
 .workspace-learning input[type=checkbox] { width:20px; height:20px; min-height:20px; }
 .workspace-save-scene { margin-top:20px; border:1px solid var(--line); border-radius:var(--radius-panel); padding:20px; background:var(--panel); display:grid; gap:12px; }
 .workspace-save-scene label { display:grid; gap:6px; }
+.workspace-save-scope { margin:0; color:var(--accent); font-size:14px; overflow-wrap:anywhere; }
 .workspace-save-scene input,.workspace-save-scene select,.workspace-save-scene textarea { width:100%; min-height:44px; }
 .workspace-error { margin:32px; padding:20px; border:1px solid var(--line); border-radius:12px; color:var(--warn); }
 @media(max-width:1080px) { .workspace-layout { grid-template-columns:1fr; } .workspace-media { position:static; } .workspace-particle-card { max-width:900px; } }
