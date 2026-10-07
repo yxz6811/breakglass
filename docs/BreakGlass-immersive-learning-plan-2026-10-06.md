@@ -1,5 +1,7 @@
 # BreakGlass 视频沉浸学习产品规划
 
+> 2026-10-07最新规划：根据用户要求融合学习研究，并以 `extension/demo/index.html` 为本轮统一工作台，将已有与新增功能在同页实现。详见[研究融合/实现顺序/竞争评估](BreakGlass-evidence-learning-plan-2026-10-07.md)、[主工作台UI](BreakGlass-demo-workspace-ui-plan-2026-10-07.md)和[010任务](../specs/010-evidence-guided-learning/tasks.md)。这是下一轮规划，010实现项尚未执行；下文插件产品方向、学习站复用模块、许可和独立验收继续适用。
+
 > 009最新交付（2026-10-07，治理2.5.0）：记录备注/原因标签可修订，获准素材可显式渐进分段并复用私有缓存；新增五种手工数学、粒子、真实作答与窄题型诊断；登记短音轨可配置ASR；提供严格试点配置检查和运行入口。功能仍对应BG-F01–F12/BG-U01–U13，新增UI-A31–35见[009规划](BreakGlass-learning-completion-2026-10-07.md)与[管理UI规划](BreakGlass-learning-management-ui-2026-10-06.md)。[009任务](../specs/009-learning-completion/tasks.md)按真实证据更新；视觉候选不扩大，B站许可、真实模型/长课、正式发布和学生效果另验。下方006–008与初始规划保留为历史范围。
 
 > 008最新实施（治理2.4.0）：插件与网站本机账号显式配对、未来记录/观看同步、受限离线队列，网站短片段多帧＋登记作者字幕，以及参数预测/三级提示/独立程序变式。UI、风险及状态见[008连通学习规划](BreakGlass-connected-learning-2026-10-06.md)与[任务](../specs/008-connected-learning/tasks.md)。真实模型、B站许可、公网跨设备与真实学生效果仍独立待验；下文历史基线保留。
